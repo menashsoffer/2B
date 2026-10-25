@@ -13,6 +13,7 @@ data class Dream(
     val priority: Int = 1,
     val status: String = "active", // active, completed, archived
     val targetDate: LocalDate? = null,
+    val rawTargetDate: String? = null,
     val notes: String = "",
     val ownerUid: String = "",
     val forWhom: ForWhom = ForWhom.BOTH,

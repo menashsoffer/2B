@@ -1,5 +1,7 @@
 package com.menash.myself.feature.calculators.car.domain
 
+import com.menash.myself.core.domain.model.Car
+import com.menash.myself.core.domain.model.Money
 import kotlin.math.max
 
 data class CarCostInput(
@@ -20,6 +22,15 @@ data class CarCostResult(
     val total5YearCost: Double,
     val net5YearCost: Double,
     val netMonthlyCost: Double
+)
+
+data class CarCostResultMoney(
+    val yearlyRunningCost: Money,
+    val monthlyRunningCost: Money,
+    val fiveYearRunningCost: Money,
+    val total5YearCost: Money,
+    val net5YearCost: Money,
+    val netMonthlyCost: Money
 )
 
 data class EnergyCostInput(
@@ -62,6 +73,33 @@ object CarCostCalculator {
         val netMonthlyCost = max(0.0, net5YearCost / 60.0)
 
         return CarCostResult(
+            yearlyRunningCost = yearlyRunningCost,
+            monthlyRunningCost = monthlyRunningCost,
+            fiveYearRunningCost = fiveYearRunningCost,
+            total5YearCost = total5YearCost,
+            net5YearCost = net5YearCost,
+            netMonthlyCost = netMonthlyCost
+        )
+    }
+
+    /**
+     * Calculates 5-year and monthly costs for a domain Car using Money (Long agorot with HALF_UP).
+     * Single implementation of car math for domain Car models.
+     */
+    fun calculate5YearCost(car: Car): CarCostResultMoney {
+        val yearlyRunningCost = car.energyCostYearly +
+                car.insuranceYearly +
+                car.trackerYearly +
+                car.maintenanceYearly +
+                car.annualTestYearly
+
+        val monthlyRunningCost = yearlyRunningCost / 12
+        val fiveYearRunningCost = yearlyRunningCost * 5L
+        val total5YearCost = car.purchasePrice + fiveYearRunningCost + car.tires5YearsTotal
+        val net5YearCost = total5YearCost - car.resaleValueAfter5Years
+        val netMonthlyCost = if (net5YearCost.isPositive()) net5YearCost / 60 else Money.ZERO
+
+        return CarCostResultMoney(
             yearlyRunningCost = yearlyRunningCost,
             monthlyRunningCost = monthlyRunningCost,
             fiveYearRunningCost = fiveYearRunningCost,

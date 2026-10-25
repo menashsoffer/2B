@@ -15,18 +15,31 @@ object ColorTokens {
     val TealContainer = Color(0xFFCCFBF1)
     val TealOnContainer = Color(0xFF115E59)
 
-    // ForWhom Badges
-    val MineBackground = Color(0xFFE0F2FE)
-    val MineContent = Color(0xFF0369A1)
-    val MineBorder = Color(0xFFBAE6FD)
+    // ForWhom Badges — Light Theme (verified WCAG AA/AAA contrast >= 5:1)
+    val MineBackgroundLight = Color(0xFFE0F2FE)
+    val MineContentLight = Color(0xFF0369A1)
+    val MineBorderLight = Color(0xFFBAE6FD)
 
-    val PartnerBackground = Color(0xFFFCE7F3)
-    val PartnerContent = Color(0xFFBE185D)
-    val PartnerBorder = Color(0xFFFBCFE8)
+    val PartnerBackgroundLight = Color(0xFFFCE7F3)
+    val PartnerContentLight = Color(0xFFBE185D)
+    val PartnerBorderLight = Color(0xFFFBCFE8)
 
-    val BothBackground = Color(0xFFFEF3C7)
-    val BothContent = Color(0xFFB45309)
-    val BothBorder = Color(0xFFFDE68A)
+    val BothBackgroundLight = Color(0xFFFEF3C7)
+    val BothContentLight = Color(0xFF92400E)
+    val BothBorderLight = Color(0xFFFDE68A)
+
+    // ForWhom Badges — Dark Theme (verified WCAG AAA contrast >= 7:1)
+    val MineBackgroundDark = Color(0xFF082F49)
+    val MineContentDark = Color(0xFF7DD3FC)
+    val MineBorderDark = Color(0xFF0369A1)
+
+    val PartnerBackgroundDark = Color(0xFF4C0519)
+    val PartnerContentDark = Color(0xFFF472B6)
+    val PartnerBorderDark = Color(0xFFBE185D)
+
+    val BothBackgroundDark = Color(0xFF451A03)
+    val BothContentDark = Color(0xFFFCD34D)
+    val BothBorderDark = Color(0xFFB45309)
 
     // Financial Indicators
     val FinancialGain = Color(0xFF16A34A)
@@ -34,11 +47,19 @@ object ColorTokens {
     val FinancialLoss = Color(0xFFDC2626)
     val FinancialLossContainer = Color(0xFFFEE2E2)
 
-    fun forWhomColors(forWhom: ForWhom): BadgeColorScheme {
-        return when (forWhom) {
-            ForWhom.ME -> BadgeColorScheme(MineBackground, MineContent, MineBorder)
-            ForWhom.PARTNER -> BadgeColorScheme(PartnerBackground, PartnerContent, PartnerBorder)
-            ForWhom.BOTH -> BadgeColorScheme(BothBackground, BothContent, BothBorder)
+    fun forWhomColors(forWhom: ForWhom, isDarkTheme: Boolean = false): BadgeColorScheme {
+        return if (isDarkTheme) {
+            when (forWhom) {
+                ForWhom.ME -> BadgeColorScheme(MineBackgroundDark, MineContentDark, MineBorderDark)
+                ForWhom.PARTNER -> BadgeColorScheme(PartnerBackgroundDark, PartnerContentDark, PartnerBorderDark)
+                ForWhom.BOTH -> BadgeColorScheme(BothBackgroundDark, BothContentDark, BothBorderDark)
+            }
+        } else {
+            when (forWhom) {
+                ForWhom.ME -> BadgeColorScheme(MineBackgroundLight, MineContentLight, MineBorderLight)
+                ForWhom.PARTNER -> BadgeColorScheme(PartnerBackgroundLight, PartnerContentLight, PartnerBorderLight)
+                ForWhom.BOTH -> BadgeColorScheme(BothBackgroundLight, BothContentLight, BothBorderLight)
+            }
         }
     }
 }

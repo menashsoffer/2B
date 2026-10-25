@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,7 +69,24 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    // --- TASKS (Scoped under households/{hid}/tasks) ---
+    // --- TASKS (Scoped under households/{hid}/tasks & users/{uid}/private) ---
+
+    fun observePrivateTasks(uid: String): Flow<List<TaskItem>> = callbackFlow {
+        val listener = db.collection("users").document(uid).collection("private")
+            .whereEqualTo("itemType", "tasks")
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    reportError("observePrivateTasks", error)
+                    return@addSnapshotListener
+                }
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(TaskItem::class.java)?.copy(id = doc.id, householdId = "private", space = "private")
+                } ?: emptyList()
+                trySend(items)
+            }
+        awaitClose { listener.remove() }
+    }
 
     fun observeTasks(spaceFilter: String? = null, household: Household? = null): Flow<List<TaskItem>> = callbackFlow {
         val uid = auth.currentUser?.uid
@@ -102,6 +121,19 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
+    fun observeMergedTasks(household: Household?): Flow<List<TaskItem>> {
+        val uid = auth.currentUser?.uid
+        val hid = household?.id?.trim()
+        if (hid.isNullOrBlank()) return flowOf(emptyList())
+
+        val householdFlow = observeTasks(household = household)
+        val privateFlow = if (uid != null) observePrivateTasks(uid) else flowOf(emptyList())
+
+        return combine(householdFlow, privateFlow) { hhTasks, privTasks ->
+            (hhTasks + privTasks).sortedByDescending { it.createdAt?.seconds ?: 0L }
+        }
+    }
+
     suspend fun createTask(
         title: String,
         nextAction: String = "",
@@ -112,89 +144,195 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         household: Household? = null
     ) {
         val uid = requireUid()
-        val hid = household?.id ?: throw IllegalStateException("Household ID required to create task")
-        try {
-            val docRef = db.collection("households").document(hid).collection("tasks").document()
-            val payload = mapOf(
-                "title" to title.trim(),
-                "nextAction" to nextAction.trim(),
-                "isTop3" to isTop3,
-                "isFiveBefore11" to isFiveBefore11,
-                "dueDate" to dueDate,
-                "isDone" to false,
-                "space" to space,
-                "userId" to uid,
-                "householdId" to hid,
-                "createdAt" to FieldValue.serverTimestamp()
-            )
-            docRef.set(payload).await()
-        } catch (e: Exception) {
-            reportError("createTask", e)
-            throw e
+        if (space == "private" || space == SpaceType.PRIVATE.id) {
+            try {
+                val docRef = db.collection("users").document(uid).collection("private").document()
+                val payload = mapOf(
+                    "title" to title.trim(),
+                    "nextAction" to nextAction.trim(),
+                    "isTop3" to isTop3,
+                    "isFiveBefore11" to isFiveBefore11,
+                    "dueDate" to dueDate,
+                    "isDone" to false,
+                    "space" to "private",
+                    "userId" to uid,
+                    "householdId" to "private",
+                    "itemType" to "tasks",
+                    "collection" to "tasks",
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(payload).await()
+            } catch (e: Exception) {
+                reportError("createTask (private)", e)
+                throw e
+            }
+        } else {
+            val hid = household?.id ?: throw IllegalStateException("Household ID required to create task")
+            try {
+                val docRef = db.collection("households").document(hid).collection("tasks").document()
+                val payload = mapOf(
+                    "title" to title.trim(),
+                    "nextAction" to nextAction.trim(),
+                    "isTop3" to isTop3,
+                    "isFiveBefore11" to isFiveBefore11,
+                    "dueDate" to dueDate,
+                    "isDone" to false,
+                    "space" to space,
+                    "userId" to uid,
+                    "householdId" to hid,
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(payload).await()
+            } catch (e: Exception) {
+                reportError("createTask", e)
+                throw e
+            }
         }
     }
 
     suspend fun toggleTaskDone(task: TaskItem) {
-        val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
-        try {
-            db.collection("households").document(hid).collection("tasks").document(task.id)
-                .update("isDone", !task.isDone)
-                .await()
-        } catch (e: Exception) {
-            reportError("toggleTaskDone", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (task.space == "private" || task.householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(task.id)
+                    .update("isDone", !task.isDone)
+                    .await()
+            } catch (e: Exception) {
+                reportError("toggleTaskDone (private)", e)
+                throw e
+            }
+        } else {
+            val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
+            try {
+                db.collection("households").document(hid).collection("tasks").document(task.id)
+                    .update("isDone", !task.isDone)
+                    .await()
+            } catch (e: Exception) {
+                reportError("toggleTaskDone", e)
+                throw e
+            }
         }
     }
 
     suspend fun setTaskTop3(task: TaskItem, isTop3: Boolean) {
-        val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
-        try {
-            db.collection("households").document(hid).collection("tasks").document(task.id)
-                .update("isTop3", isTop3)
-                .await()
-        } catch (e: Exception) {
-            reportError("setTaskTop3", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (task.space == "private" || task.householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(task.id)
+                    .update("isTop3", isTop3)
+                    .await()
+            } catch (e: Exception) {
+                reportError("setTaskTop3 (private)", e)
+                throw e
+            }
+        } else {
+            val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
+            try {
+                db.collection("households").document(hid).collection("tasks").document(task.id)
+                    .update("isTop3", isTop3)
+                    .await()
+            } catch (e: Exception) {
+                reportError("setTaskTop3", e)
+                throw e
+            }
         }
     }
 
     suspend fun setTaskFiveBefore11(task: TaskItem, isFive: Boolean) {
-        val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
-        try {
-            db.collection("households").document(hid).collection("tasks").document(task.id)
-                .update("isFiveBefore11", isFive)
-                .await()
-        } catch (e: Exception) {
-            reportError("setTaskFiveBefore11", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (task.space == "private" || task.householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(task.id)
+                    .update("isFiveBefore11", isFive)
+                    .await()
+            } catch (e: Exception) {
+                reportError("setTaskFiveBefore11 (private)", e)
+                throw e
+            }
+        } else {
+            val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
+            try {
+                db.collection("households").document(hid).collection("tasks").document(task.id)
+                    .update("isFiveBefore11", isFive)
+                    .await()
+            } catch (e: Exception) {
+                reportError("setTaskFiveBefore11", e)
+                throw e
+            }
         }
     }
 
     suspend fun updateTaskDate(taskId: String, date: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("tasks").document(taskId)
-                .update("dueDate", date)
-                .await()
-        } catch (e: Exception) {
-            reportError("updateTaskDate", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(taskId)
+                    .update("dueDate", date)
+                    .await()
+            } catch (e: Exception) {
+                reportError("updateTaskDate (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("tasks").document(taskId)
+                    .update("dueDate", date)
+                    .await()
+            } catch (e: Exception) {
+                reportError("updateTaskDate", e)
+                throw e
+            }
         }
     }
 
     suspend fun deleteTask(taskId: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("tasks").document(taskId)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            reportError("deleteTask", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(taskId)
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                reportError("deleteTask (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("tasks").document(taskId)
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                reportError("deleteTask", e)
+                throw e
+            }
         }
     }
 
-    // --- DREAMS & LISTS (Scoped under households/{hid}/dreams) ---
+    // --- DREAMS & LISTS (Scoped under households/{hid}/dreams & users/{uid}/private) ---
+
+    fun observePrivateDreams(uid: String): Flow<List<DreamItem>> = callbackFlow {
+        val listener = db.collection("users").document(uid).collection("private")
+            .whereEqualTo("itemType", "dreams")
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    reportError("observePrivateDreams", error)
+                    return@addSnapshotListener
+                }
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(DreamItem::class.java)?.copy(id = doc.id, householdId = "private", space = "private")
+                } ?: emptyList()
+                trySend(items)
+            }
+        awaitClose { listener.remove() }
+    }
 
     fun observeDreams(listFilter: String? = null, spaceFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> = callbackFlow {
         val uid = auth.currentUser?.uid
@@ -227,88 +365,207 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
+    fun observeMergedDreams(listFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> {
+        val uid = auth.currentUser?.uid
+        val hid = household?.id?.trim()
+        if (hid.isNullOrBlank()) return flowOf(emptyList())
+
+        val householdFlow = observeDreams(listFilter = listFilter, household = household)
+        val privateFlow = if (uid != null) observePrivateDreams(uid) else flowOf(emptyList())
+
+        return combine(householdFlow, privateFlow) { hhDreams, privDreams ->
+            val all = hhDreams + privDreams.filter { dream ->
+                listFilter == null || listFilter == "הכל" || dream.list == listFilter
+            }
+            all.sortedByDescending { it.createdAt?.seconds ?: 0L }
+        }
+    }
+
     suspend fun createDream(dream: DreamItem, household: Household? = null) {
         val uid = requireUid()
-        val hid = resolveHouseholdId(household?.id ?: dream.householdId)
-        try {
-            val docRef = db.collection("households").document(hid).collection("dreams").document()
-            val payload = mapOf(
-                "title" to dream.title.trim(),
-                "list" to dream.list.trim(),
-                "estimatedCost" to dream.estimatedCost,
-                "savedAmount" to dream.savedAmount,
-                "link" to dream.link.trim(),
-                "priority" to dream.priority,
-                "status" to dream.status,
-                "targetDate" to dream.targetDate,
-                "notes" to dream.notes.trim(),
-                "space" to dream.space,
-                "userId" to uid,
-                "householdId" to hid,
-                "appIdeaQuestions" to dream.appIdeaQuestions,
-                "nextAction" to dream.nextAction.trim(),
-                "createdAt" to FieldValue.serverTimestamp()
-            )
-            docRef.set(payload).await()
-        } catch (e: Exception) {
-            reportError("createDream", e)
-            throw e
+        if (dream.space == "private" || dream.householdId == "private") {
+            try {
+                val docRef = db.collection("users").document(uid).collection("private").document()
+                val payload = mapOf(
+                    "title" to dream.title.trim(),
+                    "list" to dream.list.trim(),
+                    "estimatedCost" to dream.estimatedCost,
+                    "savedAmount" to dream.savedAmount,
+                    "link" to dream.link.trim(),
+                    "priority" to dream.priority,
+                    "status" to dream.status,
+                    "targetDate" to dream.targetDate,
+                    "notes" to dream.notes.trim(),
+                    "space" to "private",
+                    "userId" to uid,
+                    "householdId" to "private",
+                    "itemType" to "dreams",
+                    "collection" to "dreams",
+                    "appIdeaQuestions" to dream.appIdeaQuestions,
+                    "nextAction" to dream.nextAction.trim(),
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(payload).await()
+            } catch (e: Exception) {
+                reportError("createDream (private)", e)
+                throw e
+            }
+        } else {
+            val hid = resolveHouseholdId(household?.id ?: dream.householdId)
+            try {
+                val docRef = db.collection("households").document(hid).collection("dreams").document()
+                val payload = mapOf(
+                    "title" to dream.title.trim(),
+                    "list" to dream.list.trim(),
+                    "estimatedCost" to dream.estimatedCost,
+                    "savedAmount" to dream.savedAmount,
+                    "link" to dream.link.trim(),
+                    "priority" to dream.priority,
+                    "status" to dream.status,
+                    "targetDate" to dream.targetDate,
+                    "notes" to dream.notes.trim(),
+                    "space" to dream.space,
+                    "userId" to uid,
+                    "householdId" to hid,
+                    "appIdeaQuestions" to dream.appIdeaQuestions,
+                    "nextAction" to dream.nextAction.trim(),
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(payload).await()
+            } catch (e: Exception) {
+                reportError("createDream", e)
+                throw e
+            }
         }
     }
 
     suspend fun updateDreamStatus(dreamId: String, status: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("dreams").document(dreamId)
-                .update("status", status)
-                .await()
-        } catch (e: Exception) {
-            reportError("updateDreamStatus", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(dreamId)
+                    .update("status", status)
+                    .await()
+            } catch (e: Exception) {
+                reportError("updateDreamStatus (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                    .update("status", status)
+                    .await()
+            } catch (e: Exception) {
+                reportError("updateDreamStatus", e)
+                throw e
+            }
         }
     }
 
     suspend fun updateDreamSavings(dreamId: String, savedAmount: Double, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("dreams").document(dreamId)
-                .update("savedAmount", savedAmount)
-                .await()
-        } catch (e: Exception) {
-            reportError("updateDreamSavings", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(dreamId)
+                    .update("savedAmount", savedAmount)
+                    .await()
+            } catch (e: Exception) {
+                reportError("updateDreamSavings (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                    .update("savedAmount", savedAmount)
+                    .await()
+            } catch (e: Exception) {
+                reportError("updateDreamSavings", e)
+                throw e
+            }
         }
     }
 
     suspend fun updateDreamAppIdea(dreamId: String, questions: Map<String, String>, nextAction: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("dreams").document(dreamId)
-                .update(
-                    mapOf(
-                        "appIdeaQuestions" to questions,
-                        "nextAction" to nextAction
-                    )
-                ).await()
-        } catch (e: Exception) {
-            reportError("updateDreamAppIdea", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(dreamId)
+                    .update(
+                        mapOf(
+                            "appIdeaQuestions" to questions,
+                            "nextAction" to nextAction
+                        )
+                    ).await()
+            } catch (e: Exception) {
+                reportError("updateDreamAppIdea (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                    .update(
+                        mapOf(
+                            "appIdeaQuestions" to questions,
+                            "nextAction" to nextAction
+                        )
+                    ).await()
+            } catch (e: Exception) {
+                reportError("updateDreamAppIdea", e)
+                throw e
+            }
         }
     }
 
     suspend fun deleteDream(dreamId: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("dreams").document(dreamId)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            reportError("deleteDream", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(dreamId)
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                reportError("deleteDream (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                reportError("deleteDream", e)
+                throw e
+            }
         }
     }
 
-    // --- INBOX (QUICK CAPTURE) (Scoped under households/{hid}/inbox) ---
+    // --- INBOX (QUICK CAPTURE) (Scoped under households/{hid}/inbox & users/{uid}/private) ---
+
+    fun observePrivateInbox(uid: String): Flow<List<InboxItem>> = callbackFlow {
+        val listener = db.collection("users").document(uid).collection("private")
+            .whereEqualTo("itemType", "inbox")
+            .whereEqualTo("status", "inbox")
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    reportError("observePrivateInbox", error)
+                    return@addSnapshotListener
+                }
+                val items = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(InboxItem::class.java)?.copy(id = doc.id, householdId = "private", space = "private")
+                } ?: emptyList()
+                trySend(items)
+            }
+        awaitClose { listener.remove() }
+    }
 
     fun observeInbox(household: Household? = null): Flow<List<InboxItem>> = callbackFlow {
         val uid = auth.currentUser?.uid
@@ -337,52 +594,116 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
+    fun observeMergedInbox(household: Household?): Flow<List<InboxItem>> {
+        val uid = auth.currentUser?.uid
+        val hid = household?.id?.trim()
+        if (hid.isNullOrBlank()) return flowOf(emptyList())
+
+        val householdFlow = observeInbox(household = household)
+        val privateFlow = if (uid != null) observePrivateInbox(uid) else flowOf(emptyList())
+
+        return combine(householdFlow, privateFlow) { hhInbox, privInbox ->
+            (hhInbox + privInbox).sortedByDescending { it.createdAt?.seconds ?: 0L }
+        }
+    }
+
     suspend fun addInboxItem(text: String, space: String = SpaceType.SHARED.id, household: Household? = null) {
         val uid = requireUid()
-        val hid = resolveHouseholdId(household?.id ?: "")
-        try {
-            val docRef = db.collection("households").document(hid).collection("inbox").document()
-            val payload = mapOf(
-                "text" to text.trim(),
-                "space" to space,
-                "status" to "inbox",
-                "triagedType" to "",
-                "userId" to uid,
-                "householdId" to hid,
-                "createdAt" to FieldValue.serverTimestamp()
-            )
-            docRef.set(payload).await()
-        } catch (e: Exception) {
-            reportError("addInboxItem", e)
-            throw e
+        if (space == "private" || space == SpaceType.PRIVATE.id) {
+            try {
+                val docRef = db.collection("users").document(uid).collection("private").document()
+                val payload = mapOf(
+                    "text" to text.trim(),
+                    "space" to "private",
+                    "status" to "inbox",
+                    "triagedType" to "",
+                    "userId" to uid,
+                    "householdId" to "private",
+                    "itemType" to "inbox",
+                    "collection" to "inbox",
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(payload).await()
+            } catch (e: Exception) {
+                reportError("addInboxItem (private)", e)
+                throw e
+            }
+        } else {
+            val hid = resolveHouseholdId(household?.id ?: "")
+            try {
+                val docRef = db.collection("households").document(hid).collection("inbox").document()
+                val payload = mapOf(
+                    "text" to text.trim(),
+                    "space" to space,
+                    "status" to "inbox",
+                    "triagedType" to "",
+                    "userId" to uid,
+                    "householdId" to hid,
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+                docRef.set(payload).await()
+            } catch (e: Exception) {
+                reportError("addInboxItem", e)
+                throw e
+            }
         }
     }
 
     suspend fun markInboxTriaged(itemId: String, triagedType: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("inbox").document(itemId)
-                .update(
-                    mapOf(
-                        "status" to "triaged",
-                        "triagedType" to triagedType
-                    )
-                ).await()
-        } catch (e: Exception) {
-            reportError("markInboxTriaged", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(itemId)
+                    .update(
+                        mapOf(
+                            "status" to "triaged",
+                            "triagedType" to triagedType
+                        )
+                    ).await()
+            } catch (e: Exception) {
+                reportError("markInboxTriaged (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("inbox").document(itemId)
+                    .update(
+                        mapOf(
+                            "status" to "triaged",
+                            "triagedType" to triagedType
+                        )
+                    ).await()
+            } catch (e: Exception) {
+                reportError("markInboxTriaged", e)
+                throw e
+            }
         }
     }
 
     suspend fun deleteInboxItem(itemId: String, householdId: String = "") {
-        try {
-            val hid = resolveHouseholdId(householdId)
-            db.collection("households").document(hid).collection("inbox").document(itemId)
-                .delete()
-                .await()
-        } catch (e: Exception) {
-            reportError("deleteInboxItem", e)
-            throw e
+        val uid = auth.currentUser?.uid
+        if (householdId == "private") {
+            if (uid == null) throw IllegalStateException("User not authenticated")
+            try {
+                db.collection("users").document(uid).collection("private").document(itemId)
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                reportError("deleteInboxItem (private)", e)
+                throw e
+            }
+        } else {
+            try {
+                val hid = resolveHouseholdId(householdId)
+                db.collection("households").document(hid).collection("inbox").document(itemId)
+                    .delete()
+                    .await()
+            } catch (e: Exception) {
+                reportError("deleteInboxItem", e)
+                throw e
+            }
         }
     }
 

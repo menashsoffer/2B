@@ -1,5 +1,8 @@
 package com.menash.myself.core.domain.model
 
+import com.menash.myself.feature.calculators.car.domain.CarCostCalculator
+import com.menash.myself.feature.calculators.car.domain.CarCostResultMoney
+
 data class Car(
     val id: Long = 0,
     val name: String,
@@ -13,21 +16,13 @@ data class Car(
     val tires5YearsTotal: Money,
     val isBaseline: Boolean = false
 ) {
-    val yearlyRunningCost: Money
-        get() = energyCostYearly + insuranceYearly + trackerYearly + maintenanceYearly + annualTestYearly
+    val costResult: CarCostResultMoney
+        get() = CarCostCalculator.calculate5YearCost(this)
 
-    val monthlyRunningCost: Money
-        get() = yearlyRunningCost / 12
-
-    val fiveYearRunningCost: Money
-        get() = yearlyRunningCost * 5L
-
-    val total5YearCost: Money
-        get() = purchasePrice + fiveYearRunningCost + tires5YearsTotal
-
-    val net5YearCost: Money
-        get() = total5YearCost - resaleValueAfter5Years
-
-    val netMonthlyCost: Money
-        get() = if (net5YearCost.isPositive()) net5YearCost / 60 else Money.ZERO
+    val yearlyRunningCost: Money get() = costResult.yearlyRunningCost
+    val monthlyRunningCost: Money get() = costResult.monthlyRunningCost
+    val fiveYearRunningCost: Money get() = costResult.fiveYearRunningCost
+    val total5YearCost: Money get() = costResult.total5YearCost
+    val net5YearCost: Money get() = costResult.net5YearCost
+    val netMonthlyCost: Money get() = costResult.netMonthlyCost
 }

@@ -2,11 +2,12 @@ package com.menash.myself.core.data.repository
 
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Task
+import com.menash.myself.core.domain.model.VisibilityFilter
 import kotlinx.coroutines.flow.Flow
 import java.time.LocalDate
 
 interface TaskRepository {
-    fun observeTasks(spaceFilter: String? = null): Flow<List<Task>>
+    fun observeTasks(filter: VisibilityFilter = VisibilityFilter.MINE_AND_BOTH): Flow<List<Task>>
 
     suspend fun createTask(
         title: String,
@@ -19,9 +20,9 @@ interface TaskRepository {
         tag: String = ""
     )
 
-    suspend fun toggleTaskDone(taskId: String, currentDone: Boolean)
-    suspend fun setTaskTop3(taskId: String, isTop3: Boolean)
-    suspend fun setTaskFiveBefore11(taskId: String, isFive: Boolean)
-    suspend fun updateTaskDate(taskId: String, date: LocalDate?)
-    suspend fun deleteTask(taskId: String)
+    suspend fun toggleTaskDone(taskId: String, currentDone: Boolean, isPrivate: Boolean = false)
+    suspend fun setTaskTop3(taskId: String, isTop3: Boolean, isPrivate: Boolean = false)
+    suspend fun setTaskFiveBefore11(taskId: String, isFive: Boolean, isPrivate: Boolean = false)
+    suspend fun updateTaskDate(taskId: String, date: LocalDate?, isPrivate: Boolean = false)
+    suspend fun deleteTask(taskId: String, isPrivate: Boolean = false)
 }

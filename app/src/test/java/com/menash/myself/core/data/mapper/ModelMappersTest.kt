@@ -120,8 +120,8 @@ class ModelMappersTest {
         assertEquals(Pair(ForWhom.ME, false), ModelMappers.legacySpaceToForWhom("mine"))
         assertEquals(Pair(ForWhom.PARTNER, false), ModelMappers.legacySpaceToForWhom("partner"))
         assertEquals(Pair(ForWhom.ME, true), ModelMappers.legacySpaceToForWhom("private"))
-        assertEquals(Pair(ForWhom.BOTH, false), ModelMappers.legacySpaceToForWhom("unknown"))
-        assertEquals(Pair(ForWhom.BOTH, false), ModelMappers.legacySpaceToForWhom(null))
+        assertEquals(Pair(ForWhom.ME, false), ModelMappers.legacySpaceToForWhom("unknown"))
+        assertEquals(Pair(ForWhom.ME, false), ModelMappers.legacySpaceToForWhom(null))
     }
 
     @Test

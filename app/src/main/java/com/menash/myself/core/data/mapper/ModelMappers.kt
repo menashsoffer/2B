@@ -113,6 +113,9 @@ object ModelMappers {
         )
     }
 
+    private val isoDateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
+    private val slashDateFormatter = DateTimeFormatter.ofPattern("d/M/yyyy")
+
     // --- FORWHOM & LEGACY SPACE ---
     fun forWhomToLegacySpace(forWhom: ForWhom, isPrivate: Boolean): String {
         if (isPrivate) return "private"
@@ -124,27 +127,44 @@ object ModelMappers {
     }
 
     fun legacySpaceToForWhom(space: String?): Pair<ForWhom, Boolean> {
-        return when (space?.trim()?.lowercase()) {
+        val clean = space?.trim()?.lowercase() ?: ""
+        return when (clean) {
             "private" -> Pair(ForWhom.ME, true)
-            "mine" -> Pair(ForWhom.ME, false)
-            "partner" -> Pair(ForWhom.PARTNER, false)
-            "shared" -> Pair(ForWhom.BOTH, false)
-            else -> Pair(ForWhom.BOTH, false)
+            "mine", "שלי" -> Pair(ForWhom.ME, false)
+            "wife", "partner", "של אשתי" -> Pair(ForWhom.PARTNER, false)
+            "shared", "משותף" -> Pair(ForWhom.BOTH, false)
+            else -> {
+                android.util.Log.w("ModelMappers", "Unknown space value: '$space', defaulting to ME (never BOTH)")
+                Pair(ForWhom.ME, false)
+            }
         }
     }
 
     // --- DATE CONVERSIONS ---
     fun parseLocalDate(dateStr: String?): LocalDate? {
-        if (dateStr.isNullOrBlank()) return null
-        return try {
-            LocalDate.parse(dateStr.trim(), dateFormatter)
-        } catch (e: Exception) {
-            null
-        }
+        return parseLocalDateWithRaw(dateStr).first
+    }
+
+    fun parseLocalDateWithRaw(dateStr: String?): Pair<LocalDate?, String?> {
+        if (dateStr.isNullOrBlank()) return Pair(null, null)
+        val trimmed = dateStr.trim()
+        // 1. Try ISO_LOCAL_DATE (yyyy-MM-dd)
+        try {
+            return Pair(LocalDate.parse(trimmed, isoDateFormatter), null)
+        } catch (_: Exception) {}
+
+        // 2. Try dd/MM/yyyy (or d/M/yyyy)
+        try {
+            return Pair(LocalDate.parse(trimmed, slashDateFormatter), null)
+        } catch (_: Exception) {}
+
+        // 3. Unparseable -> keep raw string, never overwrite with empty
+        android.util.Log.w("ModelMappers", "Unparseable legacy date: '$dateStr', preserving raw string")
+        return Pair(null, trimmed)
     }
 
     fun formatLocalDate(date: LocalDate?): String {
-        return date?.format(dateFormatter) ?: ""
+        return date?.format(isoDateFormatter) ?: ""
     }
 
     fun timestampToInstant(timestamp: Timestamp?): Instant? {
@@ -158,6 +178,7 @@ object ModelMappers {
     // --- TASK ---
     fun taskToDomain(data: TaskItem): Task {
         val (forWhom, isPrivate) = legacySpaceToForWhom(data.space)
+        val (parsedDate, rawDate) = parseLocalDateWithRaw(data.dueDate)
         return Task(
             id = data.id,
             title = data.title,
@@ -165,7 +186,8 @@ object ModelMappers {
             isDone = data.isDone,
             isTop3 = data.isTop3,
             isFiveBefore11 = data.isFiveBefore11,
-            dueDate = parseLocalDate(data.dueDate),
+            dueDate = parsedDate,
+            rawDueDate = rawDate,
             ownerUid = data.userId,
             forWhom = forWhom,
             isPrivate = isPrivate,
@@ -174,6 +196,11 @@ object ModelMappers {
     }
 
     fun taskToData(domain: Task, householdId: String): TaskItem {
+        val effectiveDueDate = if (domain.dueDate != null) {
+            formatLocalDate(domain.dueDate)
+        } else {
+            domain.rawDueDate ?: ""
+        }
         return TaskItem(
             id = domain.id,
             title = domain.title,
@@ -181,7 +208,7 @@ object ModelMappers {
             isDone = domain.isDone,
             isTop3 = domain.isTop3,
             isFiveBefore11 = domain.isFiveBefore11,
-            dueDate = formatLocalDate(domain.dueDate),
+            dueDate = effectiveDueDate,
             space = forWhomToLegacySpace(domain.forWhom, domain.isPrivate),
             userId = domain.ownerUid,
             householdId = householdId,
@@ -192,6 +219,7 @@ object ModelMappers {
     // --- DREAM ---
     fun dreamToDomain(data: DreamItem): Dream {
         val (forWhom, isPrivate) = legacySpaceToForWhom(data.space)
+        val (parsedDate, rawDate) = parseLocalDateWithRaw(data.targetDate)
         return Dream(
             id = data.id,
             title = data.title,
@@ -201,7 +229,8 @@ object ModelMappers {
             link = data.link,
             priority = data.priority,
             status = data.status,
-            targetDate = parseLocalDate(data.targetDate),
+            targetDate = parsedDate,
+            rawTargetDate = rawDate,
             notes = data.notes,
             ownerUid = data.userId,
             forWhom = forWhom,
@@ -213,6 +242,11 @@ object ModelMappers {
     }
 
     fun dreamToData(domain: Dream, householdId: String): DreamItem {
+        val effectiveTargetDate = if (domain.targetDate != null) {
+            formatLocalDate(domain.targetDate)
+        } else {
+            domain.rawTargetDate ?: ""
+        }
         return DreamItem(
             id = domain.id,
             title = domain.title,
@@ -222,7 +256,7 @@ object ModelMappers {
             link = domain.link,
             priority = domain.priority,
             status = domain.status,
-            targetDate = formatLocalDate(domain.targetDate),
+            targetDate = effectiveTargetDate,
             notes = domain.notes,
             space = forWhomToLegacySpace(domain.forWhom, domain.isPrivate),
             userId = domain.ownerUid,

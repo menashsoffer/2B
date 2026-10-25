@@ -287,24 +287,34 @@ test("Items: require userId == auth.uid on create, and userId cannot change on u
 });
 
 // 10. Private items readable only by owner
-test("Private items: stored under users/{uid}/private and readable only by owner", async () => {
+test("Private items: stored under users/{uid}/private and readable only by owner; partner is denied", async () => {
+  await setupHousehold("house_1", ALICE_UID, [ALICE_UID, BOB_UID], BOB_EMAIL);
+
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await context.firestore().collection("users").doc(ALICE_UID).collection("private").doc("item_1").set({
-      title: "פתק אישי סודי",
-      userId: ALICE_UID
+    // Owner Alice creates a private task
+    await context.firestore().collection("users").doc(ALICE_UID).collection("private").doc("task_private_alice").set({
+      title: "משימה אישית סודית של אליס",
+      userId: ALICE_UID,
+      itemType: "tasks",
+      space: "private"
     });
   });
 
   const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
   const bobDb = testEnv.authenticatedContext(BOB_UID, { email: BOB_EMAIL }).firestore();
 
-  // Alice can read her private item
+  // Alice can read her private task
   await assertSucceeds(
-    aliceDb.collection("users").doc(ALICE_UID).collection("private").doc("item_1").get()
+    aliceDb.collection("users").doc(ALICE_UID).collection("private").doc("task_private_alice").get()
   );
 
-  // Bob (even though household partner) is DENIED access to Alice's private items
+  // Bob (household partner) is DENIED access to Alice's private task
   await assertFails(
-    bobDb.collection("users").doc(ALICE_UID).collection("private").doc("item_1").get()
+    bobDb.collection("users").doc(ALICE_UID).collection("private").doc("task_private_alice").get()
+  );
+
+  // Bob is also DENIED listing Alice's private collection
+  await assertFails(
+    bobDb.collection("users").doc(ALICE_UID).collection("private").get()
   );
 });

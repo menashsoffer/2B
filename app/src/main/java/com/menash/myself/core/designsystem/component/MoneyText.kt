@@ -1,6 +1,5 @@
 package com.menash.myself.core.designsystem.component
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,8 +15,15 @@ import kotlin.math.abs
 /**
  * Design system component for displaying currency amounts in standard Israeli New Shekel (NIS) format.
  * Relocated from Money.formatShekels to ensure pure domain models have zero presentation logic.
+ * Wraps formatted currency in Unicode Bidi isolation (\u2066...\u2069) so "-₪1,250" renders correctly inside RTL layout.
  */
 object MoneyFormatter {
+
+    // Unicode Bidi Isolation characters:
+    // \u2066: LEFT-TO-RIGHT ISOLATE (LRI)
+    // \u2069: POP DIRECTIONAL ISOLATE (PDI)
+    const val LRI = "\u2066"
+    const val PDI = "\u2069"
 
     fun format(money: Money, includeAgorot: Boolean = false): String {
         return formatShekels(money.shekels, money.agorot < 0, includeAgorot)
@@ -39,7 +45,8 @@ object MoneyFormatter {
             }
         }
         val formattedNumber = fmt.format(absShekels)
-        return if (isNegative) "-₪$formattedNumber" else "₪$formattedNumber"
+        val signPrefixed = if (isNegative) "-₪$formattedNumber" else "₪$formattedNumber"
+        return "$LRI$signPrefixed$PDI"
     }
 }
 

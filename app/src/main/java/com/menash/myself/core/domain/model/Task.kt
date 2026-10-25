@@ -11,6 +11,7 @@ data class Task(
     val isTop3: Boolean = false,
     val isFiveBefore11: Boolean = false,
     val dueDate: LocalDate? = null,
+    val rawDueDate: String? = null,
     val ownerUid: String = "",
     val forWhom: ForWhom = ForWhom.ME,
     val isPrivate: Boolean = false,

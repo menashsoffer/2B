@@ -5,27 +5,42 @@ import com.menash.myself.core.data.repository.TaskRepository
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Task
+import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.data.firestore.LifeHubRepository
 import com.menash.myself.data.models.Household
 import com.menash.myself.data.models.TaskItem
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FirestoreTaskRepository(
     private val lifeHub: LifeHubRepository,
     private val householdSession: HouseholdSession
 ) : TaskRepository {
 
-    override fun observeTasks(spaceFilter: String?): Flow<List<Task>> {
-        val hid = householdSession.currentHouseholdId.value
-        if (hid.isNullOrBlank()) {
-            return emptyFlow()
+    override fun observeTasks(filter: VisibilityFilter): Flow<List<Task>> {
+        return householdSession.currentHouseholdId.flatMapLatest { hid ->
+            if (hid.isNullOrBlank()) {
+                flowOf(emptyList())
+            } else {
+                val dummyHousehold = Household(id = hid, name = "", ownerUid = "")
+                lifeHub.observeMergedTasks(dummyHousehold)
+                    .map { list ->
+                        list.map { ModelMappers.taskToDomain(it) }
+                            .filter { task ->
+                                when (filter) {
+                                    VisibilityFilter.ALL -> true
+                                    VisibilityFilter.MINE_AND_BOTH ->
+                                        task.forWhom == ForWhom.ME || task.forWhom == ForWhom.BOTH
+                                }
+                            }
+                    }
+            }
         }
-        val dummyHousehold = Household(id = hid, name = "", ownerUid = "")
-        return lifeHub.observeTasks(spaceFilter = spaceFilter, household = dummyHousehold)
-            .map { list -> list.map { ModelMappers.taskToDomain(it) } }
     }
 
     override suspend fun createTask(
@@ -38,9 +53,13 @@ class FirestoreTaskRepository(
         isPrivate: Boolean,
         tag: String
     ) {
-        val hid = householdSession.requireHouseholdId()
         val legacySpace = ModelMappers.forWhomToLegacySpace(forWhom, isPrivate)
-        val dummyHousehold = Household(id = hid, name = "", ownerUid = "")
+        val dummyHousehold = if (!isPrivate) {
+            val hid = householdSession.requireHouseholdId()
+            Household(id = hid, name = "", ownerUid = "")
+        } else {
+            Household(id = "private", name = "", ownerUid = "")
+        }
         lifeHub.createTask(
             title = title,
             nextAction = nextAction,
@@ -52,31 +71,48 @@ class FirestoreTaskRepository(
         )
     }
 
-    override suspend fun toggleTaskDone(taskId: String, currentDone: Boolean) {
-        val hid = householdSession.requireHouseholdId()
-        val stub = TaskItem(id = taskId, householdId = hid, isDone = currentDone)
+    override suspend fun toggleTaskDone(taskId: String, currentDone: Boolean, isPrivate: Boolean) {
+        val targetHouseholdId = if (isPrivate) "private" else householdSession.requireHouseholdId()
+        val stub = TaskItem(
+            id = taskId,
+            householdId = targetHouseholdId,
+            space = if (isPrivate) "private" else "",
+            isDone = currentDone
+        )
         lifeHub.toggleTaskDone(stub)
     }
 
-    override suspend fun setTaskTop3(taskId: String, isTop3: Boolean) {
-        val hid = householdSession.requireHouseholdId()
-        val stub = TaskItem(id = taskId, householdId = hid)
+    override suspend fun setTaskTop3(taskId: String, isTop3: Boolean, isPrivate: Boolean) {
+        val targetHouseholdId = if (isPrivate) "private" else householdSession.requireHouseholdId()
+        val stub = TaskItem(
+            id = taskId,
+            householdId = targetHouseholdId,
+            space = if (isPrivate) "private" else ""
+        )
         lifeHub.setTaskTop3(stub, isTop3)
     }
 
-    override suspend fun setTaskFiveBefore11(taskId: String, isFive: Boolean) {
-        val hid = householdSession.requireHouseholdId()
-        val stub = TaskItem(id = taskId, householdId = hid)
+    override suspend fun setTaskFiveBefore11(taskId: String, isFive: Boolean, isPrivate: Boolean) {
+        val targetHouseholdId = if (isPrivate) "private" else householdSession.requireHouseholdId()
+        val stub = TaskItem(
+            id = taskId,
+            householdId = targetHouseholdId,
+            space = if (isPrivate) "private" else ""
+        )
         lifeHub.setTaskFiveBefore11(stub, isFive)
     }
 
-    override suspend fun updateTaskDate(taskId: String, date: LocalDate?) {
-        val hid = householdSession.requireHouseholdId()
-        lifeHub.updateTaskDate(taskId = taskId, date = ModelMappers.formatLocalDate(date), householdId = hid)
+    override suspend fun updateTaskDate(taskId: String, date: LocalDate?, isPrivate: Boolean) {
+        val targetHouseholdId = if (isPrivate) "private" else householdSession.requireHouseholdId()
+        lifeHub.updateTaskDate(
+            taskId = taskId,
+            date = ModelMappers.formatLocalDate(date),
+            householdId = targetHouseholdId
+        )
     }
 
-    override suspend fun deleteTask(taskId: String) {
-        val hid = householdSession.requireHouseholdId()
-        lifeHub.deleteTask(taskId = taskId, householdId = hid)
+    override suspend fun deleteTask(taskId: String, isPrivate: Boolean) {
+        val targetHouseholdId = if (isPrivate) "private" else householdSession.requireHouseholdId()
+        lifeHub.deleteTask(taskId = taskId, householdId = targetHouseholdId)
     }
 }

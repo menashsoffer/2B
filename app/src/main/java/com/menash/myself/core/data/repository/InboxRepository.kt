@@ -7,6 +7,6 @@ import kotlinx.coroutines.flow.Flow
 interface InboxRepository {
     fun observeInbox(): Flow<List<InboxItem>>
     suspend fun addInboxItem(text: String, forWhom: ForWhom = ForWhom.ME, isPrivate: Boolean = false)
-    suspend fun markInboxTriaged(itemId: String, triagedType: String)
-    suspend fun deleteInboxItem(itemId: String)
+    suspend fun markInboxTriaged(itemId: String, triagedType: String, isPrivate: Boolean = false)
+    suspend fun deleteInboxItem(itemId: String, isPrivate: Boolean = false)
 }
