@@ -39,22 +39,24 @@ class BoiRateStore(private val dataStore: DataStore<Preferences>) {
         val rateDate = dateStr?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         val fetchedAt = fetchedEpoch?.let { Instant.ofEpochMilli(it) }
 
-        if (isManual && manualRate != null && manualRate > 0.0) {
+        if (cachedRate != null && cachedRate > 0.0 && rateDate != null && fetchedAt != null) {
+            val isStale = BoiStalenessPolicy.isStale(rateDate, fetchedAt, Instant.now())
             BoiRate(
-                rate = manualRate,
-                rateDate = rateDate ?: LocalDate.now(BoiStalenessPolicy.ISRAEL_ZONE),
-                fetchedAt = fetchedAt ?: Instant.now(),
-                isManualOverride = true,
-                isStale = false
-            )
-        } else if (cachedRate != null && cachedRate > 0.0 && rateDate != null && fetchedAt != null) {
-            val isStale = BoiStalenessPolicy.isStale(rateDate, fetchedAt)
-            BoiRate(
-                rate = cachedRate,
-                rateDate = rateDate,
-                fetchedAt = fetchedAt,
-                isManualOverride = false,
+                officialRate = cachedRate,
+                officialRateDate = rateDate,
+                officialFetchedAt = fetchedAt,
+                manualRate = manualRate,
+                isManualOverride = isManual,
                 isStale = isStale
+            )
+        } else if (manualRate != null && manualRate > 0.0) {
+            BoiRate(
+                officialRate = manualRate,
+                officialRateDate = rateDate ?: LocalDate.now(BoiStalenessPolicy.ISRAEL_ZONE),
+                officialFetchedAt = fetchedAt ?: Instant.now(),
+                manualRate = manualRate,
+                isManualOverride = isManual,
+                isStale = false
             )
         } else {
             null
@@ -63,9 +65,9 @@ class BoiRateStore(private val dataStore: DataStore<Preferences>) {
 
     suspend fun saveAutoRate(rate: BoiRate) {
         dataStore.edit { prefs ->
-            prefs[KEY_RATE] = rate.rate
-            prefs[KEY_RATE_DATE] = rate.rateDate.toString()
-            prefs[KEY_FETCHED_AT] = rate.fetchedAt.toEpochMilli()
+            prefs[KEY_RATE] = rate.officialRate
+            prefs[KEY_RATE_DATE] = rate.officialRateDate.toString()
+            prefs[KEY_FETCHED_AT] = rate.officialFetchedAt.toEpochMilli()
         }
     }
 

@@ -59,9 +59,10 @@ class BoiExchangeRateClient {
         val rateDate = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE)
 
         return BoiRate(
-            rate = rateVal,
-            rateDate = rateDate,
-            fetchedAt = nowInstant,
+            officialRate = rateVal,
+            officialRateDate = rateDate,
+            officialFetchedAt = nowInstant,
+            manualRate = null,
             isManualOverride = false,
             isStale = false
         )

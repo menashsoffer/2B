@@ -15,7 +15,7 @@ class HebcalClient {
 
     suspend fun fetchCalendarData(geonameid: Int, cityName: String): Result<HebcalData> = withContext(Dispatchers.IO) {
         runCatching {
-            val urlStr = "https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=on&nx=on&year=now&month=x&ss=on&mf=on&c=on&geo=geoname&geonameid=$geonameid"
+            val urlStr = "https://www.hebcal.com/hebcal?v=1&cfg=json&maj=on&min=on&mod=on&nx=on&year=now&month=x&ss=on&mf=on&c=on&d=on&geo=geoname&geonameid=$geonameid"
             val jsonStr = fetchUrl(urlStr)
             parseHebcalJson(jsonStr, geonameid, cityName)
         }

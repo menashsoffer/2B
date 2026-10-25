@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan for fixing manual override, wiring BoiSyncWorker and Hebcal on app startup and Home screen, handling staleness, historical rates, real test resources, Hebrew dates, strings.xml extraction, ErrorMapper classification, city picker, tests, and formatting.",
-  "updatedAt":  "2026-10-25T16:01:03.889841304Z",
+  "summary":  "Restored master implementation plan with all previous steps 1 to 9.5 and added current round requirements under step 8.",
+  "updatedAt":  "2026-10-25T16:33:41.179198787Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

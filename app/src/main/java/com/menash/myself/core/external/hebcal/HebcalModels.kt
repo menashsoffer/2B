@@ -43,8 +43,11 @@ data class HebcalData(
     val isStale: Boolean = false
 ) {
     val currentHebrewDate: String?
-        get() = items.firstOrNull { it.category == "roshchodesh" || it.category == "day" || (it.hebrew != null && it.category != "candles" && it.category != "havdalah" && it.category != "holiday") }?.hebrew
-            ?: items.firstOrNull { it.hebrew != null }?.hebrew
+        get() {
+            val todayStr = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jerusalem")).format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
+            val dayItem = items.firstOrNull { it.category == "day" && it.date.startsWith(todayStr) }
+            return dayItem?.hebrew ?: items.firstOrNull { it.category == "day" }?.hebrew
+        }
 
     val upcomingShabbatCandles: String?
         get() = items.firstOrNull { it.category == "candles" }?.let { "${it.hebrew ?: "הדלקת נרות"}: ${it.title.replace("Candle lighting: ", "")}" }

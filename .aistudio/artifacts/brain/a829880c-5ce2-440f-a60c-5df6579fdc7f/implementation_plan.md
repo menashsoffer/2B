@@ -1,27 +1,54 @@
-# Implementation Plan - Review Fixes & Step 8 Completion
+# Master Implementation Plan
 
-1. **Manual Override & SettingsDialog**:
-   - Add explicit "Use manual rate" toggle and "Return to official rate" button in `SettingsDialog`.
-   - Ensure saving settings or updating official rate does not silently turn on manual override.
-   - Display both manual and official rate with date when override is active.
+## Step 1: Core Foundation & Calculators Setup
+- Establish Room database, data entities, and DAOs.
+- Implement calculators for Car Comparison, AI Subscriptions, and Pension Savings.
+- Set up M3 theme, navigation, and core architecture.
 
-2. **Step 8 End-to-End Wiring**:
-   - Enqueue `BoiSyncWorker` as unique periodic work (`ExistingPeriodicWorkPolicy.KEEP`) with network constraint (`NetworkType.CONNECTED`), scheduled after 16:00 Israel time on business days. Document in `RULES.md`.
-   - On app startup (`MyselfApp` or `MainViewModel`), trigger `exchangeRateRepository.refreshRateIfNeeded()` and `hebcalRepository.refreshDataIfNeeded()` via `safeLaunch` (non-blocking).
-   - Add compact Hebcal card on Home screen showing Hebrew date, next holiday, candle lighting, havdalah, and "נתונים: Hebcal.com". If no city is chosen, show "בחר עיר" opening city picker.
+## Step 2: Firestore Integration & Authentication
+- Provision Firebase Firestore and Authentication via Credential Manager (Google Sign-In).
+- Implement Firestore repositories for Tasks, Dreams, Inbox, and Household.
+- Set up secure zero-trust Firestore security rules.
 
-3. **Staleness & Historical Rates**:
-   - Compute staleness at read/check time (`isStale(now)`).
-   - Implement historical rate lookup querying a window of ~10 days back and returning the latest valid representative rate with its actual publication date.
+## Step 3: Offline-First & Local Persistence
+- Ensure offline caching and synchronization flows.
+- Implement backup and restore features via JSON.
 
-4. **Real Test Resources & Hebrew Dates**:
-   - Record real sample responses from BOI SDMX CSV latest, BOI historical window, and Hebcal under `app/src/test/resources/`. Write exact fetch date in `RULES.md`.
-   - Parse daily Hebrew date from proper Hebcal category (not holiday items).
+## Step 4: UI Refinement & Cognitive Load Management
+- Implement 5-tab bottom navigation with persistent quick capture FAB.
+- Enforce strict cognitive load rules (Top 3, Five Before 11, clean views).
 
-5. **Hebrew Strings Extraction & ErrorMapper**:
-   - Move user-facing Hebrew strings to `res/values/strings.xml`, including ErrorMapper messages returning `@StringRes` IDs.
-   - Classify Firestore errors by `FirebaseFirestoreException.code` (PERMISSION_DENIED, UNAVAILABLE), and network exceptions by `UnknownHostException`, `SocketTimeoutException`, `ConnectException`.
+## Step 5: Accessibility, RTL, and Design System
+- Apply Material Design 3 tokens, minimum 48dp touch targets, RTL layout direction, and content descriptions.
 
-6. **City Picker Search & Tests**:
-   - Implement city search/autocomplete using Hebcal lookup endpoint or verified offline fallback list with geonameid and Hebrew names.
-   - Add comprehensive unit tests covering override precedence, staleness cases, historical rate on Saturday, Hebcal parsing, and remove unselectedCity test.
+## Step 6: External Data Sources (BOI & Hebcal)
+- Set up Bank of Israel SDMX CSV client and Hebcal REST integration.
+- Implement DataStore caches for exchange rates and Hebrew calendar data.
+
+## Step 7: Migration & CSV Imports
+- Implement CSV import wizard with column mapping for bank statements, cards, and list data.
+
+## Step 8: External Data Wiring & Automated Sync
+- Enqueue `BoiSyncWorker` as unique periodic work (`ExistingPeriodicWorkPolicy.UPDATE`) with network constraints and 16:30 Israel time initial delay (skipping Friday/Saturday).
+- On app startup, trigger non-blocking refreshes for exchange rates and Hebcal calendar data.
+- Add HomeHebcalCard showing Hebrew date, next holiday, candle lighting, havdalah, and "נתונים: Hebcal.com". If no city is chosen, show "בחר עיר" opening city picker.
+- **Current Round Fixes (Review Round 2)**:
+  1. Restore master plan and document in docs/RULES.md.
+  2. Use real downloaded samples for BOI and Hebcal test resources.
+  3. Strict historical rate query without fallback to today's rate.
+  4. Precise daily Hebrew date parsing via `d=on` parameter in Hebcal.
+  5. Official vs manual rate separation in DataStore and SettingsDialog, with periodic staleness check.
+  6. Staleness computed at check time (`isStale(now)`).
+  7. Correct work delay calculation and Friday/Saturday skip.
+  8. Remove hardcoded 3.11 from HomeHebcalCard.
+  9. Move RULES.md to docs/RULES.md (deleted app/RULES.md).
+  10. Extract all Hebrew strings to strings.xml.
+  11. Precise ErrorMapper classification.
+  12. Move HomeHebcalCard to `ui/home/HomeHebcalCard.kt` (<300 lines per file).
+  13. Hebcal city search/autocomplete in city picker.
+  14. Comprehensive unit tests for override, staleness, historical rates, and Hebrew dates.
+  15. Non-blocking error reporting via ErrorReporter in MainViewModel.
+  16. 4 decimals formatting with bidi isolation.
+
+## Step 9: Advanced Analytics & Phase 2 Features
+- Monthly cashflow analysis, automated bank/card statement parsing, and advanced budgeting.
