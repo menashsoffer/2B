@@ -35,11 +35,15 @@ class BoiSyncWorker(
                 .setInitialDelay(initialDelay, java.util.concurrent.TimeUnit.MILLISECONDS)
                 .build()
 
-            androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
-                request
-            )
+            try {
+                androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    WORK_NAME,
+                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
+                    request
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("BoiSyncWorker", "Failed to enqueue work", e)
+            }
         }
     }
 

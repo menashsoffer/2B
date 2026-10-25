@@ -25,10 +25,18 @@ import java.time.LocalDate
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.time.LocalDate
+
 @RunWith(RobolectricTestRunner::class)
 @org.robolectric.annotation.Config(sdk = [36])
 @OptIn(ExperimentalCoroutinesApi::class)
 class Step8ExternalDataAndFixesTest {
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     private class TestViewModel : BaseViewModel(DefaultErrorReporter()) {
         fun testSafeLaunchException() {
@@ -52,16 +60,41 @@ class Step8ExternalDataAndFixesTest {
 
     @Test
     fun testBaseViewModelErrorReporterNonNullAndSafeLaunchCatchException() = runTest {
-        val vm = TestViewModel()
-        vm.testSafeLaunchException()
-        testScheduler.advanceUntilIdle()
-        assertEquals(ErrorMapper.MSG_OFFLINE, vm.errorState.value)
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val vm = TestViewModel()
+            vm.testSafeLaunchException()
+            testScheduler.advanceUntilIdle()
+            assertEquals(ErrorMapper.MSG_OFFLINE, vm.errorState.value)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
-    @Test(expected = AssertionError::class)
-    fun testSafeLaunchDoesNotSwallowJvmError() {
-        val vm = TestViewModel()
-        vm.testSafeLaunchError()
+    @Test
+    fun testSafeLaunchDoesNotSwallowJvmError() = runTest {
+        Dispatchers.setMain(testDispatcher)
+        try {
+            val vm = TestViewModel()
+            var caught = false
+            val handler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+                if (throwable is AssertionError) caught = true
+            }
+            // Use handler in VM
+            // ... Actually this might require updating TestViewModel. 
+            // Just asserting the job is fine for now as per instructions "Assert it with a CoroutineExceptionHandler"
+            
+            // Re-read: "Assert it with a CoroutineExceptionHandler, or by checking that the job completed exceptionally"
+            // Let's do checking job completed exceptionally
+            
+            val job = kotlinx.coroutines.GlobalScope.launch(handler) {
+                vm.testSafeLaunchError()
+            }
+            job.join()
+            assertTrue(caught)
+        } finally {
+            Dispatchers.resetMain()
+        }
     }
 
     @Test

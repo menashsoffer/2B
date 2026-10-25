@@ -128,17 +128,16 @@ class Step8RoundThreeTest {
     fun testWorkerDelay() {
         val israelZone = ZoneId.of("Asia/Jerusalem")
         
-        // Sunday 09:00 -> to 16:30 same day (7.5h)
+        // Sunday 09:00 -> to 16:30 same day (7.5h = 450 min)
         val sunday09 = java.time.Clock.fixed(ZonedDateTime.of(2026, 10, 25, 9, 0, 0, 0, israelZone).toInstant(), israelZone)
-        assertEquals(7.5 * 60 * 60 * 1000, BoiSyncWorker.computeInitialDelay(sunday09))
+        assertEquals(java.time.Duration.ofMinutes(450).toMillis(), BoiSyncWorker.computeInitialDelay(sunday09))
 
-        // Thursday 17:00 -> to Friday 16:30 (approx 23.5h)
+        // Thursday 17:00 -> to Friday 16:30 (approx 23.5h = 1410 min)
         val thursday17 = java.time.Clock.fixed(ZonedDateTime.of(2026, 10, 22, 17, 0, 0, 0, israelZone).toInstant(), israelZone)
-        val expectedThursdayDelay = (23 * 60 * 60 * 1000) + (30 * 60 * 1000)
-        assertEquals(expectedThursdayDelay.toLong(), BoiSyncWorker.computeInitialDelay(thursday17))
+        assertEquals(java.time.Duration.ofMinutes(1410).toMillis(), BoiSyncWorker.computeInitialDelay(thursday17))
 
         // Exactly 16:30 -> next day 16:30
         val exactly1630 = java.time.Clock.fixed(ZonedDateTime.of(2026, 10, 25, 16, 30, 0, 0, israelZone).toInstant(), israelZone)
-        assertEquals(24 * 60 * 60 * 1000, BoiSyncWorker.computeInitialDelay(exactly1630))
+        assertEquals(java.time.Duration.ofHours(24).toMillis(), BoiSyncWorker.computeInitialDelay(exactly1630))
     }
 }

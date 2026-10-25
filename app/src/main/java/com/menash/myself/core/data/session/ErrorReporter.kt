@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 interface ErrorReporter {
     val errorState: StateFlow<String?>
+    val lastTechnicalError: String?
     fun reportError(message: String)
     fun reportError(action: String, throwable: Throwable)
     fun clearError()
@@ -21,11 +22,15 @@ class DefaultErrorReporter : ErrorReporter {
     private val _errorState = MutableStateFlow<String?>(null)
     override val errorState: StateFlow<String?> = _errorState.asStateFlow()
 
+    override var lastTechnicalError: String? = null
+        private set
+
     override fun reportError(message: String) {
         _errorState.value = message
     }
 
     override fun reportError(action: String, throwable: Throwable) {
+        lastTechnicalError = throwable.message
         runCatching {
             Log.e("ErrorReporter", "Action '$action' failed: ${throwable.message}", throwable)
         }
@@ -34,5 +39,6 @@ class DefaultErrorReporter : ErrorReporter {
 
     override fun clearError() {
         _errorState.value = null
+        lastTechnicalError = null
     }
 }

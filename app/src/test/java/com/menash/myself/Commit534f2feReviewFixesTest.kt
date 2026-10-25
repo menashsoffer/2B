@@ -234,7 +234,7 @@ class Commit534f2feReviewFixesTest {
         vm.triggerFailure()
         testScheduler.advanceUntilIdle()
         assertEquals(com.menash.myself.core.ui.ErrorMapper.MSG_UNKNOWN, vm.errorState.value)
-        assertTrue(reporter.errorState.value?.contains("testAction: Something went wrong") == true)
+        assertEquals("Something went wrong", reporter.lastTechnicalError)
 
         vm.clearError()
         assertNull(vm.errorState.value)

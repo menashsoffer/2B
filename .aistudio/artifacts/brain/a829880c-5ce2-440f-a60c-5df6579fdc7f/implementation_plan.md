@@ -129,7 +129,7 @@
 - **`core/data/repository/` (ממשקים בלבד):**
   - `CarRepository`, `AiSubscriptionRepository`, `PensionFundRepository`
   - `TaskRepository`, `DreamRepository`, `InboxRepository`, `FitnessRepository`, `HouseholdRepositoryInterface`
-- עטיפת המימושים הקיימים
+- **`core/data/repository/impl/` (עטיפת המימושים הקיימים):**
   - עטיפות Room: `RoomCarRepository`, `RoomAiSubscriptionRepository`, `RoomPensionFundRepository` עוטפות את `AppDao` / `AppDatabase` (קובץ `"my_calculators.db"`).
   - עטיפות Firestore: `FirestoreTaskRepository`, `FirestoreDreamRepository`, `FirestoreInboxRepository`, `FirestoreFitnessRepository`, `FirestoreHouseholdRepository` עוטפות את `LifeHubRepository` ו-`HouseholdRepository`.
 - **`core/di/AppContainer.kt`:** מכולת תלויות ידנית המרכזת את כל הממשקים ומאפשרת לשכבות הפיצ'רים להיות תלויות אך ורק בממשקים הנקיים.
@@ -207,6 +207,10 @@
 - **אידמפוטנטיות ובטיחות:** יצירת מזהים יציבים (Stable IDs) ודגל `migratedAt` המונע כפילויות בכל הרצה חוזרת.
 - **אימות כפול:** גיבוי מקומי מלא של בסיס הנתונים Room לפני המיגרציה, ובדיקת כמויות שורות מלאה מול מסמכי Firestore.
 - **הסרת Room:** רק לאחר אימות סופי ומוחלט של כל הנתונים ב-Firestore, ניתוק Room והסרתו מהפרויקט.
+
+### שלב 9.5: הסבת מחשבונים ל-Money (Calculators → Money)
+- הסבת המחשבונים (`CarCostCalculator`, `AiSubscriptionCalculator`, `PensionSavingsCalculator`) לעבודה עם טיפוס `Money` באגורות במקום `Double`.
+- הוספת בדיקות מאפיינות ובדיקות יחידה ייעודיות לדיוק אגורות ללא שגיאות עיגול.
 
 ---
 

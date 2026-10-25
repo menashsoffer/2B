@@ -26,11 +26,13 @@ class BoiExchangeRateRepository(
     override suspend fun refreshRateIfNeeded(): Result<BoiRate?> {
         val current = currentRateFlow.value
         val now = clock.instant()
-        val isStale = if (current != null && current.officialRateDate != null && current.officialFetchedAt != null) {
-            com.menash.myself.core.external.boi.BoiStalenessPolicy.isStale(current.officialRateDate, current.officialFetchedAt, now)
-        } else false
         
-        if (current == null || isStale) {
+        val needsFetch = current == null ||
+            current.officialRateDate == null ||
+            current.officialFetchedAt == null ||
+            com.menash.myself.core.external.boi.BoiStalenessPolicy.isStale(current.officialRateDate, current.officialFetchedAt, now)
+
+        if (needsFetch) {
             val res = source.fetchLatestRate()
             res.getOrNull()?.let { store.saveAutoRate(it) }
             return res.map { it }

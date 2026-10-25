@@ -14,6 +14,6 @@ class MyselfApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        // com.menash.myself.core.external.boi.BoiSyncWorker.enqueuePeriodicWork(this)
+        com.menash.myself.core.external.boi.BoiSyncWorker.enqueuePeriodicWork(this)
     }
 }
