@@ -50,26 +50,20 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         _errorFlow.value = null
     }
 
-    @Volatile
-    private var lastKnownHouseholdId: String? = null
-
     suspend fun resolveHouseholdId(explicitHid: String = ""): String {
         if (explicitHid.isNotBlank()) {
-            lastKnownHouseholdId = explicitHid
             return explicitHid
         }
-        val cached = lastKnownHouseholdId
-        if (!cached.isNullOrBlank()) return cached
-
-        val uid = auth.currentUser?.uid ?: return ""
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("Active household session required: User is not authenticated")
         return try {
             val query = db.collection("households").whereArrayContains("memberUids", uid).limit(1).get().await()
-            val hid = query.documents.firstOrNull()?.id ?: ""
-            if (hid.isNotBlank()) lastKnownHouseholdId = hid
+            val hid = query.documents.firstOrNull()?.id
+                ?: throw IllegalStateException("Active household session required: No household found for user")
             hid
         } catch (e: Exception) {
             reportError("resolveHouseholdId", e)
-            ""
+            throw e
         }
     }
 
@@ -77,10 +71,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
 
     fun observeTasks(spaceFilter: String? = null, household: Household? = null): Flow<List<TaskItem>> = callbackFlow {
         val uid = auth.currentUser?.uid
-        val hid = household?.id ?: lastKnownHouseholdId
-        if (household?.id?.isNotBlank() == true) {
-            lastKnownHouseholdId = household.id
-        }
+        val hid = household?.id?.trim()
         if (uid == null || hid.isNullOrBlank()) {
             trySend(emptyList())
             close()
@@ -207,10 +198,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
 
     fun observeDreams(listFilter: String? = null, spaceFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> = callbackFlow {
         val uid = auth.currentUser?.uid
-        val hid = household?.id ?: lastKnownHouseholdId
-        if (household?.id?.isNotBlank() == true) {
-            lastKnownHouseholdId = household.id
-        }
+        val hid = household?.id?.trim()
         if (uid == null || hid.isNullOrBlank()) {
             trySend(emptyList())
             close()
@@ -324,10 +312,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
 
     fun observeInbox(household: Household? = null): Flow<List<InboxItem>> = callbackFlow {
         val uid = auth.currentUser?.uid
-        val hid = household?.id ?: lastKnownHouseholdId
-        if (household?.id?.isNotBlank() == true) {
-            lastKnownHouseholdId = household.id
-        }
+        val hid = household?.id?.trim()
         if (uid == null || hid.isNullOrBlank()) {
             trySend(emptyList())
             close()

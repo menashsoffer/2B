@@ -1,14 +1,14 @@
 package com.menash.myself.core.data.repository
 
-import com.menash.myself.data.entities.PensionFundEntity
+import com.menash.myself.core.domain.model.PensionFund
 import kotlinx.coroutines.flow.Flow
 
 interface PensionFundRepository {
-    fun getAllPensionFunds(): Flow<List<PensionFundEntity>>
-    suspend fun getAllPensionFundsList(): List<PensionFundEntity>
-    suspend fun insertPensionFund(fund: PensionFundEntity): Long
-    suspend fun insertPensionFunds(funds: List<PensionFundEntity>)
-    suspend fun updatePensionFund(fund: PensionFundEntity)
-    suspend fun deletePensionFund(fund: PensionFundEntity)
+    fun getAllPensionFunds(): Flow<List<PensionFund>>
+    suspend fun getAllPensionFundsList(): List<PensionFund>
+    suspend fun insertPensionFund(fund: PensionFund): Long
+    suspend fun insertPensionFunds(funds: List<PensionFund>)
+    suspend fun updatePensionFund(fund: PensionFund)
+    suspend fun deletePensionFund(fund: PensionFund)
     suspend fun deleteAllPensionFunds()
 }

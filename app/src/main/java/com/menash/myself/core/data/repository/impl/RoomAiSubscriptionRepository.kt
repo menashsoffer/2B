@@ -1,22 +1,38 @@
 package com.menash.myself.core.data.repository.impl
 
+import com.menash.myself.core.data.mapper.ModelMappers
 import com.menash.myself.core.data.repository.AiSubscriptionRepository
+import com.menash.myself.core.domain.model.AiSubscription
 import com.menash.myself.data.dao.AppDao
-import com.menash.myself.data.entities.AiSubscriptionEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class RoomAiSubscriptionRepository(private val dao: AppDao) : AiSubscriptionRepository {
-    override fun getAllAiSubscriptions(): Flow<List<AiSubscriptionEntity>> = dao.getAllAiSubscriptionsFlow()
+    override fun getAllAiSubscriptions(): Flow<List<AiSubscription>> {
+        return dao.getAllAiSubscriptionsFlow().map { list -> list.map { ModelMappers.aiSubscriptionToDomain(it) } }
+    }
 
-    override suspend fun getAllAiSubscriptionsList(): List<AiSubscriptionEntity> = dao.getAllAiSubscriptions()
+    override suspend fun getAllAiSubscriptionsList(): List<AiSubscription> {
+        return dao.getAllAiSubscriptions().map { ModelMappers.aiSubscriptionToDomain(it) }
+    }
 
-    override suspend fun insertAiSubscription(sub: AiSubscriptionEntity): Long = dao.insertAiSubscription(sub)
+    override suspend fun insertAiSubscription(sub: AiSubscription): Long {
+        return dao.insertAiSubscription(ModelMappers.aiSubscriptionToEntity(sub))
+    }
 
-    override suspend fun insertAiSubscriptions(subs: List<AiSubscriptionEntity>) = dao.insertAiSubscriptions(subs)
+    override suspend fun insertAiSubscriptions(subs: List<AiSubscription>) {
+        dao.insertAiSubscriptions(subs.map { ModelMappers.aiSubscriptionToEntity(it) })
+    }
 
-    override suspend fun updateAiSubscription(sub: AiSubscriptionEntity) = dao.updateAiSubscription(sub)
+    override suspend fun updateAiSubscription(sub: AiSubscription) {
+        dao.updateAiSubscription(ModelMappers.aiSubscriptionToEntity(sub))
+    }
 
-    override suspend fun deleteAiSubscription(sub: AiSubscriptionEntity) = dao.deleteAiSubscription(sub)
+    override suspend fun deleteAiSubscription(sub: AiSubscription) {
+        dao.deleteAiSubscription(ModelMappers.aiSubscriptionToEntity(sub))
+    }
 
-    override suspend fun deleteAllAiSubscriptions() = dao.deleteAllAiSubscriptions()
+    override suspend fun deleteAllAiSubscriptions() {
+        dao.deleteAllAiSubscriptions()
+    }
 }

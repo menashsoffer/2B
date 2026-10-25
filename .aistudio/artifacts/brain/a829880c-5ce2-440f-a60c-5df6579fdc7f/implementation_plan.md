@@ -137,12 +137,24 @@
 
 ---
 
-### שלב 5: הקמת `core/designsystem` (עיצוב מונחה הפחתת עומס) (השלב הבא)
-- **טוקנים:** `Spacing.kt` (4, 8, 16, 24, 32 dp), `Type.kt`, `ColorTokens.kt`.
-- **צבעי `SpaceBadge`:** צבעים מובחנים לפי `forWhom` (שלי / בן/בת הזוג / של שנינו).
-- **רכיבים משותפים:** `AppCard`, `ListRow`, `MoneyText`, `StatusChip`, `SpaceBadge`, `EmptyState`, `LoadingState`, `ErrorState`, `OfflineIndicator`, `CaptureSheet`.
+### שלב 5: הקמת `core/designsystem` (עיצוב מונחה הפחתת עומס) — הושלם (100% ירוק) ✅
+- **טוקנים (`core/designsystem/tokens/`):**
+  - `Spacing.kt`: רשת 8dp מדויקת (`xxs: 4.dp`, `xs: 8.dp`, `sm: 12.dp`, `md: 16.dp`, `lg: 24.dp`, `xl: 32.dp`, `xxl: 48.dp`).
+  - `TypographyTokens.kt`: סגנונות טיפוגרפיה סמנטיים (`HeadlineLarge/Medium`, `TitleMedium`, `BodyMedium/Small`, `LabelMedium`, `MoneyLarge/Medium`).
+  - `ColorTokens.kt`: ערכות צבעים ייעודיות ל-`SpaceBadge` עבור כל ערך של `ForWhom` (שלי / בן/בת הזוג / של שנינו) ואינדיקטורים פיננסיים (רווח/חיסכון בירוק, עלות באדום).
+- **רכיבים משותפים (`core/designsystem/component/`):**
+  - `MoneyText`: רכיב תצוגת מטבע שקלי (₪) מדויק (חולץ מ-`Money.formatShekels` כדי לנתק את ה-Domain מ-UI). תומך ב-`Money` וב-`Double` (עבור מחשבונים עד שלב 9.5).
+  - `AppCard`: מעטפת כרטיס Material 3 עם רדיוס 16dp, צל עדין, גבול ברור וריווח פנימי אחיד.
+  - `ListRow`: שורת פריט תקנית ברשימות (משימות, אינבוקס, כושר, חלומות, מחשבונים) עם שטח מגע נגיש של לפחות 48dp ואפקט ripple.
+  - `SpaceBadge`: תג ויזואלי מובחן המציג בעלות (`ME`, `PARTNER`, `BOTH`) עם צבעים נפרדים לזיהוי מהיר.
+  - `StatusChip`: צ'יפ סינון ומצב סטטוס (משימות, קטגוריות) עם תמיכה באייקון מוביל ובחירה.
+  - `EmptyState`: מצב ריק נגיש ומזמין בעברית עם אייקון, כותרת, תיאור וכפתור פעולה אופציונלי.
+  - `LoadingState`: רכיב התקדמות אחיד עם מחוון עגול והודעת טעינה.
+  - `ErrorState`: רכיב שגיאה אחיד עם אייקון, הודעה וכפתור נסה שוב.
+  - `OfflineIndicator`: באנר עדין המודיע על פעולה במצב לא מקוון ומקומי.
+  - `CaptureSheet`: תחתית מודאלית (ModalBottomSheet) ללכידה מהירה (+), המכבדת את סרגל הניווט של המערכת (`navigationBarsPadding`).
 
-### שלב 6: ארגון הפיצ'רים ופיצול קבצים (Feature Packages & Screen Splitting)
+---
 - הקפדה על פחות מ-300 שורות לקובץ ופחות מ-80 שורות לקומפוננטה.
 - `feature/calculators/`: פיצול מסכי רכב, AI ופנסיה.
 - `feature/dreams/`, `feature/tasks/`, `feature/fitness/`, `feature/calendar/`.

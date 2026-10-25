@@ -1,23 +1,27 @@
 package com.menash.myself.core.data.repository
 
-import com.menash.myself.data.models.Household
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.domain.model.ForWhom
+import com.menash.myself.core.domain.model.Task
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 interface TaskRepository {
-    fun observeTasks(spaceFilter: String? = null, household: Household? = null): Flow<List<TaskItem>>
+    fun observeTasks(spaceFilter: String? = null): Flow<List<Task>>
+
     suspend fun createTask(
         title: String,
         nextAction: String = "",
         isTop3: Boolean = false,
         isFiveBefore11: Boolean = false,
-        dueDate: String = "",
-        space: String = "shared",
-        household: Household? = null
+        dueDate: LocalDate? = null,
+        forWhom: ForWhom = ForWhom.ME,
+        isPrivate: Boolean = false,
+        tag: String = ""
     )
-    suspend fun toggleTaskDone(task: TaskItem)
-    suspend fun setTaskTop3(task: TaskItem, isTop3: Boolean)
-    suspend fun setTaskFiveBefore11(task: TaskItem, isFive: Boolean)
-    suspend fun updateTaskDate(taskId: String, date: String, householdId: String = "")
-    suspend fun deleteTask(taskId: String, householdId: String = "")
+
+    suspend fun toggleTaskDone(taskId: String, currentDone: Boolean)
+    suspend fun setTaskTop3(taskId: String, isTop3: Boolean)
+    suspend fun setTaskFiveBefore11(taskId: String, isFive: Boolean)
+    suspend fun updateTaskDate(taskId: String, date: LocalDate?)
+    suspend fun deleteTask(taskId: String)
 }

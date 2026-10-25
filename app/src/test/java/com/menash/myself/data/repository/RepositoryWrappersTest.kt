@@ -3,6 +3,10 @@ package com.menash.myself.data.repository
 import com.menash.myself.core.data.repository.impl.RoomCarRepository
 import com.menash.myself.core.data.repository.impl.RoomAiSubscriptionRepository
 import com.menash.myself.core.data.repository.impl.RoomPensionFundRepository
+import com.menash.myself.core.domain.model.AiSubscription
+import com.menash.myself.core.domain.model.Car
+import com.menash.myself.core.domain.model.Money
+import com.menash.myself.core.domain.model.PensionFund
 import com.menash.myself.data.dao.AppDao
 import com.menash.myself.data.entities.AiSubscriptionEntity
 import com.menash.myself.data.entities.AppSettings
@@ -16,7 +20,7 @@ import org.junit.Test
 
 /**
  * Unit tests verifying that core/data repository interfaces and their Room wrappers
- * correctly delegate to the underlying DAO.
+ * correctly delegate to the underlying DAO and map domain models.
  */
 class RepositoryWrappersTest {
 
@@ -82,61 +86,64 @@ class RepositoryWrappersTest {
     }
 
     @Test
-    fun carRepository_delegatesToDao() = runBlocking {
+    fun carRepository_delegatesToDaoWithDomainModel() = runBlocking {
         val repo = RoomCarRepository(fakeDao)
-        val car = CarEntity(
+        val car = Car(
             id = 1L,
             name = "טסלה 3",
-            purchasePrice = 200000.0,
-            resaleValueAfter5Years = 100000.0,
-            energyCostYearly = 3000.0,
-            insuranceYearly = 4000.0,
-            trackerYearly = 500.0,
-            maintenanceYearly = 1000.0,
-            annualTestYearly = 2000.0,
-            tires5YearsTotal = 2500.0
+            purchasePrice = Money.fromShekels(200000.0),
+            resaleValueAfter5Years = Money.fromShekels(100000.0),
+            energyCostYearly = Money.fromShekels(3000.0),
+            insuranceYearly = Money.fromShekels(4000.0),
+            trackerYearly = Money.fromShekels(500.0),
+            maintenanceYearly = Money.fromShekels(1000.0),
+            annualTestYearly = Money.fromShekels(2000.0),
+            tires5YearsTotal = Money.fromShekels(2500.0)
         )
         repo.insertCar(car)
         val list = repo.getAllCarsList()
         assertEquals(1, list.size)
         assertEquals("טסלה 3", list.first().name)
+        assertEquals(200000.0, list.first().purchasePrice.shekels, 0.001)
 
         repo.deleteCar(car)
         assertTrue(repo.getAllCarsList().isEmpty())
     }
 
     @Test
-    fun aiSubscriptionRepository_delegatesToDao() = runBlocking {
+    fun aiSubscriptionRepository_delegatesToDaoWithDomainModel() = runBlocking {
         val repo = RoomAiSubscriptionRepository(fakeDao)
-        val sub = AiSubscriptionEntity(
+        val sub = AiSubscription(
             id = 1L,
             name = "ChatGPT Plus",
             category = "LLM",
-            price = 20.0
+            price = Money.fromShekels(20.0)
         )
         repo.insertAiSubscription(sub)
         val list = repo.getAllAiSubscriptionsList()
         assertEquals(1, list.size)
         assertEquals("ChatGPT Plus", list.first().name)
+        assertEquals(20.0, list.first().price.shekels, 0.001)
 
         repo.deleteAllAiSubscriptions()
         assertTrue(repo.getAllAiSubscriptionsList().isEmpty())
     }
 
     @Test
-    fun pensionFundRepository_delegatesToDao() = runBlocking {
+    fun pensionFundRepository_delegatesToDaoWithDomainModel() = runBlocking {
         val repo = RoomPensionFundRepository(fakeDao)
-        val fund = PensionFundEntity(
+        val fund = PensionFund(
             id = 1L,
             fundType = "קרן פנסיה",
             provider = "הראל",
-            currentValue = 100000.0,
-            totalDeposits = 70000.0
+            currentValue = Money.fromShekels(100000.0),
+            totalDeposits = Money.fromShekels(70000.0)
         )
         repo.insertPensionFund(fund)
         val list = repo.getAllPensionFundsList()
         assertEquals(1, list.size)
         assertEquals("הראל", list.first().provider)
+        assertEquals(100000.0, list.first().currentValue.shekels, 0.001)
 
         repo.deleteAllPensionFunds()
         assertTrue(repo.getAllPensionFundsList().isEmpty())

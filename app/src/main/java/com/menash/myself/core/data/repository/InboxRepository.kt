@@ -1,12 +1,12 @@
 package com.menash.myself.core.data.repository
 
-import com.menash.myself.data.models.Household
-import com.menash.myself.data.models.InboxItem
+import com.menash.myself.core.domain.model.ForWhom
+import com.menash.myself.core.domain.model.InboxItem
 import kotlinx.coroutines.flow.Flow
 
 interface InboxRepository {
-    fun observeInbox(household: Household? = null): Flow<List<InboxItem>>
-    suspend fun addInboxItem(text: String, space: String = "shared", household: Household? = null)
-    suspend fun markInboxTriaged(itemId: String, triagedType: String, householdId: String = "")
-    suspend fun deleteInboxItem(itemId: String, householdId: String = "")
+    fun observeInbox(): Flow<List<InboxItem>>
+    suspend fun addInboxItem(text: String, forWhom: ForWhom = ForWhom.ME, isPrivate: Boolean = false)
+    suspend fun markInboxTriaged(itemId: String, triagedType: String)
+    suspend fun deleteInboxItem(itemId: String)
 }

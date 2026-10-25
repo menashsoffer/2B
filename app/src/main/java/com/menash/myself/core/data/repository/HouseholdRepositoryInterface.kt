@@ -1,6 +1,6 @@
 package com.menash.myself.core.data.repository
 
-import com.menash.myself.data.models.Household
+import com.menash.myself.core.domain.model.Household
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
