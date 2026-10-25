@@ -19,7 +19,18 @@ object MigrationManager {
     private const val TAG = "MigrationManager"
     private const val PREFS_NAME = "life_hub_migration"
 
+    /**
+     * Flag controlling whether migration runs automatically on startup.
+     * Defaulted to false to prevent premature or duplicate migration.
+     */
+    var AUTO_MIGRATE_ENABLED: Boolean = false
+
     suspend fun checkAndMigrate(context: Context): Boolean = withContext(Dispatchers.IO) {
+        if (!AUTO_MIGRATE_ENABLED) {
+            Log.i(TAG, "checkAndMigrate: auto-run is disabled by AUTO_MIGRATE_ENABLED=false")
+            return@withContext false
+        }
+
         val auth = Firebase.auth
         val uid = auth.currentUser?.uid ?: return@withContext false
 
@@ -149,5 +160,26 @@ object MigrationManager {
             Log.e(TAG, "Migration encountered error", e)
             false
         }
+    }
+
+    /**
+     * Lists existing calculator_sync document IDs for the signed-in user without deleting them.
+     */
+    suspend fun listExistingCalculatorSyncDocs(context: Context): List<String> = withContext(Dispatchers.IO) {
+        val uid = Firebase.auth.currentUser?.uid ?: return@withContext emptyList()
+        val firestore = FirestoreManager.get(context)
+        val expectedDocIds = listOf("cars_$uid", "ai_$uid", "pension_$uid")
+        val foundDocs = mutableListOf<String>()
+        for (docId in expectedDocIds) {
+            try {
+                val snapshot = firestore.collection("calculator_sync").document(docId).get().await()
+                if (snapshot.exists()) {
+                    foundDocs.add(docId)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Error checking calculator_sync doc $docId: ${e.message}")
+            }
+        }
+        foundDocs
     }
 }

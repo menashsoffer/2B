@@ -4,14 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -64,92 +66,140 @@ class MainActivity : ComponentActivity() {
                             }
                         }
 
-                        if (currentUser == null) {
+                        var bypassSignIn by remember { mutableStateOf(false) }
+
+                        if (currentUser == null && !bypassSignIn) {
                             SignInScreen(
                                 onAuthSuccess = {
                                     currentUser = auth.currentUser
+                                },
+                                onContinueToCalculators = {
+                                    bypassSignIn = true
                                 }
                             )
                         } else {
-                            // Run non-destructive Room -> Firestore migration in background on startup
+                            // Non-destructive Room -> Firestore migration (behind flag, disabled by default)
                             LaunchedEffect(currentUser) {
-                                MigrationManager.checkAndMigrate(context)
+                                if (currentUser != null) {
+                                    MigrationManager.checkAndMigrate(context)
+                                }
                             }
 
                             val navController = rememberNavController()
                             val lifeRepo = remember { LifeHubRepository(context) }
                             val householdRepo = remember { HouseholdRepository(context) }
+                            val lifeError by lifeRepo.errorFlow.collectAsState()
+                            val householdError by householdRepo.errorFlow.collectAsState()
                             var household by remember { mutableStateOf<Household?>(null) }
                             var showQuickCapture by remember { mutableStateOf(false) }
 
-                            LaunchedEffect(Unit) {
-                                household = householdRepo.getOrCreateHousehold()
-                                householdRepo.observeHousehold().collect { h ->
-                                    if (h != null) household = h
+                            LaunchedEffect(currentUser) {
+                                if (currentUser != null) {
+                                    household = householdRepo.getOrCreateHousehold()
+                                    householdRepo.observeHousehold().collect { h ->
+                                        if (h != null) household = h
+                                    }
                                 }
                             }
 
-                            NavHost(navController = navController, startDestination = "home") {
-                                composable("home") {
-                                    LifeHomeScreen(
-                                        onNavigate = { route -> navController.navigate(route) },
-                                        onOpenQuickCapture = { showQuickCapture = true }
-                                    )
-                                }
-                                composable("tasks") {
-                                    TasksScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("dreams") {
-                                    DreamsScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("inbox") {
-                                    InboxTriageScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("fitness") {
-                                    FitnessScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("calendar") {
-                                    CalendarScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("catalog") {
-                                    FileCatalogScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("household") {
-                                    HouseholdScreen(
-                                        onBack = { navController.popBackStack() },
-                                        onSignOut = {
-                                            currentUser = null
-                                        }
-                                    )
-                                }
-                                composable("calculators") {
-                                    CalculatorsHubScreen(
-                                        navController = navController,
-                                        onBack = { navController.popBackStack() }
-                                    )
-                                }
-                                composable("car_calculator") {
-                                    CarComparisonScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("ai_calculator") {
-                                    AiSubscriptionsScreen(onBack = { navController.popBackStack() })
-                                }
-                                composable("pension_calculator") {
-                                    PensionSavingsScreen(onBack = { navController.popBackStack() })
-                                }
-                            }
-
-                            // Global quick capture modal accessible from home FAB
-                            if (showQuickCapture) {
-                                QuickCaptureDialog(
-                                    onDismiss = { showQuickCapture = false },
-                                    onSave = { text, space ->
-                                        scope.launch {
-                                            lifeRepo.addInboxItem(text, space, household)
-                                            showQuickCapture = false
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                Column(modifier = Modifier.fillMaxSize()) {
+                                    // Surface Firestore errors in UI
+                                    val activeError = lifeError ?: householdError
+                                    if (activeError != null) {
+                                        Surface(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            color = MaterialTheme.colorScheme.errorContainer
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = activeError,
+                                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                                    fontSize = 12.sp,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                TextButton(onClick = {
+                                                    lifeRepo.clearError()
+                                                    householdRepo.clearError()
+                                                }) {
+                                                    Text("סגור", fontSize = 12.sp)
+                                                }
+                                            }
                                         }
                                     }
-                                )
+
+                                    NavHost(
+                                        navController = navController,
+                                        startDestination = if (currentUser == null) "calculators" else "home",
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        composable("home") {
+                                            LifeHomeScreen(
+                                                onNavigate = { route -> navController.navigate(route) },
+                                                onOpenQuickCapture = { showQuickCapture = true }
+                                            )
+                                        }
+                                        composable("tasks") {
+                                            TasksScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("dreams") {
+                                            DreamsScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("inbox") {
+                                            InboxTriageScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("fitness") {
+                                            FitnessScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("calendar") {
+                                            CalendarScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("catalog") {
+                                            FileCatalogScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("household") {
+                                            HouseholdScreen(
+                                                onBack = { navController.popBackStack() },
+                                                onSignOut = {
+                                                    currentUser = null
+                                                    bypassSignIn = false
+                                                }
+                                            )
+                                        }
+                                        composable("calculators") {
+                                            CalculatorsHubScreen(
+                                                navController = navController,
+                                                onBack = { navController.popBackStack() }
+                                            )
+                                        }
+                                        composable("car_calculator") {
+                                            CarComparisonScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("ai_calculator") {
+                                            AiSubscriptionsScreen(onBack = { navController.popBackStack() })
+                                        }
+                                        composable("pension_calculator") {
+                                            PensionSavingsScreen(onBack = { navController.popBackStack() })
+                                        }
+                                    }
+                                }
+
+                                // Global quick capture modal accessible from home FAB
+                                if (showQuickCapture) {
+                                    QuickCaptureDialog(
+                                        onDismiss = { showQuickCapture = false },
+                                        onSave = { text, space ->
+                                            scope.launch {
+                                                lifeRepo.addInboxItem(text, space, household)
+                                                showQuickCapture = false
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

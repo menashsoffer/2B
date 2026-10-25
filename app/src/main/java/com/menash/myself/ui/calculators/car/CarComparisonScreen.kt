@@ -492,7 +492,7 @@ fun EnergyHelperDialog(
 
     val calculatedCost: Double = remember(isFuel, annualKm, kmPerLiter, fuelPrice, kwhPer100Km, homeKwhPrice, publicSessionsCount, publicSessionCost) {
         val km = annualKm.toDoubleOrNull() ?: 0.0
-        val kml = kmPerLiter.toDoubleOrNull() ?: 1.0
+        val kml = CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim(kmPerLiter)
         val price = fuelPrice.toDoubleOrNull() ?: 0.0
         val kwh100 = kwhPer100Km.toDoubleOrNull() ?: 0.0
         val kwhCost = homeKwhPrice.toDoubleOrNull() ?: 0.0

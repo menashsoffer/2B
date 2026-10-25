@@ -1,6 +1,6 @@
 {
-  "summary":  "Updated implementation plan incorporating the new household visibility space model: items belong to household by default, ownerUid + forWhom (ME / PARTNER / BOTH), viewer-computed labels ('שלי' / 'שלה'/'שלו' / 'של שנינו'), default 'mine + both' view with 'הצג הכל' toggle, optional isPrivate toggle, SpaceBadge colors by forWhom, and scoped backup/restore with BOTH warning.",
-  "updatedAt":  "2026-10-25T02:38:14.649157775Z",
+  "summary":  "תוכנית רה-פקטורינג מעודכנת הכוללת תיקון עובדתי קריטי (חלומות, משימות, אינבוקס וכושר כבר חיים ב-Firestore; Room מחזיק רק מחשבונים), שילוב שלב 1.5 לייצוב שכבת Firebase לפני המשך הרה-פקטורינג, והתאמת שלב 10 למיגרציית סכמה של מסמכים קיימים והעברת המחשבונים מ-Room.",
+  "updatedAt":  "2026-10-25T06:32:33.080405308Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

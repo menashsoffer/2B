@@ -21,18 +21,13 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
     }
 
-    function canAccessSpace(data) {
-      return isSignedIn() && (
-        data.userId == request.auth.uid ||
-        (
-          (data.space == 'shared' || data.space == 'משותף') &&
-          ('householdMembers' in data) &&
-          request.auth.uid in data.householdMembers
-        )
-      );
+    function isHouseholdMember(hid) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/households/$(hid)) &&
+        request.auth.uid in get(/databases/$(database)/documents/households/$(hid)).data.memberUids;
     }
 
     // --- Validation Helpers ---
@@ -40,6 +35,7 @@ service cloud.firestore {
     function isValidHousehold(data) {
       return data.ownerUid is string && data.ownerUid.size() <= 128 &&
              data.memberUids is list && data.memberUids.size() <= 10 &&
+             (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
              (!('ownerEmail' in data) || (data.ownerEmail is string && data.ownerEmail.size() <= 120)) &&
              (!('partnerEmail' in data) || (data.partnerEmail is string && data.partnerEmail.size() <= 120)) &&
              (!('partnerUid' in data) || (data.partnerUid is string && data.partnerUid.size() <= 128));
@@ -47,21 +43,18 @@ service cloud.firestore {
 
     function isValidInboxItem(data) {
       return data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
-             data.userId is string && data.userId == request.auth.uid &&
-             data.space is string && data.space.size() <= 50;
+             data.userId is string;
     }
 
     function isValidDreamItem(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
              data.list is string && data.list.size() <= 100 &&
-             data.userId is string &&
-             data.space is string && data.space.size() <= 50;
+             data.userId is string;
     }
 
     function isValidTaskItem(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
-             data.userId is string &&
-             data.space is string && data.space.size() <= 50;
+             data.userId is string;
     }
 
     function isValidFitnessLog(data) {
@@ -76,21 +69,31 @@ service cloud.firestore {
              data.userId is string && data.userId == request.auth.uid;
     }
 
-    // --- Collections ---
+    // --- Invites Collection (Join Flow) ---
+
+    match /invites/{emailLower} {
+      // Invitee can read only their own invite
+      allow get: if isSignedIn() &&
+                    request.auth.token.email != null &&
+                    request.auth.token.email.lower() == emailLower;
+      allow list: if false;
+
+      // Only the household owner can create or delete an invite
+      allow create, update: if isSignedIn() &&
+                               incoming().householdId is string &&
+                               isHouseholdMember(incoming().householdId) &&
+                               get(/databases/$(database)/documents/households/$(incoming().householdId)).data.ownerUid == request.auth.uid;
+
+      allow delete: if isSignedIn() &&
+                       existing().householdId is string &&
+                       isHouseholdMember(existing().householdId) &&
+                       get(/databases/$(database)/documents/households/$(existing().householdId)).data.ownerUid == request.auth.uid;
+    }
+
+    // --- Households & Scoped Subcollections ---
 
     match /households/{householdId} {
-      allow get: if isSignedIn() && (
-        request.auth.uid in resource.data.memberUids ||
-        (
-          'partnerEmail' in resource.data &&
-          request.auth.token.email != null &&
-          request.auth.token.email.lower() == resource.data.partnerEmail.lower()
-        )
-      );
-
-      allow list: if isSignedIn() && (
-        request.auth.uid in resource.data.memberUids
-      );
+      allow get, list: if isSignedIn() && request.auth.uid in resource.data.memberUids;
 
       allow create: if isSignedIn() &&
                        isValidId(householdId) &&
@@ -100,52 +103,73 @@ service cloud.firestore {
 
       allow update: if isSignedIn() &&
                        isValidId(householdId) &&
-                       isValidHousehold(incoming()) &&
-                       (
-                         request.auth.uid in existing().memberUids ||
+                       isValidHousehold(incoming()) && (
+                         // 1. Owner can update fields (including partnerEmail), but cannot change ownerUid
+                         (existing().ownerUid == request.auth.uid && incoming().ownerUid == existing().ownerUid) ||
+                         // 2. Member (partner) can update fields, but CANNOT change ownerUid or partnerEmail
                          (
-                           'partnerEmail' in existing() &&
-                           request.auth.token.email != null &&
-                           request.auth.token.email.lower() == existing().partnerEmail.lower()
+                           request.auth.uid in existing().memberUids &&
+                           incoming().ownerUid == existing().ownerUid &&
+                           incoming().partnerEmail == existing().partnerEmail
+                         ) ||
+                         // 3. Join flow: invitee can only add their uid to memberUids and set partnerUid
+                         (
+                           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'partnerUid']) &&
+                           incoming().memberUids == existing().memberUids.concat([request.auth.uid]) &&
+                           incoming().partnerUid == request.auth.uid
                          )
                        );
 
       allow delete: if isSignedIn() && existing().ownerUid == request.auth.uid;
+
+      // Subcollection: Tasks scoped to household
+      match /tasks/{taskId} {
+        allow get, list: if isHouseholdMember(householdId);
+        allow create: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming());
+        allow update: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming());
+        allow delete: if isHouseholdMember(householdId) && isValidId(taskId);
+      }
+
+      // Subcollection: Dreams scoped to household
+      match /dreams/{dreamId} {
+        allow get, list: if isHouseholdMember(householdId);
+        allow create: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming());
+        allow update: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming());
+        allow delete: if isHouseholdMember(householdId) && isValidId(dreamId);
+      }
+
+      // Subcollection: Inbox scoped to household
+      match /inbox/{itemId} {
+        allow get, list: if isHouseholdMember(householdId);
+        allow create: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming());
+        allow update: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming());
+        allow delete: if isHouseholdMember(householdId) && isValidId(itemId);
+      }
     }
 
-    match /inbox/{itemId} {
-      allow get, list: if isSignedIn() && canAccessSpace(resource.data);
-      allow create: if isSignedIn() && isValidId(itemId) && isValidInboxItem(incoming());
-      allow update: if isSignedIn() && isValidId(itemId) && canAccessSpace(existing()) && isValidInboxItem(incoming());
-      allow delete: if isSignedIn() && isValidId(itemId) && canAccessSpace(existing());
+    // --- Users: Fitness Logs & Private Subcollections ---
+
+    match /users/{userId} {
+      // Fitness logs: personal to user
+      match /fitness/{logId} {
+        allow get, list: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn() && request.auth.uid == userId && isValidId(logId) && isValidFitnessLog(incoming());
+        allow update: if isSignedIn() && request.auth.uid == userId && isValidId(logId) && isValidFitnessLog(incoming());
+        allow delete: if isSignedIn() && request.auth.uid == userId && isValidId(logId);
+      }
+
+      // Private items (isPrivate = true): isolated from household queries
+      match /private/{document=**} {
+        allow get, list, create, update, delete: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
-    match /dreams/{dreamId} {
-      allow get, list: if isSignedIn() && canAccessSpace(resource.data);
-      allow create: if isSignedIn() && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(dreamId) && canAccessSpace(existing()) && isValidDreamItem(incoming());
-      allow delete: if isSignedIn() && isValidId(dreamId) && canAccessSpace(existing());
-    }
-
-    match /tasks/{taskId} {
-      allow get, list: if isSignedIn() && canAccessSpace(resource.data);
-      allow create: if isSignedIn() && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == request.auth.uid;
-      allow update: if isSignedIn() && isValidId(taskId) && canAccessSpace(existing()) && isValidTaskItem(incoming());
-      allow delete: if isSignedIn() && isValidId(taskId) && canAccessSpace(existing());
-    }
-
-    match /fitness_logs/{logId} {
-      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(logId) && isValidFitnessLog(incoming());
-      allow update: if isSignedIn() && isValidId(logId) && existing().userId == request.auth.uid && isValidFitnessLog(incoming());
-      allow delete: if isSignedIn() && isValidId(logId) && existing().userId == request.auth.uid;
-    }
+    // --- Calculator Sync (Preserved/Legacy) ---
 
     match /calculator_sync/{syncId} {
       allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(syncId) && isValidCalculatorSync(incoming());
-      allow update: if isSignedIn() && isValidId(syncId) && existing().userId == request.auth.uid && isValidCalculatorSync(incoming());
-      allow delete: if isSignedIn() && isValidId(syncId) && existing().userId == request.auth.uid;
+      allow update, delete: if isSignedIn() && isValidId(syncId) && existing().userId == request.auth.uid;
     }
   }
 }

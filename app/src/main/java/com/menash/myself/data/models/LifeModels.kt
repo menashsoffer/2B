@@ -34,7 +34,7 @@ data class InboxItem(
     val space: String = SpaceType.SHARED.id,
     val status: String = "inbox", // inbox, triaged
     val triagedType: String = "", // task, dream, idea, note
-    val householdMembers: List<String> = emptyList(),
+    val householdId: String = "",
     @ServerTimestamp val createdAt: Timestamp? = null
 )
 
@@ -60,7 +60,6 @@ data class DreamItem(
     val space: String = SpaceType.SHARED.id,
     val userId: String = "",
     val householdId: String = "",
-    val householdMembers: List<String> = emptyList(),
     val appIdeaQuestions: Map<String, String> = emptyMap(),
     val nextAction: String = "",
     @ServerTimestamp val createdAt: Timestamp? = null
@@ -80,7 +79,6 @@ data class TaskItem(
     val space: String = SpaceType.SHARED.id,
     val userId: String = "",
     val householdId: String = "",
-    val householdMembers: List<String> = emptyList(),
     @ServerTimestamp val createdAt: Timestamp? = null
 )
 

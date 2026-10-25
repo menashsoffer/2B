@@ -57,4 +57,12 @@ object CarCalculationVerbatimHelpers {
             text = text
         )
     }
+
+    /**
+     * Extracted VERBATIM from CarComparisonScreen.kt
+     * Known issue 1.4: empty or invalid string falls back to 1.0, inflating fuel cost.
+     */
+    fun parseKmPerLiterVerbatim(input: String): Double {
+        return input.toDoubleOrNull() ?: 1.0
+    }
 }

@@ -23,7 +23,8 @@ import androidx.credentials.CredentialManager
 
 @Composable
 fun SignInScreen(
-    onAuthSuccess: () -> Unit
+    onAuthSuccess: () -> Unit,
+    onContinueToCalculators: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -147,6 +148,21 @@ fun SignInScreen(
                             fontSize = 15.sp
                         )
                     }
+                }
+
+                OutlinedButton(
+                    onClick = onContinueToCalculators,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .testTag("skip_to_calculators_button"),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(
+                        text = "כניסה למחשבונים בלבד (אופליין / ללא התחברות)",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }

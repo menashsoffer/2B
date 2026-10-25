@@ -1,5 +1,6 @@
 package com.menash.myself.calendar
 
+import android.content.ContentUris
 import android.content.Context
 import android.content.pm.PackageManager
 import android.provider.CalendarContract
@@ -40,40 +41,37 @@ object CalendarHelper {
         }.timeInMillis
 
         val projection = arrayOf(
-            CalendarContract.Events._ID,
-            CalendarContract.Events.TITLE,
-            CalendarContract.Events.DTSTART,
-            CalendarContract.Events.DTEND,
-            CalendarContract.Events.EVENT_LOCATION,
-            CalendarContract.Events.ALL_DAY
+            CalendarContract.Instances.EVENT_ID,
+            CalendarContract.Instances.TITLE,
+            CalendarContract.Instances.BEGIN,
+            CalendarContract.Instances.END,
+            CalendarContract.Instances.EVENT_LOCATION,
+            CalendarContract.Instances.ALL_DAY
         )
 
-        val selection = "(${CalendarContract.Events.DTSTART} >= ? AND ${CalendarContract.Events.DTSTART} <= ?) OR (${CalendarContract.Events.DTSTART} <= ? AND ${CalendarContract.Events.DTEND} >= ?)"
-        val selectionArgs = arrayOf(
-            startOfDay.toString(),
-            endOfDay.toString(),
-            startOfDay.toString(),
-            endOfDay.toString()
-        )
+        val builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
+        ContentUris.appendId(builder, startOfDay)
+        ContentUris.appendId(builder, endOfDay)
+        val instancesUri = builder.build()
 
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
         try {
             val cursor = context.contentResolver.query(
-                CalendarContract.Events.CONTENT_URI,
+                instancesUri,
                 projection,
-                selection,
-                selectionArgs,
-                "${CalendarContract.Events.DTSTART} ASC"
+                null,
+                null,
+                "${CalendarContract.Instances.BEGIN} ASC"
             )
 
             cursor?.use {
-                val idIdx = it.getColumnIndex(CalendarContract.Events._ID)
-                val titleIdx = it.getColumnIndex(CalendarContract.Events.TITLE)
-                val startIdx = it.getColumnIndex(CalendarContract.Events.DTSTART)
-                val endIdx = it.getColumnIndex(CalendarContract.Events.DTEND)
-                val locIdx = it.getColumnIndex(CalendarContract.Events.EVENT_LOCATION)
-                val allDayIdx = it.getColumnIndex(CalendarContract.Events.ALL_DAY)
+                val idIdx = it.getColumnIndex(CalendarContract.Instances.EVENT_ID)
+                val titleIdx = it.getColumnIndex(CalendarContract.Instances.TITLE)
+                val startIdx = it.getColumnIndex(CalendarContract.Instances.BEGIN)
+                val endIdx = it.getColumnIndex(CalendarContract.Instances.END)
+                val locIdx = it.getColumnIndex(CalendarContract.Instances.EVENT_LOCATION)
+                val allDayIdx = it.getColumnIndex(CalendarContract.Instances.ALL_DAY)
 
                 while (it.moveToNext()) {
                     val id = if (idIdx >= 0) it.getLong(idIdx) else 0L

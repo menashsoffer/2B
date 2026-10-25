@@ -7,8 +7,12 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
@@ -19,75 +23,131 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
     private val auth = Firebase.auth
     private val TAG = "HouseholdRepository"
 
+    private val _errorFlow = MutableStateFlow<String?>(null)
+    val errorFlow: StateFlow<String?> = _errorFlow.asStateFlow()
+
     private fun requireUid(): String {
         return auth.currentUser?.uid ?: throw IllegalStateException("User not authenticated")
     }
 
     private fun userEmail(): String {
-        return auth.currentUser?.email ?: ""
+        return auth.currentUser?.email?.lowercase()?.trim() ?: ""
+    }
+
+    private fun reportError(action: String, error: Throwable) {
+        val code = (error as? FirebaseFirestoreException)?.code?.name ?: "ERROR"
+        val message = "שגיאת Firestore ב-$action ($code): ${error.localizedMessage ?: error.message}"
+        Log.e(TAG, message, error)
+        _errorFlow.value = message
+    }
+
+    fun clearError() {
+        _errorFlow.value = null
     }
 
     suspend fun getOrCreateHousehold(): Household {
         val uid = requireUid()
-        val email = userEmail().lowercase().trim()
+        val email = userEmail()
 
-        // 1. Try to find existing household where user is member
-        val memberQuery = db.collection("households")
-            .whereArrayContains("memberUids", uid)
-            .get()
-            .await()
+        try {
+            // 1. Check if user already has an invite waiting
+            var inviteHouseholdId: String? = null
+            if (email.isNotEmpty()) {
+                try {
+                    val inviteDoc = db.collection("invites").document(email).get().await()
+                    if (inviteDoc.exists()) {
+                        inviteHouseholdId = inviteDoc.getString("householdId")
+                    }
+                } catch (e: Exception) {
+                    reportError("checkInvite", e)
+                }
+            }
 
-        if (!memberQuery.isEmpty) {
-            val doc = memberQuery.documents.first()
-            return doc.toObject(Household::class.java)?.copy(id = doc.id) ?: Household(id = doc.id)
-        }
-
-        // 2. If not found, check if invited via partnerEmail
-        if (email.isNotEmpty()) {
-            val inviteQuery = db.collection("households")
-                .whereEqualTo("partnerEmail", email)
+            // 2. Query households where user is already a member
+            val memberQuery = db.collection("households")
+                .whereArrayContains("memberUids", uid)
                 .get()
                 .await()
 
-            if (!inviteQuery.isEmpty) {
-                val doc = inviteQuery.documents.first()
-                val household = doc.toObject(Household::class.java)
-                if (household != null) {
-                    val updatedMembers = (household.memberUids + uid).distinct()
-                    doc.reference.update(
-                        mapOf(
-                            "memberUids" to updatedMembers,
-                            "partnerUid" to uid
-                        )
-                    ).await()
-                    Log.i(TAG, "Joined invited household: ${doc.id}")
-                    return household.copy(id = doc.id, memberUids = updatedMembers, partnerUid = uid)
+            if (!memberQuery.isEmpty) {
+                val currentDoc = memberQuery.documents.first()
+                val currentHousehold = currentDoc.toObject(Household::class.java)?.copy(id = currentDoc.id)
+                    ?: Household(id = currentDoc.id)
+
+                // If user has an invite to another household, and their current household is empty (sole member)
+                if (inviteHouseholdId != null && inviteHouseholdId != currentHousehold.id &&
+                    currentHousehold.memberUids.size == 1 && currentHousehold.ownerUid == uid
+                ) {
+                    val joined = joinInvitedHousehold(inviteHouseholdId, uid)
+                    if (joined != null) {
+                        try {
+                            db.collection("households").document(currentHousehold.id).delete().await()
+                            Log.i(TAG, "Removed empty previous household ${currentHousehold.id} after joining $inviteHouseholdId")
+                        } catch (e: Exception) {
+                            reportError("deleteEmptyHousehold", e)
+                        }
+                        return joined
+                    }
+                }
+                return currentHousehold
+            }
+
+            // 3. User is not in any household yet: join via invite if available
+            if (inviteHouseholdId != null) {
+                val joined = joinInvitedHousehold(inviteHouseholdId, uid)
+                if (joined != null) {
+                    return joined
                 }
             }
-        }
 
-        // 3. Create fresh household for this user
-        val newHousehold = Household(
-            name = "הבית שלנו",
-            ownerUid = uid,
-            ownerEmail = email,
-            partnerEmail = "",
-            partnerUid = "",
-            memberUids = listOf(uid)
-        )
-        val docRef = db.collection("households").document()
-        val payload = mapOf(
-            "name" to newHousehold.name,
-            "ownerUid" to uid,
-            "ownerEmail" to email,
-            "partnerEmail" to "",
-            "partnerUid" to "",
-            "memberUids" to listOf(uid),
-            "createdAt" to FieldValue.serverTimestamp()
-        )
-        docRef.set(payload).await()
-        Log.i(TAG, "Created new household: ${docRef.id}")
-        return newHousehold.copy(id = docRef.id)
+            // 4. Create fresh household for this user
+            val newHousehold = Household(
+                name = "הבית שלנו",
+                ownerUid = uid,
+                ownerEmail = email,
+                partnerEmail = "",
+                partnerUid = "",
+                memberUids = listOf(uid)
+            )
+            val docRef = db.collection("households").document()
+            val payload = mapOf(
+                "name" to newHousehold.name,
+                "ownerUid" to uid,
+                "ownerEmail" to email,
+                "partnerEmail" to "",
+                "partnerUid" to "",
+                "memberUids" to listOf(uid),
+                "createdAt" to FieldValue.serverTimestamp()
+            )
+            docRef.set(payload).await()
+            Log.i(TAG, "Created new household: ${docRef.id}")
+            return newHousehold.copy(id = docRef.id)
+        } catch (e: Exception) {
+            reportError("getOrCreateHousehold", e)
+            throw e
+        }
+    }
+
+    private suspend fun joinInvitedHousehold(householdId: String, uid: String): Household? {
+        try {
+            val docRef = db.collection("households").document(householdId)
+            val doc = docRef.get().await()
+            val household = doc.toObject(Household::class.java) ?: return null
+
+            val updatedMembers = (household.memberUids + uid).distinct()
+            // Narrow update rule: affectedKeys().hasOnly(['memberUids', 'partnerUid'])
+            docRef.update(
+                mapOf(
+                    "memberUids" to updatedMembers,
+                    "partnerUid" to uid
+                )
+            ).await()
+            Log.i(TAG, "Successfully joined invited household $householdId")
+            return household.copy(id = doc.id, memberUids = updatedMembers, partnerUid = uid)
+        } catch (e: Exception) {
+            reportError("joinInvitedHousehold", e)
+            return null
+        }
     }
 
     fun observeHousehold(): Flow<Household?> = callbackFlow {
@@ -102,7 +162,7 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
             .whereArrayContains("memberUids", uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Failed to observe household", error)
+                    reportError("observeHousehold", error)
                     return@addSnapshotListener
                 }
                 val doc = snapshot?.documents?.firstOrNull()
@@ -115,7 +175,23 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
 
     suspend fun invitePartner(householdId: String, email: String) {
         val cleanEmail = email.lowercase().trim()
-        db.collection("households").document(householdId).update("partnerEmail", cleanEmail).await()
-        Log.i(TAG, "Invited partner $cleanEmail to household $householdId")
+        if (cleanEmail.isEmpty()) return
+
+        try {
+            // 1. Create or update invite document for the invitee's email
+            db.collection("invites").document(cleanEmail).set(
+                mapOf(
+                    "householdId" to householdId,
+                    "ownerEmail" to userEmail()
+                )
+            ).await()
+
+            // 2. Update partnerEmail on household (owner only)
+            db.collection("households").document(householdId).update("partnerEmail", cleanEmail).await()
+            Log.i(TAG, "Invited partner $cleanEmail to household $householdId")
+        } catch (e: Exception) {
+            reportError("invitePartner", e)
+            throw e
+        }
     }
 }

@@ -128,13 +128,13 @@ class CharacterizationTests {
     @Test
     fun car_energyHelper_emptyKmPerLiterFallbackToOne_locksInflatedFuelCost() {
         // KNOWN ISSUE LOCK (docs/KNOWN_ISSUES.md § 1.4):
-        // In CarComparisonScreen, empty input string kmPerLiter evaluates as:
-        // val kml = kmPerLiter.toDoubleOrNull() ?: 1.0
-        // When user clears the field (""), kml becomes 1.0, and cost is calculated as:
-        // (annualKm / 1.0) * fuelPrice -> 20,000 * 7.50 = 150,000 NIS/year (inflated).
+        // Extracted function parseKmPerLiterVerbatim evaluates empty or invalid string as 1.0
         val inputStr = ""
-        val kml = inputStr.toDoubleOrNull() ?: 1.0
+        val kml = CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim(inputStr)
         assertEquals(1.0, kml, 0.0001)
+
+        val invalidKml = CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim("abc")
+        assertEquals(1.0, invalidKml, 0.0001)
 
         val calculated = CarCalculationVerbatimHelpers.calculateEnergyCostVerbatim(
             isFuel = true,
@@ -381,5 +381,25 @@ class CharacterizationTests {
         val highestDepositFund = funds.firstOrNull { it.feeOnDepositsPercent == maxDepositFee }
         assertEquals(1.49, maxDepositFee, 0.001)
         assertEquals("מנורה", highestDepositFund?.provider)
+    }
+
+    // =========================================================================
+    // 4. STEP 1.5 STABILIZATION TESTS
+    // =========================================================================
+
+    @Test
+    fun step1_5_car_parseKmPerLiterVerbatim_comprehensiveBehaviorLock() {
+        // Locks verbatim parsing behavior for all input strings
+        assertEquals(1.0, CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim(""), 0.0001)
+        assertEquals(1.0, CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim("   "), 0.0001)
+        assertEquals(1.0, CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim("not_a_number"), 0.0001)
+        assertEquals(0.0, CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim("0"), 0.0001)
+        assertEquals(16.5, CarCalculationVerbatimHelpers.parseKmPerLiterVerbatim("16.5"), 0.0001)
+    }
+
+    @Test
+    fun step1_5_migrationManager_autoMigrateDisabledByDefault() {
+        // Step 1.5 sub-step 1: AUTO_MIGRATE_ENABLED must be false by default
+        assertFalse(com.menash.myself.data.firestore.MigrationManager.AUTO_MIGRATE_ENABLED)
     }
 }
