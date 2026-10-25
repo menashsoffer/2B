@@ -1,11 +1,15 @@
 package com.menash.myself
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.menash.myself.data.entities.AiSubscriptionEntity
 import com.menash.myself.data.entities.CarEntity
 import com.menash.myself.data.entities.PensionFundEntity
 import com.menash.myself.ui.calculators.car.CarCalculationVerbatimHelpers
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -16,6 +20,7 @@ import java.util.Locale
  * They MUST pass before any code moves, and after every refactoring step.
  * Any documented quirks or edge cases are also tracked in docs/KNOWN_ISSUES.md.
  */
+@RunWith(RobolectricTestRunner::class)
 class CharacterizationTests {
 
     private val localeFmt = NumberFormat.getNumberInstance(Locale.US)
@@ -171,6 +176,8 @@ class CharacterizationTests {
         assertEquals(2503.0, calculated, 0.001)
     }
 
+    private val testContext: Context by lazy { ApplicationProvider.getApplicationContext() }
+
     @Test
     fun car_baselineDiff_savingTruncationTowardZero_locksCurrentOutput() {
         // KNOWN ISSUE LOCK (docs/KNOWN_ISSUES.md § 1.2):
@@ -178,6 +185,7 @@ class CharacterizationTests {
         // Diff = 144500 (baseline) - 143545 (car) = 955.0
         // diffMonthly = 955.0 / 60.0 = 15.91666... -> .toInt() = 15 (NOT rounded to 16!)
         val result = CarCalculationVerbatimHelpers.calculateBaselineDiffVerbatim(
+            context = testContext,
             carNet5YearCost = 143545.0,
             baselineNet5YearCost = 144500.0,
             baselineCarName = "קורולה בסיס",
@@ -198,6 +206,7 @@ class CharacterizationTests {
         // Diff = 144500 (baseline) - 145455 (car) = -955.0
         // diffMonthly = -955.0 / 60.0 = -15.91666... -> .toInt() = -15
         val result = CarCalculationVerbatimHelpers.calculateBaselineDiffVerbatim(
+            context = testContext,
             carNet5YearCost = 145455.0,
             baselineNet5YearCost = 144500.0,
             baselineCarName = "קורולה בסיס",

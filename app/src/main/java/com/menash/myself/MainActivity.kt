@@ -54,19 +54,21 @@ import com.menash.myself.ui.quickcapture.QuickCaptureDialog
 import com.menash.myself.ui.tasks.TasksScreen
 import com.menash.myself.ui.theme.MyApplicationTheme
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 data class BottomNavTab(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
     val testTag: String
 )
 
 private val bottomNavTabs = listOf(
-    BottomNavTab("home", "בית", Icons.Default.Home, "nav_tab_home"),
-    BottomNavTab("dreams", "חלומות", Icons.Default.Star, "nav_tab_dreams"),
-    BottomNavTab("tasks", "משימות", Icons.Default.CheckCircle, "nav_tab_tasks"),
-    BottomNavTab("calculators", "מחשבונים", Icons.Default.Calculate, "nav_tab_calculators"),
-    BottomNavTab("more", "עוד", Icons.Default.MoreHoriz, "nav_tab_more")
+    BottomNavTab("home", R.string.ui_str_6, Icons.Default.Home, "nav_tab_home"),
+    BottomNavTab("dreams", R.string.ui_str_3, Icons.Default.Star, "nav_tab_dreams"),
+    BottomNavTab("tasks", R.string.ui_str_4, Icons.Default.CheckCircle, "nav_tab_tasks"),
+    BottomNavTab("calculators", R.string.ui_str_1, Icons.Default.Calculate, "nav_tab_calculators"),
+    BottomNavTab("more", R.string.ui_str_5, Icons.Default.MoreHoriz, "nav_tab_more")
 )
 
 class MainActivity : ComponentActivity() {
@@ -169,8 +171,8 @@ private fun AuthenticatedShell(
                                 }
                             }
                         },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label, fontSize = 11.sp) },
+                        icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
+                        label = { Text(stringResource(tab.labelRes), fontSize = 11.sp) },
                         modifier = Modifier.testTag(tab.testTag)
                     )
                 }
@@ -184,7 +186,7 @@ private fun AuthenticatedShell(
                 shape = CircleShape,
                 modifier = Modifier.testTag("persistent_capture_fab")
             ) {
-                Icon(Icons.Default.Add, contentDescription = "לכידה מהירה")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_str_7))
             }
         }
     ) { innerPadding ->
@@ -232,7 +234,7 @@ private fun GlobalErrorBanner(message: String, onDismiss: () -> Unit) {
                 modifier = Modifier.weight(1f)
             )
             TextButton(onClick = onDismiss) {
-                Text("סגור", fontSize = 12.sp)
+                Text(stringResource(R.string.ui_str_2), fontSize = 12.sp)
             }
         }
     }

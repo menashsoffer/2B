@@ -35,14 +35,14 @@ class LifeHomeViewModel(
     private val inboxRepository: InboxRepository,
     private val fitnessRepository: FitnessRepository,
     private val householdRepository: HouseholdRepositoryInterface,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     private val _visibilityFilter = MutableStateFlow(VisibilityFilter.MINE_AND_BOTH)
     val visibilityFilter: StateFlow<VisibilityFilter> = _visibilityFilter.asStateFlow()
 
     val household: StateFlow<Household?> = householdRepository.observeMyHousehold()
-        .catch { e -> handleException("observeHousehold", e) }
+        .catch { e -> if (e is Exception) handleException("observeHousehold", e) else throw e }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val tasks: StateFlow<List<Task>?> = _visibilityFilter
@@ -50,7 +50,7 @@ class LifeHomeViewModel(
             taskRepository.observeTasks(filter).map<List<Task>, List<Task>?> { it }
         }
         .catch { e ->
-            handleException("observeTasks", e)
+            if (e is Exception) handleException("observeTasks", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -61,7 +61,7 @@ class LifeHomeViewModel(
                 .map<List<Dream>, List<Dream>?> { it }
         }
         .catch { e ->
-            handleException("observeDreams", e)
+            if (e is Exception) handleException("observeDreams", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -69,14 +69,14 @@ class LifeHomeViewModel(
     val inboxItems: StateFlow<List<InboxItem>?> = inboxRepository.observeInbox()
         .map<List<InboxItem>, List<InboxItem>?> { it }
         .catch { e ->
-            handleException("observeInbox", e)
+            if (e is Exception) handleException("observeInbox", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val todayFitness: StateFlow<FitnessEntry?> = fitnessRepository.observeTodayFitness()
         .catch { e ->
-            handleException("observeTodayFitness", e)
+            if (e is Exception) handleException("observeTodayFitness", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -84,7 +84,7 @@ class LifeHomeViewModel(
     val weeklyFitness: StateFlow<List<FitnessEntry>?> = fitnessRepository.observeWeeklyFitness()
         .map<List<FitnessEntry>, List<FitnessEntry>?> { it }
         .catch { e ->
-            handleException("observeWeeklyFitness", e)
+            if (e is Exception) handleException("observeWeeklyFitness", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -121,7 +121,7 @@ class LifeHomeViewModel(
             inboxRepository: InboxRepository,
             fitnessRepository: FitnessRepository,
             householdRepository: HouseholdRepositoryInterface,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

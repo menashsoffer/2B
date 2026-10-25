@@ -22,6 +22,8 @@ import com.menash.myself.core.domain.model.PensionFund
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PensionFundCard(
@@ -76,7 +78,7 @@ private fun PensionFundCardHeader(
     onUpdate: (PensionFund) -> Unit,
     onDelete: () -> Unit
 ) {
-    val fundTypes = listOf("קרן פנסיה", "קרן השתלמות", "קופת גמל", "גמל להשקעה")
+    val fundTypes = listOf(stringResource(R.string.ui_str_99), stringResource(R.string.ui_str_97), stringResource(R.string.ui_str_107), stringResource(R.string.ui_str_110))
     var typeDropdownExpanded by remember { mutableStateOf(false) }
 
     Row(
@@ -93,7 +95,7 @@ private fun PensionFundCardHeader(
                 value = fund.fundType,
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("סוג קרן") },
+                label = { Text(stringResource(R.string.ui_str_98)) },
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeDropdownExpanded) },
                 modifier = Modifier.menuAnchor(),
                 textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, fontWeight = FontWeight.Bold)
@@ -119,13 +121,13 @@ private fun PensionFundCardHeader(
         OutlinedTextField(
             value = fund.provider,
             onValueChange = { onUpdate(fund.copy(provider = it)) },
-            label = { Text("גוף מנהל") },
+            label = { Text(stringResource(R.string.ui_str_111)) },
             modifier = Modifier.weight(1.2f),
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
         )
 
         IconButton(onClick = onDelete, modifier = Modifier.testTag("delete_fund_${fund.id}")) {
-            Icon(Icons.Default.Delete, contentDescription = "מחק קרן", tint = Color.Gray)
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ui_str_104), tint = Color.Gray)
         }
     }
 }
@@ -145,7 +147,7 @@ private fun PensionHighFeeChips(
                 onClick = {},
                 label = {
                     Text(
-                        "⚠️ דמי ניהול מצבירה הגבוהים ביותר (${fund.feeOnBalancePercent}%)",
+                        stringResource(R.string.ui_str_108, fund.feeOnBalancePercent),
                         fontSize = 11.sp,
                         color = Color(0xFF991B1B)
                     )
@@ -158,7 +160,7 @@ private fun PensionHighFeeChips(
                 onClick = {},
                 label = {
                     Text(
-                        "⚠️ דמי ניהול מהפקדה הגבוהים ביותר (${fund.feeOnDepositsPercent}%)",
+                        stringResource(R.string.ui_str_94, fund.feeOnDepositsPercent),
                         fontSize = 11.sp,
                         color = Color(0xFF991B1B)
                     )
@@ -184,7 +186,7 @@ private fun PensionMetricsBanner(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("רווח נקי מצטבר", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_str_105), fontSize = 11.sp, color = Color.DarkGray)
             Text(
                 "${if (isProfit) "+" else ""}₪${fmt.format(fund.profit.shekels.toInt())}",
                 fontWeight = FontWeight.Bold,
@@ -194,7 +196,7 @@ private fun PensionMetricsBanner(
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("תשואה כוללת", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_str_95), fontSize = 11.sp, color = Color.DarkGray)
             Text(
                 "${if (isProfit) "+" else ""}${String.format(Locale.US, "%.1f", fund.profitPercent)}%",
                 fontWeight = FontWeight.Bold,
@@ -204,9 +206,9 @@ private fun PensionMetricsBanner(
         }
 
         Column(horizontalAlignment = Alignment.End) {
-            Text("עלות דמי ניהול צבירה", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_str_96), fontSize = 11.sp, color = Color.DarkGray)
             Text(
-                "~₪${fmt.format(fund.yearlyBalanceFeeEstimate.shekels.toInt())}/שנה",
+                stringResource(R.string.ui_fmtformatfundyearlybalancefeeestimateshekelstoint_109, fmt.format(fund.yearlyBalanceFeeEstimate.shekels.toInt())),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp,
                 color = Color.DarkGray
@@ -227,7 +229,7 @@ private fun PensionInlineInputs(
                 val v = it.toDoubleOrNull()
                 if (v != null) onUpdate(fund.copy(currentValue = Money.fromShekels(v)))
             },
-            label = { Text("שווי נוכחי (₪)") },
+            label = { Text(stringResource(R.string.ui_str_100)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.weight(1f)
         )
@@ -237,7 +239,7 @@ private fun PensionInlineInputs(
                 val v = it.toDoubleOrNull()
                 if (v != null) onUpdate(fund.copy(totalDeposits = Money.fromShekels(v)))
             },
-            label = { Text("סך הפקדות (₪)") },
+            label = { Text(stringResource(R.string.ui_str_102)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.weight(1f)
         )
@@ -250,7 +252,7 @@ private fun PensionInlineInputs(
                 val v = it.toDoubleOrNull()
                 if (v != null) onUpdate(fund.copy(feeOnBalancePercent = v))
             },
-            label = { Text("דמי ניהול מצבירה (%)") },
+            label = { Text(stringResource(R.string.ui_str_106)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f)
         )
@@ -260,7 +262,7 @@ private fun PensionInlineInputs(
                 val v = it.toDoubleOrNull()
                 if (v != null) onUpdate(fund.copy(feeOnDepositsPercent = v))
             },
-            label = { Text("דמי ניהול מהפקדה (%)") },
+            label = { Text(stringResource(R.string.ui_str_103)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f)
         )
@@ -269,7 +271,7 @@ private fun PensionInlineInputs(
     OutlinedTextField(
         value = fund.notes,
         onValueChange = { onUpdate(fund.copy(notes = it)) },
-        label = { Text("הערות ומסלול השקעה (לדוגמה: מחקה S&P 500, כללי)") },
+        label = { Text(stringResource(R.string.ui_str_101)) },
         modifier = Modifier.fillMaxWidth()
     )
 }

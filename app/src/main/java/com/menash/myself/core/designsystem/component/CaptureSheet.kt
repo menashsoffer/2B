@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.dp
 import com.menash.myself.core.designsystem.tokens.Spacing
 import com.menash.myself.core.designsystem.tokens.TypographyTokens
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 /**
  * Standard modal bottom sheet container for quick capture and modal operations.
  * Fully supports RTL and properly applies system navigation bar padding.
@@ -36,7 +38,7 @@ import com.menash.myself.core.designsystem.tokens.TypographyTokens
 fun CaptureSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    title: String = "לכידה מהירה",
+    title: String = stringResource(R.string.ui_str_7),
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     testTag: String = "capture_sheet",
     content: @Composable ColumnScope.() -> Unit
@@ -74,7 +76,7 @@ fun CaptureSheet(
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Close,
-                        contentDescription = "סגור",
+                        contentDescription = stringResource(R.string.ui_str_2),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

@@ -17,13 +17,13 @@ import kotlinx.coroutines.flow.stateIn
 
 class PensionCalculatorViewModel(
     private val pensionFundRepository: PensionFundRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val funds: StateFlow<List<PensionFund>?> = pensionFundRepository.getAllPensionFunds()
         .map<List<PensionFund>, List<PensionFund>?> { it }
         .catch { e ->
-            handleException("getAllPensionFunds", e)
+            if (e is Exception) handleException("getAllPensionFunds", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -64,7 +64,7 @@ class PensionCalculatorViewModel(
     companion object {
         fun factory(
             pensionFundRepository: PensionFundRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")

@@ -20,6 +20,8 @@ import com.menash.myself.core.domain.model.PensionFund
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun PensionSummaryCard(
     totalValue: Double,
@@ -42,7 +44,7 @@ fun PensionSummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("סך שווי נכסים כולל", fontSize = 12.sp, color = Color.DarkGray)
+                    Text(stringResource(R.string.ui_str_127), fontSize = 12.sp, color = Color.DarkGray)
                     Text(
                         "₪${fmt.format(totalValue.toInt())}",
                         fontWeight = FontWeight.Bold,
@@ -51,7 +53,7 @@ fun PensionSummaryCard(
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("סך הפקדות", fontSize = 12.sp, color = Color.DarkGray)
+                    Text(stringResource(R.string.ui_str_118), fontSize = 12.sp, color = Color.DarkGray)
                     Text(
                         "₪${fmt.format(totalDeposits.toInt())}",
                         fontWeight = FontWeight.SemiBold,
@@ -69,7 +71,7 @@ fun PensionSummaryCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    Text("סך רווח / תשואה מצטברת", fontSize = 11.sp, color = Color.DarkGray)
+                    Text(stringResource(R.string.ui_str_126), fontSize = 11.sp, color = Color.DarkGray)
                     val isProfitable = totalProfit >= 0
                     Text(
                         "${if (isProfitable) "+" else ""}₪${fmt.format(totalProfit.toInt())} (${String.format(Locale.US, "%.1f", totalProfitPercent)}%)",
@@ -79,9 +81,9 @@ fun PensionSummaryCard(
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("דמי ניהול שנתיים משוערים", fontSize = 11.sp, color = Color.DarkGray)
+                    Text(stringResource(R.string.ui_str_128), fontSize = 11.sp, color = Color.DarkGray)
                     Text(
-                        "~₪${fmt.format(totalEstimatedYearlyFees.toInt())} / שנה",
+                        stringResource(R.string.ui_fmtformattotalestimatedyearlyfeestoint_132, fmt.format(totalEstimatedYearlyFees.toInt())),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp,
                         color = Color.DarkGray
@@ -113,7 +115,7 @@ fun HighFeesWarningBanner(
         ) {
             Icon(
                 Icons.Default.Warning,
-                contentDescription = "התראת דמי ניהול",
+                contentDescription = stringResource(R.string.ui_str_133),
                 tint = Color(0xFFDC2626),
                 modifier = Modifier
                     .size(24.dp)
@@ -122,14 +124,14 @@ fun HighFeesWarningBanner(
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    "מעקב ומיקוד: דמי הניהול הגבוהים ביותר בתיק",
+                    stringResource(R.string.ui_str_134),
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = Color(0xFF991B1B)
                 )
                 if (highestBalanceFund != null && maxBalanceFee > 0) {
                     Text(
-                        "• שיא צבירה: ${highestBalanceFund.feeOnBalancePercent}% ב-${highestBalanceFund.provider} (${highestBalanceFund.fundType})",
+                        stringResource(R.string.ui_highestbalancefundfeeonbalancepercent_highestbalancefundprovider_129, highestBalanceFund.feeOnBalancePercent, highestBalanceFund.provider, highestBalanceFund.fundType),
                         fontSize = 12.sp,
                         color = Color(0xFF7F1D1D),
                         fontWeight = FontWeight.Medium
@@ -137,14 +139,14 @@ fun HighFeesWarningBanner(
                 }
                 if (highestDepositFund != null && maxDepositFee > 0) {
                     Text(
-                        "• שיא הפקדה: ${highestDepositFund.feeOnDepositsPercent}% ב-${highestDepositFund.provider} (${highestDepositFund.fundType})",
+                        stringResource(R.string.ui_highestdepositfundfeeondepositspercent_highestdepositfundprovider_130, highestDepositFund.feeOnDepositsPercent, highestDepositFund.provider, highestDepositFund.fundType),
                         fontSize = 12.sp,
                         color = Color(0xFF7F1D1D),
                         fontWeight = FontWeight.Medium
                     )
                 }
                 Text(
-                    "טיפ: פנייה לגוף המנהל או לסוכן יכולה לחסוך אלפי שקלים לאורך השנים!",
+                    stringResource(R.string.ui_str_131),
                     fontSize = 11.sp,
                     color = Color.DarkGray
                 )
@@ -160,12 +162,13 @@ fun PensionFundTypeFilterRow(
     selectedTypeFilter: String?,
     onSelectType: (String?) -> Unit
 ) {
+    val allLabel = stringResource(R.string.ui_str_123)
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(fundTypes) { type ->
-            val count = if (type == "הכל") funds.size else funds.count { it.fundType == type }
+            val count = if (type == allLabel) funds.size else funds.count { it.fundType == type }
             FilterChip(
-                selected = (selectedTypeFilter == null && type == "הכל") || selectedTypeFilter == type,
-                onClick = { onSelectType(if (type == "הכל") null else type) },
+                selected = (selectedTypeFilter == null && type == allLabel) || selectedTypeFilter == type,
+                onClick = { onSelectType(if (type == allLabel) null else type) },
                 label = { Text("$type ($count)") }
             )
         }

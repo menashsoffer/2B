@@ -24,10 +24,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.menash.myself.core.designsystem.component.OfflineIndicator
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 data class MoreMenuItem(
     val route: String,
-    val title: String,
-    val subtitle: String,
+    val titleRes: Int,
+    val subtitleRes: Int,
     val icon: ImageVector,
     val testTag: String
 )
@@ -35,36 +37,36 @@ data class MoreMenuItem(
 private val moreMenuItems = listOf(
     MoreMenuItem(
         route = "inbox",
-        title = "אינבוקס ומיון מהיר",
-        subtitle = "מיון רעיונות ולכידות מהירות למשימות או חלומות",
+        titleRes = R.string.ui_str_400,
+        subtitleRes = R.string.ui_str_398,
         icon = Icons.Default.Inbox,
         testTag = "more_inbox_item"
     ),
     MoreMenuItem(
         route = "fitness",
-        title = "כושר ותנועה יומית",
-        subtitle = "מעקב תנועה יומי ורצף שבועי",
+        titleRes = R.string.ui_str_356,
+        subtitleRes = R.string.ui_str_399,
         icon = Icons.AutoMirrored.Filled.DirectionsRun,
         testTag = "more_fitness_item"
     ),
     MoreMenuItem(
         route = "calendar",
-        title = "יומן אירועים",
-        subtitle = "אירועי היום מתוך יומן המכשיר",
+        titleRes = R.string.ui_str_396,
+        subtitleRes = R.string.ui_str_392,
         icon = Icons.Default.CalendarMonth,
         testTag = "more_calendar_item"
     ),
     MoreMenuItem(
         route = "catalog",
-        title = "קטלוג וקבצי CSV",
-        subtitle = "ייבוא וייצוא תבניות נתונים לאפליקציה",
+        titleRes = R.string.ui_csv_393,
+        subtitleRes = R.string.ui_str_391,
         icon = Icons.Default.FolderOpen,
         testTag = "more_catalog_item"
     ),
     MoreMenuItem(
         route = "household",
-        title = "משק בית ומרחבים",
-        subtitle = "ניהול שותפות, הזמנת בת הזוג וחשבון",
+        titleRes = R.string.ui_str_394,
+        subtitleRes = R.string.ui_str_395,
         icon = Icons.Default.Group,
         testTag = "more_household_item"
     )
@@ -76,7 +78,7 @@ fun MoreScreen(onNavigate: (String) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("עוד כלים והגדרות", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = { Text(stringResource(R.string.ui_str_397), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = Color.White
@@ -126,8 +128,8 @@ private fun MoreMenuRowCard(
             )
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text(item.subtitle, fontSize = 12.sp, color = Color.Gray)
+                Text(stringResource(item.titleRes), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(stringResource(item.subtitleRes), fontSize = 12.sp, color = Color.Gray)
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,

@@ -32,6 +32,8 @@ import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.feature.dreams.DreamsViewModel
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DreamsScreen(onBack: () -> Unit) {
@@ -57,10 +59,10 @@ fun DreamsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("חלומות ורשימות", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = { Text(stringResource(R.string.ui_str_233), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("dreams_back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
                     }
                 },
                 actions = {
@@ -68,12 +70,12 @@ fun DreamsScreen(onBack: () -> Unit) {
                         onClick = { showCreateDialog = true },
                         modifier = Modifier.testTag("add_dream_top_action")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "הוסף חלום")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_str_345))
                     }
                     IconButton(onClick = { isBoardView = !isBoardView }) {
                         Icon(
                             if (isBoardView) Icons.AutoMirrored.Filled.ViewList else Icons.Default.ViewKanban,
-                            contentDescription = "החלף תצוגה"
+                            contentDescription = stringResource(R.string.ui_str_344)
                         )
                     }
                 },
@@ -152,7 +154,7 @@ private fun DreamsFilterSection(
     onListFilterChange: (String) -> Unit,
     onVisibilityFilterChange: (VisibilityFilter) -> Unit
 ) {
-    val defaultLists = listOf("הכל", "לבית", "טיסות משפחה", "פיתוח ואפליקציות")
+    val defaultLists = listOf(stringResource(R.string.ui_str_123), stringResource(R.string.ui_str_311), stringResource(R.string.ui_str_321), stringResource(R.string.ui_str_307))
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,13 +174,13 @@ private fun DreamsFilterSection(
             FilterChip(
                 selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
                 onClick = { onVisibilityFilterChange(VisibilityFilter.MINE_AND_BOTH) },
-                label = { Text("שלי + של שנינו", fontSize = 11.sp) },
+                label = { Text(stringResource(R.string.ui_str_283), fontSize = 11.sp) },
                 modifier = Modifier.testTag("dreams_filter_mine_and_both")
             )
             FilterChip(
                 selected = visibilityFilter == VisibilityFilter.ALL,
                 onClick = { onVisibilityFilterChange(VisibilityFilter.ALL) },
-                label = { Text("הצג הכל", fontSize = 11.sp) },
+                label = { Text(stringResource(R.string.ui_str_289), fontSize = 11.sp) },
                 modifier = Modifier.testTag("dreams_filter_all")
             )
         }
@@ -202,9 +204,9 @@ private fun DreamsContentArea(
         is UiState.Error -> ErrorState(message = uiState.message, onRetry = onClearError)
         is UiState.Empty -> EmptyState(
             icon = Icons.Default.Star,
-            title = "אין חלומות ברשימה זו",
-            description = "הוסף חלום חדש או עבור לרשימה אחרת",
-            actionLabel = "חלום חדש",
+            title = stringResource(R.string.ui_str_346),
+            description = stringResource(R.string.ui_str_347),
+            actionLabel = stringResource(R.string.ui_str_348),
             onActionClick = onShowCreate
         )
         is UiState.Content -> {

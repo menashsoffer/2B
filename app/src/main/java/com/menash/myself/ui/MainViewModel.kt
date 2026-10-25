@@ -20,7 +20,7 @@ class MainViewModel(
     val errorFlow: Flow<String?> = appContainer.errorFlow
 
     val household: StateFlow<Household?> = appContainer.householdRepository.observeMyHousehold()
-        .catch { e -> handleException("observeHousehold", e) }
+        .catch { e -> if (e is Exception) handleException("observeHousehold", e) else throw e }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun initializeHouseholdForUser() {

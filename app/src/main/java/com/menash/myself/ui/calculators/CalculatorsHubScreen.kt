@@ -30,6 +30,8 @@ import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalculatorsHubScreen(
@@ -63,8 +65,8 @@ fun CalculatorsHubScreen(
     val daysSinceBackup = if (lastBackup == 0L) Long.MAX_VALUE else TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - lastBackup)
     val needsBackupWarning = daysSinceBackup >= 30
 
-    val calculators = remember(cars, aiSubs, pensionFunds, usdRate) {
-        buildCalculatorItems(cars.orEmpty(), aiSubs.orEmpty(), pensionFunds.orEmpty(), usdRate)
+    val calculators = remember(cars, aiSubs, pensionFunds, usdRate, context) {
+        buildCalculatorItems(context, cars.orEmpty(), aiSubs.orEmpty(), pensionFunds.orEmpty(), usdRate)
     }
 
     Scaffold(
@@ -107,7 +109,7 @@ fun CalculatorsHubScreen(
                             if (item.isReady && item.route != null) {
                                 navController.navigate(item.route)
                             } else {
-                                pendingNoticeMessage = "מחשבון ${item.title} יתווסף בשלב הבא לבקשתך!"
+                                pendingNoticeMessage = context.getString(R.string.ui_itemtitle_15, item.title)
                             }
                         }
                     )
@@ -131,11 +133,11 @@ fun CalculatorsHubScreen(
     pendingNoticeMessage?.let { msg ->
         AlertDialog(
             onDismissRequest = { pendingNoticeMessage = null },
-            title = { Text("מחשבון בשלבי פיתוח", fontWeight = FontWeight.Bold) },
+            title = { Text(stringResource(R.string.ui_str_31), fontWeight = FontWeight.Bold) },
             text = { Text(msg) },
             confirmButton = {
                 Button(onClick = { pendingNoticeMessage = null }) {
-                    Text("הבנתי")
+                    Text(stringResource(R.string.ui_str_19))
                 }
             }
         )
@@ -152,13 +154,13 @@ private fun CalculatorsHubTopBar(
     TopAppBar(
         title = {
             Column {
-                Text("המחשבונים שלי", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("מרכז מחשבונים פיננסיים (שמור מקומית ובענן)", fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f))
+                Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(stringResource(R.string.ui_str_30), fontSize = 11.sp, color = Color.White.copy(alpha = 0.85f))
             }
         },
         navigationIcon = {
             IconButton(onClick = onBack, modifier = Modifier.testTag("calculators_back_button")) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזרה לדף הבית")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_28))
             }
         },
         actions = {
@@ -166,13 +168,13 @@ private fun CalculatorsHubTopBar(
                 onClick = onBackup,
                 modifier = Modifier.testTag("calculators_backup_button")
             ) {
-                Icon(Icons.Default.Backup, contentDescription = "גיבוי נתונים")
+                Icon(Icons.Default.Backup, contentDescription = stringResource(R.string.ui_str_20))
             }
             IconButton(
                 onClick = onSettings,
                 modifier = Modifier.testTag("calculators_settings_button")
             ) {
-                Icon(Icons.Default.Settings, contentDescription = "הגדרות ושער דולר")
+                Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.ui_str_23))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -185,6 +187,7 @@ private fun CalculatorsHubTopBar(
 }
 
 private fun buildCalculatorItems(
+    context: android.content.Context,
     cars: List<Car>,
     aiSubs: List<AiSubscription>,
     pensionFunds: List<PensionFund>,
@@ -192,33 +195,33 @@ private fun buildCalculatorItems(
 ): List<CalculatorCardItem> {
     val fmt = NumberFormat.getNumberInstance(Locale.US)
     val carHeadline = if (cars.isEmpty()) {
-        "אין רכבים עדיין (לחץ להוספה)"
+        context.getString(R.string.ui_str_29)
     } else {
         val best = cars.minByOrNull { it.netMonthlyCost } ?: cars.first()
-        "הכי משתלם: ${best.name} (₪${fmt.format(best.netMonthlyCost.shekels.toInt())}/חודש)"
+        context.getString(R.string.ui_bestname_fmtformatbestnetmonthlycostshekelstoint_17, best.name, fmt.format(best.netMonthlyCost.shekels.toInt()))
     }
 
     val activeAi = aiSubs.filter { it.isActive }
     val sumMonthlyAi = activeAi.sumOf { it.monthlyCostIls(usdRate).shekels }
-    val aiHeadline = "₪${fmt.format(sumMonthlyAi.toInt())} / חודש (${activeAi.size} פעילים)"
+    val aiHeadline = context.getString(R.string.ui_fmtformatsummonthlyaitoint_activeaisize_26, fmt.format(sumMonthlyAi.toInt()), activeAi.size)
 
     val pensionHeadline = if (pensionFunds.isEmpty()) {
-        "אין קופות עדיין (לחץ להוספה)"
+        context.getString(R.string.ui_str_12)
     } else {
         val totalVal = pensionFunds.sumOf { it.currentValue.shekels }
         val totalDep = pensionFunds.sumOf { it.totalDeposits.shekels }
         val profitPercent = if (totalDep > 0) ((totalVal - totalDep) / totalDep) * 100.0 else 0.0
-        "סך נכסים: ₪${fmt.format(totalVal.toInt())} (${String.format(Locale.US, "%+.1f", profitPercent)}%)"
+        context.getString(R.string.ui_fmtformattotalvaltoint_stringformatlocaleus_18, fmt.format(totalVal.toInt()), String.format(Locale.US, "%+.1f%%", profitPercent))
     }
 
     return listOf(
-        CalculatorCardItem("car", "השוואת רכבים (5 שנים)", carHeadline, Icons.Default.DirectionsCar, "car_calculator", true),
-        CalculatorCardItem("ai", "מנויי AI וכלים", aiHeadline, Icons.Default.SmartToy, "ai_calculator", true),
-        CalculatorCardItem("pension", "פנסיה וחיסכון", pensionHeadline, Icons.Default.Savings, "pension_calculator", true),
-        CalculatorCardItem("mishloach", "משלוחי מנות", "תכנון סל: ₪680 (12 מארזים)", Icons.Default.CardGiftcard, null, false),
-        CalculatorCardItem("investments", "יומן השקעות", "תשואה: +14.2% (₪42,500)", Icons.Default.TrendingUp, null, false),
-        CalculatorCardItem("apartment", "נדל״ן — קנייה ומכירה", "רווח צפוי: ₪385,000", Icons.Default.Apartment, null, false),
-        CalculatorCardItem("donations", "החזרי מס — תרומות", "זכאות להחזר: ₪2,150", Icons.Default.VolunteerActivism, null, false),
-        CalculatorCardItem("trip", "תקציב טיול", "תקציב משוער: $4,850 (₪320/יום)", Icons.Default.FlightTakeoff, null, false)
+        CalculatorCardItem("car", context.getString(R.string.ui_5_13), carHeadline, Icons.Default.DirectionsCar, "car_calculator", true),
+        CalculatorCardItem("ai", context.getString(R.string.ui_ai_27), aiHeadline, Icons.Default.SmartToy, "ai_calculator", true),
+        CalculatorCardItem("pension", context.getString(R.string.ui_str_22), pensionHeadline, Icons.Default.Savings, "pension_calculator", true),
+        CalculatorCardItem("mishloach", context.getString(R.string.ui_str_25), context.getString(R.string.ui_680_12_10), Icons.Default.CardGiftcard, null, false),
+        CalculatorCardItem("investments", context.getString(R.string.ui_str_14), context.getString(R.string.ui_142_42500_16), Icons.Default.TrendingUp, null, false),
+        CalculatorCardItem("apartment", context.getString(R.string.ui_str_11), context.getString(R.string.ui_385000_34), Icons.Default.Apartment, null, false),
+        CalculatorCardItem("donations", context.getString(R.string.ui_str_32), context.getString(R.string.ui_2150_33), Icons.Default.VolunteerActivism, null, false),
+        CalculatorCardItem("trip", context.getString(R.string.ui_str_24), context.getString(R.string.ui_4850_320_21, 4), Icons.Default.FlightTakeoff, null, false)
     )
 }

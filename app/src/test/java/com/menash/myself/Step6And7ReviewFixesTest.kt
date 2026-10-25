@@ -149,8 +149,8 @@ class Step6And7ReviewFixesTest {
 
         val err = viewModel.errorState.value
         assertNotNull("Expected errorState to be populated instead of crashing", err)
-        assertTrue(err!!.contains("Active household session required"))
-        assertTrue(errorReporter.errorState.value?.contains(err) == true)
+        assertEquals(com.menash.myself.core.ui.ErrorMapper.MSG_NO_HOUSEHOLD, err)
+        assertTrue(errorReporter.errorState.value?.contains("Active household session required") == true)
     }
 
     @Test
@@ -176,9 +176,10 @@ class Step6And7ReviewFixesTest {
         val inboxRepo = FakeInboxRepository()
         val fitnessRepo = FakeFitnessRepository()
 
-        val tasksVm = TasksViewModel(taskRepo, householdRepo)
-        val dreamsVm = DreamsViewModel(dreamRepo, householdRepo)
-        val homeVm = LifeHomeViewModel(taskRepo, dreamRepo, inboxRepo, fitnessRepo, householdRepo)
+        val reporter = DefaultErrorReporter()
+        val tasksVm = TasksViewModel(taskRepo, householdRepo, reporter)
+        val dreamsVm = DreamsViewModel(dreamRepo, householdRepo, reporter)
+        val homeVm = LifeHomeViewModel(taskRepo, dreamRepo, inboxRepo, fitnessRepo, householdRepo, reporter)
 
         assertEquals(VisibilityFilter.MINE_AND_BOTH, tasksVm.visibilityFilter.value)
         assertEquals(VisibilityFilter.MINE_AND_BOTH, dreamsVm.visibilityFilter.value)

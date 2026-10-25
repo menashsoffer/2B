@@ -22,6 +22,8 @@ import com.menash.myself.core.domain.model.VisibilityFilter
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun HomeVisibilityFilterRow(
     visibilityFilter: VisibilityFilter,
@@ -31,13 +33,13 @@ fun HomeVisibilityFilterRow(
         FilterChip(
             selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
             onClick = { onFilterChange(VisibilityFilter.MINE_AND_BOTH) },
-            label = { Text("שלי + של שנינו", fontSize = 11.sp) },
+            label = { Text(stringResource(R.string.ui_str_283), fontSize = 11.sp) },
             modifier = Modifier.testTag("home_filter_mine_and_both")
         )
         FilterChip(
             selected = visibilityFilter == VisibilityFilter.ALL,
             onClick = { onFilterChange(VisibilityFilter.ALL) },
-            label = { Text("הצג הכל", fontSize = 11.sp) },
+            label = { Text(stringResource(R.string.ui_str_289), fontSize = 11.sp) },
             modifier = Modifier.testTag("home_filter_all")
         )
     }
@@ -106,7 +108,7 @@ fun TopTaskItemCard(
                 )
                 if (task.nextAction.isNotEmpty()) {
                     Text(
-                        text = "פעולה הבאה: ${task.nextAction}",
+                        text = stringResource(R.string.ui_tasknextaction_381, task.nextAction),
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -167,7 +169,7 @@ fun FeaturedDreamCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "נחסך: ₪${fmt.format(dream.savedAmount.shekels.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.shekels.toInt())}",
+                            stringResource(R.string.ui_fmtformatdreamsavedamountshekelstoint_fmtformatdreamestimatedcostshekelstoint_343, fmt.format(dream.savedAmount.shekels.toInt()), fmt.format(dream.estimatedCost.shekels.toInt())),
                             fontSize = 11.sp,
                             color = Color.DarkGray
                         )
@@ -183,7 +185,7 @@ fun FeaturedDreamCard(
                     )
                 }
             } else if (dream.nextAction.isNotEmpty()) {
-                Text("צעד הבא: ${dream.nextAction}", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(R.string.ui_dreamnextaction_382, dream.nextAction), fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
             }
         }
     }

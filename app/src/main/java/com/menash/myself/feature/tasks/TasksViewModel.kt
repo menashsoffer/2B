@@ -28,14 +28,14 @@ import java.time.LocalDate
 class TasksViewModel(
     private val taskRepository: TaskRepository,
     private val householdRepository: HouseholdRepositoryInterface,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     private val _visibilityFilter = MutableStateFlow(VisibilityFilter.MINE_AND_BOTH)
     val visibilityFilter: StateFlow<VisibilityFilter> = _visibilityFilter.asStateFlow()
 
     val household: StateFlow<Household?> = householdRepository.observeMyHousehold()
-        .catch { e -> handleException("observeHousehold", e) }
+        .catch { e -> if (e is Exception) handleException("observeHousehold", e) else throw e }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val tasks: StateFlow<List<Task>?> = _visibilityFilter
@@ -43,7 +43,7 @@ class TasksViewModel(
             taskRepository.observeTasks(filter).map<List<Task>, List<Task>?> { it }
         }
         .catch { e ->
-            handleException("observeTasks", e)
+            if (e is Exception) handleException("observeTasks", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -119,7 +119,7 @@ class TasksViewModel(
         fun factory(
             taskRepository: TaskRepository,
             householdRepository: HouseholdRepositoryInterface,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

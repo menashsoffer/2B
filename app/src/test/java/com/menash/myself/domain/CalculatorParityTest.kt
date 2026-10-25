@@ -1,5 +1,7 @@
 package com.menash.myself.domain
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.menash.myself.data.entities.AiSubscriptionEntity
 import com.menash.myself.data.entities.CarEntity
 import com.menash.myself.data.entities.PensionFundEntity
@@ -13,6 +15,8 @@ import com.menash.myself.feature.calculators.pension.domain.PensionSavingsCalcul
 import com.menash.myself.ui.calculators.car.CarCalculationVerbatimHelpers
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -21,9 +25,11 @@ import java.util.Locale
  * Verifies that for all Characterization-Test inputs, domain calculator results
  * strictly equal previous entity computed getters and verbatim helper outputs.
  */
+@RunWith(RobolectricTestRunner::class)
 class CalculatorParityTest {
 
     private val fmt = NumberFormat.getNumberInstance(Locale.US)
+    private val testContext: Context by lazy { ApplicationProvider.getApplicationContext() }
 
     // =========================================================================
     // 1. CAR CALCULATOR PARITY
@@ -139,7 +145,7 @@ class CalculatorParityTest {
 
         // Baseline diff parity:
         val domainDiff = CarCostCalculator.calculateBaselineComparison(143545.0, 144500.0)
-        val helperDiff = CarCalculationVerbatimHelpers.calculateBaselineDiffVerbatim(143545.0, 144500.0, "קורולה", fmt)
+        val helperDiff = CarCalculationVerbatimHelpers.calculateBaselineDiffVerbatim(testContext, 143545.0, 144500.0, "קורולה", fmt)
         assertEquals(domainDiff.diffFromBaseline, helperDiff.diffFromBaseline, 0.0001)
         assertEquals(domainDiff.isSaving, helperDiff.isSaving)
         assertEquals(domainDiff.diffMonthly, helperDiff.diffMonthly)

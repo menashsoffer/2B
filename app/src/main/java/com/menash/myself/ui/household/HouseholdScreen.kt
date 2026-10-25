@@ -27,6 +27,8 @@ import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.feature.household.HouseholdViewModel
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HouseholdScreen(
@@ -52,10 +54,10 @@ fun HouseholdScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("ניהול משק בית ומרחבים", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.ui_str_181), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("household_back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזרה")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_180))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -79,7 +81,7 @@ fun HouseholdScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     UserProfileCard(
-                        displayName = currentUser?.displayName ?: "משתמש מחובר",
+                        displayName = currentUser?.displayName ?: stringResource(R.string.ui_str_177),
                         email = currentUser?.email ?: ""
                     )
                     SpacesInfoCard()
@@ -92,12 +94,12 @@ fun HouseholdScreen(
                             val email = partnerEmailInput.trim()
                             val hid = household?.id
                             if (email.isEmpty() || !email.contains("@")) {
-                                Toast.makeText(context, "נא להזין כתובת אימייל תקינה", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.ui_str_173), Toast.LENGTH_SHORT).show()
                             } else if (hid.isNullOrEmpty()) {
-                                Toast.makeText(context, "שגיאה בטעינת משק הבית", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.ui_str_178), Toast.LENGTH_SHORT).show()
                             } else {
                                 viewModel.invitePartner(hid, email)
-                                Toast.makeText(context, "ההזמנה נשמרה בהצלחה!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.ui_str_175), Toast.LENGTH_SHORT).show()
                                 partnerEmailInput = ""
                             }
                         }
@@ -110,7 +112,7 @@ fun HouseholdScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("התנתק מחשבון Google")
+                        Text(stringResource(R.string.ui_google_174))
                     }
                 }
             }
@@ -120,8 +122,8 @@ fun HouseholdScreen(
     if (showSignOutConfirm) {
         AlertDialog(
             onDismissRequest = { showSignOutConfirm = false },
-            title = { Text("התנתקות מהחשבון") },
-            text = { Text("האם אתה בטוח שברצונך להתנתק? תוכל להתחבר שוב בכל עת.") },
+            title = { Text(stringResource(R.string.ui_str_176)) },
+            text = { Text(stringResource(R.string.ui_str_172)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -136,12 +138,12 @@ fun HouseholdScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Text("התנתק")
+                    Text(stringResource(R.string.ui_str_179))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutConfirm = false }) {
-                    Text("ביטול")
+                    Text(stringResource(R.string.ui_str_92))
                 }
             }
         )

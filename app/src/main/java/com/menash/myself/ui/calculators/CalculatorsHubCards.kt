@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 data class CalculatorCardItem(
     val id: String,
     val title: String,
@@ -49,13 +51,13 @@ fun BackupWarningBanner(onBackupNow: () -> Unit) {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "טרם בוצע גיבוי מעל 30 יום!",
+                    stringResource(R.string.ui_str_40),
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF991B1B),
                     fontSize = 13.sp
                 )
                 Text(
-                    "האפליקציה מחליפה את הגיליון שלך. מומלץ לשמור גיבוי עכשיו.",
+                    stringResource(R.string.ui_str_36),
                     color = Color(0xFF4B5563),
                     fontSize = 11.sp
                 )
@@ -66,7 +68,7 @@ fun BackupWarningBanner(onBackupNow: () -> Unit) {
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("גבה עכשיו", fontSize = 12.sp)
+                Text(stringResource(R.string.ui_str_37), fontSize = 12.sp)
             }
         }
     }
@@ -98,14 +100,14 @@ fun CalculatorsStatusBar(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                "שער דולר גלובלי: ₪$usdRate",
+                stringResource(R.string.ui_usdrate_39, usdRate),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
             )
             Icon(
                 Icons.Default.Edit,
-                contentDescription = "ערוך שער",
+                contentDescription = stringResource(R.string.ui_str_38),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
                     .size(12.dp)
@@ -114,7 +116,7 @@ fun CalculatorsStatusBar(
         }
 
         Text(
-            text = if (lastBackup == 0L) "טרם גובה" else "גיבוי: לפני $daysSinceBackup ימים",
+            text = if (lastBackup == 0L) stringResource(R.string.ui_str_35) else stringResource(R.string.ui_dayssincebackup_41, daysSinceBackup),
             fontSize = 11.sp,
             color = Color.Gray
         )
@@ -192,7 +194,7 @@ private fun CalculatorHubCard(
                 )
                 if (!item.isReady) {
                     Text(
-                        "בפיתוח — שלב הבא",
+                        stringResource(R.string.ui_str_42),
                         fontSize = 10.sp,
                         color = Color.Gray,
                         modifier = Modifier.padding(top = 2.dp)

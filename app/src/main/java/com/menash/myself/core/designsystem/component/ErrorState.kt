@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import com.menash.myself.core.designsystem.tokens.Spacing
 import com.menash.myself.core.designsystem.tokens.TypographyTokens
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 /**
  * Standard error state presentation with retry action affordance.
  */
@@ -31,7 +33,7 @@ fun ErrorState(
     message: String,
     modifier: Modifier = Modifier,
     onRetry: (() -> Unit)? = null,
-    retryLabel: String = "נסה שוב",
+    retryLabel: String = stringResource(R.string.ui_str_9),
     testTag: String = "error_state"
 ) {
     Column(

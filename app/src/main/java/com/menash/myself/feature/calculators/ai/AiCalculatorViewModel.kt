@@ -20,12 +20,12 @@ import kotlinx.coroutines.flow.stateIn
 class AiCalculatorViewModel(
     private val aiSubscriptionRepository: AiSubscriptionRepository,
     private val settingsRepository: SettingsRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val settings: StateFlow<CalculatorSettings?> = settingsRepository.getSettingsFlow()
         .catch { e ->
-            handleException("getSettingsFlow", e)
+            if (e is Exception) handleException("getSettingsFlow", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -33,7 +33,7 @@ class AiCalculatorViewModel(
     val subscriptions: StateFlow<List<AiSubscription>?> = aiSubscriptionRepository.getAllAiSubscriptions()
         .map<List<AiSubscription>, List<AiSubscription>?> { it }
         .catch { e ->
-            handleException("getAllAiSubscriptions", e)
+            if (e is Exception) handleException("getAllAiSubscriptions", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -75,7 +75,7 @@ class AiCalculatorViewModel(
         fun factory(
             aiSubscriptionRepository: AiSubscriptionRepository,
             settingsRepository: SettingsRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -23,13 +23,13 @@ class InboxViewModel(
     private val inboxRepository: InboxRepository,
     private val taskRepository: TaskRepository,
     private val dreamRepository: DreamRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val inboxItems: StateFlow<List<InboxItem>?> = inboxRepository.observeInbox()
         .map<List<InboxItem>, List<InboxItem>?> { it }
         .catch { e ->
-            handleException("observeInbox", e)
+            if (e is Exception) handleException("observeInbox", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -94,7 +94,7 @@ class InboxViewModel(
             inboxRepository: InboxRepository,
             taskRepository: TaskRepository,
             dreamRepository: DreamRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

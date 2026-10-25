@@ -37,6 +37,8 @@ import com.menash.myself.feature.calculators.pension.PensionCalculatorViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PensionSavingsScreen(
@@ -70,7 +72,7 @@ fun PensionSavingsScreen(
         topBar = {
             PensionSavingsTopBar(
                 onBack = onBack,
-                onAddFund = { viewModel.insertPensionFund(createDefaultPensionFund()) },
+                onAddFund = { viewModel.insertPensionFund(createDefaultPensionFund(context)) },
                 onImportCsv = { csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*")) },
                 onExportCsv = { sharePensionFundsCsv(context, funds.orEmpty()) }
             )
@@ -87,7 +89,7 @@ fun PensionSavingsScreen(
                 selectedTypeFilter = selectedTypeFilter,
                 onSelectType = { selectedTypeFilter = it },
                 onRetry = { viewModel.clearError() },
-                onAddFirst = { viewModel.insertPensionFund(createDefaultPensionFund()) },
+                onAddFirst = { viewModel.insertPensionFund(createDefaultPensionFund(context)) },
                 onUpdate = { viewModel.updatePensionFund(it) },
                 onDelete = { viewModel.deletePensionFund(it) }
             )
@@ -98,12 +100,12 @@ fun PensionSavingsScreen(
         CsvMappingDialog(
             headers = importedCsvRows.first(),
             previewRows = importedCsvRows.drop(1),
-            targetFields = listOf("סוג חיסכון", "גוף מנהל", "שווי נוכחי", "סך הפקדות", "דמי ניהול מצבירה (%)", "דמי ניהול מהפקדה (%)", "הערות"),
+            targetFields = listOf(stringResource(R.string.ui_str_124), stringResource(R.string.ui_str_111), stringResource(R.string.ui_str_114), stringResource(R.string.ui_str_118), stringResource(R.string.ui_str_106), stringResource(R.string.ui_str_103), stringResource(R.string.ui_str_121)),
             onDismiss = { showCsvMapping = false },
             onConfirmMap = { mapping ->
-                val newFunds = parseMappedPensionFunds(importedCsvRows.drop(1), mapping)
+                val newFunds = parseMappedPensionFunds(context, importedCsvRows.drop(1), mapping)
                 viewModel.insertPensionFunds(newFunds)
-                Toast.makeText(context, "יובאו ${newFunds.size} קופות וקרנות בהצלחה!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.ui_newfundssize_119, newFunds.size), Toast.LENGTH_SHORT).show()
                 showCsvMapping = false
             }
         )
@@ -119,21 +121,21 @@ private fun PensionSavingsTopBar(
     onExportCsv: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("פנסיה וחיסכון", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        title = { Text(stringResource(R.string.ui_str_22), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
         navigationIcon = {
             IconButton(onClick = onBack, modifier = Modifier.testTag("pension_back_button")) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
             }
         },
         actions = {
             IconButton(onClick = onAddFund, modifier = Modifier.testTag("add_fund_top_action")) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף קרן או קופה")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_str_120))
             }
             IconButton(onClick = onImportCsv, modifier = Modifier.testTag("pension_import_csv_button")) {
-                Icon(Icons.Default.UploadFile, contentDescription = "ייבוא CSV")
+                Icon(Icons.Default.UploadFile, contentDescription = stringResource(R.string.ui_csv_72))
             }
             IconButton(onClick = onExportCsv, modifier = Modifier.testTag("pension_export_csv_button")) {
-                Icon(Icons.Default.Share, contentDescription = "ייצוא CSV")
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.ui_csv_64))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -159,10 +161,10 @@ private fun PensionSavingsContent(
         is UiState.Loading -> LoadingState()
         is UiState.Error -> ErrorState(message = uiState.message, onRetry = onRetry)
         is UiState.Empty -> EmptyState(
-            title = "אין קופות או קרנות רשומות",
-            description = "הוסף קרן פנסיה או קרן השתלמות למעקב אחר צבירה ודמי ניהול.",
+            title = stringResource(R.string.ui_str_116),
+            description = stringResource(R.string.ui_str_122),
             icon = Icons.Default.Savings,
-            actionLabel = "הוסף קרן או קופה",
+            actionLabel = stringResource(R.string.ui_str_120),
             onActionClick = onAddFirst
         )
         is UiState.Content -> {
@@ -176,9 +178,10 @@ private fun PensionSavingsContent(
             val maxDepositFee = funds.maxOfOrNull { it.feeOnDepositsPercent } ?: 0.0
             val highestBalanceFund = funds.firstOrNull { it.feeOnBalancePercent == maxBalanceFee && maxBalanceFee > 0.0 }
             val highestDepositFund = funds.firstOrNull { it.feeOnDepositsPercent == maxDepositFee && maxDepositFee > 0.0 }
-            val fundTypes = listOf("הכל", "קרן פנסיה", "קרן השתלמות", "קופת גמל", "גמל להשקעה")
-            val filteredFunds = remember(funds, selectedTypeFilter) {
-                if (selectedTypeFilter == null || selectedTypeFilter == "הכל") funds
+            val allTypesLabel = stringResource(R.string.ui_str_123)
+            val fundTypes = listOf(allTypesLabel, stringResource(R.string.ui_str_99), stringResource(R.string.ui_str_97), stringResource(R.string.ui_str_107), stringResource(R.string.ui_str_110))
+            val filteredFunds = remember(funds, selectedTypeFilter, allTypesLabel) {
+                if (selectedTypeFilter == null || selectedTypeFilter == allTypesLabel) funds
                 else funds.filter { it.fundType == selectedTypeFilter }
             }
 
@@ -233,9 +236,9 @@ private fun PensionSavingsContent(
     }
 }
 
-private fun createDefaultPensionFund(): PensionFund = PensionFund(
-    fundType = "קרן השתלמות",
-    provider = "חברה מנהלת",
+private fun createDefaultPensionFund(context: android.content.Context): PensionFund = PensionFund(
+    fundType = context.getString(R.string.ui_str_97),
+    provider = context.getString(R.string.ui_str_113),
     currentValue = Money.fromShekels(50000.0),
     totalDeposits = Money.fromShekels(40000.0),
     feeOnBalancePercent = 0.25,
@@ -244,7 +247,7 @@ private fun createDefaultPensionFund(): PensionFund = PensionFund(
 )
 
 private fun sharePensionFundsCsv(context: android.content.Context, funds: List<PensionFund>) {
-    val headers = listOf("סוג חיסכון", "גוף מנהל", "שווי נוכחי (₪)", "סך הפקדות (₪)", "רווח (₪)", "תשואה (%)", "דמי ניהול מצבירה (%)", "דמי ניהול מהפקדה (%)", "הערות")
+    val headers = listOf(context.getString(R.string.ui_str_124), context.getString(R.string.ui_str_111), context.getString(R.string.ui_str_100), context.getString(R.string.ui_str_102), context.getString(R.string.ui_str_112), context.getString(R.string.ui_str_125), context.getString(R.string.ui_str_106), context.getString(R.string.ui_str_103), context.getString(R.string.ui_str_121))
     val rows = funds.map {
         listOf(
             it.fundType, it.provider, it.currentValue.shekels.toInt().toString(),
@@ -257,23 +260,24 @@ private fun sharePensionFundsCsv(context: android.content.Context, funds: List<P
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/csv"
         putExtra(Intent.EXTRA_TEXT, csv)
-        putExtra(Intent.EXTRA_SUBJECT, "פנסיה_וחיסכון.csv")
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.ui_csv_115))
     }
-    context.startActivity(Intent.createChooser(sendIntent, "שתף נתוני פנסיה וחיסכון"))
+    context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.ui_str_117)))
 }
 
 private fun parseMappedPensionFunds(
+    context: android.content.Context,
     dataRows: List<List<String>>,
     mapping: Map<String, Int>
 ): List<PensionFund> = dataRows.mapNotNull { row ->
     try {
-        val type = row.getOrNull(mapping["סוג חיסכון"] ?: -1) ?: "קרן פנסיה"
-        val provider = row.getOrNull(mapping["גוף מנהל"] ?: -1) ?: "גוף מנהל"
-        val currentVal = row.getOrNull(mapping["שווי נוכחי"] ?: -1)?.toDoubleOrNull() ?: 50000.0
-        val deposits = row.getOrNull(mapping["סך הפקדות"] ?: -1)?.toDoubleOrNull() ?: 40000.0
-        val feeBalance = row.getOrNull(mapping["דמי ניהול מצבירה (%)"] ?: -1)?.toDoubleOrNull() ?: 0.2
-        val feeDeposit = row.getOrNull(mapping["דמי ניהול מהפקדה (%)"] ?: -1)?.toDoubleOrNull() ?: 0.0
-        val notes = row.getOrNull(mapping["הערות"] ?: -1) ?: ""
+        val type = row.getOrNull(mapping[context.getString(R.string.ui_str_124)] ?: -1) ?: context.getString(R.string.ui_str_99)
+        val provider = row.getOrNull(mapping[context.getString(R.string.ui_str_111)] ?: -1) ?: context.getString(R.string.ui_str_111)
+        val currentVal = row.getOrNull(mapping[context.getString(R.string.ui_str_114)] ?: -1)?.toDoubleOrNull() ?: 50000.0
+        val deposits = row.getOrNull(mapping[context.getString(R.string.ui_str_118)] ?: -1)?.toDoubleOrNull() ?: 40000.0
+        val feeBalance = row.getOrNull(mapping[context.getString(R.string.ui_str_106)] ?: -1)?.toDoubleOrNull() ?: 0.2
+        val feeDeposit = row.getOrNull(mapping[context.getString(R.string.ui_str_103)] ?: -1)?.toDoubleOrNull() ?: 0.0
+        val notes = row.getOrNull(mapping[context.getString(R.string.ui_str_121)] ?: -1) ?: ""
 
         PensionFund(
             fundType = type,

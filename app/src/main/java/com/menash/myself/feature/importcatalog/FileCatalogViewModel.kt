@@ -14,7 +14,7 @@ import com.menash.myself.core.ui.BaseViewModel
 class FileCatalogViewModel(
     private val taskRepository: TaskRepository,
     private val dreamRepository: DreamRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     fun importCsvRows(
@@ -81,7 +81,7 @@ class FileCatalogViewModel(
         fun factory(
             taskRepository: TaskRepository,
             dreamRepository: DreamRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

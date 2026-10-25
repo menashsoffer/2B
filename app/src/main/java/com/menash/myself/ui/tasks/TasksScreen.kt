@@ -29,6 +29,8 @@ import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.feature.tasks.TasksViewModel
 import kotlinx.coroutines.launch
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksScreen(onBack: () -> Unit) {
@@ -51,12 +53,16 @@ fun TasksScreen(onBack: () -> Unit) {
     var taskToSchedule by remember { mutableStateOf<Task?>(null) }
     var taskToDelete by remember { mutableStateOf<Task?>(null) }
 
+    val msgDone = stringResource(R.string.ui_str_275)
+    val msgUndone = stringResource(R.string.ui_str_281)
+    val actionUndo = stringResource(R.string.ui_str_279)
+
     val onToggleTaskWithUndo: (Task) -> Unit = { task ->
         viewModel.toggleTaskDone(task)
         coroutineScope.launch {
             val res = snackbarHostState.showSnackbar(
-                message = if (!task.isDone) "המשימה סומנה כבוצעה" else "המשימה הוחזרה לפעילות",
-                actionLabel = "בטל",
+                message = if (!task.isDone) msgDone else msgUndone,
+                actionLabel = actionUndo,
                 duration = SnackbarDuration.Short
             )
             if (res == SnackbarResult.ActionPerformed) {
@@ -68,10 +74,10 @@ fun TasksScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("משימות יומיות", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = { Text(stringResource(R.string.ui_str_230), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("tasks_back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
                     }
                 },
                 actions = {
@@ -79,7 +85,7 @@ fun TasksScreen(onBack: () -> Unit) {
                         onClick = { showCreateDialog = true },
                         modifier = Modifier.testTag("add_task_top_action")
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = "הוסף משימה")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_str_282))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -178,9 +184,9 @@ private fun TasksScreenBody(
             is UiState.Error -> ErrorState(message = uiState.message, onRetry = onClearError)
             is UiState.Empty -> EmptyState(
                 icon = Icons.Default.CheckCircle,
-                title = "אין משימות בתצוגה זו",
-                description = "הוסף משימה חדשה או עבור ל\"הצג הכל\"",
-                actionLabel = "משימה חדשה",
+                title = stringResource(R.string.ui_str_276),
+                description = stringResource(R.string.ui_str_278),
+                actionLabel = stringResource(R.string.ui_str_274),
                 onActionClick = onShowCreate
             )
             is UiState.Content -> TasksContentList(
@@ -240,7 +246,7 @@ private fun TasksContentList(
             item { UndatedTasksNoticeCard(undatedCount = undatedTasks.size) }
         }
         item {
-            Text("כל המשימות הפעילות", fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.ui_str_277), fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(top = 4.dp))
         }
         items(regularTasks, key = { it.id }) { task ->
             TaskRow(
@@ -255,7 +261,7 @@ private fun TasksContentList(
         }
         if (completedTasks.isNotEmpty()) {
             item {
-                Text("הושלמו (${completedTasks.size})", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = Color.Gray)
+                Text(stringResource(R.string.ui_completedtaskssize_280, completedTasks.size), fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = Color.Gray)
             }
             items(completedTasks, key = { it.id }) { task ->
                 TaskRow(

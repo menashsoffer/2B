@@ -17,40 +17,50 @@ import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.core.domain.model.SpaceSelection
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun CreateDreamDialog(
     defaultList: String,
     onDismiss: () -> Unit,
     onSave: (Dream) -> Unit
 ) {
+    val allListsLabel = stringResource(R.string.ui_str_123)
+    val defaultListLabel = stringResource(R.string.ui_str_311)
+    val appIdeaListLabel = stringResource(R.string.ui_str_307)
+    val wishListLabel = stringResource(R.string.ui_str_321)
+    val bucketListLabel = stringResource(R.string.ui_str_331)
+
     var title by remember { mutableStateOf("") }
-    var list by remember { mutableStateOf(if (defaultList == "הכל") "לבית" else defaultList) }
+    var list by remember(defaultList, allListsLabel, defaultListLabel) {
+        mutableStateOf(if (defaultList == allListsLabel) defaultListLabel else defaultList)
+    }
     var estimatedCostInput by remember { mutableStateOf("") }
-    var spaceSelection by remember {
-        mutableStateOf(if (list == "פיתוח ואפליקציות") SpaceSelection.MINE else SpaceSelection.SHARED)
+    var spaceSelection by remember(list, appIdeaListLabel) {
+        mutableStateOf(if (list == appIdeaListLabel) SpaceSelection.MINE else SpaceSelection.SHARED)
     }
 
-    val availableLists = listOf("לבית", "טיסות משפחה", "פיתוח ואפליקציות", "אישי")
+    val availableLists = listOf(defaultListLabel, wishListLabel, appIdeaListLabel, bucketListLabel)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("הוספת חלום / יעד", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.ui_str_332), fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("שם החלום / הפריט") },
+                    label = { Text(stringResource(R.string.ui_str_329)) },
                     modifier = Modifier.fillMaxWidth()
                 )
-                Text("רשימה:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.ui_str_339), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     availableLists.forEach { l ->
                         FilterChip(
                             selected = list == l,
                             onClick = {
                                 list = l
-                                spaceSelection = if (l == "פיתוח ואפליקציות") SpaceSelection.MINE else SpaceSelection.SHARED
+                                spaceSelection = if (l == appIdeaListLabel) SpaceSelection.MINE else SpaceSelection.SHARED
                             },
                             label = { Text(l, fontSize = 11.sp) }
                         )
@@ -59,11 +69,11 @@ fun CreateDreamDialog(
                 OutlinedTextField(
                     value = estimatedCostInput,
                     onValueChange = { estimatedCostInput = it },
-                    label = { Text("עלות משוערת (₪) - אופציונלי") },
+                    label = { Text(stringResource(R.string.ui_str_334)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth()
                 )
-                Text("מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.ui_str_263), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     SpaceSelection.entries.forEach { option ->
                         FilterChip(
@@ -92,11 +102,11 @@ fun CreateDreamDialog(
                 },
                 enabled = title.isNotBlank()
             ) {
-                Text("שמור חלום")
+                Text(stringResource(R.string.ui_str_328))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_str_92)) }
         }
     )
 }
@@ -108,13 +118,13 @@ fun AppIdeaTemplateDialog(
     onSave: (questions: Map<String, String>, nextAction: String) -> Unit
 ) {
     val questionPrompts = listOf(
-        "1. מה הבעיה הכואבת?",
-        "2. למי זה מיועד בדיוק?",
-        "3. מה הפתרון המינימלי (MVP)?",
-        "4. מה היתרון הייחודי / הוגן?",
-        "5. איך מרוויחים / מודל עסקי?",
-        "6. מה הסיכון הכי גדול?",
-        "7. מה המדד להצלחה ראשונית?"
+        stringResource(R.string.ui_1_323),
+        stringResource(R.string.ui_2_324),
+        stringResource(R.string.ui_3_330),
+        stringResource(R.string.ui_4_338),
+        stringResource(R.string.ui_5_336),
+        stringResource(R.string.ui_6_333),
+        stringResource(R.string.ui_7_322)
     )
 
     val answers = remember {
@@ -128,7 +138,7 @@ fun AppIdeaTemplateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("תבנית 7 שאלות לרעיון + Next Action", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
+        title = { Text(stringResource(R.string.ui_7_335), fontWeight = FontWeight.Bold, fontSize = 17.sp) },
         text = {
             LazyColumn(
                 modifier = Modifier
@@ -138,7 +148,7 @@ fun AppIdeaTemplateDialog(
             ) {
                 item {
                     Text(
-                        "ענה בקצרה ובדיוק — מונע התפזרות ועומס קוגניטיבי:",
+                        stringResource(R.string.ui_str_340),
                         fontSize = 12.sp,
                         color = Color.DarkGray
                     )
@@ -156,7 +166,7 @@ fun AppIdeaTemplateDialog(
                     OutlinedTextField(
                         value = nextActionInput,
                         onValueChange = { nextActionInput = it },
-                        label = { Text("צעד ראשון מיידי (Next Action)", fontWeight = FontWeight.Bold) },
+                        label = { Text(stringResource(R.string.ui_next_268), fontWeight = FontWeight.Bold) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -164,11 +174,11 @@ fun AppIdeaTemplateDialog(
         },
         confirmButton = {
             Button(onClick = { onSave(answers.toMap(), nextActionInput.trim()) }) {
-                Text("שמור תבנית")
+                Text(stringResource(R.string.ui_str_325))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_str_92)) }
         }
     )
 }
@@ -182,13 +192,13 @@ fun ConfirmDeleteDreamDialog(
     val isShared = dream.forWhom == ForWhom.BOTH && !dream.isPrivate
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("מחיקת חלום", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.ui_str_326), fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("האם למחוק את החלום \"${dream.title}\"?")
+                Text(stringResource(R.string.ui_str_337, dream.title))
                 if (isShared) {
                     Text(
-                        "שים לב: זהו חלום משותף לשניכם במשק הבית.",
+                        stringResource(R.string.ui_str_327),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.SemiBold
@@ -201,11 +211,11 @@ fun ConfirmDeleteDreamDialog(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("מחק")
+                Text(stringResource(R.string.ui_str_260))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_str_92)) }
         }
     )
 }

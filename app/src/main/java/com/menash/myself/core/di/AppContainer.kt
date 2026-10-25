@@ -7,17 +7,21 @@ import com.menash.myself.MyselfApp
 import com.menash.myself.core.data.repository.AiSubscriptionRepository
 import com.menash.myself.core.data.repository.CarRepository
 import com.menash.myself.core.data.repository.DreamRepository
+import com.menash.myself.core.data.repository.ExchangeRateRepository
 import com.menash.myself.core.data.repository.FitnessRepository
+import com.menash.myself.core.data.repository.HebcalRepository
 import com.menash.myself.core.data.repository.HouseholdRepositoryInterface
 import com.menash.myself.core.data.repository.InboxRepository
 import com.menash.myself.core.data.repository.PensionFundRepository
 import com.menash.myself.core.data.repository.SettingsRepository
 import com.menash.myself.core.data.repository.TaskRepository
+import com.menash.myself.core.data.repository.impl.BoiExchangeRateRepository
 import com.menash.myself.core.data.repository.impl.FirestoreDreamRepository
 import com.menash.myself.core.data.repository.impl.FirestoreFitnessRepository
 import com.menash.myself.core.data.repository.impl.FirestoreHouseholdRepository
 import com.menash.myself.core.data.repository.impl.FirestoreInboxRepository
 import com.menash.myself.core.data.repository.impl.FirestoreTaskRepository
+import com.menash.myself.core.data.repository.impl.HebcalRepositoryImpl
 import com.menash.myself.core.data.repository.impl.RoomAiSubscriptionRepository
 import com.menash.myself.core.data.repository.impl.RoomCarRepository
 import com.menash.myself.core.data.repository.impl.RoomPensionFundRepository
@@ -26,10 +30,19 @@ import com.menash.myself.core.data.session.DefaultErrorReporter
 import com.menash.myself.core.data.session.DefaultHouseholdSession
 import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.data.session.HouseholdSession
+import com.menash.myself.core.external.boi.BoiExchangeRateClient
+import com.menash.myself.core.external.boi.BoiRateStore
+import com.menash.myself.core.external.boi.boiDataStore
+import com.menash.myself.core.external.hebcal.HebcalClient
+import com.menash.myself.core.external.hebcal.HebcalStore
+import com.menash.myself.core.external.hebcal.hebcalDataStore
 import com.menash.myself.data.AppDatabase
 import com.menash.myself.data.firestore.FirestoreManager
 import com.menash.myself.data.firestore.HouseholdRepository
 import com.menash.myself.data.firestore.LifeHubRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
@@ -47,6 +60,8 @@ val LocalAppContainer = compositionLocalWithComputedDefaultOf<AppContainer> {
  */
 class AppContainer(private val context: Context) {
 
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private val appDatabase by lazy { AppDatabase.getDatabase(context) }
     private val appDao by lazy { appDatabase.appDao() }
 
@@ -59,6 +74,17 @@ class AppContainer(private val context: Context) {
 
     // Shared error reporter for ViewModel action exceptions
     val errorReporter: ErrorReporter by lazy { DefaultErrorReporter() }
+
+    // External data repositories
+    val boiRateStore by lazy { BoiRateStore(context.boiDataStore) }
+    val exchangeRateRepository: ExchangeRateRepository by lazy {
+        BoiExchangeRateRepository(boiRateStore, BoiExchangeRateClient(), applicationScope)
+    }
+
+    val hebcalStore by lazy { HebcalStore(context.hebcalDataStore) }
+    val hebcalRepository: HebcalRepository by lazy {
+        HebcalRepositoryImpl(hebcalStore, HebcalClient(), applicationScope)
+    }
 
     // Room repositories for calculators & settings (local offline data)
     val carRepository: CarRepository by lazy { RoomCarRepository(appDao) }

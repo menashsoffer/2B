@@ -17,6 +17,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,6 +28,8 @@ import com.menash.myself.core.domain.model.Money
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun CarBarChartCard(cars: List<Car>) {
     val maxCost = (cars.maxOfOrNull { it.netMonthlyCost.shekels } ?: 1.0).coerceAtLeast(1.0)
@@ -38,7 +41,7 @@ fun CarBarChartCard(cars: List<Car>) {
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                "השוואה ויזואלית — עלות חודשית נטו (₪)",
+                stringResource(R.string.ui_str_53),
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.primary
@@ -121,23 +124,23 @@ private fun CarCardHeader(
         OutlinedTextField(
             value = car.name,
             onValueChange = onNameChange,
-            label = { Text("דגם רכב") },
+            label = { Text(stringResource(R.string.ui_str_47)) },
             modifier = Modifier.weight(1f).testTag("car_name_input_${car.id}")
         )
         Spacer(modifier = Modifier.width(8.dp))
         if (car.isBaseline) {
-            SuggestionChip(onClick = {}, label = { Text("רכב בסיס", fontWeight = FontWeight.Bold, fontSize = 11.sp) })
+            SuggestionChip(onClick = {}, label = { Text(stringResource(R.string.ui_str_56), fontWeight = FontWeight.Bold, fontSize = 11.sp) })
         } else {
             OutlinedButton(
                 onClick = onSetBaseline,
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                 modifier = Modifier.testTag("set_baseline_button_${car.id}")
             ) {
-                Text("הגדר כבסיס", fontSize = 11.sp)
+                Text(stringResource(R.string.ui_str_48), fontSize = 11.sp)
             }
         }
         IconButton(onClick = onDelete, modifier = Modifier.testTag("delete_car_${car.id}")) {
-            Icon(Icons.Default.Delete, contentDescription = "מחק רכב", tint = Color.Gray)
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ui_str_46), tint = Color.Gray)
         }
     }
 }
@@ -153,16 +156,18 @@ private fun CarHeadlineBanner(car: Car, baselineCar: Car?, fmt: NumberFormat) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("נטו חודשי (60 חודש)", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_60_54), fontSize = 11.sp, color = Color.DarkGray)
             Text("₪${fmt.format(car.netMonthlyCost.shekels.toInt())}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.primary)
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("סה״כ נטו ל-5 שנים", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_5_49), fontSize = 11.sp, color = Color.DarkGray)
             Text("₪${fmt.format(car.net5YearCost.shekels.toInt())}", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = Color(0xFF0F172A))
         }
     }
     if (!car.isBaseline && baselineCar != null) {
+        val context = LocalContext.current
         val diffResult = CarCalculationVerbatimHelpers.calculateBaselineDiffVerbatim(
+            context = context,
             carNet5YearCost = car.net5YearCost.shekels,
             baselineNet5YearCost = baselineCar.net5YearCost.shekels,
             baselineCarName = baselineCar.name,
@@ -180,28 +185,28 @@ private fun CarHeadlineBanner(car: Car, baselineCar: Car?, fmt: NumberFormat) {
 @Composable
 private fun CarInlineInputs(car: Car, onUpdate: (Car) -> Unit, onOpenEnergyHelper: () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        CarMoneyField("מחיר קנייה (₪)", car.purchasePrice, Modifier.weight(1f)) { onUpdate(car.copy(purchasePrice = it)) }
-        CarMoneyField("מכירה בעוד 5 שנים (₪)", car.resaleValueAfter5Years, Modifier.weight(1f)) { onUpdate(car.copy(resaleValueAfter5Years = it)) }
+        CarMoneyField(stringResource(R.string.ui_str_50), car.purchasePrice, Modifier.weight(1f)) { onUpdate(car.copy(purchasePrice = it)) }
+        CarMoneyField(stringResource(R.string.ui_5_45), car.resaleValueAfter5Years, Modifier.weight(1f)) { onUpdate(car.copy(resaleValueAfter5Years = it)) }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
             value = car.energyCostYearly.shekels.toInt().toString(),
             onValueChange = { it.toDoubleOrNull()?.let { v -> onUpdate(car.copy(energyCostYearly = Money.fromShekels(v))) } },
-            label = { Text("אנרגיה שנתית (₪)") },
+            label = { Text(stringResource(R.string.ui_str_51)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             trailingIcon = {
                 IconButton(onClick = onOpenEnergyHelper) {
-                    Icon(Icons.Default.Calculate, contentDescription = "מחשבון אנרגיה", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Default.Calculate, contentDescription = stringResource(R.string.ui_str_43), tint = MaterialTheme.colorScheme.primary)
                 }
             },
             modifier = Modifier.weight(1.2f)
         )
-        CarMoneyField("ביטוח שנתי (₪)", car.insuranceYearly, Modifier.weight(1f)) { onUpdate(car.copy(insuranceYearly = it)) }
+        CarMoneyField(stringResource(R.string.ui_str_55), car.insuranceYearly, Modifier.weight(1f)) { onUpdate(car.copy(insuranceYearly = it)) }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        CarMoneyField("טיפולים שנתי", car.maintenanceYearly, Modifier.weight(1f)) { onUpdate(car.copy(maintenanceYearly = it)) }
-        CarMoneyField("טסט/אגרה", car.annualTestYearly, Modifier.weight(1f)) { onUpdate(car.copy(annualTestYearly = it)) }
-        CarMoneyField("צמיגים (5 שנים)", car.tires5YearsTotal, Modifier.weight(1f)) { onUpdate(car.copy(tires5YearsTotal = it)) }
+        CarMoneyField(stringResource(R.string.ui_str_52), car.maintenanceYearly, Modifier.weight(1f)) { onUpdate(car.copy(maintenanceYearly = it)) }
+        CarMoneyField(stringResource(R.string.ui_str_44), car.annualTestYearly, Modifier.weight(1f)) { onUpdate(car.copy(annualTestYearly = it)) }
+        CarMoneyField(stringResource(R.string.ui_5_57), car.tires5YearsTotal, Modifier.weight(1f)) { onUpdate(car.copy(tires5YearsTotal = it)) }
     }
 }
 

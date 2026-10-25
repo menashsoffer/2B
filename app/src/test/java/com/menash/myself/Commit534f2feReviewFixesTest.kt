@@ -126,9 +126,10 @@ class Commit534f2feReviewFixesTest {
         val inboxRepo = DelayedInboxRepository()
         val householdRepo = FakeHouseholdRepo()
 
-        val tasksVm = TasksViewModel(taskRepo, householdRepo)
-        val dreamsVm = DreamsViewModel(dreamRepo, householdRepo)
-        val inboxVm = InboxViewModel(inboxRepo, taskRepo, dreamRepo)
+        val reporter = DefaultErrorReporter()
+        val tasksVm = TasksViewModel(taskRepo, householdRepo, reporter)
+        val dreamsVm = DreamsViewModel(dreamRepo, householdRepo, reporter)
+        val inboxVm = InboxViewModel(inboxRepo, taskRepo, dreamRepo, reporter)
 
         val taskUiEmissions = mutableListOf<UiState<List<Task>>>()
         val dreamUiEmissions = mutableListOf<UiState<List<Dream>>>()
@@ -231,14 +232,20 @@ class Commit534f2feReviewFixesTest {
         }
 
         vm.triggerFailure()
-        assertEquals("Something went wrong", vm.errorState.value)
+        testScheduler.advanceUntilIdle()
+        assertEquals(com.menash.myself.core.ui.ErrorMapper.MSG_UNKNOWN, vm.errorState.value)
         assertTrue(reporter.errorState.value?.contains("testAction: Something went wrong") == true)
 
         vm.clearError()
         assertNull(vm.errorState.value)
 
         var cancellationSwallowed = false
-        vm.triggerCancellation { cancellationSwallowed = true }
+        try {
+            vm.triggerCancellation { cancellationSwallowed = true }
+            testScheduler.advanceUntilIdle()
+        } catch (e: CancellationException) {
+            // Expected
+        }
         assertFalse("CancellationException must be rethrown, not treated as error", cancellationSwallowed)
         assertNull(vm.errorState.value)
 

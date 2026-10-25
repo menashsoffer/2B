@@ -1,5 +1,7 @@
 package com.menash.myself.core.data.session
 
+import android.util.Log
+import com.menash.myself.core.ui.ErrorMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,8 +26,10 @@ class DefaultErrorReporter : ErrorReporter {
     }
 
     override fun reportError(action: String, throwable: Throwable) {
-        val detail = throwable.localizedMessage ?: throwable.message ?: "שגיאה לא צפויה"
-        _errorState.value = "שגיאה ב-$action: $detail"
+        runCatching {
+            Log.e("ErrorReporter", "Action '$action' failed: ${throwable.message}", throwable)
+        }
+        _errorState.value = ErrorMapper.toFriendlyMessage(throwable)
     }
 
     override fun clearError() {

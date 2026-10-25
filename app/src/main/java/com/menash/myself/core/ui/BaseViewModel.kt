@@ -1,5 +1,6 @@
 package com.menash.myself.core.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
@@ -11,11 +12,11 @@ import kotlinx.coroutines.launch
 
 /**
  * Shared base ViewModel providing [safeLaunch] and [handleException] to route
- * action/flow errors into [errorState] and [ErrorReporter] while always rethrowing
- * [CancellationException].
+ * action/flow errors into friendly Hebrew [errorState] and [ErrorReporter] while
+ * always rethrowing [CancellationException] and propagating JVM [Error]s.
  */
 abstract class BaseViewModel(
-    protected val errorReporter: ErrorReporter? = null
+    protected val errorReporter: ErrorReporter
 ) : ViewModel() {
 
     protected val _errorState = MutableStateFlow<String?>(null)
@@ -23,19 +24,21 @@ abstract class BaseViewModel(
 
     open fun clearError() {
         _errorState.value = null
-        errorReporter?.clearError()
+        errorReporter.clearError()
     }
 
-    protected fun handleException(action: String, e: Throwable) {
-        if (e is CancellationException) throw e
-        val msg = e.localizedMessage ?: e.message ?: "שגיאה ב-$action"
-        _errorState.value = msg
-        errorReporter?.reportError(action, e)
+    protected fun handleException(action: String, e: Exception) {
+        runCatching {
+            Log.e("BaseViewModel", "Action '$action' failed with technical error: ${e.message}", e)
+        }
+        val friendlyMessage = ErrorMapper.toFriendlyMessage(e)
+        _errorState.value = friendlyMessage
+        errorReporter.reportError(action, e)
     }
 
     protected fun safeLaunch(
         action: String,
-        onError: (Throwable) -> Unit = {},
+        onError: (Exception) -> Unit = {},
         block: suspend () -> Unit
     ) {
         viewModelScope.launch {
@@ -43,9 +46,11 @@ abstract class BaseViewModel(
                 block()
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Throwable) {
+            } catch (e: Exception) {
                 handleException(action, e)
                 onError(e)
+            } catch (t: Throwable) {
+                throw t
             }
         }
     }

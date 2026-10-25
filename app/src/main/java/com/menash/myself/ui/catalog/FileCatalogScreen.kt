@@ -31,6 +31,8 @@ import com.menash.myself.core.domain.util.CsvParser
 import com.menash.myself.feature.importcatalog.FileCatalogViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 data class FileTypeItem(
     val title: String,
     val description: String,
@@ -41,50 +43,53 @@ data class FileTypeItem(
     val isPhase2: Boolean = false
 )
 
-private val defaultCatalogItems = listOf(
-    FileTypeItem(
-        title = "קובץ חלומות ויעדים (Dreams CSV)",
-        description = "מייבא רשימות קניות לבית, טיסות משפחה או רעיונות לפתח.",
-        feedsModule = "חלומות ורשימות",
-        targetType = "dreams",
-        sampleTemplateCsv = "title,list,cost,saved,next_action,space\nספה לסלון,לבית,4500,0,למדוד סלון,משותף\nחופשה באיטליה,טיסות משפחה,12000,2000,לבדוק תאריכים,משותף",
-        targetFields = listOf("כותרת חלום", "רשימה", "עלות משוערת", "סכום שנחסך", "צעד הבא", "מרחב")
-    ),
-    FileTypeItem(
-        title = "קובץ משימות (Tasks CSV)",
-        description = "מייבא משימות עם פעולה ו-Next Action מוגדר.",
-        feedsModule = "משימות יומיות",
-        targetType = "tasks",
-        sampleTemplateCsv = "task,next_action,date,space\nלהזמין טכנאי תמי 4,להתקשר לשירות לקוחות,28/10/2026,משותף\nלסדר חשבוניות רו\"ח,לפתוח תיקיית הורדות,30/10/2026,שלי",
-        targetFields = listOf("כותרת משימה", "צעד הבא", "תאריך יעד", "מרחב (שלי/של אשתי/משותף)")
-    ),
-    FileTypeItem(
-        title = "קובץ מחשבונים (רכבים, מנויים, פנסיה)",
-        description = "טבלאות מהמחשבונים הקיימים באפליקציה.",
-        feedsModule = "מחשבונים פיננסיים",
-        targetType = "calculators",
-        sampleTemplateCsv = "Name,PurchasePrice,Resale5Yr,YearlyEnergy,Insurance\nטויוטה קורולה,148000,88000,7200,4800",
-        targetFields = listOf("דגם רכב", "מחיר קנייה", "מכירה בעוד 5 שנים")
-    ),
-    FileTypeItem(
-        title = "ייצוא תנועות עו״ש בנקאי [שלב 2]",
-        description = "קובץ תנועות בנקאי לסיווג הוצאות ותזרים מזומנים חיובי.",
-        feedsModule = "תזרים פיננסי (Phase 2)",
-        targetType = "bank_phase2",
-        sampleTemplateCsv = "תאריך,תיאור,חובה,זכות,יתרה\n24/10/2026,סופרמרקט,450,,12500",
-        targetFields = listOf("תאריך", "תיאור", "סכום"),
-        isPhase2 = true
-    ),
-    FileTypeItem(
-        title = "פירוט עסקאות כרטיס אשראי [שלב 2]",
-        description = "קובץ פירוט כרטיסי אשראי חודשיים לבקרת הוצאות המשק.",
-        feedsModule = "תקציב אשראי (Phase 2)",
-        targetType = "credit_phase2",
-        sampleTemplateCsv = "תאריך,שם בית עסק,סכום חיוב,קטגוריה\n24/10/2026,דלק,320,רכב",
-        targetFields = listOf("תאריך", "שם עסק", "סכום"),
-        isPhase2 = true
+@Composable
+private fun getCatalogItems(): List<FileTypeItem> {
+    return listOf(
+        FileTypeItem(
+            title = stringResource(R.string.ui_dreams_221),
+            description = stringResource(R.string.ui_str_202),
+            feedsModule = stringResource(R.string.ui_str_233),
+            targetType = "dreams",
+            sampleTemplateCsv = "title,list,cost,saved,next_action,space\nספה לסלון,לבית,4500,0,למדוד סלון,משותף\nחופשה באיטליה,טיסות משפחה,12000,2000,לבדוק תאריכים,משותף",
+            targetFields = listOf("כותרת חלום", "רשימה", "עלות משוערת", "סכום שנחסך", "צעד הבא", "מרחב")
+        ),
+        FileTypeItem(
+            title = stringResource(R.string.ui_tasks_csv_228),
+            description = stringResource(R.string.ui_str_195),
+            feedsModule = stringResource(R.string.ui_str_230),
+            targetType = "tasks",
+            sampleTemplateCsv = "task,next_action,date,space\nלהזמין טכנאי,להתקשר לשירות לקוחות,28/10/2026,משותף",
+            targetFields = listOf("כותרת משימה", "צעד הבא", "תאריך", "מרחב")
+        ),
+        FileTypeItem(
+            title = stringResource(R.string.ui_str_197),
+            description = stringResource(R.string.ui_str_235),
+            feedsModule = stringResource(R.string.ui_str_218),
+            targetType = "calculators",
+            sampleTemplateCsv = "Name,PurchasePrice,Resale5Yr,YearlyEnergy,Insurance\nטויוטה,148000,88000,7200,4800",
+            targetFields = listOf("דגם רכב", "מחיר קנייה", "מכירה בעוד 5 שנים")
+        ),
+        FileTypeItem(
+            title = stringResource(R.string.ui_str_209),
+            description = stringResource(R.string.ui_str_236),
+            feedsModule = stringResource(R.string.ui_phase_2_226),
+            targetType = "bank_phase2",
+            sampleTemplateCsv = "תאריך,תיאור,חובה,זכות,יתרה\n24/10/2026,סופרמרקט,450,,12500",
+            targetFields = listOf("תאריך", "תיאור", "סכום"),
+            isPhase2 = true
+        ),
+        FileTypeItem(
+            title = stringResource(R.string.ui_str_237),
+            description = stringResource(R.string.ui_str_234),
+            feedsModule = stringResource(R.string.ui_phase_2_207),
+            targetType = "credit_phase2",
+            sampleTemplateCsv = "תאריך,שם בית עסק,סכום חיוב,קטגוריה\n24/10/2026,דלק,320,רכב",
+            targetFields = listOf("תאריך", "שם עסק", "סכום"),
+            isPhase2 = true
+        )
     )
-)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -103,6 +108,7 @@ fun FileCatalogScreen(onBack: () -> Unit) {
     var currentImportType by remember { mutableStateOf<FileTypeItem?>(null) }
     var showCsvMapping by remember { mutableStateOf(false) }
     var importedRows by remember { mutableStateOf<List<List<String>>>(emptyList()) }
+    val catalogItems = getCatalogItems()
 
     val csvPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
@@ -111,7 +117,7 @@ fun FileCatalogScreen(onBack: () -> Unit) {
             if (importedRows.isNotEmpty()) {
                 showCsvMapping = true
             } else {
-                Toast.makeText(context, "הקובץ שנבחר ריק", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.ui_str_224), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -119,10 +125,10 @@ fun FileCatalogScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("קטלוג קבצים — מה אפשר להעלות", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = { Text(stringResource(R.string.ui_str_200), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("catalog_back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -143,20 +149,20 @@ fun FileCatalogScreen(onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     item { CatalogIntroBanner() }
-                    items(defaultCatalogItems) { item ->
+                    items(catalogItems) { item ->
                         CatalogItemCard(
                             item = item,
                             onDownloadTemplate = {
                                 val sendIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/csv"
                                     putExtra(Intent.EXTRA_TEXT, item.sampleTemplateCsv)
-                                    putExtra(Intent.EXTRA_SUBJECT, "תבנית ${item.title}.csv")
+                                    putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.ui_itemtitlecsv_231, item.title))
                                 }
-                                context.startActivity(Intent.createChooser(sendIntent, "שתף / שמור תבנית CSV"))
+                                context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.ui_csv_201)))
                             },
                             onUploadFile = {
                                 if (item.isPhase2) {
-                                    Toast.makeText(context, "פיצ'ר זה ייפתח בשלב 2 של האפליקציה!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.ui_str_211), Toast.LENGTH_SHORT).show()
                                 } else {
                                     currentImportType = item
                                     csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*"))
@@ -185,7 +191,7 @@ fun FileCatalogScreen(onBack: () -> Unit) {
                     importedRows = importedRows,
                     mapping = mapping
                 ) { count ->
-                    Toast.makeText(context, "יובאו $count רשומות בהצלחה!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.ui_count_208, count), Toast.LENGTH_SHORT).show()
                 }
                 showCsvMapping = false
                 currentImportType = null
@@ -205,8 +211,8 @@ private fun CatalogIntroBanner() {
             Icon(Icons.Default.UploadFile, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.width(10.dp))
             Column {
-                Text("ייבוא קובצי CSV בקלות", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text("הורד תבנית לדוגמה, מלא אותה והעלה ישירות לתוך המרחב הרצוי.", fontSize = 12.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_csv_239), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(stringResource(R.string.ui_str_199), fontSize = 12.sp, color = Color.DarkGray)
             }
         }
     }
@@ -232,11 +238,11 @@ private fun CatalogItemCard(
             ) {
                 Text(item.title, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 if (item.isPhase2) {
-                    SuggestionChip(onClick = {}, label = { Text("בקרוב — שלב 2", fontSize = 10.sp) })
+                    SuggestionChip(onClick = {}, label = { Text(stringResource(R.string.ui_2_232), fontSize = 10.sp) })
                 }
             }
             Text(item.description, fontSize = 12.sp, color = Color.DarkGray)
-            Text("מזין את: ${item.feedsModule}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
+            Text(stringResource(R.string.ui_itemfeedsmodule_227, item.feedsModule), fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
             HorizontalDivider(color = Color(0xFFF1F5F9))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedButton(
@@ -246,7 +252,7 @@ private fun CatalogItemCard(
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("הורד תבנית", fontSize = 12.sp)
+                    Text(stringResource(R.string.ui_str_205), fontSize = 12.sp)
                 }
                 Button(
                     onClick = onUploadFile,
@@ -256,7 +262,7 @@ private fun CatalogItemCard(
                 ) {
                     Icon(Icons.Default.FileUpload, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("העלה קובץ", fontSize = 12.sp)
+                    Text(stringResource(R.string.ui_str_229), fontSize = 12.sp)
                 }
             }
         }

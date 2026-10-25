@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CsvMappingDialog(
@@ -44,9 +46,9 @@ fun CsvMappingDialog(
         onDismissRequest = onDismiss,
         title = {
             Column {
-                Text("ייבוא נתונים מקובץ CSV", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(stringResource(R.string.ui_csv_414), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Text(
-                    "נמצאו ${headers.size} עמודות. התאם את העמודות בקובץ לשדות האפליקציה:",
+                    stringResource(R.string.ui_headerssize_412, headers.size),
                     fontSize = 13.sp,
                     color = Color.DarkGray
                 )
@@ -66,7 +68,7 @@ fun CsvMappingDialog(
                     val selectedLabel = if (selectedIdx != null && selectedIdx in headers.indices) {
                         headers[selectedIdx]
                     } else {
-                        "בחר עמודה מתאימה..."
+                        stringResource(R.string.ui_str_409)
                     }
 
                     Card(
@@ -103,7 +105,7 @@ fun CsvMappingDialog(
                                     onDismissRequest = { expanded = false }
                                 ) {
                                     DropdownMenuItem(
-                                        text = { Text("— ללא מיפוי —", color = Color.Gray) },
+                                        text = { Text(stringResource(R.string.ui_str_413), color = Color.Gray) },
                                         onClick = {
                                             mapping.remove(field)
                                             expanded = false
@@ -127,7 +129,7 @@ fun CsvMappingDialog(
                 // Table preview of first rows
                 if (previewRows.isNotEmpty()) {
                     item {
-                        Text("תצוגה מקדימה של השורות הראשונות:", fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                        Text(stringResource(R.string.ui_str_410), fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
                         val scrollState = rememberScrollState()
                         Card(
                             modifier = Modifier
@@ -172,7 +174,7 @@ fun CsvMappingDialog(
                 onClick = { onConfirmMap(mapping.toMap()) },
                 modifier = Modifier.testTag("confirm_import_button")
             ) {
-                Text("ייבא נתונים")
+                Text(stringResource(R.string.ui_str_411))
             }
         },
         dismissButton = {
@@ -180,7 +182,7 @@ fun CsvMappingDialog(
                 onClick = onDismiss,
                 modifier = Modifier.testTag("cancel_import_button")
             ) {
-                Text("ביטול")
+                Text(stringResource(R.string.ui_str_92))
             }
         }
     )

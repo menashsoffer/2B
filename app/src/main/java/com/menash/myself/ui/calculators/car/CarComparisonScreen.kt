@@ -36,6 +36,8 @@ import com.menash.myself.core.domain.util.CsvParser
 import com.menash.myself.feature.calculators.car.CarCalculatorViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarComparisonScreen(
@@ -71,7 +73,7 @@ fun CarComparisonScreen(
         topBar = {
             CarComparisonTopBar(
                 onBack = onBack,
-                onAddCar = { viewModel.insertCar(createDefaultCar(carList.isEmpty())) },
+                onAddCar = { viewModel.insertCar(createDefaultCar(context, carList.isEmpty())) },
                 onImportCsv = { csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*")) },
                 onExportCsv = { shareCarsCsv(context, carList) }
             )
@@ -87,7 +89,7 @@ fun CarComparisonScreen(
                 uiState = uiState,
                 baselineCar = baselineCar,
                 onRetry = { viewModel.clearError() },
-                onAddFirstCar = { viewModel.insertCar(createDefaultCar(true)) },
+                onAddFirstCar = { viewModel.insertCar(createDefaultCar(context, true)) },
                 onUpdateCar = { viewModel.updateCar(it) },
                 onDeleteCar = { viewModel.deleteCar(it) },
                 onSetBaseline = { viewModel.setBaselineCar(it.id) },
@@ -111,12 +113,12 @@ fun CarComparisonScreen(
         CsvMappingDialog(
             headers = importedCsvRows.first(),
             previewRows = importedCsvRows.drop(1),
-            targetFields = listOf("דגם רכב", "מחיר קנייה", "מכירה (5 שנים)", "אנרגיה שנתית", "ביטוח שנתי", "טיפולים", "צמיגים ל-5 שנים"),
+            targetFields = listOf(stringResource(R.string.ui_str_47), stringResource(R.string.ui_str_66), stringResource(R.string.ui_5_71), stringResource(R.string.ui_str_74), stringResource(R.string.ui_str_68), stringResource(R.string.ui_str_80), stringResource(R.string.ui_5_70)),
             onDismiss = { showCsvMapping = false },
             onConfirmMap = { mapping ->
-                val newCars = parseMappedCars(importedCsvRows.drop(1), mapping)
+                val newCars = parseMappedCars(context, importedCsvRows.drop(1), mapping)
                 viewModel.insertCars(newCars)
-                Toast.makeText(context, "יובאו ${newCars.size} רכבים בהצלחה!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.ui_newcarssize_61, newCars.size), Toast.LENGTH_SHORT).show()
                 showCsvMapping = false
             }
         )
@@ -132,21 +134,21 @@ private fun CarComparisonTopBar(
     onExportCsv: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("השוואת רכבים — עלות 5 שנים", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        title = { Text(stringResource(R.string.ui_5_63), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
         navigationIcon = {
             IconButton(onClick = onBack, modifier = Modifier.testTag("car_back_button")) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
             }
         },
         actions = {
             IconButton(onClick = onAddCar, modifier = Modifier.testTag("add_car_top_action")) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף רכב")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_str_65))
             }
             IconButton(onClick = onImportCsv, modifier = Modifier.testTag("car_import_csv_button")) {
-                Icon(Icons.Default.UploadFile, contentDescription = "ייבוא CSV")
+                Icon(Icons.Default.UploadFile, contentDescription = stringResource(R.string.ui_csv_72))
             }
             IconButton(onClick = onExportCsv, modifier = Modifier.testTag("car_export_csv_button")) {
-                Icon(Icons.Default.Share, contentDescription = "ייצוא CSV")
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.ui_csv_64))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -173,10 +175,10 @@ private fun CarComparisonContent(
         is UiState.Loading -> LoadingState()
         is UiState.Error -> ErrorState(message = uiState.message, onRetry = onRetry)
         is UiState.Empty -> EmptyState(
-            title = "אין רכבים להשוואה",
-            description = "הוסף רכב ראשון כדי לחשב ולהשוות עלויות ל-5 שנים.",
+            title = stringResource(R.string.ui_str_73),
+            description = stringResource(R.string.ui_str_69),
             icon = Icons.Default.DirectionsCar,
-            actionLabel = "הוסף רכב",
+            actionLabel = stringResource(R.string.ui_str_65),
             onActionClick = onAddFirstCar
         )
         is UiState.Content -> {
@@ -205,8 +207,8 @@ private fun CarComparisonContent(
     }
 }
 
-private fun createDefaultCar(isFirst: Boolean): Car = Car(
-    name = "רכב חדש להשוואה",
+private fun createDefaultCar(context: android.content.Context, isFirst: Boolean): Car = Car(
+    name = context.getString(R.string.ui_str_76),
     purchasePrice = Money.fromShekels(140000.0),
     resaleValueAfter5Years = Money.fromShekels(75000.0),
     energyCostYearly = Money.fromShekels(7200.0),
@@ -219,7 +221,18 @@ private fun createDefaultCar(isFirst: Boolean): Car = Car(
 )
 
 private fun shareCarsCsv(context: android.content.Context, cars: List<Car>) {
-    val headers = listOf("דגם רכב", "מחיר קנייה", "מכירה (5 שנים)", "אנרגיה שנתית", "ביטוח שנתי", "איתוראן", "טיפולים", "טסט", "צמיגים ל-5 שנים", "עלות חודשית נטו")
+    val headers = listOf(
+        context.getString(R.string.ui_str_47),
+        context.getString(R.string.ui_str_66),
+        context.getString(R.string.ui_5_71),
+        context.getString(R.string.ui_str_74),
+        context.getString(R.string.ui_str_68),
+        context.getString(R.string.ui_str_79),
+        context.getString(R.string.ui_str_80),
+        context.getString(R.string.ui_str_78),
+        context.getString(R.string.ui_5_70),
+        context.getString(R.string.ui_str_62)
+    )
     val rows = cars.map {
         listOf(
             it.name,
@@ -238,21 +251,21 @@ private fun shareCarsCsv(context: android.content.Context, cars: List<Car>) {
     val sendIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/csv"
         putExtra(Intent.EXTRA_TEXT, csv)
-        putExtra(Intent.EXTRA_SUBJECT, "השוואת רכבים.csv")
+        putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.ui_csv_77))
     }
-    context.startActivity(Intent.createChooser(sendIntent, "שתף נתוני רכבים ב-CSV"))
+    context.startActivity(Intent.createChooser(sendIntent, context.getString(R.string.ui_csv_75)))
 }
 
-private fun parseMappedCars(dataRows: List<List<String>>, mapping: Map<String, Int>): List<Car> =
+private fun parseMappedCars(context: android.content.Context, dataRows: List<List<String>>, mapping: Map<String, Int>): List<Car> =
     dataRows.mapNotNull { row ->
         try {
-            val name = row.getOrNull(mapping["דגם רכב"] ?: -1) ?: "רכב מיובא"
-            val purchase = row.getOrNull(mapping["מחיר קנייה"] ?: -1)?.toDoubleOrNull() ?: 120000.0
-            val resale = row.getOrNull(mapping["מכירה (5 שנים)"] ?: -1)?.toDoubleOrNull() ?: 60000.0
-            val energy = row.getOrNull(mapping["אנרגיה שנתית"] ?: -1)?.toDoubleOrNull() ?: 7000.0
-            val insurance = row.getOrNull(mapping["ביטוח שנתי"] ?: -1)?.toDoubleOrNull() ?: 4500.0
-            val maintenance = row.getOrNull(mapping["טיפולים"] ?: -1)?.toDoubleOrNull() ?: 1500.0
-            val tires = row.getOrNull(mapping["צמיגים ל-5 שנים"] ?: -1)?.toDoubleOrNull() ?: 2000.0
+            val name = row.getOrNull(mapping[context.getString(R.string.ui_str_47)] ?: -1) ?: context.getString(R.string.ui_str_67)
+            val purchase = row.getOrNull(mapping[context.getString(R.string.ui_str_66)] ?: -1)?.toDoubleOrNull() ?: 120000.0
+            val resale = row.getOrNull(mapping[context.getString(R.string.ui_5_71)] ?: -1)?.toDoubleOrNull() ?: 60000.0
+            val energy = row.getOrNull(mapping[context.getString(R.string.ui_str_74)] ?: -1)?.toDoubleOrNull() ?: 7000.0
+            val insurance = row.getOrNull(mapping[context.getString(R.string.ui_str_68)] ?: -1)?.toDoubleOrNull() ?: 4500.0
+            val maintenance = row.getOrNull(mapping[context.getString(R.string.ui_str_80)] ?: -1)?.toDoubleOrNull() ?: 1500.0
+            val tires = row.getOrNull(mapping[context.getString(R.string.ui_5_70)] ?: -1)?.toDoubleOrNull() ?: 2000.0
             Car(
                 name = name,
                 purchasePrice = Money.fromShekels(purchase),

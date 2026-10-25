@@ -23,6 +23,8 @@ import com.menash.myself.core.domain.model.DreamStatus
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun DreamCard(
     dream: Dream,
@@ -32,7 +34,7 @@ fun DreamCard(
     onOpenAppIdea: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val isAppIdea = dream.list == "פיתוח ואפליקציות"
+    val isAppIdea = dream.list == stringResource(R.string.ui_str_307)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -81,7 +83,7 @@ private fun DreamCardHeader(
             }
         }
         IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Delete, contentDescription = "מחק", tint = Color.LightGray)
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ui_str_260), tint = Color.LightGray)
         }
     }
 }
@@ -124,7 +126,7 @@ private fun DreamSavingsProgressSection(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                "נחסך: ₪${fmt.format(dream.savedAmount.shekels.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.shekels.toInt())}",
+                stringResource(R.string.ui_fmtformatdreamsavedamountshekelstoint_fmtformatdreamestimatedcostshekelstoint_343, fmt.format(dream.savedAmount.shekels.toInt()), fmt.format(dream.estimatedCost.shekels.toInt())),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -179,7 +181,7 @@ private fun DreamAppIdeaButton(
         Icon(Icons.Default.Lightbulb, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(
-            if (dream.appIdeaQuestions.isNotEmpty()) "ערוך תבנית 7 שאלות לרעיון" else "מלא תבנית 7 שאלות לרעיון",
+            if (dream.appIdeaQuestions.isNotEmpty()) stringResource(R.string.ui_7_341) else stringResource(R.string.ui_7_342),
             color = MaterialTheme.colorScheme.secondary,
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp

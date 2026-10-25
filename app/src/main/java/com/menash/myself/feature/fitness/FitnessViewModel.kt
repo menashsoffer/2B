@@ -17,12 +17,12 @@ import kotlinx.coroutines.flow.stateIn
 
 class FitnessViewModel(
     private val fitnessRepository: FitnessRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val todayFitness: StateFlow<FitnessEntry?> = fitnessRepository.observeTodayFitness()
         .catch { e ->
-            handleException("observeTodayFitness", e)
+            if (e is Exception) handleException("observeTodayFitness", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -30,7 +30,7 @@ class FitnessViewModel(
     val weeklyLogs: StateFlow<List<FitnessEntry>?> = fitnessRepository.observeWeeklyFitness()
         .map<List<FitnessEntry>, List<FitnessEntry>?> { it }
         .catch { e ->
-            handleException("observeWeeklyFitness", e)
+            if (e is Exception) handleException("observeWeeklyFitness", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -53,7 +53,7 @@ class FitnessViewModel(
     companion object {
         fun factory(
             fitnessRepository: FitnessRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

@@ -14,6 +14,8 @@ import androidx.compose.ui.unit.sp
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.SpaceSelection
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun QuickCaptureDialog(
     onDismiss: () -> Unit,
@@ -26,7 +28,7 @@ fun QuickCaptureDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "לכידה מהירה (Inbox)",
+                text = stringResource(R.string.ui_inbox_254),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
@@ -53,12 +55,12 @@ fun QuickCaptureDialog(
             ) {
                 Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("שמור ל-Inbox")
+                Text(stringResource(R.string.ui_inbox_256))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("סגור")
+                Text(stringResource(R.string.ui_str_2))
             }
         }
     )
@@ -73,14 +75,14 @@ private fun QuickCaptureFormBody(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
-            text = "זרוק לפה כל מחשבה, משימה או רעיון בלי לחשוב. נמיין מאוחר יותר בלחיצה אחת.",
+            text = stringResource(R.string.ui_str_258),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
-            placeholder = { Text("מה עולה לך בראש עכשיו?") },
+            placeholder = { Text(stringResource(R.string.ui_str_257)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 100.dp)
@@ -89,7 +91,7 @@ private fun QuickCaptureFormBody(
             maxLines = 4
         )
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("שיוך מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.ui_str_255), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)

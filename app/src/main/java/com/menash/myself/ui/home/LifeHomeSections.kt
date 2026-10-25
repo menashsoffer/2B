@@ -24,6 +24,8 @@ import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.FitnessEntry
 import com.menash.myself.core.domain.model.Task
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun HomeTop3TasksSection(
     top3Tasks: List<Task>,
@@ -33,9 +35,9 @@ fun HomeTop3TasksSection(
     onOpenTasks: () -> Unit
 ) {
     HomeSectionHeader(
-        title = "3 המשימות של היום (Top 3)",
-        subtitle = "רק מה שקריטי היום, ללא הסחות דעת",
-        actionText = "כל המשימות ($activeTasksCount)",
+        title = stringResource(R.string.ui_3_377),
+        subtitle = stringResource(R.string.ui_str_371),
+        actionText = stringResource(R.string.ui_activetaskscount_352, activeTasksCount),
         onActionClick = onOpenTasks
     )
     if (top3Tasks.isEmpty()) {
@@ -47,7 +49,7 @@ fun HomeTop3TasksSection(
             Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Checklist, contentDescription = null, tint = Color.Gray)
                 Spacer(modifier = Modifier.width(10.dp))
-                Text("לא נבחרו משימות Top 3 להיום. לחץ לבחירת משימות ממוקדות.", fontSize = 12.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_top_368), fontSize = 12.sp, color = Color.DarkGray)
             }
         }
     } else {
@@ -72,9 +74,9 @@ fun HomeTodayCalendarSection(
     onOpenCalendar: () -> Unit
 ) {
     HomeSectionHeader(
-        title = "אירועים ביומן להיום",
-        subtitle = "מתוך יומן המכשיר",
-        actionText = "יומן מלא",
+        title = stringResource(R.string.ui_str_363),
+        subtitle = stringResource(R.string.ui_str_354),
+        actionText = stringResource(R.string.ui_str_367),
         onActionClick = onOpenCalendar
     )
     if (!hasCalendarPermission) {
@@ -87,7 +89,7 @@ fun HomeTodayCalendarSection(
                 Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF2563EB))
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    "אפשר גישה ליומן כדי לראות פגישות להיום מול העיניים.",
+                    stringResource(R.string.ui_str_379),
                     fontSize = 12.sp,
                     color = Color(0xFF1E3A8A),
                     modifier = Modifier.weight(1f)
@@ -98,12 +100,12 @@ fun HomeTodayCalendarSection(
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB))
                 ) {
-                    Text("אפשר", fontSize = 11.sp)
+                    Text(stringResource(R.string.ui_str_355), fontSize = 11.sp)
                 }
             }
         }
     } else if (calendarEvents.isEmpty()) {
-        Text("היום פנוי מאירועים ביומן", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(vertical = 4.dp))
+        Text(stringResource(R.string.ui_str_380), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(vertical = 4.dp))
     } else {
         Column(modifier = Modifier.padding(top = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             calendarEvents.take(2).forEach { event ->
@@ -117,7 +119,7 @@ fun HomeTodayCalendarSection(
                     Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = if (event.isAllDay) "כל היום" else "${event.startTime} - ${event.endTime}",
+                        text = if (event.isAllDay) stringResource(R.string.ui_str_366) else "${event.startTime} - ${event.endTime}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp,
                         color = MaterialTheme.colorScheme.primary
@@ -138,9 +140,9 @@ fun HomeDailyFitnessSection(
     onOpenFitness: () -> Unit
 ) {
     HomeSectionHeader(
-        title = "כושר ותנועה יומית",
-        subtitle = if (streakDays > 0) "רצף של $streakDays ימים פעילים!" else "בדיקה יומית מהירה",
-        actionText = "מעקב שבועי",
+        title = stringResource(R.string.ui_str_356),
+        subtitle = if (streakDays > 0) stringResource(R.string.ui_streakdays_374, streakDays) else stringResource(R.string.ui_str_373),
+        actionText = stringResource(R.string.ui_str_357),
         onActionClick = onOpenFitness
     )
     val didMove = todayFitness?.moved == true
@@ -160,20 +162,21 @@ fun HomeDailyFitnessSection(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (didMove) "הזזת את הגוף היום! (${todayFitness?.minutes ?: 0} דק׳ ${todayFitness?.type ?: ""})" else "האם הזזת את הגוף היום?",
+                    text = if (didMove) stringResource(R.string.ui_str_359, todayFitness?.minutes ?: 0) else stringResource(R.string.ui_str_360),
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = if (didMove) Color(0xFF15803D) else Color.DarkGray
                 )
-                Text(if (didMove) "כל הכבוד, המשך כך!" else "לחץ לסימון מהיר של הפעילות", fontSize = 11.sp, color = Color.Gray)
+                Text(if (didMove) stringResource(R.string.ui_str_358) else stringResource(R.string.ui_str_349), fontSize = 11.sp, color = Color.Gray)
             }
+            val defaultFitnessType = stringResource(R.string.ui_str_298)
             Switch(
                 checked = didMove,
                 onCheckedChange = { checked ->
                     onSaveTodayFitness(
                         checked,
                         if (checked && (todayFitness?.minutes ?: 0) == 0) 30 else (todayFitness?.minutes ?: 0),
-                        todayFitness?.type ?: "הליכה"
+                        todayFitness?.type ?: defaultFitnessType
                     )
                 },
                 modifier = Modifier.testTag("home_fitness_quick_switch")
@@ -191,9 +194,9 @@ fun HomeFeaturedDreamAndQuickNavSection(
     onNavigate: (String) -> Unit
 ) {
     HomeSectionHeader(
-        title = "חלום ממוקד",
-        subtitle = "חלום אחד בתהליך חסכון או תכנון",
-        actionText = "כל החלומות ($dreamsCount)",
+        title = stringResource(R.string.ui_str_350),
+        subtitle = stringResource(R.string.ui_str_351),
+        actionText = stringResource(R.string.ui_dreamscount_370, dreamsCount),
         onActionClick = { onNavigate("dreams") }
     )
     if (featuredDream == null) {
@@ -205,17 +208,17 @@ fun HomeFeaturedDreamAndQuickNavSection(
             Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.StarBorder, contentDescription = null, tint = Color.Gray)
                 Spacer(modifier = Modifier.width(10.dp))
-                Text("אין כרגע חלום מוגדר. לחץ להוספת חלום או יעד משפחתי.", fontSize = 12.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_str_365), fontSize = 12.sp, color = Color.DarkGray)
             }
         }
     } else {
         FeaturedDreamCard(dream = featuredDream, onClick = { onNavigate("dreams") })
     }
-    Text("גישה מהירה לכל התחומים", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
+    Text(stringResource(R.string.ui_str_375), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        QuickNavButton(Icons.Default.Calculate, "המחשבונים שלי", "8", Modifier.weight(1f)) { onNavigate("calculators") }
-        QuickNavButton(Icons.Default.FolderOpen, "קטלוג וקבצים", "CSV", Modifier.weight(1f)) { onNavigate("catalog") }
-        QuickNavButton(Icons.AutoMirrored.Filled.ListAlt, "חלומות ורשימות", "$dreamsCount", Modifier.weight(1f)) { onNavigate("dreams") }
+        QuickNavButton(Icons.Default.Calculate, stringResource(R.string.app_name), "8", Modifier.weight(1f)) { onNavigate("calculators") }
+        QuickNavButton(Icons.Default.FolderOpen, stringResource(R.string.ui_str_361), "CSV", Modifier.weight(1f)) { onNavigate("catalog") }
+        QuickNavButton(Icons.AutoMirrored.Filled.ListAlt, stringResource(R.string.ui_str_233), "$dreamsCount", Modifier.weight(1f)) { onNavigate("dreams") }
     }
     HomeRoadmapCard(roadmapExpanded = roadmapExpanded, onToggleRoadmap = onToggleRoadmap)
 }
@@ -237,15 +240,15 @@ private fun HomeRoadmapCard(roadmapExpanded: Boolean, onToggleRoadmap: () -> Uni
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Upcoming, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("מפת דרכים — בקרוב (שלבים 2 ו-3)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Text(stringResource(R.string.ui_str_364), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 }
                 Icon(if (roadmapExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, contentDescription = null, tint = Color.Gray)
             }
             AnimatedVisibility(visible = roadmapExpanded) {
                 Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    RoadmapItem("שלב 2 — כספים וחשבונות", "תזרים מזומנים חודשי אוטומטי מייבוא בנקים ואשראי, חלוקה לקטגוריות, ניהול הוראות קבע, ויעד יתרה חיובית מקושר לחיסכון החלומות.")
-                    RoadmapItem("שלב 2 — בריאות", "סנכרון נתוני הליכה ופעילות אוטומטית מחיישני הטלפון לתוך המעקב היומי.")
-                    RoadmapItem("שלב 3 — תפעול החיים", "ארכיון מסמכים ותעודות אחריות, ניהול מלאי ביתי וציוד, ביקורת מנויים תקופתית, ותחזוקה שוטפת של הבית והרכב.")
+                    RoadmapItem(stringResource(R.string.ui_2_378), stringResource(R.string.ui_str_376))
+                    RoadmapItem(stringResource(R.string.ui_2_353), stringResource(R.string.ui_str_369))
+                    RoadmapItem(stringResource(R.string.ui_3_372), stringResource(R.string.ui_str_362))
                 }
             }
         }

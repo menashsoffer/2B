@@ -24,6 +24,8 @@ import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.core.domain.util.DateInputParser
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun TasksFilterBar(
     visibilityFilter: VisibilityFilter,
@@ -33,13 +35,13 @@ fun TasksFilterBar(
         FilterChip(
             selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
             onClick = { onFilterChange(VisibilityFilter.MINE_AND_BOTH) },
-            label = { Text("שלי + של שנינו", fontSize = 11.sp) },
+            label = { Text(stringResource(R.string.ui_str_283), fontSize = 11.sp) },
             modifier = Modifier.testTag("filter_mine_and_both")
         )
         FilterChip(
             selected = visibilityFilter == VisibilityFilter.ALL,
             onClick = { onFilterChange(VisibilityFilter.ALL) },
-            label = { Text("הצג הכל", fontSize = 11.sp) },
+            label = { Text(stringResource(R.string.ui_str_289), fontSize = 11.sp) },
             modifier = Modifier.testTag("filter_all")
         )
     }
@@ -65,12 +67,12 @@ fun Top3FocusCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("⭐ Top 3 של היום (מיקוד עליון)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(stringResource(R.string.ui_top_3_291), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Text("${tasks.size}/3", fontSize = 12.sp, color = Color.Gray)
             }
 
             if (tasks.isEmpty()) {
-                Text("טרם בחרת Top 3 להיום. סמן משימה כ-Top 3 כדי למנוע עומס.", fontSize = 12.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_top_3_284), fontSize = 12.sp, color = Color.DarkGray)
             } else {
                 tasks.forEach { task ->
                     TaskRow(
@@ -107,12 +109,12 @@ fun FiveBefore11Card(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("⚡ Five Before 11 (5 משימות קצרות עד 11:00)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(stringResource(R.string.ui_five_before_11_5_290), fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text("${tasks.size}/5", fontSize = 12.sp, color = Color.Gray)
             }
 
             if (tasks.isEmpty()) {
-                Text("משימות קצרות שתלויות רק בך שמסיימים בתחילת היום לתנופת עשייה.", fontSize = 11.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_str_285), fontSize = 11.sp, color = Color.DarkGray)
             } else {
                 tasks.forEach { task ->
                     TaskRow(
@@ -144,12 +146,12 @@ fun UndatedTasksNoticeCard(undatedCount: Int) {
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "יש $undatedCount משימות ללא תאריך יעד",
+                    stringResource(R.string.ui_undatedcount_286, undatedCount),
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     color = Color(0xFF78350F)
                 )
-                Text("משימה בלי תאריך יוצרת עומס שקט — קבע מועד או מחק.", fontSize = 11.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_str_288), fontSize = 11.sp, color = Color.DarkGray)
             }
         }
     }
@@ -240,7 +242,7 @@ private fun TaskRowBody(
                 Text(text = "• $dueDateDisplay", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
             } else if (!task.isDone && onScheduleClick != null) {
                 Text(
-                    text = "• ללא תאריך (קבע)",
+                    text = stringResource(R.string.ui_str_287),
                     fontSize = 10.sp,
                     color = Color(0xFFD97706),
                     modifier = Modifier.clickable { onScheduleClick() }
@@ -276,6 +278,6 @@ private fun TaskRowActions(
         }
     }
     IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-        Icon(Icons.Default.Delete, contentDescription = "מחק", tint = Color.LightGray, modifier = Modifier.size(16.dp))
+        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ui_str_260), tint = Color.LightGray, modifier = Modifier.size(16.dp))
     }
 }

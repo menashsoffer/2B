@@ -1,5 +1,7 @@
 package com.menash.myself.ui.calculators.car
 
+import android.content.Context
+import com.menash.myself.R
 import com.menash.myself.feature.calculators.car.domain.CarCostCalculator
 import com.menash.myself.feature.calculators.car.domain.EnergyCostInput
 import java.text.NumberFormat
@@ -44,6 +46,7 @@ object CarCalculationVerbatimHelpers {
      * Delegates pure numbers calculation to CarCostCalculator, then formats the UI string.
      */
     fun calculateBaselineDiffVerbatim(
+        context: Context,
         carNet5YearCost: Double,
         baselineNet5YearCost: Double,
         baselineCarName: String,
@@ -54,9 +57,9 @@ object CarCalculationVerbatimHelpers {
             baselineNet5YearCost = baselineNet5YearCost
         )
         val text = if (comparison.isSaving) {
-            "חיסכון של ₪${fmt.format(comparison.diffFromBaseline.toInt())} מול $baselineCarName (₪${comparison.diffMonthly}/חודש)"
+            context.getString(R.string.ui_fmtformatcomparisondifffrombaselinetoint_59, fmt.format(comparison.diffFromBaseline.toInt()), baselineCarName, comparison.diffMonthly)
         } else {
-            "יקר ב-₪${fmt.format((-comparison.diffFromBaseline).toInt())} מול $baselineCarName (₪${-comparison.diffMonthly}/חודש)"
+            context.getString(R.string.ui_fmtformatcomparisondifffrombaselinetoint_baselinecarname_58, fmt.format((-comparison.diffFromBaseline).toInt()), baselineCarName, -comparison.diffMonthly)
         }
         return BaselineDiffResult(
             diffFromBaseline = comparison.diffFromBaseline,

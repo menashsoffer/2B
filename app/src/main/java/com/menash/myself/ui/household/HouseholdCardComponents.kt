@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun UserProfileCard(displayName: String, email: String) {
     Card(
@@ -52,33 +54,33 @@ fun SpacesInfoCard() {
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
-                text = "3 המרחבים של הבית",
+                text = stringResource(R.string.ui_3_189),
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "לכל פריט באפליקציה יש שיוך ברור למרחב כדי למנוע עומס ובלאגן:",
+                text = stringResource(R.string.ui_str_187),
                 fontSize = 12.sp,
                 color = Color.DarkGray
             )
             SpaceInfoRow(
                 icon = Icons.Default.Person,
                 color = Color(0xFF2563EB),
-                title = "שלי",
-                desc = "משימות ופריטים שמיועדים עבורך."
+                title = stringResource(R.string.for_whom_mine),
+                desc = stringResource(R.string.ui_str_193)
             )
             SpaceInfoRow(
                 icon = Icons.Default.Favorite,
                 color = Color(0xFFEC4899),
-                title = "של אשתי",
-                desc = "משימות ופריטים שמיועדים עבור בת הזוג."
+                title = stringResource(R.string.ui_str_188),
+                desc = stringResource(R.string.ui_str_183)
             )
             SpaceInfoRow(
                 icon = Icons.Default.Groups,
                 color = Color(0xFF16A34A),
-                title = "של שנינו (משותף)",
-                desc = "משימות לבית, טיסות, קניות, וכל מה שמנוהל יחד."
+                title = stringResource(R.string.ui_str_190),
+                desc = stringResource(R.string.ui_str_191)
             )
         }
     }
@@ -102,13 +104,13 @@ fun PartnerInviteCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.GroupAdd, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("חיבור בן/בת הזוג לבית", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(stringResource(R.string.ui_str_186), fontWeight = FontWeight.Bold, fontSize = 15.sp)
             }
             if (!partnerEmail.isNullOrEmpty()) {
                 PartnerStatusBanner(partnerEmail = partnerEmail, isConnected = !partnerUid.isNullOrEmpty())
             }
             Text(
-                text = "הזן את כתובת ה-Google של אשתך. ברגע שהיא תתחבר לאפליקציה מחשבונה, היא תצטרף מיידית למשק הבית ותראה את כל הפריטים המשותפים.",
+                text = stringResource(R.string.ui_google_185),
                 fontSize = 12.sp,
                 color = Color.Gray,
                 lineHeight = 18.sp
@@ -116,7 +118,7 @@ fun PartnerInviteCard(
             OutlinedTextField(
                 value = partnerEmailInput,
                 onValueChange = onEmailChange,
-                label = { Text("אימייל Google של בת הזוג") },
+                label = { Text(stringResource(R.string.ui_google_182)) },
                 placeholder = { Text("wife@gmail.com") },
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
@@ -128,7 +130,7 @@ fun PartnerInviteCard(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().testTag("send_invite_button")
             ) {
-                Text("שלח הזמנה לחשבון Google")
+                Text(stringResource(R.string.ui_google_184))
             }
         }
     }
@@ -153,7 +155,7 @@ private fun PartnerStatusBanner(partnerEmail: String, isConnected: Boolean) {
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(
-                    text = if (isConnected) "מחובר/ת למשק הבית:" else "הזמנה ממתינה לחיבור:",
+                    text = if (isConnected) stringResource(R.string.ui_str_194) else stringResource(R.string.ui_str_192),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isConnected) Color(0xFF065F46) else Color(0xFF92400E)

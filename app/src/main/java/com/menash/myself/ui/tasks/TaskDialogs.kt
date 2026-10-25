@@ -15,6 +15,8 @@ import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.util.DateInputParser
 import java.time.LocalDate
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun CreateTaskDialog(
     onDismiss: () -> Unit,
@@ -29,36 +31,36 @@ fun CreateTaskDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("משימה חדשה", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.ui_str_274), fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("משימה (מתחילה בפועל, למשל: לקנות, לבדוק, לשלוח)") },
+                    label = { Text(stringResource(R.string.ui_str_265)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = nextAction,
                     onValueChange = { nextAction = it },
-                    label = { Text("צעד ראשון מיידי (Next Action)") },
+                    label = { Text(stringResource(R.string.ui_next_268)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = dueDateInput,
                     onValueChange = { dueDateInput = it },
-                    label = { Text("תאריך יעד (DD/MM/YYYY)") },
+                    label = { Text(stringResource(R.string.ui_ddmmyyyy_259)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isTop3, onCheckedChange = { isTop3 = it })
-                    Text("הגדר כ-Top 3 של היום", fontSize = 12.sp)
+                    Text(stringResource(R.string.ui_top_3_261), fontSize = 12.sp)
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = isFive, onCheckedChange = { isFive = it })
-                    Text("הגדר כ-Five Before 11", fontSize = 12.sp)
+                    Text(stringResource(R.string.ui_five_before_11_270), fontSize = 12.sp)
                 }
-                Text("מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.ui_str_263), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     SpaceSelection.entries.forEach { option ->
                         FilterChip(
@@ -87,11 +89,11 @@ fun CreateTaskDialog(
                 },
                 enabled = title.isNotBlank()
             ) {
-                Text("שמור משימה")
+                Text(stringResource(R.string.ui_str_272))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_str_92)) }
         }
     )
 }
@@ -105,25 +107,25 @@ fun ScheduleTaskDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("משימה ללא תאריך: קבע מועד או מחק", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+        title = { Text(stringResource(R.string.ui_str_271), fontWeight = FontWeight.Bold, fontSize = 16.sp) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("\"${task.title}\"", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text("משימות בלי מועד סופן להידחות לנצח. בחר מה לעשות:", fontSize = 12.sp)
+                Text(stringResource(R.string.ui_str_267), fontSize = 12.sp)
             }
         },
         confirmButton = {
             Button(onClick = { onSetDate(LocalDate.now()) }) {
-                Text("קבע להיום")
+                Text(stringResource(R.string.ui_str_264))
             }
         },
         dismissButton = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onDelete) {
-                    Text("מחק משימה", color = Color(0xFFDC2626))
+                    Text(stringResource(R.string.ui_str_269), color = Color(0xFFDC2626))
                 }
                 TextButton(onClick = onDismiss) {
-                    Text("ביטול")
+                    Text(stringResource(R.string.ui_str_92))
                 }
             }
         }
@@ -139,13 +141,13 @@ fun ConfirmDeleteTaskDialog(
     val isShared = task.forWhom == ForWhom.BOTH && !task.isPrivate
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("מחיקת משימה", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.ui_str_266), fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("האם למחוק את המשימה \"${task.title}\"?")
+                Text(stringResource(R.string.ui_str_273, task.title))
                 if (isShared) {
                     Text(
-                        "שים לב: זוהי משימה משותפת לשניכם במשק הבית.",
+                        stringResource(R.string.ui_str_262),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.error,
                         fontWeight = FontWeight.SemiBold
@@ -158,11 +160,11 @@ fun ConfirmDeleteTaskDialog(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
             ) {
-                Text("מחק")
+                Text(stringResource(R.string.ui_str_260))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_str_92)) }
         }
     )
 }

@@ -17,13 +17,13 @@ import kotlinx.coroutines.flow.stateIn
 
 class CarCalculatorViewModel(
     private val carRepository: CarRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val cars: StateFlow<List<Car>?> = carRepository.getAllCars()
         .map<List<Car>, List<Car>?> { it }
         .catch { e ->
-            handleException("getAllCars", e)
+            if (e is Exception) handleException("getAllCars", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -76,7 +76,7 @@ class CarCalculatorViewModel(
     companion object {
         fun factory(
             carRepository: CarRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

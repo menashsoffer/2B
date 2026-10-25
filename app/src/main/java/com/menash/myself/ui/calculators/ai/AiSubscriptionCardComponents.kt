@@ -23,6 +23,8 @@ import com.menash.myself.core.domain.model.Money
 import java.text.NumberFormat
 import java.util.Locale
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun AiSubscriptionsSummarySection(
     totalMonthlyIls: Double,
@@ -42,14 +44,14 @@ fun AiSubscriptionsSummarySection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text("הוצאה חודשית פעילה", fontSize = 11.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_str_139), fontSize = 11.sp, color = Color.DarkGray)
                 Text(
                     "₪${fmt.format(totalMonthlyIls.toInt())}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.primary
                 )
-                Text("$activeCount מתוך $totalCount מנויים פעילים", fontSize = 11.sp, color = Color.Gray)
+                Text(stringResource(R.string.ui_activecount_totalcount_135, activeCount, totalCount), fontSize = 11.sp, color = Color.Gray)
             }
         }
 
@@ -59,14 +61,14 @@ fun AiSubscriptionsSummarySection(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text("הוצאה שנתית מצטברת", fontSize = 11.sp, color = Color.DarkGray)
+                Text(stringResource(R.string.ui_str_145), fontSize = 11.sp, color = Color.DarkGray)
                 Text(
                     "₪${fmt.format(totalYearlyIls.toInt())}",
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     color = MaterialTheme.colorScheme.secondary
                 )
-                Text("שער מחושב: ₪$usdRate ל-$", fontSize = 11.sp, color = Color.Gray)
+                Text(stringResource(R.string.ui_usdrate_140, usdRate), fontSize = 11.sp, color = Color.Gray)
             }
         }
     }
@@ -89,7 +91,7 @@ fun AiCategoryFilterRow(
             FilterChip(
                 selected = selectedCategoryFilter == null,
                 onClick = { onSelectCategory(null) },
-                label = { Text("הכל (${subscriptions.size})") }
+                label = { Text(stringResource(R.string.ui_subscriptionssize_146, subscriptions.size)) }
             )
         }
         items(categories) { cat ->
@@ -147,21 +149,21 @@ private fun AiSubscriptionCardHeader(
         OutlinedTextField(
             value = sub.name,
             onValueChange = { onUpdate(sub.copy(name = it)) },
-            label = { Text("שם הכלי") },
+            label = { Text(stringResource(R.string.ui_str_136)) },
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(8.dp))
         FilterChip(
             selected = sub.isActive,
             onClick = { onUpdate(sub.copy(isActive = !sub.isActive)) },
-            label = { Text(if (sub.isActive) "פעיל ✓" else "מבוטל ✕") },
+            label = { Text(if (sub.isActive) stringResource(R.string.ui_str_144) else stringResource(R.string.ui_str_149)) },
             colors = FilterChipDefaults.filterChipColors(
                 selectedContainerColor = Color(0xFFD1FAE5),
                 selectedLabelColor = Color(0xFF065F46)
             )
         )
         IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = "מחק מנוי", tint = Color.Gray)
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ui_str_143), tint = Color.Gray)
         }
     }
 }
@@ -185,7 +187,7 @@ private fun AiSubscriptionSpendBanner(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text("עלות חודשית בש״ח", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_str_137), fontSize = 11.sp, color = Color.DarkGray)
             Text(
                 "₪${fmt.format(monthlyIls.toInt())}",
                 fontWeight = FontWeight.Bold,
@@ -194,7 +196,7 @@ private fun AiSubscriptionSpendBanner(
             )
         }
         Column(horizontalAlignment = Alignment.End) {
-            Text("עלות שנתית", fontSize = 11.sp, color = Color.DarkGray)
+            Text(stringResource(R.string.ui_str_141), fontSize = 11.sp, color = Color.DarkGray)
             Text(
                 "₪${fmt.format(yearlyIls.toInt())}",
                 fontWeight = FontWeight.SemiBold,
@@ -221,7 +223,7 @@ private fun AiSubscriptionInlineFields(
                 val v = it.toDoubleOrNull()
                 if (v != null) onUpdate(sub.copy(price = Money.fromShekels(v)))
             },
-            label = { Text("מחיר נקוב") },
+            label = { Text(stringResource(R.string.ui_str_151)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.weight(1f)
         )
@@ -235,7 +237,7 @@ private fun AiSubscriptionInlineFields(
                 .weight(0.9f)
                 .padding(top = 8.dp)
         ) {
-            Text(if (sub.currency == "USD") "$ דולר" else "₪ שקל", fontSize = 12.sp)
+            Text(if (sub.currency == "USD") stringResource(R.string.ui_str_147) else stringResource(R.string.ui_str_142), fontSize = 12.sp)
         }
 
         OutlinedButton(
@@ -247,7 +249,7 @@ private fun AiSubscriptionInlineFields(
                 .weight(0.9f)
                 .padding(top = 8.dp)
         ) {
-            Text(if (sub.billingCycle == "MONTHLY") "חודשי" else "שנתי", fontSize = 12.sp)
+            Text(if (sub.billingCycle == "MONTHLY") stringResource(R.string.ui_str_148) else stringResource(R.string.ui_str_138), fontSize = 12.sp)
         }
     }
 
@@ -258,13 +260,13 @@ private fun AiSubscriptionInlineFields(
         OutlinedTextField(
             value = sub.category,
             onValueChange = { onUpdate(sub.copy(category = it)) },
-            label = { Text("קטגוריה") },
+            label = { Text(stringResource(R.string.ui_str_150)) },
             modifier = Modifier.weight(1f)
         )
         OutlinedTextField(
             value = sub.notes,
             onValueChange = { onUpdate(sub.copy(notes = it)) },
-            label = { Text("הערות") },
+            label = { Text(stringResource(R.string.ui_str_121)) },
             modifier = Modifier.weight(1.2f)
         )
     }

@@ -27,12 +27,12 @@ class CalculatorsHubViewModel(
     private val aiSubscriptionRepository: AiSubscriptionRepository,
     private val pensionFundRepository: PensionFundRepository,
     private val settingsRepository: SettingsRepository,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val settings: StateFlow<CalculatorSettings?> = settingsRepository.getSettingsFlow()
         .catch { e ->
-            handleException("getSettingsFlow", e)
+            if (e is Exception) handleException("getSettingsFlow", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -40,7 +40,7 @@ class CalculatorsHubViewModel(
     val cars: StateFlow<List<Car>?> = carRepository.getAllCars()
         .map<List<Car>, List<Car>?> { it }
         .catch { e ->
-            handleException("getAllCars", e)
+            if (e is Exception) handleException("getAllCars", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -48,7 +48,7 @@ class CalculatorsHubViewModel(
     val aiSubs: StateFlow<List<AiSubscription>?> = aiSubscriptionRepository.getAllAiSubscriptions()
         .map<List<AiSubscription>, List<AiSubscription>?> { it }
         .catch { e ->
-            handleException("getAllAiSubscriptions", e)
+            if (e is Exception) handleException("getAllAiSubscriptions", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -56,7 +56,7 @@ class CalculatorsHubViewModel(
     val pensionFunds: StateFlow<List<PensionFund>?> = pensionFundRepository.getAllPensionFunds()
         .map<List<PensionFund>, List<PensionFund>?> { it }
         .catch { e ->
-            handleException("getAllPensionFunds", e)
+            if (e is Exception) handleException("getAllPensionFunds", e) else throw e
             emit(null)
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -98,7 +98,7 @@ class CalculatorsHubViewModel(
             aiSubscriptionRepository: AiSubscriptionRepository,
             pensionFundRepository: PensionFundRepository,
             settingsRepository: SettingsRepository,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

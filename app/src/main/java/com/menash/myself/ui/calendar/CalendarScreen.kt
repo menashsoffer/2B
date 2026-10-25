@@ -27,6 +27,8 @@ import com.menash.myself.core.designsystem.component.EmptyState
 import com.menash.myself.core.designsystem.component.OfflineIndicator
 import com.menash.myself.core.domain.model.CalendarEvent
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(onBack: () -> Unit) {
@@ -46,16 +48,16 @@ fun CalendarScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("יומן אירועים להיום", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = { Text(stringResource(R.string.ui_str_401), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("calendar_back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
                     }
                 },
                 actions = {
                     if (hasPermission) {
                         IconButton(onClick = { events = CalendarHelper.getTodayEvents(context) }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "רענן")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.ui_str_407))
                         }
                     }
                 },
@@ -79,11 +81,11 @@ fun CalendarScreen(onBack: () -> Unit) {
                 } else if (events.isEmpty()) {
                     EmptyState(
                         icon = Icons.Default.EventAvailable,
-                        title = "אין אירועים ביומן להיום",
-                        description = "יום פנוי לעשייה ממוקדת ומנוחה."
+                        title = stringResource(R.string.ui_str_408),
+                        description = stringResource(R.string.ui_str_405)
                     )
                 } else {
-                    Text("אירועי היום (${events.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    Text(stringResource(R.string.ui_eventssize_404, events.size), fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         items(events, key = { it.id }) { event ->
                             CalendarEventRowCard(event = event)
@@ -113,14 +115,14 @@ private fun CalendarPermissionCard(onRequest: () -> Unit) {
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(44.dp)
             )
-            Text("חיבור ליומן המכשיר לקריאה בלבד", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(stringResource(R.string.ui_str_403), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(
-                "האפליקציה יכולה להציג לך את אירועי היום ישירות במסך הבית בלי לעבור בין אפליקציות.",
+                stringResource(R.string.ui_str_402),
                 fontSize = 12.sp,
                 color = Color.DarkGray
             )
             Button(onClick = onRequest, shape = RoundedCornerShape(10.dp)) {
-                Text("אשר קריאת יומן")
+                Text(stringResource(R.string.ui_str_406))
             }
         }
     }
@@ -143,7 +145,7 @@ private fun CalendarEventRowCard(event: CalendarEvent) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = if (event.isAllDay) "כל היום" else event.startTime,
+                    text = if (event.isAllDay) stringResource(R.string.ui_str_366) else event.startTime,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.primary

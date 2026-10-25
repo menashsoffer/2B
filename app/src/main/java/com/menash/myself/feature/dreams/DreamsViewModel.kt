@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.stateIn
 class DreamsViewModel(
     private val dreamRepository: DreamRepository,
     private val householdRepository: HouseholdRepositoryInterface,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     private val _selectedListFilter = MutableStateFlow("הכל")
@@ -37,7 +37,7 @@ class DreamsViewModel(
     val visibilityFilter: StateFlow<VisibilityFilter> = _visibilityFilter.asStateFlow()
 
     val household: StateFlow<Household?> = householdRepository.observeMyHousehold()
-        .catch { e -> handleException("observeHousehold", e) }
+        .catch { e -> if (e is Exception) handleException("observeHousehold", e) else throw e }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val dreams: StateFlow<List<Dream>?> = combine(_selectedListFilter, _visibilityFilter) { listFilter, visFilter ->
@@ -46,7 +46,7 @@ class DreamsViewModel(
         dreamRepository.observeDreams(listFilter = listFilter, filter = visFilter)
             .map<List<Dream>, List<Dream>?> { it }
     }.catch { e ->
-        handleException("observeDreams", e)
+        if (e is Exception) handleException("observeDreams", e) else throw e
         emit(null)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -101,7 +101,7 @@ class DreamsViewModel(
         fun factory(
             dreamRepository: DreamRepository,
             householdRepository: HouseholdRepositoryInterface,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {

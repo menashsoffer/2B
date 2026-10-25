@@ -37,6 +37,8 @@ import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.feature.home.LifeHomeViewModel
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LifeHomeScreen(
@@ -92,7 +94,7 @@ fun LifeHomeScreen(
     Scaffold(
         topBar = {
             LifeHomeTopBar(
-                userName = user?.displayName ?: "שלום",
+                userName = user?.displayName ?: stringResource(R.string.ui_str_388),
                 hasPartner = !household?.partnerEmail.isNullOrEmpty(),
                 inboxCount = inboxItems.orEmpty().size,
                 onNavigate = onNavigate
@@ -135,8 +137,8 @@ private fun LifeHomeTopBar(
     TopAppBar(
         title = {
             Column {
-                Text(text = "מה מול העיניים", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                val partnerName = if (hasPartner) "שותף פעיל" else "משק בית פרטי"
+                Text(text = stringResource(R.string.ui_str_389), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                val partnerName = if (hasPartner) stringResource(R.string.ui_str_386) else stringResource(R.string.ui_str_387)
                 Text(
                     text = "$userName • $partnerName",
                     fontSize = 11.sp,
@@ -158,14 +160,14 @@ private fun LifeHomeTopBar(
                         }
                     }
                 ) {
-                    Icon(Icons.Default.Inbox, contentDescription = "אינבוקס ולכידה מהירה")
+                    Icon(Icons.Default.Inbox, contentDescription = stringResource(R.string.ui_str_390))
                 }
             }
             IconButton(
                 onClick = { onNavigate("household") },
                 modifier = Modifier.testTag("home_household_button")
             ) {
-                Icon(Icons.Default.Group, contentDescription = "ניהול משק בית")
+                Icon(Icons.Default.Group, contentDescription = stringResource(R.string.ui_str_385))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -192,10 +194,14 @@ private fun LifeHomeDashboardContent(
     onSaveTodayFitness: (Boolean, Int, String) -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    val statusSaving = stringResource(R.string.ui_str_383)
+    val statusReview = stringResource(R.string.ui_str_384)
+    val statusDream = stringResource(R.string.ui_str_317)
+
     val top3Tasks = remember(allTasks) { allTasks.filter { it.isTop3 && !it.isDone }.take(3) }
     val featuredDream = remember(allDreams) {
-        allDreams.firstOrNull { it.status == "חוסכים/מתכננים" || it.status == "בבדיקה" }
-            ?: allDreams.firstOrNull { it.status == "חלום" }
+        allDreams.firstOrNull { it.status == statusSaving || it.status == statusReview }
+            ?: allDreams.firstOrNull { it.status == statusDream }
     }
     val streakDays = remember(weeklyFitness) { weeklyFitness.takeWhile { it.moved }.size }
     var roadmapExpanded by remember { mutableStateOf(false) }

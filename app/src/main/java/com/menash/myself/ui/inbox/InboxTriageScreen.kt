@@ -36,6 +36,8 @@ import com.menash.myself.core.domain.model.InboxItem
 import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.feature.inbox.InboxViewModel
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxTriageScreen(onBack: () -> Unit) {
@@ -59,13 +61,13 @@ fun InboxTriageScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = {
                     Column {
-                        Text("מיון Inbox", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("${inboxItems.orEmpty().size} פריטים ממתינים למיון", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
+                        Text(stringResource(R.string.ui_inbox_309), fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(stringResource(R.string.ui_inboxitemsoremptysize_319, inboxItems.orEmpty().size), fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag("inbox_back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -83,8 +85,8 @@ fun InboxTriageScreen(onBack: () -> Unit) {
                 is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.clearError() })
                 is UiState.Empty -> EmptyState(
                     icon = Icons.Default.CheckCircle,
-                    title = "ה-Inbox שלך נקי!",
-                    description = "כל המחשבות מויינו. שקט מנטלי מובטח."
+                    title = stringResource(R.string.ui_inbox_308),
+                    description = stringResource(R.string.ui_str_310)
                 )
                 is UiState.Content -> LazyColumn(
                     modifier = Modifier
@@ -98,19 +100,19 @@ fun InboxTriageScreen(onBack: () -> Unit) {
                             viewerUid = viewerUid,
                             onTriageToTask = {
                                 viewModel.triageAsTask(item, title = item.text, nextAction = "", isTop3 = false)
-                                Toast.makeText(context, "הועבר למשימות!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.ui_str_320), Toast.LENGTH_SHORT).show()
                             },
                             onTriageToDream = {
-                                viewModel.triageAsDream(item, title = item.text, list = "לבית")
-                                Toast.makeText(context, "הועבר לחלומות!", Toast.LENGTH_SHORT).show()
+                                viewModel.triageAsDream(item, title = item.text, list = context.getString(R.string.ui_str_311))
+                                Toast.makeText(context, context.getString(R.string.ui_str_312), Toast.LENGTH_SHORT).show()
                             },
                             onTriageToIdea = {
-                                viewModel.triageAsDream(item, title = item.text, list = "פיתוח ואפליקציות")
-                                Toast.makeText(context, "נשמר כרעיון לפיתוח!", Toast.LENGTH_SHORT).show()
+                                viewModel.triageAsDream(item, title = item.text, list = context.getString(R.string.ui_str_307))
+                                Toast.makeText(context, context.getString(R.string.ui_str_313), Toast.LENGTH_SHORT).show()
                             },
                             onTriageToNote = {
                                 viewModel.triageAsNote(item)
-                                Toast.makeText(context, "סומן כפתק!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.ui_str_316), Toast.LENGTH_SHORT).show()
                             },
                             onDelete = { viewModel.deleteInboxItem(item) }
                         )
@@ -149,7 +151,7 @@ fun InboxItemCard(
                     viewerUid = viewerUid
                 )
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "מחק", tint = Color.LightGray)
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.ui_str_260), tint = Color.LightGray)
                 }
             }
             Text(
@@ -189,7 +191,7 @@ private fun InboxTriageActionsRow(
         ) {
             Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("משימה", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_str_315), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
         OutlinedButton(
             onClick = onTriageToDream,
@@ -199,7 +201,7 @@ private fun InboxTriageActionsRow(
         ) {
             Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("חלום", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_str_317), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
         OutlinedButton(
             onClick = onTriageToIdea,
@@ -209,7 +211,7 @@ private fun InboxTriageActionsRow(
         ) {
             Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("רעיון", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.ui_str_318), fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
         OutlinedButton(
             onClick = onTriageToNote,
@@ -219,7 +221,7 @@ private fun InboxTriageActionsRow(
         ) {
             Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("פתק", fontSize = 11.sp)
+            Text(stringResource(R.string.ui_str_314), fontSize = 11.sp)
         }
     }
 }

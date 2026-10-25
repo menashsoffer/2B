@@ -13,6 +13,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @Composable
 fun EnergyHelperDialog(
     initialEnergy: Double,
@@ -53,7 +55,7 @@ fun EnergyHelperDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("עוזר חישוב אנרגיה שנתית", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.ui_str_89), fontWeight = FontWeight.Bold) },
         text = {
             EnergyHelperDialogBody(
                 isFuel = isFuel,
@@ -77,11 +79,11 @@ fun EnergyHelperDialog(
         },
         confirmButton = {
             Button(onClick = { onApply(calculatedCost) }) {
-                Text("החל על הרכב")
+                Text(stringResource(R.string.ui_str_88))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.ui_str_92)) }
         }
     )
 }
@@ -110,18 +112,18 @@ private fun EnergyHelperDialogBody(
         Row(modifier = Modifier.selectableGroup(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RadioButton(selected = isFuel, onClick = { onFuelChange(true) })
-                Text("דלק (בנזין / דיזל)")
+                Text(stringResource(R.string.ui_str_93))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RadioButton(selected = !isFuel, onClick = { onFuelChange(false) })
-                Text("רכב חשמלי (EV)")
+                Text(stringResource(R.string.ui_ev_85))
             }
         }
 
         OutlinedTextField(
             value = annualKm,
             onValueChange = onAnnualKmChange,
-            label = { Text("נסועה שנתית ממוצעת (ק״מ)") },
+            label = { Text(stringResource(R.string.ui_str_87)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth()
         )
@@ -130,14 +132,14 @@ private fun EnergyHelperDialogBody(
             OutlinedTextField(
                 value = kmPerLiter,
                 onValueChange = onKmPerLiterChange,
-                label = { Text("צריכת דלק (ק״מ לליטר)") },
+                label = { Text(stringResource(R.string.ui_str_81)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = fuelPrice,
                 onValueChange = onFuelPriceChange,
-                label = { Text("מחיר לליטר (₪)") },
+                label = { Text(stringResource(R.string.ui_str_91)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -145,14 +147,14 @@ private fun EnergyHelperDialogBody(
             OutlinedTextField(
                 value = kwhPer100Km,
                 onValueChange = onKwhPer100KmChange,
-                label = { Text("צריכת חשמל (קוט״ש ל-100 ק״מ)") },
+                label = { Text(stringResource(R.string.ui_100_83)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = homeKwhPrice,
                 onValueChange = onHomeKwhPriceChange,
-                label = { Text("מחיר קוט״ש ביתי (₪)") },
+                label = { Text(stringResource(R.string.ui_str_84)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -160,14 +162,14 @@ private fun EnergyHelperDialogBody(
                 OutlinedTextField(
                     value = publicSessionsCount,
                     onValueChange = onPublicSessionsCountChange,
-                    label = { Text("טעינות ציבוריות/שנה") },
+                    label = { Text(stringResource(R.string.ui_str_90)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.weight(1f)
                 )
                 OutlinedTextField(
                     value = publicSessionCost,
                     onValueChange = onPublicSessionCostChange,
-                    label = { Text("מחיר טעינה (₪)") },
+                    label = { Text(stringResource(R.string.ui_str_82)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f)
                 )
@@ -179,7 +181,7 @@ private fun EnergyHelperDialogBody(
             shape = RoundedCornerShape(8.dp)
         ) {
             Text(
-                "עלות אנרגיה שנתית מחושבת: ₪${calculatedCost.toInt()}",
+                stringResource(R.string.ui_str_86, calculatedCost.toInt()),
                 modifier = Modifier.padding(10.dp),
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp

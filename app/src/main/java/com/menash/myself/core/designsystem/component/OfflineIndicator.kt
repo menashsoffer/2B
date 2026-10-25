@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import com.menash.myself.core.designsystem.tokens.Spacing
 import com.menash.myself.core.designsystem.tokens.TypographyTokens
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 /**
  * Subtle offline indicator banner informing the user that the app is operating in local/offline mode.
  */
@@ -31,7 +33,7 @@ import com.menash.myself.core.designsystem.tokens.TypographyTokens
 fun OfflineIndicator(
     isOffline: Boolean,
     modifier: Modifier = Modifier,
-    message: String = "מצב לא מקוון - הנתונים נשמרים מקומית במכשיר",
+    message: String = stringResource(R.string.ui_str_8),
     testTag: String = "offline_indicator"
 ) {
     AnimatedVisibility(

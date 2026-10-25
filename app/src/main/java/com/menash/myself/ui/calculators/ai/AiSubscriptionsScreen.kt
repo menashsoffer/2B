@@ -36,6 +36,8 @@ import com.menash.myself.core.domain.util.CsvParser
 import com.menash.myself.feature.calculators.ai.AiCalculatorViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
 
+import com.menash.myself.R
+import androidx.compose.ui.res.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiSubscriptionsScreen(
@@ -73,9 +75,9 @@ fun AiSubscriptionsScreen(
         topBar = {
             AiSubscriptionsTopBar(
                 onBack = onBack,
-                onAddSubscription = { viewModel.insertAiSubscription(createDefaultAiSub()) },
+                onAddSubscription = { viewModel.insertAiSubscription(AiSubscriptionCsvHelpers.createDefaultAiSub(context)) },
                 onImportCsv = { csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*")) },
-                onExportCsv = { shareAiSubscriptionsCsv(context, subscriptions.orEmpty(), usdRate) }
+                onExportCsv = { AiSubscriptionCsvHelpers.shareAiSubscriptionsCsv(context, subscriptions.orEmpty(), usdRate) }
             )
         }
     ) { padding ->
@@ -91,7 +93,7 @@ fun AiSubscriptionsScreen(
                 selectedCategoryFilter = selectedCategoryFilter,
                 onSelectCategory = { selectedCategoryFilter = it },
                 onRetry = { viewModel.clearError() },
-                onAddFirst = { viewModel.insertAiSubscription(createDefaultAiSub()) },
+                onAddFirst = { viewModel.insertAiSubscription(AiSubscriptionCsvHelpers.createDefaultAiSub(context)) },
                 onUpdate = { viewModel.updateAiSubscription(it) },
                 onDelete = { viewModel.deleteAiSubscription(it) }
             )
@@ -102,12 +104,12 @@ fun AiSubscriptionsScreen(
         CsvMappingDialog(
             headers = importedCsvRows.first(),
             previewRows = importedCsvRows.drop(1),
-            targetFields = listOf("שם כלי", "קטגוריה", "מחיר", "מטבע (USD/ILS)", "תדירות (חודשי/שנתי)", "הערות"),
+            targetFields = listOf(stringResource(R.string.ui_str_164), stringResource(R.string.ui_str_150), stringResource(R.string.ui_str_161), stringResource(R.string.ui_usdils_159), stringResource(R.string.ui_str_165), stringResource(R.string.ui_str_121)),
             onDismiss = { showCsvMapping = false },
             onConfirmMap = { mapping ->
-                val newSubs = parseMappedAiSubs(importedCsvRows.drop(1), mapping)
+                val newSubs = AiSubscriptionCsvHelpers.parseMappedAiSubs(context, importedCsvRows.drop(1), mapping)
                 viewModel.insertAiSubscriptions(newSubs)
-                Toast.makeText(context, "יובאו ${newSubs.size} מנויים בהצלחה!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.ui_newsubssize_168, newSubs.size), Toast.LENGTH_SHORT).show()
                 showCsvMapping = false
             }
         )
@@ -123,21 +125,21 @@ private fun AiSubscriptionsTopBar(
     onExportCsv: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("מנויי AI וכלים דיגיטליים", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+        title = { Text(stringResource(R.string.ui_ai_169), fontWeight = FontWeight.Bold, fontSize = 18.sp) },
         navigationIcon = {
             IconButton(onClick = onBack, modifier = Modifier.testTag("ai_back_button")) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.ui_str_60))
             }
         },
         actions = {
             IconButton(onClick = onAddSubscription, modifier = Modifier.testTag("add_ai_top_action")) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף מנוי")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.ui_str_163))
             }
             IconButton(onClick = onImportCsv, modifier = Modifier.testTag("ai_import_csv_button")) {
-                Icon(Icons.Default.UploadFile, contentDescription = "ייבוא CSV")
+                Icon(Icons.Default.UploadFile, contentDescription = stringResource(R.string.ui_csv_72))
             }
             IconButton(onClick = onExportCsv, modifier = Modifier.testTag("ai_export_csv_button")) {
-                Icon(Icons.Default.Share, contentDescription = "ייצוא CSV")
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.ui_csv_64))
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
@@ -164,10 +166,10 @@ private fun AiSubscriptionsContent(
         is UiState.Loading -> LoadingState()
         is UiState.Error -> ErrorState(message = uiState.message, onRetry = onRetry)
         is UiState.Empty -> EmptyState(
-            title = "אין מנויי AI רשומים",
-            description = "הוסף מנוי כדי לעקוב אחר ההוצאה החודשית והשנתית בשקלים.",
+            title = stringResource(R.string.ui_ai_170),
+            description = stringResource(R.string.ui_str_154),
             icon = Icons.Default.SmartToy,
-            actionLabel = "הוסף מנוי",
+            actionLabel = stringResource(R.string.ui_str_163),
             onActionClick = onAddFirst
         )
         is UiState.Content -> {
@@ -175,8 +177,9 @@ private fun AiSubscriptionsContent(
             val activeSubs = subscriptions.filter { it.isActive }
             val totalMonthlyIls = activeSubs.sumOf { it.monthlyCostIls(usdRate).shekels }
             val totalYearlyIls = activeSubs.sumOf { it.yearlyCostIls(usdRate).shekels }
+            val fallbackCat = stringResource(R.string.ui_str_162)
             val categories = remember(subscriptions) {
-                subscriptions.map { it.category.ifBlank { "כללי" } }.distinct()
+                subscriptions.map { it.category.ifBlank { fallbackCat } }.distinct()
             }
             val filteredSubs = remember(subscriptions, selectedCategoryFilter) {
                 if (selectedCategoryFilter == null) subscriptions
@@ -225,67 +228,4 @@ private fun AiSubscriptionsContent(
     }
 }
 
-private fun createDefaultAiSub(): AiSubscription = AiSubscription(
-    name = "כלי AI חדש",
-    category = "פרודוקטיביות",
-    isActive = true,
-    billingCycle = "MONTHLY",
-    currency = "USD",
-    price = Money.fromShekels(20.0),
-    notes = ""
-)
 
-private fun shareAiSubscriptionsCsv(
-    context: android.content.Context,
-    subscriptions: List<AiSubscription>,
-    usdRate: Double
-) {
-    val headers = listOf("שם כלי", "קטגוריה", "פעיל", "תדירות", "מטבע", "מחיר", "עלות חודשית בש״ח", "הערות")
-    val rows = subscriptions.map {
-        listOf(
-            it.name,
-            it.category,
-            if (it.isActive) "פעיל" else "מבוטל",
-            it.billingCycle,
-            it.currency,
-            it.price.shekels.toString(),
-            it.monthlyCostIls(usdRate).shekels.toInt().toString(),
-            it.notes
-        )
-    }
-    val csv = CsvParser.exportToCsv(headers, rows)
-    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/csv"
-        putExtra(Intent.EXTRA_TEXT, csv)
-        putExtra(Intent.EXTRA_SUBJECT, "מנויי_AI.csv")
-    }
-    context.startActivity(Intent.createChooser(sendIntent, "שתף נתוני מנויי AI"))
-}
-
-private fun parseMappedAiSubs(
-    dataRows: List<List<String>>,
-    mapping: Map<String, Int>
-): List<AiSubscription> = dataRows.mapNotNull { row ->
-    try {
-        val name = row.getOrNull(mapping["שם כלי"] ?: -1) ?: "כלי מיובא"
-        val category = row.getOrNull(mapping["קטגוריה"] ?: -1) ?: "כללי"
-        val price = row.getOrNull(mapping["מחיר"] ?: -1)?.toDoubleOrNull() ?: 15.0
-        val currencyRaw = row.getOrNull(mapping["מטבע (USD/ILS)"] ?: -1)?.uppercase() ?: "USD"
-        val currency = if (currencyRaw.contains("ILS") || currencyRaw.contains("₪") || currencyRaw.contains("שח")) "ILS" else "USD"
-        val cycleRaw = row.getOrNull(mapping["תדירות (חודשי/שנתי)"] ?: -1)?.uppercase() ?: "MONTHLY"
-        val cycle = if (cycleRaw.contains("YEAR") || cycleRaw.contains("שנתי")) "YEARLY" else "MONTHLY"
-        val notes = row.getOrNull(mapping["הערות"] ?: -1) ?: ""
-
-        AiSubscription(
-            name = name,
-            category = category,
-            isActive = true,
-            billingCycle = cycle,
-            currency = currency,
-            price = Money.fromShekels(price),
-            notes = notes
-        )
-    } catch (e: Exception) {
-        null
-    }
-}

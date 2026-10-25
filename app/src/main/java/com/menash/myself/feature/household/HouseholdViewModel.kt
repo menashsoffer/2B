@@ -16,11 +16,11 @@ import kotlinx.coroutines.flow.stateIn
 
 class HouseholdViewModel(
     private val householdRepository: HouseholdRepositoryInterface,
-    errorReporter: ErrorReporter? = null
+    errorReporter: ErrorReporter
 ) : BaseViewModel(errorReporter) {
 
     val household: StateFlow<Household?> = householdRepository.observeMyHousehold()
-        .catch { e -> handleException("observeHousehold", e) }
+        .catch { e -> if (e is Exception) handleException("observeHousehold", e) else throw e }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val uiState: StateFlow<UiState<Household?>> = combine(household, _errorState) { h, error ->
@@ -45,7 +45,7 @@ class HouseholdViewModel(
     companion object {
         fun factory(
             householdRepository: HouseholdRepositoryInterface,
-            errorReporter: ErrorReporter? = null
+            errorReporter: ErrorReporter
         ): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {
                 @Suppress("UNCHECKED_CAST")
