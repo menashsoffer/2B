@@ -42,17 +42,18 @@ class BoiExchangeRateClient {
             throw IllegalArgumentException("Invalid SDMX CSV response: insufficient lines")
         }
 
-        val header = lines[0].split(",")
-        val timePeriodIdx = header.indexOf("TIME_PERIOD").takeIf { it >= 0 } ?: 12
-        val obsValueIdx = header.indexOf("OBS_VALUE").takeIf { it >= 0 } ?: 13
+        val header = lines[0].split(",").map { it.trim().trim('"') }
+        val timePeriodIdx = header.indexOf("TIME_PERIOD").takeIf { it >= 0 }
+            ?: throw IllegalArgumentException("Missing TIME_PERIOD column in BOI CSV header")
+        val obsValueIdx = header.indexOf("OBS_VALUE").takeIf { it >= 0 }
+            ?: throw IllegalArgumentException("Missing OBS_VALUE column in BOI CSV header")
 
-        // Find the last valid data line
-        val dataLine = lines.last { line ->
-            val cols = line.split(",")
+        val dataLine = lines.lastOrNull { line ->
+            val cols = line.split(",").map { it.trim().trim('"') }
             cols.size > maxOf(timePeriodIdx, obsValueIdx) && cols[obsValueIdx].toDoubleOrNull() != null
-        }
+        } ?: throw IllegalArgumentException("No valid observations found in BOI CSV")
 
-        val cols = dataLine.split(",")
+        val cols = dataLine.split(",").map { it.trim().trim('"') }
         val dateStr = cols[timePeriodIdx].trim()
         val rateVal = cols[obsValueIdx].trim().toDouble()
         val rateDate = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE)
@@ -74,6 +75,18 @@ class BoiExchangeRateClient {
             setRequestProperty("User-Agent", "MyselfApp/1.0 (Android)")
         }
 
-        return conn.inputStream.bufferedReader().use { it.readText() }
+        try {
+            val responseCode = conn.responseCode
+            if (responseCode in 200..299) {
+                return conn.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                val errorText = runCatching {
+                    conn.errorStream?.bufferedReader()?.use { it.readText() }
+                }.getOrNull() ?: "HTTP error code $responseCode"
+                throw java.io.IOException("Failed to fetch BOI rate: $errorText")
+            }
+        } finally {
+            runCatching { conn.disconnect() }
+        }
     }
 }

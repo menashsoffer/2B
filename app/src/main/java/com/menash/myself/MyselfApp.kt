@@ -11,4 +11,9 @@ class MyselfApp : Application() {
     val appContainer: AppContainer by lazy {
         AppContainer(applicationContext)
     }
+
+    override fun onCreate() {
+        super.onCreate()
+        com.menash.myself.core.external.boi.BoiSyncWorker.enqueuePeriodicWork(this)
+    }
 }

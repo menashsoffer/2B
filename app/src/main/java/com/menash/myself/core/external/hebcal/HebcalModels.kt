@@ -43,7 +43,8 @@ data class HebcalData(
     val isStale: Boolean = false
 ) {
     val currentHebrewDate: String?
-        get() = items.firstOrNull { it.category == "roshchodesh" || (it.hebrew != null && !it.title.startsWith("Candle") && !it.title.startsWith("Havdalah")) }?.hebrew
+        get() = items.firstOrNull { it.category == "roshchodesh" || it.category == "day" || (it.hebrew != null && it.category != "candles" && it.category != "havdalah" && it.category != "holiday") }?.hebrew
+            ?: items.firstOrNull { it.hebrew != null }?.hebrew
 
     val upcomingShabbatCandles: String?
         get() = items.firstOrNull { it.category == "candles" }?.let { "${it.hebrew ?: "הדלקת נרות"}: ${it.title.replace("Candle lighting: ", "")}" }

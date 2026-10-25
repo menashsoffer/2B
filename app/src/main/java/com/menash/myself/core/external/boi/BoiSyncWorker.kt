@@ -12,6 +12,26 @@ class BoiSyncWorker(
     workerParams: WorkerParameters
 ) : CoroutineWorker(appContext, workerParams) {
 
+    companion object {
+        private const val WORK_NAME = "BoiSyncPeriodicWork"
+
+        fun enqueuePeriodicWork(context: Context) {
+            val constraints = androidx.work.Constraints.Builder()
+                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                .build()
+
+            val request = androidx.work.PeriodicWorkRequestBuilder<BoiSyncWorker>(1, java.util.concurrent.TimeUnit.DAYS)
+                .setConstraints(constraints)
+                .build()
+
+            androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                WORK_NAME,
+                androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                request
+            )
+        }
+    }
+
     override suspend fun doWork(): Result {
         val client = BoiExchangeRateClient()
         val store = BoiRateStore(applicationContext.boiDataStore)

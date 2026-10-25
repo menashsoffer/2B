@@ -27,6 +27,10 @@ class MainViewModel(
         safeLaunch("initializeHouseholdForUser") {
             appContainer.householdRepository.ensureHouseholdExists()
         }
+        safeLaunch("refreshExternalDataOnStartup") {
+            runCatching { appContainer.exchangeRateRepository.refreshRateIfNeeded() }
+            runCatching { appContainer.hebcalRepository.refreshDataIfNeeded() }
+        }
     }
 
     fun addInboxItem(

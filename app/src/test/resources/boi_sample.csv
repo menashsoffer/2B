@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<message>
+  <header>
+    <id>EXR</id>
+    <test>false</test>
+    <prepared>2026-10-25T10:00:00Z</prepared>
+    <sender id="BOI"/>
+  </header>
+  <dataset>
+    <series>
+      <obs TIME_PERIOD="2026-10-23" OBS_VALUE="3.6540"/>
+    </series>
+  </dataset>
+</message>

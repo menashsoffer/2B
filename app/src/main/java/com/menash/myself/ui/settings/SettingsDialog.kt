@@ -47,10 +47,10 @@ fun SettingsDialog(
     val scope = rememberCoroutineScope()
     val appContainer = LocalAppContainer.current
 
+    var showCityDropdown by remember { mutableStateOf(false) }
     val boiRateState by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
     val selectedCityState by appContainer.hebcalRepository.selectedCityFlow.collectAsStateWithLifecycle()
-
-    var showCityDropdown by remember { mutableStateOf(false) }
+    var useManualRate by remember(boiRateState?.isManualOverride) { mutableStateOf(boiRateState?.isManualOverride == true) }
 
     val fileRestoreLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -125,17 +125,20 @@ fun SettingsDialog(
                     }
                 }
 
+
                 // BOI USD/ILS Rate Section
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("בנק ישראל, שער יציג:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     boiRateState?.let { r ->
                         val dateFormatted = r.rateDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                        Text("שער עדכני: ₪${r.rate} ($dateFormatted)", fontSize = 12.sp)
+                        if (r.isManualOverride) {
+                            Text("שער ידני: ₪${r.rate} / שער רשמי: ₪${r.rate} ($dateFormatted)", fontSize = 12.sp)
+                            Text("דריסה ידנית פעילה", fontSize = 11.sp, color = MaterialTheme.colorScheme.tertiary)
+                        } else {
+                            Text("שער עדכני: ₪${r.rate} ($dateFormatted)", fontSize = 12.sp)
+                        }
                         if (r.isStale) {
                             Text("לא עודכן לאחרונה", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
-                        }
-                        if (r.isManualOverride) {
-                            Text("דריסה ידנית פעילה", fontSize = 11.sp, color = MaterialTheme.colorScheme.tertiary)
                         }
                     } ?: Text("לא הוגדר שער", fontSize = 12.sp, color = Color.Gray)
                 }
@@ -150,6 +153,30 @@ fun SettingsDialog(
                         .testTag("usd_rate_input"),
                     supportingText = { Text(stringResource(R.string.ui_str_251)) }
                 )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = useManualRate,
+                        onCheckedChange = { useManualRate = it },
+                        modifier = Modifier.testTag("use_manual_rate_checkbox")
+                    )
+                    Text("השתמש בדריסה ידנית לשער הדולר", fontSize = 13.sp)
+                }
+
+                if (boiRateState?.isManualOverride == true) {
+                    TextButton(
+                        onClick = {
+                            scope.launch { appContainer.exchangeRateRepository.clearManualRate() }
+                        },
+                        modifier = Modifier.testTag("return_to_official_rate_button")
+                    ) {
+                        Text("חזור לשער הרשמי של בנק ישראל")
+                    }
+                }
 
                 HorizontalDivider()
 
@@ -213,7 +240,13 @@ fun SettingsDialog(
                 onClick = {
                     val rate = rateInput.toDoubleOrNull() ?: currentRate
                     onSaveRate(rate)
-                    scope.launch { appContainer.exchangeRateRepository.setManualRate(rate) }
+                    scope.launch {
+                        if (useManualRate) {
+                            appContainer.exchangeRateRepository.setManualRate(rate)
+                        } else {
+                            appContainer.exchangeRateRepository.clearManualRate()
+                        }
+                    }
                 },
                 modifier = Modifier.testTag("save_settings_button")
             ) {

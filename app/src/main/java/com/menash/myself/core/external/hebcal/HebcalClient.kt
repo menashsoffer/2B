@@ -56,6 +56,18 @@ class HebcalClient {
             setRequestProperty("User-Agent", "MyselfApp/1.0 (Android)")
         }
 
-        return conn.inputStream.bufferedReader().use { it.readText() }
+        try {
+            val responseCode = conn.responseCode
+            if (responseCode in 200..299) {
+                return conn.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                val errorText = runCatching {
+                    conn.errorStream?.bufferedReader()?.use { it.readText() }
+                }.getOrNull() ?: "HTTP error code $responseCode"
+                throw java.io.IOException("Failed to fetch Hebcal data: $errorText")
+            }
+        } finally {
+            runCatching { conn.disconnect() }
+        }
     }
 }

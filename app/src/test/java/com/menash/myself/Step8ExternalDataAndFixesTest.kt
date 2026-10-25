@@ -26,6 +26,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [36])
 @OptIn(ExperimentalCoroutinesApi::class)
 class Step8ExternalDataAndFixesTest {
 
@@ -129,9 +130,5 @@ class Step8ExternalDataAndFixesTest {
         assertEquals(293397, parsed.geonameid)
         assertEquals(2, parsed.items.size)
         assertTrue(parsed.upcomingShabbatCandles!!.contains("16:16"))
-
-        // Unselected city should be null
-        val unselectedCity: IsraeliCity? = null
-        assertNull(unselectedCity)
     }
 }

@@ -13,6 +13,9 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Inbox
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.Alignment
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -226,6 +229,9 @@ private fun LifeHomeDashboardContent(
             )
         }
         item {
+            HomeHebcalCard(onOpenSettings = { onNavigate("household") })
+        }
+        item {
             HomeTodayCalendarSection(
                 hasCalendarPermission = hasCalendarPermission,
                 calendarEvents = calendarEvents,
@@ -250,5 +256,80 @@ private fun LifeHomeDashboardContent(
                 onNavigate = onNavigate
             )
         }
+    }
+}
+
+@Composable
+private fun HomeHebcalCard(onOpenSettings: () -> Unit) {
+    val appContainer = com.menash.myself.core.di.LocalAppContainer.current
+    val selectedCity by appContainer.hebcalRepository.selectedCityFlow.collectAsStateWithLifecycle()
+    val hebcalData by appContainer.hebcalRepository.hebcalDataFlow.collectAsStateWithLifecycle()
+
+    var showSettingsDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showSettingsDialog = true }
+            .testTag("home_hebcal_card"),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "לוח עברי וזמני שבת",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "נתונים: Hebcal.com",
+                    fontSize = 10.sp,
+                    color = Color.Gray
+                )
+            }
+
+            if (selectedCity == null) {
+                Text(
+                    text = "בחר עיר",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.error
+                )
+            } else {
+                val cityText = selectedCity?.nameHebrew ?: ""
+                val hebrewDate = hebcalData?.currentHebrewDate ?: "יום עברי"
+                val candles = hebcalData?.upcomingShabbatCandles
+                val havdalah = hebcalData?.upcomingShabbatHavdalah
+
+                Text(
+                    text = "$cityText | $hebrewDate",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+                if (candles != null) {
+                    Text(text = candles, fontSize = 12.sp)
+                }
+                if (havdalah != null) {
+                    Text(text = havdalah, fontSize = 12.sp)
+                }
+            }
+        }
+    }
+
+    if (showSettingsDialog) {
+        com.menash.myself.ui.settings.SettingsDialog(
+            currentRate = 3.11,
+            lastBackupTimestamp = 0L,
+            onDismiss = { showSettingsDialog = false },
+            onSaveRate = {}
+        )
     }
 }

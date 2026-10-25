@@ -16,20 +16,31 @@ object ErrorMapper {
 
     fun toFriendlyMessage(throwable: Throwable?): String {
         if (throwable == null) return MSG_UNKNOWN
+
+        // Check FirebaseFirestoreException code
+        if (throwable is com.google.firebase.firestore.FirebaseFirestoreException) {
+            when (throwable.code) {
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED -> return MSG_PERMISSION_DENIED
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE -> return MSG_OFFLINE
+                else -> {}
+            }
+        }
+
+        // Check network exceptions
+        val isNetwork = throwable is UnknownHostException ||
+                throwable is SocketTimeoutException ||
+                throwable is java.net.ConnectException ||
+                (throwable is IOException && !(throwable is java.io.FileNotFoundException))
+
+        if (isNetwork) {
+            val msg = (throwable.message ?: "").lowercase()
+            if (msg.contains("unavailable") || msg.contains("offline") || msg.contains("network") || msg.contains("unable to resolve host") || throwable is UnknownHostException || throwable is SocketTimeoutException || throwable is java.net.ConnectException) {
+                return MSG_OFFLINE
+            }
+        }
+
         val msg = (throwable.message ?: "").lowercase()
         val causeMsg = (throwable.cause?.message ?: "").lowercase()
-
-        val isOffline = throwable is UnknownHostException ||
-                throwable is SocketTimeoutException ||
-                throwable is IOException ||
-                msg.contains("unavailable") ||
-                msg.contains("offline") ||
-                msg.contains("network") ||
-                msg.contains("unable to resolve host") ||
-                causeMsg.contains("unavailable") ||
-                causeMsg.contains("offline")
-
-        if (isOffline) return MSG_OFFLINE
 
         val isPermission = msg.contains("permission_denied") ||
                 msg.contains("permission denied") ||

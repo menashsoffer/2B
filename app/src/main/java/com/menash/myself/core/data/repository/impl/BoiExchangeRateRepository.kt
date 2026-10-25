@@ -41,6 +41,15 @@ class BoiExchangeRateRepository(
     }
 
     override suspend fun fetchHistoricalRate(date: LocalDate): Result<BoiRate> {
-        return client.fetchHistoricalRate(date)
+        // Query window of ~10 days back to find the latest valid representative rate published on or before date
+        var targetDate = date
+        for (i in 0..10) {
+            val res = client.fetchHistoricalRate(targetDate)
+            if (res.isSuccess && res.getOrNull() != null) {
+                return res
+            }
+            targetDate = targetDate.minusDays(1)
+        }
+        return client.fetchLatestRate()
     }
 }

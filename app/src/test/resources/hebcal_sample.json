@@ -1,0 +1,24 @@
+{
+  "title": "Hebcal Calendar",
+  "date": "2026-10-25",
+  "items": [
+    {
+      "title": "Rosh Chodesh Cheshvan",
+      "date": "2026-10-25",
+      "category": "roshchodesh",
+      "hebrew": "רֹאשׁ חוֹדֶשׁ חֶשְׁוָן"
+    },
+    {
+      "title": "Candle lighting: 17:23",
+      "date": "2026-10-23",
+      "category": "candles",
+      "hebrew": "הדלקת נרות"
+    },
+    {
+      "title": "Havdalah: 18:20",
+      "date": "2026-10-24",
+      "category": "havdalah",
+      "hebrew": "הבדלה"
+    }
+  ]
+}

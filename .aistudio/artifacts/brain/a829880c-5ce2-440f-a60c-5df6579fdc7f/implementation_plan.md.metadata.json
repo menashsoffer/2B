@@ -1,6 +1,6 @@
 {
-  "summary":  "Updated implementation plan to record completion of all 6 pre-Step 6 review fixes with tests and Step 6 (AppContainer wiring into ViewModels across all screens).",
-  "updatedAt":  "2026-10-25T09:06:27.942207098Z",
+  "summary":  "Implementation plan for fixing manual override, wiring BoiSyncWorker and Hebcal on app startup and Home screen, handling staleness, historical rates, real test resources, Hebrew dates, strings.xml extraction, ErrorMapper classification, city picker, tests, and formatting.",
+  "updatedAt":  "2026-10-25T16:01:03.889841304Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
