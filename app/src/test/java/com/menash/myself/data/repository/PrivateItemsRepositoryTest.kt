@@ -1,9 +1,9 @@
 package com.menash.myself.data.repository
 
+import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.impl.FirestoreTaskRepository
 import com.menash.myself.core.data.session.DefaultHouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
-import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.data.firestore.LifeHubRepository
 import com.menash.myself.data.models.Household
@@ -18,17 +18,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Tests for Blocking 2:
- * Private items (isPrivate = true) are written to users/{uid}/private/{collection}/{id},
- * never to the household subcollection. Reads merge household items + the viewer's private items.
+ * Tests for Blocking 2 & ItemLocation:
+ * Private items (isPrivate = true) are routed via ItemLocation.Private(uid) to
+ * users/{uid}/private/{collection}/items/{id}, never to the household subcollection.
+ * Reads merge household items + the viewer's private items.
  * A partner cannot see the owner's private task.
  */
 class PrivateItemsRepositoryTest {
 
     @Test
-    fun createTask_whenIsPrivateTrue_passesPrivateSpaceAndNeverWritesToHousehold() = runBlocking {
+    fun createTask_whenIsPrivateTrue_usesTypedItemLocationPrivateAndNeverWritesToHousehold() = runBlocking {
         var capturedSpace: String? = null
-        var capturedHouseholdId: String? = null
+        var capturedLocation: ItemLocation? = null
 
         val fakeLifeHubRepo = object : LifeHubRepository(db = null, uidProvider = { "uid_owner" }) {
             override suspend fun createTask(
@@ -38,10 +39,10 @@ class PrivateItemsRepositoryTest {
                 isFiveBefore11: Boolean,
                 dueDate: String,
                 space: String,
-                household: Household?
+                location: ItemLocation
             ) {
                 capturedSpace = space
-                capturedHouseholdId = if (space == "private") "private" else household?.id
+                capturedLocation = location
             }
         }
 
@@ -55,7 +56,37 @@ class PrivateItemsRepositoryTest {
         )
 
         assertEquals("private", capturedSpace)
-        assertEquals("private", capturedHouseholdId)
+        assertEquals(ItemLocation.Private("uid_owner"), capturedLocation)
+    }
+
+    @Test
+    fun createTask_whenIsPrivateFalse_usesTypedItemLocationHousehold() = runBlocking {
+        var capturedLocation: ItemLocation? = null
+
+        val fakeLifeHubRepo = object : LifeHubRepository(db = null, uidProvider = { "uid_owner" }) {
+            override suspend fun createTask(
+                title: String,
+                nextAction: String,
+                isTop3: Boolean,
+                isFiveBefore11: Boolean,
+                dueDate: String,
+                space: String,
+                location: ItemLocation
+            ) {
+                capturedLocation = location
+            }
+        }
+
+        val session = DefaultHouseholdSession().apply { setHouseholdId("hh_1") }
+        val repo = FirestoreTaskRepository(fakeLifeHubRepo, session)
+
+        repo.createTask(
+            title = "Shared Groceries",
+            forWhom = ForWhom.BOTH,
+            isPrivate = false
+        )
+
+        assertEquals(ItemLocation.Household("hh_1"), capturedLocation)
     }
 
     @Test
@@ -72,7 +103,7 @@ class PrivateItemsRepositoryTest {
             title = "Surprise birthday cake",
             space = "private",
             userId = "uid_owner",
-            householdId = "private"
+            householdId = ""
         )
 
         var activeViewerUid = "uid_owner"

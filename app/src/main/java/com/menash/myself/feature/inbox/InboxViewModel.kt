@@ -6,81 +6,112 @@ import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.repository.DreamRepository
 import com.menash.myself.core.data.repository.InboxRepository
 import com.menash.myself.core.data.repository.TaskRepository
+import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.InboxItem
+import com.menash.myself.core.domain.model.UiState
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class InboxViewModel(
     private val inboxRepository: InboxRepository,
     private val taskRepository: TaskRepository,
-    private val dreamRepository: DreamRepository
+    private val dreamRepository: DreamRepository,
+    private val errorReporter: ErrorReporter? = null
 ) : ViewModel() {
 
+    private val _errorState = MutableStateFlow<String?>(null)
+    val errorState: StateFlow<String?> = _errorState.asStateFlow()
+
     val inboxItems: StateFlow<List<InboxItem>> = inboxRepository.observeInbox()
+        .catch { e ->
+            handleException("observeInbox", e)
+            emit(emptyList())
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun triageToTask(item: InboxItem, onDone: () -> Unit = {}) {
+    val uiState: StateFlow<UiState<List<InboxItem>>> = combine(inboxItems, _errorState) { list, error ->
+        when {
+            error != null && list.isEmpty() -> UiState.Error(error)
+            list.isEmpty() -> UiState.Empty
+            else -> UiState.Content(list)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
+
+    fun clearError() {
+        _errorState.value = null
+        errorReporter?.clearError()
+    }
+
+    private fun handleException(action: String, e: Throwable) {
+        if (e is CancellationException) throw e
+        val msg = e.localizedMessage ?: e.message ?: "שגיאה ב-$action"
+        _errorState.value = msg
+        errorReporter?.reportError(action, e)
+    }
+
+    private fun launchCatching(action: String, block: suspend () -> Unit) {
         viewModelScope.launch {
-            val taskTitle = if (item.text.startsWith("ל") || item.text.startsWith("ה")) {
-                item.text
-            } else {
-                "לטפל ב-${item.text}"
+            try {
+                block()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                handleException(action, e)
             }
+        }
+    }
+
+    fun addInboxItem(text: String, forWhom: ForWhom = ForWhom.BOTH, isPrivate: Boolean = false) {
+        launchCatching("addInboxItem") {
+            inboxRepository.addInboxItem(text, forWhom, isPrivate)
+        }
+    }
+
+    fun triageAsTask(item: InboxItem, title: String, nextAction: String, isTop3: Boolean) {
+        launchCatching("triageAsTask") {
             taskRepository.createTask(
-                title = taskTitle,
-                nextAction = "צעד ראשון",
+                title = title,
+                nextAction = nextAction,
+                isTop3 = isTop3,
                 forWhom = item.forWhom,
                 isPrivate = item.isPrivate
             )
             inboxRepository.markInboxTriaged(item.id, "task", item.isPrivate)
-            onDone()
         }
     }
 
-    fun triageToDream(item: InboxItem, onDone: () -> Unit = {}) {
-        viewModelScope.launch {
-            val targetList = if (item.forWhom == ForWhom.ME) "פיתוח ואפליקציות" else "לבית"
+    fun triageAsDream(item: InboxItem, title: String, list: String, status: String = "חלום") {
+        launchCatching("triageAsDream") {
             dreamRepository.createDream(
                 Dream(
-                    title = item.text,
-                    list = targetList,
+                    title = title,
+                    list = list,
+                    status = status,
                     forWhom = item.forWhom,
                     isPrivate = item.isPrivate
                 )
             )
             inboxRepository.markInboxTriaged(item.id, "dream", item.isPrivate)
-            onDone()
         }
     }
 
-    fun triageToIdea(item: InboxItem, onDone: () -> Unit = {}) {
-        viewModelScope.launch {
-            dreamRepository.createDream(
-                Dream(
-                    title = item.text,
-                    list = "פיתוח ואפליקציות",
-                    forWhom = ForWhom.ME,
-                    isPrivate = item.isPrivate
-                )
-            )
-            inboxRepository.markInboxTriaged(item.id, "idea", item.isPrivate)
-            onDone()
-        }
-    }
-
-    fun triageToNote(item: InboxItem, onDone: () -> Unit = {}) {
-        viewModelScope.launch {
+    fun triageAsNote(item: InboxItem) {
+        launchCatching("triageAsNote") {
             inboxRepository.markInboxTriaged(item.id, "note", item.isPrivate)
-            onDone()
         }
     }
 
-    fun deleteItem(item: InboxItem) {
-        viewModelScope.launch {
+    fun deleteInboxItem(item: InboxItem) {
+        launchCatching("deleteInboxItem") {
             inboxRepository.deleteInboxItem(item.id, item.isPrivate)
         }
     }
@@ -89,11 +120,12 @@ class InboxViewModel(
         fun factory(
             inboxRepository: InboxRepository,
             taskRepository: TaskRepository,
-            dreamRepository: DreamRepository
+            dreamRepository: DreamRepository,
+            errorReporter: ErrorReporter? = null
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return InboxViewModel(inboxRepository, taskRepository, dreamRepository) as T
+                return InboxViewModel(inboxRepository, taskRepository, dreamRepository, errorReporter) as T
             }
         }
     }

@@ -1,7 +1,9 @@
 package com.menash.myself.core.di
 
 import android.content.Context
-import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalWithComputedDefaultOf
+import androidx.compose.ui.platform.LocalContext
+import com.menash.myself.MyselfApp
 import com.menash.myself.core.data.repository.AiSubscriptionRepository
 import com.menash.myself.core.data.repository.CarRepository
 import com.menash.myself.core.data.repository.DreamRepository
@@ -20,7 +22,9 @@ import com.menash.myself.core.data.repository.impl.RoomAiSubscriptionRepository
 import com.menash.myself.core.data.repository.impl.RoomCarRepository
 import com.menash.myself.core.data.repository.impl.RoomPensionFundRepository
 import com.menash.myself.core.data.repository.impl.RoomSettingsRepository
+import com.menash.myself.core.data.session.DefaultErrorReporter
 import com.menash.myself.core.data.session.DefaultHouseholdSession
+import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.data.AppDatabase
 import com.menash.myself.data.firestore.FirestoreManager
@@ -30,14 +34,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 
 /**
- * CompositionLocal providing the singleton AppContainer across the Compose tree.
+ * CompositionLocal reading the singleton AppContainer from MyselfApp Application instance.
  */
-val LocalAppContainer = staticCompositionLocalOf<AppContainer> {
-    error("LocalAppContainer not provided")
+val LocalAppContainer = compositionLocalWithComputedDefaultOf<AppContainer> {
+    val appContext = LocalContext.currentValue.applicationContext
+    (appContext as MyselfApp).appContainer
 }
 
 /**
- * Manual Dependency Injection Container.
+ * Manual Dependency Injection Container owned by MyselfApp.
  * Features and ViewModels depend only on repository interfaces from core/data/repository.
  */
 class AppContainer(private val context: Context) {
@@ -49,8 +54,11 @@ class AppContainer(private val context: Context) {
     private val rawLifeHubRepository by lazy { LifeHubRepository(firestore) }
     private val rawHouseholdRepository by lazy { HouseholdRepository(firestore) }
 
-    // Single source of truth for active household
+    // Single source of truth for active household (survives Activity recreation)
     val householdSession: HouseholdSession by lazy { DefaultHouseholdSession() }
+
+    // Shared error reporter for ViewModel action exceptions
+    val errorReporter: ErrorReporter by lazy { DefaultErrorReporter() }
 
     // Room repositories for calculators & settings (local offline data)
     val carRepository: CarRepository by lazy { RoomCarRepository(appDao) }
@@ -65,14 +73,19 @@ class AppContainer(private val context: Context) {
     val fitnessRepository: FitnessRepository by lazy { FirestoreFitnessRepository(rawLifeHubRepository) }
     val householdRepository: HouseholdRepositoryInterface by lazy { FirestoreHouseholdRepository(rawHouseholdRepository, householdSession) }
 
-    // Combined Firestore error flow for global banner
+    // Combined error flow for global banner
     val errorFlow: Flow<String?> by lazy {
-        combine(rawLifeHubRepository.errorFlow, rawHouseholdRepository.errorFlow) { lifeErr, hhErr ->
-            lifeErr ?: hhErr
+        combine(
+            errorReporter.errorState,
+            rawLifeHubRepository.errorFlow,
+            rawHouseholdRepository.errorFlow
+        ) { vmErr, lifeErr, hhErr ->
+            vmErr ?: lifeErr ?: hhErr
         }
     }
 
     fun clearErrors() {
+        errorReporter.clearError()
         rawLifeHubRepository.clearError()
         rawHouseholdRepository.clearError()
     }

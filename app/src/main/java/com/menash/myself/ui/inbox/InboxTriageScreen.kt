@@ -8,7 +8,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Notes
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,9 +26,14 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.menash.myself.core.designsystem.component.EmptyState
+import com.menash.myself.core.designsystem.component.ErrorState
+import com.menash.myself.core.designsystem.component.LoadingState
+import com.menash.myself.core.designsystem.component.OfflineIndicator
 import com.menash.myself.core.designsystem.component.SpaceBadge
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.core.domain.model.InboxItem
+import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.feature.inbox.InboxViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,11 +45,13 @@ fun InboxTriageScreen(onBack: () -> Unit) {
         factory = InboxViewModel.factory(
             inboxRepository = appContainer.inboxRepository,
             taskRepository = appContainer.taskRepository,
-            dreamRepository = appContainer.dreamRepository
+            dreamRepository = appContainer.dreamRepository,
+            errorReporter = appContainer.errorReporter
         )
     )
 
     val inboxItems by viewModel.inboxItems.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val viewerUid = remember { runCatching { Firebase.auth.currentUser?.uid }.getOrNull() ?: "" }
 
     Scaffold(
@@ -65,60 +76,45 @@ fun InboxTriageScreen(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        if (inboxItems.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(54.dp)
-                    )
-                    Text("ה-Inbox שלך נקי!", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text("כל המחשבות מויינו. שקט מנטלי מובטח.", fontSize = 13.sp, color = Color.Gray)
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(inboxItems, key = { it.id }) { item ->
-                    InboxItemCard(
-                        item = item,
-                        viewerUid = viewerUid,
-                        onTriageToTask = {
-                            viewModel.triageToTask(item) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            OfflineIndicator(isOffline = false)
+            when (val state = uiState) {
+                is UiState.Loading -> LoadingState()
+                is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.clearError() })
+                is UiState.Empty -> EmptyState(
+                    icon = Icons.Default.CheckCircle,
+                    title = "ה-Inbox שלך נקי!",
+                    description = "כל המחשבות מויינו. שקט מנטלי מובטח."
+                )
+                is UiState.Content -> LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.data, key = { it.id }) { item ->
+                        InboxItemCard(
+                            item = item,
+                            viewerUid = viewerUid,
+                            onTriageToTask = {
+                                viewModel.triageAsTask(item, title = item.text, nextAction = "", isTop3 = false)
                                 Toast.makeText(context, "הועבר למשימות!", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onTriageToDream = {
-                            viewModel.triageToDream(item) {
+                            },
+                            onTriageToDream = {
+                                viewModel.triageAsDream(item, title = item.text, list = "לבית")
                                 Toast.makeText(context, "הועבר לחלומות!", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onTriageToIdea = {
-                            viewModel.triageToIdea(item) {
+                            },
+                            onTriageToIdea = {
+                                viewModel.triageAsDream(item, title = item.text, list = "פיתוח ואפליקציות")
                                 Toast.makeText(context, "נשמר כרעיון לפיתוח!", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onTriageToNote = {
-                            viewModel.triageToNote(item) {
+                            },
+                            onTriageToNote = {
+                                viewModel.triageAsNote(item)
                                 Toast.makeText(context, "סומן כפתק!", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        onDelete = {
-                            viewModel.deleteItem(item)
-                        }
-                    )
+                            },
+                            onDelete = { viewModel.deleteInboxItem(item) }
+                        )
+                    }
                 }
             }
         }
@@ -152,11 +148,10 @@ fun InboxItemCard(
                     ownerUid = item.ownerUid.ifBlank { viewerUid },
                     viewerUid = viewerUid
                 )
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "מחק", tint = Color.LightGray)
                 }
             }
-
             Text(
                 text = item.text,
                 fontSize = 16.sp,
@@ -164,57 +159,67 @@ fun InboxItemCard(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 4.dp)
             )
-
             HorizontalDivider(color = Color(0xFFF1F5F9))
+            InboxTriageActionsRow(
+                onTriageToTask = onTriageToTask,
+                onTriageToDream = onTriageToDream,
+                onTriageToIdea = onTriageToIdea,
+                onTriageToNote = onTriageToNote
+            )
+        }
+    }
+}
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onTriageToTask,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("משימה", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                OutlinedButton(
-                    onClick = onTriageToDream,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("חלום", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                OutlinedButton(
-                    onClick = onTriageToIdea,
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("רעיון", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                OutlinedButton(
-                    onClick = onTriageToNote,
-                    modifier = Modifier.weight(0.9f),
-                    shape = RoundedCornerShape(8.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("פתק", fontSize = 11.sp)
-                }
-            }
+@Composable
+private fun InboxTriageActionsRow(
+    onTriageToTask: () -> Unit,
+    onTriageToDream: () -> Unit,
+    onTriageToIdea: () -> Unit,
+    onTriageToNote: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        OutlinedButton(
+            onClick = onTriageToTask,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+        ) {
+            Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("משימה", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+        OutlinedButton(
+            onClick = onTriageToDream,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+        ) {
+            Icon(Icons.Default.Star, contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("חלום", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+        OutlinedButton(
+            onClick = onTriageToIdea,
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+        ) {
+            Icon(Icons.Default.Lightbulb, contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("רעיון", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+        }
+        OutlinedButton(
+            onClick = onTriageToNote,
+            modifier = Modifier.weight(0.9f),
+            shape = RoundedCornerShape(8.dp),
+            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+        ) {
+            Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null, modifier = Modifier.size(14.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("פתק", fontSize = 11.sp)
         }
     }
 }

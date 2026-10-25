@@ -38,13 +38,7 @@ data class InboxItem(
     @ServerTimestamp val createdAt: Timestamp? = null
 )
 
-enum class DreamStatus(val displayName: String) {
-    DREAM("חלום"),
-    UNDER_REVIEW("בבדיקה"),
-    SAVING_PLANNING("חוסכים/מתכננים"),
-    DONE("בוצע"),
-    ARCHIVED("נגנז")
-}
+typealias DreamStatus = com.menash.myself.core.domain.model.DreamStatus
 
 data class DreamItem(
     @DocumentId val id: String = "",
@@ -92,14 +86,7 @@ data class FitnessLog(
     @ServerTimestamp val createdAt: Timestamp? = null
 )
 
-data class CalendarEvent(
-    val id: Long = 0,
-    val title: String = "",
-    val startTime: String = "",
-    val endTime: String = "",
-    val location: String = "",
-    val isAllDay: Boolean = false
-)
+typealias CalendarEvent = com.menash.myself.core.domain.model.CalendarEvent
 
 data class CalculatorSync(
     @DocumentId val id: String = "",

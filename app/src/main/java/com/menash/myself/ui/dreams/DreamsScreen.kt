@@ -1,41 +1,36 @@
 package com.menash.myself.ui.dreams
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.ViewKanban
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.menash.myself.core.data.mapper.ModelMappers
-import com.menash.myself.core.designsystem.component.SpaceBadge
+import com.menash.myself.core.designsystem.component.EmptyState
+import com.menash.myself.core.designsystem.component.ErrorState
+import com.menash.myself.core.designsystem.component.LoadingState
+import com.menash.myself.core.designsystem.component.OfflineIndicator
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.Money
+import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
-import com.menash.myself.data.models.DreamStatus
-import com.menash.myself.data.models.SpaceType
 import com.menash.myself.feature.dreams.DreamsViewModel
-import java.text.NumberFormat
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,20 +39,20 @@ fun DreamsScreen(onBack: () -> Unit) {
     val viewModel: DreamsViewModel = viewModel(
         factory = DreamsViewModel.factory(
             dreamRepository = appContainer.dreamRepository,
-            householdRepository = appContainer.householdRepository
+            householdRepository = appContainer.householdRepository,
+            errorReporter = appContainer.errorReporter
         )
     )
 
-    val selectedListFilter by viewModel.listFilter.collectAsState()
+    val selectedListFilter by viewModel.selectedListFilter.collectAsState()
     val visibilityFilter by viewModel.visibilityFilter.collectAsState()
-    val dreams by viewModel.dreams.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val viewerUid = remember { runCatching { Firebase.auth.currentUser?.uid }.getOrNull() ?: "" }
 
     var isBoardView by remember { mutableStateOf(false) }
     var showCreateDialog by remember { mutableStateOf(false) }
     var selectedDreamForAppIdea by remember { mutableStateOf<Dream?>(null) }
-
-    val defaultLists = listOf("הכל", "לבית", "טיסות משפחה", "פיתוח ואפליקציות")
+    var dreamToDelete by remember { mutableStateOf<Dream?>(null) }
 
     Scaffold(
         topBar = {
@@ -93,84 +88,34 @@ fun DreamsScreen(onBack: () -> Unit) {
             }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Filters Row: Lists & Typed VisibilityFilter
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(defaultLists) { listName ->
-                        FilterChip(
-                            selected = (selectedListFilter == null && listName == "הכל") || selectedListFilter == listName,
-                            onClick = { viewModel.setListFilter(if (listName == "הכל") null else listName) },
-                            label = { Text(listName, fontSize = 12.sp) }
-                        )
-                    }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
-                        onClick = { viewModel.setVisibilityFilter(VisibilityFilter.MINE_AND_BOTH) },
-                        label = { Text("שלי + של שנינו", fontSize = 11.sp) },
-                        modifier = Modifier.testTag("dreams_filter_mine_and_both")
-                    )
-                    FilterChip(
-                        selected = visibilityFilter == VisibilityFilter.ALL,
-                        onClick = { viewModel.setVisibilityFilter(VisibilityFilter.ALL) },
-                        label = { Text("הצג הכל", fontSize = 11.sp) },
-                        modifier = Modifier.testTag("dreams_filter_all")
-                    )
-                }
-            }
-
-            // Content: List View or Board View
-            if (isBoardView) {
-                DreamBoardView(
-                    dreams = dreams,
-                    onStatusChange = { dream, newStatus ->
-                        viewModel.updateDreamStatus(dream, newStatus)
-                    },
-                    onOpenAppIdea = { selectedDreamForAppIdea = it }
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(dreams, key = { it.id }) { dream ->
-                        DreamCard(
-                            dream = dream,
-                            viewerUid = viewerUid,
-                            onStatusChange = { newStatus ->
-                                viewModel.updateDreamStatus(dream, newStatus)
-                            },
-                            onAddSavings = { amount ->
-                                viewModel.addDreamSavings(dream, amount)
-                            },
-                            onOpenAppIdea = { selectedDreamForAppIdea = dream },
-                            onDelete = { viewModel.deleteDream(dream) }
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(72.dp)) }
-                }
-            }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            OfflineIndicator(isOffline = false)
+            DreamsFilterSection(
+                selectedListFilter = selectedListFilter,
+                visibilityFilter = visibilityFilter,
+                onListFilterChange = { viewModel.setListFilter(it) },
+                onVisibilityFilterChange = { viewModel.setVisibilityFilter(it) }
+            )
+            DreamsContentArea(
+                uiState = uiState,
+                isBoardView = isBoardView,
+                viewerUid = viewerUid,
+                onClearError = { viewModel.clearError() },
+                onShowCreate = { showCreateDialog = true },
+                onStatusChange = { dream, newStatus -> viewModel.updateDreamStatus(dream, newStatus) },
+                onAddSavings = { dream, amount ->
+                    val nextSaved = Money.fromShekels(dream.savedAmount.shekels + amount)
+                    viewModel.updateDreamSavings(dream, nextSaved)
+                },
+                onOpenAppIdea = { selectedDreamForAppIdea = it },
+                onRequestDelete = { dreamToDelete = it }
+            )
         }
     }
 
-    // Create Dream Dialog
     if (showCreateDialog) {
         CreateDreamDialog(
-            defaultList = selectedListFilter ?: "לבית",
+            defaultList = selectedListFilter,
             onDismiss = { showCreateDialog = false },
             onSave = { newDream ->
                 viewModel.createDream(newDream)
@@ -179,7 +124,6 @@ fun DreamsScreen(onBack: () -> Unit) {
         )
     }
 
-    // App Idea Template Dialog
     selectedDreamForAppIdea?.let { dream ->
         AppIdeaTemplateDialog(
             dream = dream,
@@ -190,361 +134,104 @@ fun DreamsScreen(onBack: () -> Unit) {
             }
         )
     }
-}
 
-@Composable
-fun DreamCard(
-    dream: Dream,
-    viewerUid: String = "",
-    onStatusChange: (String) -> Unit,
-    onAddSavings: (Double) -> Unit,
-    onOpenAppIdea: () -> Unit,
-    onDelete: () -> Unit
-) {
-    val fmt = NumberFormat.getNumberInstance(Locale.US)
-    val isAppIdea = dream.list == "פיתוח ואפליקציות"
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(dream.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(dream.list, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                        Text("•", fontSize = 11.sp, color = Color.Gray)
-                        SpaceBadge(
-                            forWhom = dream.forWhom,
-                            ownerUid = dream.ownerUid.ifBlank { viewerUid },
-                            viewerUid = viewerUid
-                        )
-                    }
-                }
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "מחק", tint = Color.LightGray)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                DreamStatus.entries.forEach { status ->
-                    val isCurrent = dream.status == status.displayName
-                    FilterChip(
-                        selected = isCurrent,
-                        onClick = { onStatusChange(status.displayName) },
-                        label = { Text(status.displayName, fontSize = 10.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                }
-            }
-
-            if (dream.estimatedCost.agoras > 0) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            "נחסך: ₪${fmt.format(dream.savedAmount.shekels.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.shekels.toInt())}",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            "${(dream.progressPercent * 100).toInt()}%",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                    LinearProgressIndicator(
-                        progress = { dream.progressPercent },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp),
-                        color = MaterialTheme.colorScheme.secondary,
-                        trackColor = Color(0xFFE2E8F0)
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { onAddSavings(100.0) },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text("+₪100", fontSize = 10.sp)
-                        }
-                        OutlinedButton(
-                            onClick = { onAddSavings(500.0) },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                            shape = RoundedCornerShape(6.dp)
-                        ) {
-                            Text("+₪500", fontSize = 10.sp)
-                        }
-                    }
-                }
-            }
-
-            if (isAppIdea) {
-                Button(
-                    onClick = onOpenAppIdea,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Lightbulb, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        if (dream.appIdeaQuestions.isNotEmpty()) "ערוך תבנית 7 שאלות לרעיון" else "מלא תבנית 7 שאלות לרעיון",
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                }
-            }
-        }
+    dreamToDelete?.let { dream ->
+        ConfirmDeleteDreamDialog(
+            dream = dream,
+            onConfirm = {
+                viewModel.deleteDream(dream)
+                dreamToDelete = null
+            },
+            onDismiss = { dreamToDelete = null }
+        )
     }
 }
 
 @Composable
-fun DreamBoardView(
-    dreams: List<Dream>,
-    onStatusChange: (Dream, String) -> Unit,
-    onOpenAppIdea: (Dream) -> Unit
+private fun DreamsFilterSection(
+    selectedListFilter: String,
+    visibilityFilter: VisibilityFilter,
+    onListFilterChange: (String) -> Unit,
+    onVisibilityFilterChange: (VisibilityFilter) -> Unit
 ) {
-    val statuses = DreamStatus.entries.map { it.displayName }
-    val scrollState = rememberScrollState()
-
-    Row(
+    val defaultLists = listOf("הכל", "לבית", "טיסות משפחה", "פיתוח ואפליקציות")
+    Column(
         modifier = Modifier
-            .fillMaxSize()
-            .horizontalScroll(scrollState)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        statuses.forEach { status ->
-            val columnDreams = dreams.filter { it.status == status }
-            Card(
-                modifier = Modifier
-                    .width(260.dp)
-                    .fillMaxHeight(),
-                shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                border = CardDefaults.outlinedCardBorder()
-            ) {
-                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(status, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("${columnDreams.size}", fontSize = 12.sp, color = Color.Gray)
-                    }
-                    HorizontalDivider()
-
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(columnDreams, key = { it.id }) { d ->
-                            Card(
-                                shape = RoundedCornerShape(10.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(d.title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                                    Text(d.list, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
-                                    if (d.estimatedCost.agoras > 0) {
-                                        Text("₪${d.savedAmount.shekels.toInt()} / ₪${d.estimatedCost.shekels.toInt()}", fontSize = 10.sp, color = Color.Gray)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(defaultLists) { listName ->
+                FilterChip(
+                    selected = selectedListFilter == listName,
+                    onClick = { onListFilterChange(listName) },
+                    label = { Text(listName, fontSize = 12.sp) }
+                )
             }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
+                onClick = { onVisibilityFilterChange(VisibilityFilter.MINE_AND_BOTH) },
+                label = { Text("שלי + של שנינו", fontSize = 11.sp) },
+                modifier = Modifier.testTag("dreams_filter_mine_and_both")
+            )
+            FilterChip(
+                selected = visibilityFilter == VisibilityFilter.ALL,
+                onClick = { onVisibilityFilterChange(VisibilityFilter.ALL) },
+                label = { Text("הצג הכל", fontSize = 11.sp) },
+                modifier = Modifier.testTag("dreams_filter_all")
+            )
         }
     }
 }
 
 @Composable
-fun CreateDreamDialog(
-    defaultList: String,
-    onDismiss: () -> Unit,
-    onSave: (Dream) -> Unit
+private fun DreamsContentArea(
+    uiState: UiState<List<Dream>>,
+    isBoardView: Boolean,
+    viewerUid: String,
+    onClearError: () -> Unit,
+    onShowCreate: () -> Unit,
+    onStatusChange: (Dream, String) -> Unit,
+    onAddSavings: (Dream, Double) -> Unit,
+    onOpenAppIdea: (Dream) -> Unit,
+    onRequestDelete: (Dream) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var list by remember { mutableStateOf(if (defaultList == "הכל") "לבית" else defaultList) }
-    var estimatedCostInput by remember { mutableStateOf("") }
-    var space by remember {
-        mutableStateOf(if (list == "פיתוח ואפליקציות") SpaceType.MINE else SpaceType.SHARED)
-    }
-
-    val availableLists = listOf("לבית", "טיסות משפחה", "פיתוח ואפליקציות", "אישי")
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("הוספת חלום / יעד", fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("שם החלום / הפריט") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text("רשימה:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    availableLists.forEach { l ->
-                        FilterChip(
-                            selected = list == l,
-                            onClick = {
-                                list = l
-                                space = if (l == "פיתוח ואפליקציות") SpaceType.MINE else SpaceType.SHARED
-                            },
-                            label = { Text(l, fontSize = 11.sp) }
+    when (uiState) {
+        is UiState.Loading -> LoadingState()
+        is UiState.Error -> ErrorState(message = uiState.message, onRetry = onClearError)
+        is UiState.Empty -> EmptyState(
+            icon = Icons.Default.Star,
+            title = "אין חלומות ברשימה זו",
+            description = "הוסף חלום חדש או עבור לרשימה אחרת",
+            actionLabel = "חלום חדש",
+            onActionClick = onShowCreate
+        )
+        is UiState.Content -> {
+            if (isBoardView) {
+                DreamBoardView(dreams = uiState.data)
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    items(uiState.data, key = { it.id }) { dream ->
+                        DreamCard(
+                            dream = dream,
+                            viewerUid = viewerUid,
+                            onStatusChange = { newStatus -> onStatusChange(dream, newStatus) },
+                            onAddSavings = { amount -> onAddSavings(dream, amount) },
+                            onOpenAppIdea = { onOpenAppIdea(dream) },
+                            onDelete = { onRequestDelete(dream) }
                         )
                     }
+                    item { Spacer(modifier = Modifier.height(72.dp)) }
                 }
-
-                OutlinedTextField(
-                    value = estimatedCostInput,
-                    onValueChange = { estimatedCostInput = it },
-                    label = { Text("עלות משוערת (₪) - אופציונלי") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text("מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    SpaceType.entries.forEach { s ->
-                        FilterChip(
-                            selected = space == s,
-                            onClick = { space = s },
-                            label = { Text(s.displayName, fontSize = 11.sp) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (title.isNotBlank()) {
-                        val (forWhom, isPrivate) = ModelMappers.legacySpaceToForWhom(space.id)
-                        onSave(
-                            Dream(
-                                title = title.trim(),
-                                list = list,
-                                estimatedCost = Money.fromShekels(estimatedCostInput.toDoubleOrNull() ?: 0.0),
-                                forWhom = forWhom,
-                                isPrivate = isPrivate
-                            )
-                        )
-                    }
-                },
-                enabled = title.isNotBlank()
-            ) {
-                Text("שמור חלום")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
-        }
-    )
-}
-
-@Composable
-fun AppIdeaTemplateDialog(
-    dream: Dream,
-    onDismiss: () -> Unit,
-    onSave: (questions: Map<String, String>, nextAction: String) -> Unit
-) {
-    val questionPrompts = listOf(
-        "1. מה הבעיה הכואבת?",
-        "2. למי זה מיועד בדיוק?",
-        "3. מה הפתרון המינימלי (MVP)?",
-        "4. מה היתרון הייחודי / הוגן?",
-        "5. איך מרוויחים / מודל עסקי?",
-        "6. מה הסיכון הכי גדול?",
-        "7. מה המדד להצלחה ראשונית?"
-    )
-
-    val answers = remember {
-        mutableStateMapOf<String, String>().apply {
-            questionPrompts.forEach { q ->
-                this[q] = dream.appIdeaQuestions[q] ?: ""
             }
         }
     }
-    var nextActionInput by remember { mutableStateOf(dream.nextAction) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("תבנית 7 שאלות לרעיון + Next Action", fontWeight = FontWeight.Bold, fontSize = 17.sp) },
-        text = {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 450.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                item {
-                    Text(
-                        "ענה בקצרה ובדיוק — מונע התפזרות ועומס קוגניטיבי:",
-                        fontSize = 12.sp,
-                        color = Color.DarkGray
-                    )
-                }
-
-                items(questionPrompts) { question ->
-                    OutlinedTextField(
-                        value = answers[question] ?: "",
-                        onValueChange = { answers[question] = it },
-                        label = { Text(question, fontSize = 11.sp) },
-                        modifier = Modifier.fillMaxWidth(),
-                        maxLines = 3
-                    )
-                }
-
-                item {
-                    OutlinedTextField(
-                        value = nextActionInput,
-                        onValueChange = { nextActionInput = it },
-                        label = { Text("צעד ראשון מיידי (Next Action)", fontWeight = FontWeight.Bold) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onSave(answers.toMap(), nextActionInput.trim()) }) {
-                Text("שמור תבנית")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("ביטול") }
-        }
-    )
 }

@@ -176,12 +176,18 @@
 - **ניתוק מוחלט של מסכי ה-UI ממימושי הדאטה:**
   - כל מסכי ה-UI (`MainActivity`, `LifeHomeScreen`, `TasksScreen`, `DreamsScreen`, `InboxTriageScreen`, `FitnessScreen`, `HouseholdScreen`, `FileCatalogScreen`, `CalculatorsHubScreen`, `HomeScreen`, `CarComparisonScreen`, `AiSubscriptionsScreen`, `PensionSavingsScreen`) צורכים נתונים ופעולות אך ורק דרך ה-ViewModels שלהם ו-`LocalAppContainer`, ללא שום מופע ישיר של `LifeHubRepository`, `HouseholdRepository`, או `AppDatabase.getDatabase`.
 
-### שלב 7: ניווט 5 טאבים ואינטראקציה (Navigation & Interactions)
-- **Bottom Navigation Bar (M3):** בית, חלומות, משימות, מחשבונים, עוד.
-- תצוגת ברירת מחדל: "שלי + של שנינו" עם צ'יפ "הצג הכל".
-- כפתור לכידה מהירה (+ FAB) נגיש תמיד.
-- שחזור פריטים של `BOTH` מציג אזהרה מפורשת.
-- Snackbar עם Undo לכל פעולה הפיכה; דיאלוג אישור לפעולות הרסניות.
+- **תיקוני ביקורת לפני שלב 7 (Pre-Step 7 Review Fixes — 100% ירוק עם בדיקות):**
+  1. **מניעת קריסות מפעולות ViewModel:** כל פעולת `viewModelScope.launch` (יצירה/עדכון/מחיקה/שינוי סטטוס) בכל 12 ה-ViewModels עטופה ב-`launchCatching`, כך שחריגות (כגון `requireHouseholdId` כאשר טרם הוגדר משק בית) מנותבות ל-`errorState` ול-`ErrorReporter` במקום לגרום לקריסה (`Step6And7ReviewFixesTest`).
+  2. **בעלות `AppContainer` ב-`MyselfApp : Application()`:** ה-`AppContainer` ו-`HouseholdSession` מוחזקים ב-`MyselfApp` הרשום ב-`AndroidManifest.xml`, ו-`LocalAppContainer` שואב אותם אוטומטית מה-Application כך שהם שורדים יצירה מחדש של ה-Activity (סיבוב מסך, מצב כהה, החלפת שפה).
+  3. **ברירת מחדל `VisibilityFilter.MINE_AND_BOTH`:** מוגדרת במשימות, חלומות ומסך הבית, עם צ'יפ "הצג הכל" במרחק לחיצה אחת.
+  4. **אפס ייבוא משכבת הדאטה ב-`feature/` או `ui/`:** הוסרו לחלוטין כל השימושים ב-`ModelMappers` וב-`com.menash.myself.data.*` משכבות ה-UI וה-Feature. ה-UI מעביר ערכים מוקלדים בלבד (`ForWhom`, `isPrivate`, `LocalDate?`).
+  5. **החלפת הסנטינל `"private"` בטיפוס מוקלד `ItemLocation`:** נוצר `sealed class ItemLocation { data class Household(val id: String); data class Private(val uid: String) }` בתוך `core/data` לניתוב מוקלד ובטוח בין מסמכי משק הבית לאוסף הפרטי של המשתמש.
+
+### שלב 7: ניווט 5 טאבים, פיצול מסכים ואינטראקציה (Navigation, Screen Splitting & UiState) — הושלם (100% ירוק) ✅
+- **פיצול מסכים מודולרי:** כל קובץ ב-`ui/` וב-`feature/` קצר מ-300 שורות וכל `@Composable` קצר מ-80 שורות (`TasksScreen` + `TaskCardComponents` + `TaskDialogs`, `DreamsScreen` + `DreamCardComponents` + `DreamDialogs`, `LifeHomeScreen` + `LifeHomeSections` + `LifeHomeCards`, `CarComparisonScreen` + `CarCardComponents` + `CarDialogs`, `AiSubscriptionsScreen` + `AiSubscriptionCardComponents`, `PensionSavingsScreen` + `PensionSummaryComponents` + `PensionCardComponents`, `HouseholdScreen` + `HouseholdCardComponents`, `MoreScreen`).
+- **`UiState` אחיד לכל מסך:** `Loading` / `Empty` / `Error` / `Content` בשילוב רכיבי מערכת העיצוב `LoadingState`, `EmptyState`, `ErrorState`, ו-`OfflineIndicator`.
+- **Bottom Navigation Bar (M3) עם 5 טאבים:** בית, חלומות, משימות, מחשבונים, עוד + כפתור לכידה מהירה קבוע (+ FAB).
+- **Snackbar עם Undo ודיאלוג אישור מחיקה:** Snackbar עם פעולת ביטול (Undo) בסימון משימה, ודיאלוג אישור לפני מחיקה כולל התראה מפורשת לפריטים משותפים (`ForWhom.BOTH`).
 
 ### שלב 8: מקורות מידע חיצוניים רשמיים ומטמון DataStore (`core/external`)
 - **בנק ישראל (BOI SDMX CSV):** שאיבת שער דולר יציג רשמי ללא מפתח API; שמירה ב-DataStore מקומי; בדיקת עדכון יומית אחרי 16:00; תמיכה בעקיפה ידנית מסומנת.

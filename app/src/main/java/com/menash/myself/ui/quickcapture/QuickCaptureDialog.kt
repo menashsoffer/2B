@@ -6,21 +6,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.models.SpaceType
+import com.menash.myself.core.domain.model.ForWhom
+import com.menash.myself.core.domain.model.SpaceSelection
 
 @Composable
 fun QuickCaptureDialog(
     onDismiss: () -> Unit,
-    onSave: (text: String, space: String) -> Unit
+    onSave: (text: String, forWhom: ForWhom, isPrivate: Boolean) -> Unit
 ) {
     var text by remember { mutableStateOf("") }
-    var selectedSpace by remember { mutableStateOf(SpaceType.SHARED) }
+    var selectedSpace by remember { mutableStateOf(SpaceSelection.SHARED) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -32,49 +32,18 @@ fun QuickCaptureDialog(
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = "זרוק לפה כל מחשבה, משימה או רעיון בלי לחשוב. נמיין מאוחר יותר בלחיצה אחת.",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    placeholder = { Text("מה עולה לך בראש עכשיו?") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 100.dp)
-                        .testTag("quick_capture_input"),
-                    shape = RoundedCornerShape(12.dp),
-                    maxLines = 4
-                )
-
-                // Space Toggle: שלי / משותף / של אשתי
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("שיוך מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        SpaceType.entries.forEach { space ->
-                            FilterChip(
-                                selected = selectedSpace == space,
-                                onClick = { selectedSpace = space },
-                                label = { Text(space.displayName, fontSize = 11.sp) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
-            }
+            QuickCaptureFormBody(
+                text = text,
+                onTextChange = { text = it },
+                selectedSpace = selectedSpace,
+                onSelectSpace = { selectedSpace = it }
+            )
         },
         confirmButton = {
             Button(
                 onClick = {
                     if (text.isNotBlank()) {
-                        onSave(text.trim(), selectedSpace.id)
+                        onSave(text.trim(), selectedSpace.forWhom, selectedSpace.isPrivate)
                         onDismiss()
                     }
                 },
@@ -93,4 +62,47 @@ fun QuickCaptureDialog(
             }
         }
     )
+}
+
+@Composable
+private fun QuickCaptureFormBody(
+    text: String,
+    onTextChange: (String) -> Unit,
+    selectedSpace: SpaceSelection,
+    onSelectSpace: (SpaceSelection) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(
+            text = "זרוק לפה כל מחשבה, משימה או רעיון בלי לחשוב. נמיין מאוחר יותר בלחיצה אחת.",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        OutlinedTextField(
+            value = text,
+            onValueChange = onTextChange,
+            placeholder = { Text("מה עולה לך בראש עכשיו?") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 100.dp)
+                .testTag("quick_capture_input"),
+            shape = RoundedCornerShape(12.dp),
+            maxLines = 4
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("שיוך מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                SpaceSelection.entries.forEach { space ->
+                    FilterChip(
+                        selected = selectedSpace == space,
+                        onClick = { onSelectSpace(space) },
+                        label = { Text(space.displayName, fontSize = 11.sp) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
 }

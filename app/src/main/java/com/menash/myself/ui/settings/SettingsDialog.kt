@@ -11,7 +11,6 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -20,7 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.io.BackupRestoreManager
+import com.menash.myself.core.di.LocalAppContainer
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -31,11 +30,14 @@ fun SettingsDialog(
     currentRate: Double,
     lastBackupTimestamp: Long,
     onDismiss: () -> Unit,
-    onSaveRate: (Double) -> Unit
+    onSaveRate: (Double) -> Unit,
+    onBackupNow: (() -> Unit)? = null,
+    onRestoreJson: ((String) -> Unit)? = null
 ) {
     var rateInput by remember { mutableStateOf(currentRate.toString()) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val appContainer = LocalAppContainer.current
 
     val fileRestoreLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -45,12 +47,13 @@ fun SettingsDialog(
                 try {
                     val jsonStr = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { r -> r.readText() }
                     if (jsonStr != null) {
-                        val success = BackupRestoreManager.restoreFromJson(context, jsonStr)
-                        if (success) {
-                            Toast.makeText(context, "הנתונים שוחזרו בהצלחה!", Toast.LENGTH_LONG).show()
-                            onDismiss()
+                        if (onRestoreJson != null) {
+                            onRestoreJson(jsonStr)
                         } else {
-                            Toast.makeText(context, "שגיאה בפורמט קובץ הגיבוי", Toast.LENGTH_LONG).show()
+                            val success = appContainer.settingsRepository.restoreFromJson(context, jsonStr)
+                            val msg = if (success) "הנתונים שוחזרו בהצלחה!" else "שגיאה בפורמט קובץ הגיבוי"
+                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                            if (success) onDismiss()
                         }
                     }
                 } catch (e: Exception) {
@@ -60,76 +63,27 @@ fun SettingsDialog(
         }
     }
 
-    val lastBackupText = if (lastBackupTimestamp == 0L) {
-        "טרם בוצע גיבוי"
-    } else {
-        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(lastBackupTimestamp))
-    }
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text("הגדרות וניהול נתונים", fontWeight = FontWeight.Bold, fontSize = 20.sp)
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // USD to ILS rate
-                OutlinedTextField(
-                    value = rateInput,
-                    onValueChange = { rateInput = it },
-                    label = { Text("שער דולר ידני (USD → ₪)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .testTag("usd_rate_input"),
-                    supportingText = { Text("משפיע מיידית על כל המחשבונים (מנויים, טיולים וכו')") }
-                )
-
-                HorizontalDivider()
-
-                // Backup and Restore Section
-                Text("גיבוי ושחזור מקומי (JSON)", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text(
-                    "גיבוי אחרון: $lastBackupText",
-                    fontSize = 12.sp,
-                    color = Color.DarkGray
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("backup_now_button"),
-                        onClick = {
-                            scope.launch {
-                                BackupRestoreManager.createAndShareBackup(context)
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("גבה כעת")
+            SettingsDialogBody(
+                rateInput = rateInput,
+                onRateInputChange = { rateInput = it },
+                lastBackupTimestamp = lastBackupTimestamp,
+                onBackupClick = {
+                    if (onBackupNow != null) {
+                        onBackupNow()
+                    } else {
+                        scope.launch { appContainer.settingsRepository.createAndShareBackup(context) }
                     }
-
-                    OutlinedButton(
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("restore_backup_button"),
-                        onClick = {
-                            fileRestoreLauncher.launch(arrayOf("application/json", "*/*"))
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("שחזר מקובץ")
-                    }
+                },
+                onRestoreClick = {
+                    fileRestoreLauncher.launch(arrayOf("application/json", "*/*"))
                 }
-            }
+            )
         },
         confirmButton = {
             Button(
@@ -151,4 +105,75 @@ fun SettingsDialog(
             }
         }
     )
+}
+
+@Composable
+private fun SettingsDialogBody(
+    rateInput: String,
+    onRateInputChange: (String) -> Unit,
+    lastBackupTimestamp: Long,
+    onBackupClick: () -> Unit,
+    onRestoreClick: () -> Unit
+) {
+    val lastBackupText = if (lastBackupTimestamp == 0L) {
+        "טרם בוצע גיבוי"
+    } else {
+        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(lastBackupTimestamp))
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        OutlinedTextField(
+            value = rateInput,
+            onValueChange = onRateInputChange,
+            label = { Text("שער דולר ידני (USD → ₪)") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("usd_rate_input"),
+            supportingText = { Text("משפיע מיידית על כל המחשבונים (מנויים, טיולים וכו')") }
+        )
+
+        HorizontalDivider()
+
+        Text("גיבוי ושחזור מקומי (JSON)", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Text(
+            "גיבוי אחרון: $lastBackupText",
+            fontSize = 12.sp,
+            color = Color.DarkGray
+        )
+        Text(
+            "שים לב: שחזור פריטים משותפים (של שנינו) יעדכן את הנתונים עבור שני בני הזוג.",
+            fontSize = 11.sp,
+            color = MaterialTheme.colorScheme.error
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Button(
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("backup_now_button"),
+                onClick = onBackupClick,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Default.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("גבה כעת")
+            }
+
+            OutlinedButton(
+                modifier = Modifier
+                    .weight(1f)
+                    .testTag("restore_backup_button"),
+                onClick = onRestoreClick,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("שחזר מקובץ")
+            }
+        }
+    }
 }

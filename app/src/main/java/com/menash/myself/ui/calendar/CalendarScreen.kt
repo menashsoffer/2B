@@ -3,14 +3,15 @@ package com.menash.myself.ui.calendar
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.EventAvailable
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.menash.myself.calendar.CalendarHelper
-import com.menash.myself.data.models.CalendarEvent
+import com.menash.myself.core.designsystem.component.EmptyState
+import com.menash.myself.core.designsystem.component.OfflineIndicator
+import com.menash.myself.core.domain.model.CalendarEvent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,110 +68,97 @@ fun CalendarScreen(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            if (!hasPermission) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(44.dp)
-                        )
-                        Text(
-                            "חיבור ליומן המכשיר לקריאה בלבד",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            "האפליקציה יכולה להציג לך את אירועי היום ישירות במסך הבית בלי לעבור בין אפליקציות.",
-                            fontSize = 12.sp,
-                            color = Color.DarkGray
-                        )
-                        Button(
-                            onClick = { permissionLauncher.launch(Manifest.permission.READ_CALENDAR) },
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Text("אשר קריאת יומן")
-                        }
-                    }
-                }
-            } else {
-                if (events.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.EventAvailable, contentDescription = null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(40.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("אין אירועים ביומן להיום", fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-                            Text("יום פנוי לעשייה ממוקדת ומנוחה.", fontSize = 12.sp, color = Color.Gray)
-                        }
-                    }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            OfflineIndicator(isOffline = false)
+            Column(
+                modifier = Modifier.fillMaxSize().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                if (!hasPermission) {
+                    CalendarPermissionCard(onRequest = { permissionLauncher.launch(Manifest.permission.READ_CALENDAR) })
+                } else if (events.isEmpty()) {
+                    EmptyState(
+                        icon = Icons.Default.EventAvailable,
+                        title = "אין אירועים ביומן להיום",
+                        description = "יום פנוי לעשייה ממוקדת ומנוחה."
+                    )
                 } else {
                     Text("אירועי היום (${events.size})", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         items(events, key = { it.id }) { event ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(
-                                        modifier = Modifier.width(60.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Text(
-                                            text = if (event.isAllDay) "כל היום" else event.startTime,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        if (!event.isAllDay && event.endTime.isNotBlank()) {
-                                            Text(
-                                                text = event.endTime,
-                                                fontSize = 11.sp,
-                                                color = Color.Gray
-                                            )
-                                        }
-                                    }
-
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    VerticalDivider(modifier = Modifier.height(36.dp), color = Color(0xFFE2E8F0))
-                                    Spacer(modifier = Modifier.width(12.dp))
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(event.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                        if (event.location.isNotBlank()) {
-                                            Text("📍 ${event.location}", fontSize = 11.sp, color = Color.Gray)
-                                        }
-                                    }
-                                }
-                            }
+                            CalendarEventRowCard(event = event)
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarPermissionCard(onRequest: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Icon(
+                Icons.Default.CalendarMonth,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(44.dp)
+            )
+            Text("חיבור ליומן המכשיר לקריאה בלבד", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(
+                "האפליקציה יכולה להציג לך את אירועי היום ישירות במסך הבית בלי לעבור בין אפליקציות.",
+                fontSize = 12.sp,
+                color = Color.DarkGray
+            )
+            Button(onClick = onRequest, shape = RoundedCornerShape(10.dp)) {
+                Text("אשר קריאת יומן")
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarEventRowCard(event: CalendarEvent) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.width(60.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = if (event.isAllDay) "כל היום" else event.startTime,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                if (!event.isAllDay && event.endTime.isNotBlank()) {
+                    Text(text = event.endTime, fontSize = 11.sp, color = Color.Gray)
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            VerticalDivider(modifier = Modifier.height(36.dp), color = Color(0xFFE2E8F0))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(event.title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                if (event.location.isNotBlank()) {
+                    Text("📍 ${event.location}", fontSize = 11.sp, color = Color.Gray)
                 }
             }
         }
