@@ -1,0 +1,6 @@
+{
+  "name": "המחשבונים שלי",
+  "description": "מרכז מחשבונים פיננסיים אישיים: רכבים ל-5 שנים, מנויי AI, פנסיה וחיסכון, ועוד. שמירה מקומית ואופליין.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
