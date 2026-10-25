@@ -138,7 +138,7 @@ fun SettingsDialog(
                         } else {
                             Text("שער רשמי: $officialStr", fontSize = 12.sp)
                         }
-                        if (r.isStale) {
+                        if (com.menash.myself.core.external.boi.BoiStalenessPolicy.isStale(r.officialRateDate, r.officialFetchedAt, java.time.Instant.now())) {
                             Text("לא עודכן לאחרונה", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)
                         }
                     } ?: Text("לא הוגדר שער", fontSize = 12.sp, color = Color.Gray)

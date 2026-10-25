@@ -78,7 +78,12 @@ class AppContainer(private val context: Context) {
     // External data repositories
     val boiRateStore by lazy { BoiRateStore(context.boiDataStore) }
     val exchangeRateRepository: ExchangeRateRepository by lazy {
-        BoiExchangeRateRepository(boiRateStore, BoiExchangeRateClient(), applicationScope)
+        BoiExchangeRateRepository(
+            boiRateStore,
+            BoiExchangeRateClient(),
+            java.time.Clock.system(com.menash.myself.core.external.boi.BoiStalenessPolicy.ISRAEL_ZONE),
+            applicationScope
+        )
     }
 
     val hebcalStore by lazy { HebcalStore(context.hebcalDataStore) }

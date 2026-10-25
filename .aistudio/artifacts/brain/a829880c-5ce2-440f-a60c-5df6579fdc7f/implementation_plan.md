@@ -129,7 +129,7 @@
 - **`core/data/repository/` (ממשקים בלבד):**
   - `CarRepository`, `AiSubscriptionRepository`, `PensionFundRepository`
   - `TaskRepository`, `DreamRepository`, `InboxRepository`, `FitnessRepository`, `HouseholdRepositoryInterface`
-- **`core/data/repository/impl/` (עטיפות המימושים הקיימים):**
+- עטיפת המימושים הקיימים
   - עטיפות Room: `RoomCarRepository`, `RoomAiSubscriptionRepository`, `RoomPensionFundRepository` עוטפות את `AppDao` / `AppDatabase` (קובץ `"my_calculators.db"`).
   - עטיפות Firestore: `FirestoreTaskRepository`, `FirestoreDreamRepository`, `FirestoreInboxRepository`, `FirestoreFitnessRepository`, `FirestoreHouseholdRepository` עוטפות את `LifeHubRepository` ו-`HouseholdRepository`.
 - **`core/di/AppContainer.kt`:** מכולת תלויות ידנית המרכזת את כל הממשקים ומאפשרת לשכבות הפיצ'רים להיות תלויות אך ורק בממשקים הנקיים.
@@ -193,13 +193,20 @@
 - **בנק ישראל (BOI SDMX CSV):** שאיבת שער דולר יציג רשמי ללא מפתח API; שמירה ב-DataStore מקומי; בדיקת עדכון יומית אחרי 16:00; תמיכה בעקיפה ידנית מסומנת.
 - **לוח עברי וזמני שבת (Hebcal REST API):** תאריך עברי, חגים, וזמני שבת לפי העיר שנבחרה בהגדרות; שמירה ב-DataStore מקומי; קרדיט רשמי "נתונים: Hebcal.com".
 
-### שלב 9: מיגרציית נתוני Room אל Firestore (Room → Firestore Migration)
-- מיגרציה מלאה של טבלאות Room (`cars`, `ai_subscriptions`, `pension_funds`) אל אוספי Firestore תחת משק הבית (`households/{hid}/...`).
-- בדיקות אידמפוטנטיות וגיבוי מקומי אוטומטי טרם ביצוע המיגרציה.
-
-### שלב 9.5: הסבת מחשבונים ל-Money (Calculators → Money)
-- הסבת המחשבונים (`CarCostCalculator`, `AiSubscriptionCalculator`, `PensionSavingsCalculator`) לעבודה עם טיפוס `Money` באגורות במקום `Double`.
-- הוספת בדיקות מאפיינות ובדיקות יחידה ייעודיות לדיוק אגורות ללא שגיאות עיגול.
+### שלב 9: פאזה סופית: מיגרציית סכמה ב-Firestore והעברת מחשבונים מ-Room
+- מתבצעת רק לאחר שכל הרה-פקטורינג הסתיים ועבר את כל הבדיקות.
+- **סדר ביצוע מחייב:**
+  1. **התחברות (Sign in):** המשתמש מחובר בחשבון Google.
+  2. **יצירת/הצטרפות למשק בית (Create/Join Household):** וידוא קיום מסמך הבית.
+  3. **העברת מחשבונים מ-Room:** העברת נתוני `cars`, `ai_subscriptions`, `pension_funds` אל `households/{hid}/...`.
+  4. **מיגרציית סכמה למסמכי Firestore הקיימים:**
+     - `tasks`, `dreams`, `inbox`: הסבת `space` ("mine"/"shared") ל-`ownerUid`, `forWhom` (`ME`/`PARTNER`/`BOTH`), ו-`isPrivate = false`.
+     - המרת ערכים כספיים מ-`Double` ל-`Long` באגורות.
+     - המרת תאריכים למחרוזות תקניות בפורמט ISO `yyyy-MM-dd`.
+  5. **קביעת בעלות:** ה-`ownerUid` נקבע כמשתמש המחובר המריץ, `isPrivate = false`.
+- **אידמפוטנטיות ובטיחות:** יצירת מזהים יציבים (Stable IDs) ודגל `migratedAt` המונע כפילויות בכל הרצה חוזרת.
+- **אימות כפול:** גיבוי מקומי מלא של בסיס הנתונים Room לפני המיגרציה, ובדיקת כמויות שורות מלאה מול מסמכי Firestore.
+- **הסרת Room:** רק לאחר אימות סופי ומוחלט של כל הנתונים ב-Firestore, ניתוק Room והסרתו מהפרויקט.
 
 ---
 

@@ -10,13 +10,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
 import java.time.LocalDate
+import com.menash.myself.core.external.boi.BoiRateSource
+import java.time.Clock
 
-/**
- * Implementation of ExchangeRateRepository backed by BoiRateStore DataStore and BoiExchangeRateClient.
- */
 class BoiExchangeRateRepository(
     private val store: BoiRateStore,
-    private val client: BoiExchangeRateClient,
+    private val source: BoiRateSource,
+    private val clock: Clock,
     externalScope: CoroutineScope
 ) : ExchangeRateRepository {
 
@@ -25,10 +25,15 @@ class BoiExchangeRateRepository(
 
     override suspend fun refreshRateIfNeeded(): Result<BoiRate?> {
         val current = currentRateFlow.value
-        if (current == null || current.isStale) {
-            val res = client.fetchLatestRate()
+        val now = clock.instant()
+        val isStale = if (current != null && current.officialRateDate != null && current.officialFetchedAt != null) {
+            com.menash.myself.core.external.boi.BoiStalenessPolicy.isStale(current.officialRateDate, current.officialFetchedAt, now)
+        } else false
+        
+        if (current == null || isStale) {
+            val res = source.fetchLatestRate()
             res.getOrNull()?.let { store.saveAutoRate(it) }
-            return res.map { store.rateFlow.toString(); it }
+            return res.map { it }
         }
         return Result.success(current)
     }
@@ -43,16 +48,23 @@ class BoiExchangeRateRepository(
 
     override suspend fun fetchHistoricalRate(date: LocalDate): Result<BoiRate> {
         val startDate = date.minusDays(10)
-        return client.fetchRateWindow(startDate, date).map { observations ->
-            val valid = observations.filter { !it.first.isAfter(date) }
-            val latest = valid.lastOrNull() ?: throw IllegalArgumentException("No historical rate found in window on or before $date")
-            BoiRate(
+        val res = source.fetchRateWindow(startDate, date)
+        if (res.isFailure) return Result.failure(res.exceptionOrNull()!!)
+        
+        val observations = res.getOrThrow()
+        val valid = observations.filter { !it.first.isAfter(date) }
+        val latest = valid.lastOrNull()
+        
+        return if (latest != null) {
+            Result.success(BoiRate(
                 officialRate = latest.second,
                 officialRateDate = latest.first,
-                officialFetchedAt = Instant.now(),
+                officialFetchedAt = clock.instant(),
                 manualRate = null,
                 isManualOverride = false
-            )
+            ))
+        } else {
+            Result.failure(Exception("No historical rate found"))
         }
     }
 }

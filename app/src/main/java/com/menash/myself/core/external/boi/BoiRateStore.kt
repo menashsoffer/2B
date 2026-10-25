@@ -48,8 +48,7 @@ class BoiRateStore(private val dataStore: DataStore<Preferences>) {
                 officialRateDate = if (hasOfficial) rateDate else null,
                 officialFetchedAt = if (hasOfficial) fetchedAt else null,
                 manualRate = manualRate,
-                isManualOverride = isManual,
-                isStale = isStale
+                isManualOverride = isManual
             )
         } else {
             null

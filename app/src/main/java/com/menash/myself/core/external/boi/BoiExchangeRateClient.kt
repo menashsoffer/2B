@@ -12,14 +12,14 @@ import java.time.format.DateTimeFormatter
  * Client for Bank of Israel SDMX API (CSV format).
  * Endpoint: https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS?c[DATA_TYPE]=OF00&lastNObservations=1&format=csv
  */
-class BoiExchangeRateClient {
+class BoiExchangeRateClient : BoiRateSource {
 
     companion object {
         const val BASE_SDMX_URL =
             "https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS?c%5BDATA_TYPE%5D=OF00"
     }
 
-    suspend fun fetchLatestRate(): Result<BoiRate> = withContext(Dispatchers.IO) {
+    override suspend fun fetchLatestRate(): Result<BoiRate> = withContext(Dispatchers.IO) {
         runCatching {
             val urlStr = "$BASE_SDMX_URL&lastNObservations=1&format=csv"
             val csv = fetchUrl(urlStr)
@@ -27,16 +27,7 @@ class BoiExchangeRateClient {
         }
     }
 
-    suspend fun fetchHistoricalRate(date: LocalDate): Result<BoiRate> = withContext(Dispatchers.IO) {
-        runCatching {
-            val dateStr = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
-            val urlStr = "$BASE_SDMX_URL&startPeriod=$dateStr&endPeriod=$dateStr&format=csv"
-            val csv = fetchUrl(urlStr)
-            parseSdmxCsv(csv)
-        }
-    }
-
-    suspend fun fetchRateWindow(startDate: LocalDate, endDate: LocalDate): Result<List<Pair<LocalDate, Double>>> = withContext(Dispatchers.IO) {
+    override suspend fun fetchRateWindow(startDate: LocalDate, endDate: LocalDate): Result<List<Pair<LocalDate, Double>>> = withContext(Dispatchers.IO) {
         runCatching {
             val startStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
             val endStr = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -77,8 +68,7 @@ class BoiExchangeRateClient {
             officialRateDate = latest.first,
             officialFetchedAt = nowInstant,
             manualRate = null,
-            isManualOverride = false,
-            isStale = false
+            isManualOverride = false
         )
     }
 
