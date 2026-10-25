@@ -1,0 +1,263 @@
+package com.menash.myself.ui.fitness
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.menash.myself.data.firestore.LifeHubRepository
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FitnessScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val repo = remember { LifeHubRepository(context) }
+
+    val todayLog by repo.observeTodayFitness().collectAsState(initial = null)
+    val weeklyLogs by repo.observeWeeklyFitness().collectAsState(initial = emptyList())
+
+    val didMove = todayLog?.moved == true
+    val todayMinutes = todayLog?.minutes ?: 30
+    val todayType = todayLog?.type ?: "הליכה"
+
+    var selectedMinutes by remember(todayMinutes) { mutableIntStateOf(todayMinutes) }
+    var selectedType by remember(todayType) { mutableStateOf(todayType) }
+
+    val movementTypes = listOf("הליכה", "ריצה", "אימון כוח", "יוגה", "אופניים", "שחייה", "אחר")
+
+    // Streak calculation (consecutive days moved)
+    val streakCount = remember(weeklyLogs) {
+        var count = 0
+        for (log in weeklyLogs.sortedByDescending { it.date }) {
+            if (log.moved) count++ else break
+        }
+        count
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("מעקב תנועה יומי", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                navigationIcon = {
+                    IconButton(onClick = onBack, modifier = Modifier.testTag("fitness_back_button")) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
+                )
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Streak & Motivation Box
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.LocalFireDepartment,
+                        contentDescription = null,
+                        tint = Color(0xFFD97706),
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (streakCount > 0) "רצף תנועה: $streakCount ימים ברציפות!" else "בוא נתחיל רצף תנועה חדש היום!",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp,
+                            color = Color(0xFF0F172A)
+                        )
+                        Text(
+                            text = "העיקר לזוז 20–30 דקות בכל יום. עקביות מנצחת עצימות.",
+                            fontSize = 11.sp,
+                            color = Color.DarkGray
+                        )
+                    }
+                }
+            }
+
+            // Today's Check-in Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("בדיקת תנועה להיום", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+
+                    // Big Toggle Button: האם זזתי היום?
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                scope.launch {
+                                    repo.saveTodayFitness(
+                                        moved = true,
+                                        minutes = selectedMinutes,
+                                        type = selectedType
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (didMove) Color(0xFF059669) else Color(0xFFE2E8F0)
+                            )
+                        ) {
+                            Icon(Icons.Default.Check, contentDescription = null, tint = if (didMove) Color.White else Color.DarkGray)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("כן, זזתי היום!", color = if (didMove) Color.White else Color.DarkGray, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                scope.launch {
+                                    repo.saveTodayFitness(
+                                        moved = false,
+                                        minutes = 0,
+                                        type = "מנוחה"
+                                    )
+                                }
+                            },
+                            modifier = Modifier.weight(0.7f),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("יום מנוחה", fontSize = 12.sp)
+                        }
+                    }
+
+                    if (didMove) {
+                        HorizontalDivider()
+
+                        // Minutes slider / selector
+                        Text("כמה דקות זזת? ($selectedMinutes דקות)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Slider(
+                            value = selectedMinutes.toFloat(),
+                            onValueChange = {
+                                selectedMinutes = it.toInt()
+                            },
+                            onValueChangeFinished = {
+                                scope.launch {
+                                    repo.saveTodayFitness(
+                                        moved = true,
+                                        minutes = selectedMinutes,
+                                        type = selectedType
+                                    )
+                                }
+                            },
+                            valueRange = 10f..120f,
+                            steps = 10,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        // Movement Type Chips
+                        Text("סוג הפעילות:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            movementTypes.take(4).forEach { t ->
+                                FilterChip(
+                                    selected = selectedType == t,
+                                    onClick = {
+                                        selectedType = t
+                                        scope.launch {
+                                            repo.saveTodayFitness(
+                                                moved = true,
+                                                minutes = selectedMinutes,
+                                                type = t
+                                            )
+                                        }
+                                    },
+                                    label = { Text(t, fontSize = 11.sp) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 7-Day Weekly View
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("שבוע אחרון מול העיניים", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        val last7Days = (0..6).map { daysAgo ->
+                            val cal = java.util.Calendar.getInstance()
+                            cal.add(java.util.Calendar.DAY_OF_YEAR, -daysAgo)
+                            val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
+                            val dayName = java.text.SimpleDateFormat("E", java.util.Locale("he")).format(cal.time)
+                            val log = weeklyLogs.firstOrNull { it.date == dateStr }
+                            Triple(dayName, dateStr, log?.moved == true)
+                        }.reversed()
+
+                        last7Days.forEach { (dayName, _, moved) ->
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .background(
+                                            if (moved) Color(0xFF059669) else Color(0xFFF1F5F9),
+                                            RoundedCornerShape(10.dp)
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = if (moved) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        tint = if (moved) Color.White else Color.LightGray,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Text(dayName, fontSize = 11.sp, color = Color.Gray)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

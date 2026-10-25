@@ -1,0 +1,126 @@
+{
+  "entities": {
+    "Household": {
+      "title": "Household",
+      "description": "Shared household linking user and spouse",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "partnerEmail": { "type": "string" },
+        "partnerUid": { "type": "string" },
+        "memberUids": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "memberUids"]
+    },
+    "InboxItem": {
+      "title": "InboxItem",
+      "description": "Quick capture item awaiting triage",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "userId": { "type": "string" },
+        "space": { "type": "string" },
+        "status": { "type": "string" },
+        "triagedType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "userId", "space"]
+    },
+    "DreamItem": {
+      "title": "DreamItem",
+      "description": "Dream or wishlist item with status and budget tracking",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "list": { "type": "string" },
+        "estimatedCost": { "type": "number" },
+        "savedAmount": { "type": "number" },
+        "link": { "type": "string" },
+        "priority": { "type": "integer" },
+        "status": { "type": "string" },
+        "targetDate": { "type": "string" },
+        "notes": { "type": "string" },
+        "space": { "type": "string" },
+        "userId": { "type": "string" },
+        "householdId": { "type": "string" },
+        "nextAction": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "list", "userId", "space"]
+    },
+    "TaskItem": {
+      "title": "TaskItem",
+      "description": "Actionable task starting with a verb and a next action",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "nextAction": { "type": "string" },
+        "isTop3": { "type": "boolean" },
+        "isFiveBefore11": { "type": "boolean" },
+        "dueDate": { "type": "string" },
+        "isDone": { "type": "boolean" },
+        "space": { "type": "string" },
+        "userId": { "type": "string" },
+        "householdId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "userId", "space"]
+    },
+    "FitnessLog": {
+      "title": "FitnessLog",
+      "description": "Daily movement check-in",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "moved": { "type": "boolean" },
+        "minutes": { "type": "integer" },
+        "type": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["date", "moved", "userId"]
+    },
+    "CalculatorSync": {
+      "title": "CalculatorSync",
+      "description": "Migrated calculator records in cloud Firestore",
+      "type": "object",
+      "properties": {
+        "calculatorType": { "type": "string" },
+        "recordsCount": { "type": "integer" },
+        "dataJson": { "type": "string" },
+        "userId": { "type": "string" },
+        "space": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["calculatorType", "userId", "dataJson"]
+    }
+  },
+  "firestore": {
+    "/households/{householdId}": {
+      "schema": { "$ref": "#/entities/Household" },
+      "description": "Households for sharing items between user and spouse"
+    },
+    "/inbox/{itemId}": {
+      "schema": { "$ref": "#/entities/InboxItem" },
+      "description": "Quick capture inbox items"
+    },
+    "/dreams/{dreamId}": {
+      "schema": { "$ref": "#/entities/DreamItem" },
+      "description": "Dreams and wishlists"
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/TaskItem" },
+      "description": "Actionable daily and scheduled tasks"
+    },
+    "/fitness_logs/{logId}": {
+      "schema": { "$ref": "#/entities/FitnessLog" },
+      "description": "Daily fitness tracking logs"
+    },
+    "/calculator_sync/{syncId}": {
+      "schema": { "$ref": "#/entities/CalculatorSync" },
+      "description": "Cloud synced calculator records"
+    }
+  }
+}

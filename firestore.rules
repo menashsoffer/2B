@@ -1,0 +1,151 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function canAccessSpace(data) {
+      return isSignedIn() && (
+        data.userId == request.auth.uid ||
+        (
+          (data.space == 'shared' || data.space == 'משותף') &&
+          ('householdMembers' in data) &&
+          request.auth.uid in data.householdMembers
+        )
+      );
+    }
+
+    // --- Validation Helpers ---
+
+    function isValidHousehold(data) {
+      return data.ownerUid is string && data.ownerUid.size() <= 128 &&
+             data.memberUids is list && data.memberUids.size() <= 10 &&
+             (!('ownerEmail' in data) || (data.ownerEmail is string && data.ownerEmail.size() <= 120)) &&
+             (!('partnerEmail' in data) || (data.partnerEmail is string && data.partnerEmail.size() <= 120)) &&
+             (!('partnerUid' in data) || (data.partnerUid is string && data.partnerUid.size() <= 128));
+    }
+
+    function isValidInboxItem(data) {
+      return data.text is string && data.text.size() > 0 && data.text.size() <= 1000 &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.space is string && data.space.size() <= 50;
+    }
+
+    function isValidDreamItem(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.list is string && data.list.size() <= 100 &&
+             data.userId is string &&
+             data.space is string && data.space.size() <= 50;
+    }
+
+    function isValidTaskItem(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             data.userId is string &&
+             data.space is string && data.space.size() <= 50;
+    }
+
+    function isValidFitnessLog(data) {
+      return data.date is string && data.date.size() <= 20 &&
+             data.moved is bool &&
+             data.userId is string && data.userId == request.auth.uid;
+    }
+
+    function isValidCalculatorSync(data) {
+      return data.calculatorType is string && data.calculatorType.size() <= 50 &&
+             data.dataJson is string && data.dataJson.size() <= 100000 &&
+             data.userId is string && data.userId == request.auth.uid;
+    }
+
+    // --- Collections ---
+
+    match /households/{householdId} {
+      allow get: if isSignedIn() && (
+        request.auth.uid in resource.data.memberUids ||
+        (
+          'partnerEmail' in resource.data &&
+          request.auth.token.email != null &&
+          request.auth.token.email.lower() == resource.data.partnerEmail.lower()
+        )
+      );
+
+      allow list: if isSignedIn() && (
+        request.auth.uid in resource.data.memberUids
+      );
+
+      allow create: if isSignedIn() &&
+                       isValidId(householdId) &&
+                       incoming().ownerUid == request.auth.uid &&
+                       request.auth.uid in incoming().memberUids &&
+                       isValidHousehold(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(householdId) &&
+                       isValidHousehold(incoming()) &&
+                       (
+                         request.auth.uid in existing().memberUids ||
+                         (
+                           'partnerEmail' in existing() &&
+                           request.auth.token.email != null &&
+                           request.auth.token.email.lower() == existing().partnerEmail.lower()
+                         )
+                       );
+
+      allow delete: if isSignedIn() && existing().ownerUid == request.auth.uid;
+    }
+
+    match /inbox/{itemId} {
+      allow get, list: if isSignedIn() && canAccessSpace(resource.data);
+      allow create: if isSignedIn() && isValidId(itemId) && isValidInboxItem(incoming());
+      allow update: if isSignedIn() && isValidId(itemId) && canAccessSpace(existing()) && isValidInboxItem(incoming());
+      allow delete: if isSignedIn() && isValidId(itemId) && canAccessSpace(existing());
+    }
+
+    match /dreams/{dreamId} {
+      allow get, list: if isSignedIn() && canAccessSpace(resource.data);
+      allow create: if isSignedIn() && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(dreamId) && canAccessSpace(existing()) && isValidDreamItem(incoming());
+      allow delete: if isSignedIn() && isValidId(dreamId) && canAccessSpace(existing());
+    }
+
+    match /tasks/{taskId} {
+      allow get, list: if isSignedIn() && canAccessSpace(resource.data);
+      allow create: if isSignedIn() && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(taskId) && canAccessSpace(existing()) && isValidTaskItem(incoming());
+      allow delete: if isSignedIn() && isValidId(taskId) && canAccessSpace(existing());
+    }
+
+    match /fitness_logs/{logId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(logId) && isValidFitnessLog(incoming());
+      allow update: if isSignedIn() && isValidId(logId) && existing().userId == request.auth.uid && isValidFitnessLog(incoming());
+      allow delete: if isSignedIn() && isValidId(logId) && existing().userId == request.auth.uid;
+    }
+
+    match /calculator_sync/{syncId} {
+      allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(syncId) && isValidCalculatorSync(incoming());
+      allow update: if isSignedIn() && isValidId(syncId) && existing().userId == request.auth.uid && isValidCalculatorSync(incoming());
+      allow delete: if isSignedIn() && isValidId(syncId) && existing().userId == request.auth.uid;
+    }
+  }
+}
