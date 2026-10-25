@@ -154,13 +154,27 @@
   - `OfflineIndicator`: באנר עדין המודיע על פעולה במצב לא מקוון ומקומי.
   - `CaptureSheet`: תחתית מודאלית (ModalBottomSheet) ללכידה מהירה (+), המכבדת את סרגל הניווט של המערכת (`navigationBarsPadding`).
 
+- **תיקוני ביקורת לפני שלב 6 (Pre-Step 6 Review Fixes — 100% ירוק עם בדיקות):**
+  1. **`observe*` Flows עם `flatMapLatest`:** `observeTasks`, `observeDreams`, `observeInbox` נגזרים מ-`householdSession.currentHouseholdId` באמצעות `flatMapLatest`. כאשר המזהה `null` או ריק נפלט `emptyList()` (לעולם לא `emptyFlow()`), ומתבצע רישום מחדש אוטומטית בשינוי משק הבית (`TaskFlowReactivityTest.kt`).
+  2. **פריטים פרטיים באוסף נפרד (`users/{uid}/private/{collection}/items/{id}`):** שמירה של `isPrivate = true` מתבצעת אך ורק לנתיב הפרטי של המשתמש (לעולם לא לתת-האוסף של משק הבית), וקריאות ממזגות את פריטי משק הבית עם הפריטים הפרטיים של הצופה (`PrivateItemsRepositoryTest.kt` + `firestore.test.js`).
+  3. **מיפוי Legacy של מרחבים ותאריכים:** מיפוי `"mine"`/`"שלי"` ← `ME`, `"wife"`/`"partner"`/`"של אשתי"` ← `PARTNER`, `"shared"`/`"משותף"` ← `BOTH`, `"private"` ← `ME + isPrivate = true`, וערכים לא מוכרים ← `ME` עם תיעוד בלוג. תאריכים מפורסרים הן בפורמט `yyyy-MM-dd` והן ב-`dd/MM/yyyy`; ערכים שאינם ניתנים לפענוח נשמרים כמחרוזת גולמית (`rawDueDate` / `rawTargetDate`) ואינם נדרסים בריק בשמירה (`LegacyMappingTest.kt`, `ModelMappersTest.kt`).
+  4. **מימוש יחיד לחישובי רכב (Car Math Parity):** `Car` בשכבת ה-Domain מאציל ל-`CarCostCalculator.calculate5YearCost(car: Car)`. בדיקת שוויון (`CarMathParityTest.kt`) מוודאת התאמה מלאה מול חישובי `Double`, והפרשי חלקי-אגורה מתועדים ב-`docs/KNOWN_ISSUES.md` (§ 1.5).
+  5. **מערכת העיצוב (Design System):** `SpaceBadge` מקבל תווית מחושבת לפי צופה (`ForWhom.labelForViewer`) עם מחרוזות מ-`strings.xml`; נוספו טוקני צבע למצב כהה ב-`ColorTokens.kt` עם בדיקת ניגודיות WCAG AA (≥ 4.5:1); `MoneyText` עוטף סכומים בבידוד כיווניות יוניקוד (`\u2066...\u2069`) לתצוגה תקינה של מספרים שליליים בתוך טקסט RTL (`DesignSystemTokensTest.kt`).
+  6. **מסנן מוקלד (`VisibilityFilter`):** החלפת `spaceFilter: String?` ב-`VisibilityFilter` (`MINE_AND_BOTH`, `ALL`) בכל שכבות הנתונים וה-UI (`VisibilityFilterTest.kt`).
+
 ---
-- הקפדה על פחות מ-300 שורות לקובץ ופחות מ-80 שורות לקומפוננטה.
-- `feature/calculators/`: פיצול מסכי רכב, AI ופנסיה.
-- `feature/dreams/`, `feature/tasks/`, `feature/fitness/`, `feature/calendar/`.
-- `feature/importcatalog/`: קטלוג קבצים נתמכים, תבניות CSV, ואשף מיפוי מדויק עם דו"ח שגיאות לכל שורה שגויה.
-- `feature/settings/`: הגדרות שער, בחירת עיר ל-Hebcal מתוך רשימת ערים (ללא ברירת מחדל של ירושלים), העדפות, ופרטי חשבון.
-- `feature/household/`: ניהול משק הבית וזרימת הזמנה לפי מייל Google.
+
+### שלב 6: חיבור `AppContainer` ל-ViewModels וניתוק ישיר של מסכי UI משכבת הנתונים — הושלם (100% ירוק) ✅
+- **`AppContainer` ו-`CompositionLocal`:**
+  - `LocalAppContainer` מסופק ב-`MainActivity` לכל עץ הקומפוזיה.
+  - נוסף `SettingsRepository` (`RoomSettingsRepository`) ל-`AppContainer` עבור הגדרות המחשבונים ושער הדולר.
+- **ViewModels ייעודיים לכל מסך ופיצ'ר (תלויים בממשקי Repository בלבד):**
+  - `MainViewModel`: ניהול משק הבית הפעיל, לכידה מהירה לאינבוקס, וזרם שגיאות.
+  - `LifeHomeViewModel`: סיכום יומי, משימות, חלומות, אינבוקס, כושר, ואירועי יומן.
+  - `TasksViewModel`, `DreamsViewModel`, `InboxViewModel`, `FitnessViewModel`, `HouseholdViewModel`, `FileCatalogViewModel`.
+  - `CalculatorsHubViewModel`, `CarCalculatorViewModel`, `AiCalculatorViewModel`, `PensionCalculatorViewModel`.
+- **ניתוק מוחלט של מסכי ה-UI ממימושי הדאטה:**
+  - כל מסכי ה-UI (`MainActivity`, `LifeHomeScreen`, `TasksScreen`, `DreamsScreen`, `InboxTriageScreen`, `FitnessScreen`, `HouseholdScreen`, `FileCatalogScreen`, `CalculatorsHubScreen`, `HomeScreen`, `CarComparisonScreen`, `AiSubscriptionsScreen`, `PensionSavingsScreen`) צורכים נתונים ופעולות אך ורק דרך ה-ViewModels שלהם ו-`LocalAppContainer`, ללא שום מופע ישיר של `LifeHubRepository`, `HouseholdRepository`, או `AppDatabase.getDatabase`.
 
 ### שלב 7: ניווט 5 טאבים ואינטראקציה (Navigation & Interactions)
 - **Bottom Navigation Bar (M3):** בית, חלומות, משימות, מחשבונים, עוד.

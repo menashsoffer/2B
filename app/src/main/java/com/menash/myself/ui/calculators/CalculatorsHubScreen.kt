@@ -19,10 +19,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.menash.myself.data.AppDatabase
-import com.menash.myself.data.entities.AppSettings
+import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.io.BackupRestoreManager
+import com.menash.myself.feature.calculators.CalculatorsHubViewModel
 import com.menash.myself.ui.settings.SettingsDialog
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -46,13 +47,20 @@ fun CalculatorsHubScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val db = remember { AppDatabase.getDatabase(context) }
-    val dao = db.appDao()
+    val appContainer = LocalAppContainer.current
+    val viewModel: CalculatorsHubViewModel = viewModel(
+        factory = CalculatorsHubViewModel.factory(
+            carRepository = appContainer.carRepository,
+            aiSubscriptionRepository = appContainer.aiSubscriptionRepository,
+            pensionFundRepository = appContainer.pensionFundRepository,
+            settingsRepository = appContainer.settingsRepository
+        )
+    )
 
-    val settings by dao.getSettingsFlow().collectAsState(initial = null)
-    val cars by dao.getAllCarsFlow().collectAsState(initial = emptyList())
-    val aiSubs by dao.getAllAiSubscriptionsFlow().collectAsState(initial = emptyList())
-    val pensionFunds by dao.getAllPensionFundsFlow().collectAsState(initial = emptyList())
+    val settings by viewModel.settings.collectAsState()
+    val cars by viewModel.cars.collectAsState()
+    val aiSubs by viewModel.aiSubs.collectAsState()
+    val pensionFunds by viewModel.pensionFunds.collectAsState()
 
     var showSettingsDialog by remember { mutableStateOf(false) }
     var pendingNoticeMessage by remember { mutableStateOf<String?>(null) }
@@ -311,11 +319,8 @@ fun CalculatorsHubScreen(
             lastBackupTimestamp = lastBackup,
             onDismiss = { showSettingsDialog = false },
             onSaveRate = { newRate ->
-                scope.launch {
-                    val s = settings ?: AppSettings()
-                    dao.saveSettings(s.copy(usdToIlsRate = newRate))
-                    showSettingsDialog = false
-                }
+                viewModel.saveUsdRate(newRate)
+                showSettingsDialog = false
             }
         )
     }

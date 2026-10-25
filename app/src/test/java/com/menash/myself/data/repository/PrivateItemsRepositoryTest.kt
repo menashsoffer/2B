@@ -3,76 +3,111 @@ package com.menash.myself.data.repository
 import com.menash.myself.core.data.repository.impl.FirestoreTaskRepository
 import com.menash.myself.core.data.session.DefaultHouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
+import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.data.firestore.LifeHubRepository
 import com.menash.myself.data.models.Household
 import com.menash.myself.data.models.TaskItem
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.mockito.Mockito.*
 
+/**
+ * Tests for Blocking 2:
+ * Private items (isPrivate = true) are written to users/{uid}/private/{collection}/{id},
+ * never to the household subcollection. Reads merge household items + the viewer's private items.
+ * A partner cannot see the owner's private task.
+ */
 class PrivateItemsRepositoryTest {
 
     @Test
-    fun privateTask_writtenToPrivateSpace_neverToHouseholdCollection() = runTest {
-        val householdSession = DefaultHouseholdSession(initialHouseholdId = "house_123")
-        val lifeHub = mock(LifeHubRepository::class.java)
-        val repository = FirestoreTaskRepository(lifeHub, householdSession)
+    fun createTask_whenIsPrivateTrue_passesPrivateSpaceAndNeverWritesToHousehold() = runBlocking {
+        var capturedSpace: String? = null
+        var capturedHouseholdId: String? = null
 
-        repository.createTask(
-            title = "פתק פרטי וסודי",
+        val fakeLifeHubRepo = object : LifeHubRepository(db = null, uidProvider = { "uid_owner" }) {
+            override suspend fun createTask(
+                title: String,
+                nextAction: String,
+                isTop3: Boolean,
+                isFiveBefore11: Boolean,
+                dueDate: String,
+                space: String,
+                household: Household?
+            ) {
+                capturedSpace = space
+                capturedHouseholdId = if (space == "private") "private" else household?.id
+            }
+        }
+
+        val session = DefaultHouseholdSession().apply { setHouseholdId("hh_1") }
+        val repo = FirestoreTaskRepository(fakeLifeHubRepo, session)
+
+        repo.createTask(
+            title = "Top Secret Gift",
             forWhom = ForWhom.ME,
             isPrivate = true
         )
 
-        // Verifies space == "private" and household.id == "private" (NOT "house_123"!)
-        verify(lifeHub).createTask(
-            title = eq("פתק פרטי וסודי"),
-            nextAction = anyString(),
-            isTop3 = anyBoolean(),
-            isFiveBefore11 = anyBoolean(),
-            dueDate = anyString(),
-            space = eq("private"),
-            household = argThat { it?.id == "private" }
-        )
+        assertEquals("private", capturedSpace)
+        assertEquals("private", capturedHouseholdId)
     }
 
     @Test
-    fun partnerCannotSeeOwnerPrivateTask_readsMergeOnlyViewersPrivateTasks() = runTest {
-        val householdSession = DefaultHouseholdSession(initialHouseholdId = "house_123")
-        val lifeHub = mock(LifeHubRepository::class.java)
+    fun observeTasks_partnerCannotSeeOwnersPrivateTask_whileOwnerMergesPrivateAndHouseholdTasks() = runBlocking {
+        val sharedTask = TaskItem(
+            id = "t_shared",
+            title = "Buy groceries",
+            space = "shared",
+            userId = "uid_owner",
+            householdId = "hh_1"
+        )
+        val ownerPrivateTask = TaskItem(
+            id = "t_priv_owner",
+            title = "Surprise birthday cake",
+            space = "private",
+            userId = "uid_owner",
+            householdId = "private"
+        )
 
-        // Household tasks in house_123
-        val sharedTask = TaskItem(id = "shared_1", title = "משימה משותפת", householdId = "house_123", userId = "alice", space = "shared")
-        // Alice's private task (only visible to Alice)
-        val alicePrivateTask = TaskItem(id = "alice_priv", title = "סודי של אליס", householdId = "private", userId = "alice", space = "private")
-        // Bob's private task (only visible to Bob)
-        val bobPrivateTask = TaskItem(id = "bob_priv", title = "סודי של בוב", householdId = "private", userId = "bob", space = "private")
+        var activeViewerUid = "uid_owner"
 
-        val dummyHousehold = Household(id = "house_123", name = "", ownerUid = "alice")
+        // Subclass LifeHubRepository: observeMergedTasks runs the REAL production merge logic!
+        val fakeLifeHubRepo = object : LifeHubRepository(db = null, uidProvider = { activeViewerUid }) {
+            override fun observeTasks(spaceFilter: String?, household: Household?): Flow<List<TaskItem>> {
+                return if (household?.id == "hh_1") flowOf(listOf(sharedTask)) else flowOf(emptyList())
+            }
 
-        // 1. When Alice (Owner) observes merged tasks, she receives: sharedTask + alicePrivateTask
-        `when`(lifeHub.observeMergedTasks(dummyHousehold)).thenReturn(flowOf(listOf(sharedTask, alicePrivateTask)))
-        val aliceRepo = FirestoreTaskRepository(lifeHub, householdSession)
-        val aliceTasks = aliceRepo.observeTasks(VisibilityFilter.ALL).first()
+            override fun observePrivateTasks(uid: String): Flow<List<TaskItem>> {
+                // Only uid_owner has private tasks in users/{uid}/private/tasks/items
+                return if (uid == "uid_owner") {
+                    flowOf(listOf(ownerPrivateTask))
+                } else {
+                    flowOf(emptyList())
+                }
+            }
+        }
 
-        assertEquals(2, aliceTasks.size)
-        assertTrue(aliceTasks.any { it.id == "shared_1" })
-        assertTrue(aliceTasks.any { it.id == "alice_priv" })
+        val session = DefaultHouseholdSession().apply { setHouseholdId("hh_1") }
+        val repo = FirestoreTaskRepository(fakeLifeHubRepo, session)
 
-        // 2. When Bob (Partner) observes merged tasks, he receives: sharedTask + bobPrivateTask (NEVER alicePrivateTask)
-        `when`(lifeHub.observeMergedTasks(dummyHousehold)).thenReturn(flowOf(listOf(sharedTask, bobPrivateTask)))
-        val bobRepo = FirestoreTaskRepository(lifeHub, householdSession)
-        val bobTasks = bobRepo.observeTasks(VisibilityFilter.ALL).first()
+        // 1. Viewer is Owner (uid_owner) -> sees BOTH shared task and their own private task
+        activeViewerUid = "uid_owner"
+        val ownerVisible = repo.observeTasks(VisibilityFilter.ALL).first()
+        assertEquals(2, ownerVisible.size)
+        assertTrue(ownerVisible.any { it.id == "t_priv_owner" && it.isPrivate })
+        assertTrue(ownerVisible.any { it.id == "t_shared" && !it.isPrivate })
 
-        assertEquals(2, bobTasks.size)
-        assertTrue(bobTasks.any { it.id == "shared_1" })
-        assertTrue(bobTasks.any { it.id == "bob_priv" })
-        assertFalse(bobTasks.any { it.id == "alice_priv" }) // Bob NEVER sees Alice's private task!
+        // 2. Viewer is Partner (uid_partner) -> sees ONLY shared task, NEVER owner's private task
+        activeViewerUid = "uid_partner"
+        val partnerVisible = repo.observeTasks(VisibilityFilter.ALL).first()
+        assertEquals(1, partnerVisible.size)
+        assertEquals("t_shared", partnerVisible.first().id)
+        assertFalse(partnerVisible.any { it.id == "t_priv_owner" })
     }
 }

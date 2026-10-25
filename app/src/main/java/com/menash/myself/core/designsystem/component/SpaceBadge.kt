@@ -31,7 +31,9 @@ import com.menash.myself.core.domain.model.ForWhom
 fun SpaceBadge(
     forWhom: ForWhom,
     modifier: Modifier = Modifier,
-    isOwner: Boolean = true,
+    ownerUid: String = "",
+    viewerUid: String = "",
+    isOwner: Boolean = ownerUid.isEmpty() || viewerUid.isEmpty() || ownerUid == viewerUid,
     partnerName: String? = null,
     label: String? = null,
     isDarkTheme: Boolean = isSystemInDarkTheme(),
@@ -39,10 +41,17 @@ fun SpaceBadge(
     testTag: String = "space_badge"
 ) {
     val colorScheme = ColorTokens.forWhomColors(forWhom, isDarkTheme)
+    val mineLabel = stringResource(R.string.for_whom_mine)
+    val bothLabel = stringResource(R.string.for_whom_both)
     val defaultPartnerText = stringResource(R.string.for_whom_partner_default)
     val effectivePartnerName = partnerName?.trim()?.ifEmpty { defaultPartnerText } ?: defaultPartnerText
 
-    val displayText = label ?: forWhom.labelForViewer(isOwner, effectivePartnerName)
+    val displayText = label ?: forWhom.labelForViewer(
+        isOwner = isOwner,
+        partnerName = effectivePartnerName,
+        mineLabel = mineLabel,
+        bothLabel = bothLabel
+    )
 
     val shape = RoundedCornerShape(8.dp)
     val clickableModifier = if (onClick != null) {

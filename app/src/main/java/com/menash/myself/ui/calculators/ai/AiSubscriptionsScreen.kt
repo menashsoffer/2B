@@ -26,25 +26,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.AppDatabase
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.entities.AiSubscriptionEntity
 import com.menash.myself.data.io.CsvHelper
+import com.menash.myself.feature.calculators.ai.AiCalculatorViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiSubscriptionsScreen(onBack: () -> Unit) {
+fun AiSubscriptionsScreen(
+    onBack: () -> Unit,
+    appContainer: com.menash.myself.core.di.AppContainer = LocalAppContainer.current,
+    viewModel: AiCalculatorViewModel = viewModel(
+        factory = AiCalculatorViewModel.factory(
+            appContainer.aiSubscriptionRepository,
+            appContainer.settingsRepository
+        )
+    )
+) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val dao = remember { AppDatabase.getDatabase(context).appDao() }
 
-    val settings by dao.getSettingsFlow().collectAsState(initial = null)
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
     val usdRate = settings?.usdToIlsRate ?: 3.11
 
-    val subscriptions by dao.getAllAiSubscriptionsFlow().collectAsState(initial = emptyList())
+    val subscriptions by viewModel.subscriptions.collectAsStateWithLifecycle()
     var selectedCategoryFilter by remember { mutableStateOf<String?>(null) }
 
     var showCsvMapping by remember { mutableStateOf(false) }
@@ -129,19 +138,17 @@ fun AiSubscriptionsScreen(onBack: () -> Unit) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    scope.launch {
-                        dao.insertAiSubscription(
-                            AiSubscriptionEntity(
-                                name = "כלי AI חדש",
-                                category = "פרודוקטיביות",
-                                isActive = true,
-                                billingCycle = "MONTHLY",
-                                currency = "USD",
-                                price = 20.0,
-                                notes = ""
-                            )
+                    viewModel.insertAiSubscription(
+                        AiSubscriptionEntity(
+                            name = "כלי AI חדש",
+                            category = "פרודוקטיביות",
+                            isActive = true,
+                            billingCycle = "MONTHLY",
+                            currency = "USD",
+                            price = 20.0,
+                            notes = ""
                         )
-                    }
+                    )
                 },
                 modifier = Modifier.testTag("add_ai_fab")
             ) {
@@ -223,8 +230,8 @@ fun AiSubscriptionsScreen(onBack: () -> Unit) {
                 AiSubscriptionCard(
                     sub = sub,
                     usdRate = usdRate,
-                    onUpdate = { updated -> scope.launch { dao.updateAiSubscription(updated) } },
-                    onDelete = { scope.launch { dao.deleteAiSubscription(sub) } }
+                    onUpdate = { updated -> viewModel.updateAiSubscription(updated) },
+                    onDelete = { viewModel.deleteAiSubscription(sub) }
                 )
             }
 
@@ -239,34 +246,32 @@ fun AiSubscriptionsScreen(onBack: () -> Unit) {
             targetFields = listOf("שם כלי", "קטגוריה", "מחיר", "מטבע (USD/ILS)", "תדירות (חודשי/שנתי)", "הערות"),
             onDismiss = { showCsvMapping = false },
             onConfirmMap = { mapping ->
-                scope.launch {
-                    val dataRows = importedCsvRows.drop(1)
-                    val newSubs = dataRows.mapNotNull { row ->
-                        try {
-                            val name = row.getOrNull(mapping["שם כלי"] ?: -1) ?: "כלי מיובא"
-                            val category = row.getOrNull(mapping["קטגוריה"] ?: -1) ?: "כללי"
-                            val price = row.getOrNull(mapping["מחיר"] ?: -1)?.toDoubleOrNull() ?: 15.0
-                            val currencyRaw = row.getOrNull(mapping["מטבע (USD/ILS)"] ?: -1)?.uppercase() ?: "USD"
-                            val currency = if (currencyRaw.contains("ILS") || currencyRaw.contains("₪") || currencyRaw.contains("שח")) "ILS" else "USD"
-                            val cycleRaw = row.getOrNull(mapping["תדירות (חודשי/שנתי)"] ?: -1)?.uppercase() ?: "MONTHLY"
-                            val cycle = if (cycleRaw.contains("YEAR") || cycleRaw.contains("שנתי")) "YEARLY" else "MONTHLY"
-                            val notes = row.getOrNull(mapping["הערות"] ?: -1) ?: ""
+                val dataRows = importedCsvRows.drop(1)
+                val newSubs = dataRows.mapNotNull { row ->
+                    try {
+                        val name = row.getOrNull(mapping["שם כלי"] ?: -1) ?: "כלי מיובא"
+                        val category = row.getOrNull(mapping["קטגוריה"] ?: -1) ?: "כללי"
+                        val price = row.getOrNull(mapping["מחיר"] ?: -1)?.toDoubleOrNull() ?: 15.0
+                        val currencyRaw = row.getOrNull(mapping["מטבע (USD/ILS)"] ?: -1)?.uppercase() ?: "USD"
+                        val currency = if (currencyRaw.contains("ILS") || currencyRaw.contains("₪") || currencyRaw.contains("שח")) "ILS" else "USD"
+                        val cycleRaw = row.getOrNull(mapping["תדירות (חודשי/שנתי)"] ?: -1)?.uppercase() ?: "MONTHLY"
+                        val cycle = if (cycleRaw.contains("YEAR") || cycleRaw.contains("שנתי")) "YEARLY" else "MONTHLY"
+                        val notes = row.getOrNull(mapping["הערות"] ?: -1) ?: ""
 
-                            AiSubscriptionEntity(
-                                name = name,
-                                category = category,
-                                isActive = true,
-                                billingCycle = cycle,
-                                currency = currency,
-                                price = price,
-                                notes = notes
-                            )
-                        } catch (e: Exception) { null }
-                    }
-                    dao.insertAiSubscriptions(newSubs)
-                    Toast.makeText(context, "יובאו ${newSubs.size} מנויים בהצלחה!", Toast.LENGTH_SHORT).show()
-                    showCsvMapping = false
+                        AiSubscriptionEntity(
+                            name = name,
+                            category = category,
+                            isActive = true,
+                            billingCycle = cycle,
+                            currency = currency,
+                            price = price,
+                            notes = notes
+                        )
+                    } catch (e: Exception) { null }
                 }
+                viewModel.insertAiSubscriptions(newSubs)
+                Toast.makeText(context, "יובאו ${newSubs.size} מנויים בהצלחה!", Toast.LENGTH_SHORT).show()
+                showCsvMapping = false
             }
         )
     }

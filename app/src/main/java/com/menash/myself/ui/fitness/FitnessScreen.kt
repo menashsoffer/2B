@@ -1,6 +1,5 @@
 package com.menash.myself.ui.fitness
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,26 +10,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.firestore.LifeHubRepository
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.feature.fitness.FitnessViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FitnessScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val repo = remember { LifeHubRepository(context) }
+    val appContainer = LocalAppContainer.current
+    val viewModel: FitnessViewModel = viewModel(
+        factory = FitnessViewModel.factory(appContainer.fitnessRepository)
+    )
 
-    val todayLog by repo.observeTodayFitness().collectAsState(initial = null)
-    val weeklyLogs by repo.observeWeeklyFitness().collectAsState(initial = emptyList())
+    val todayLog by viewModel.todayFitness.collectAsState()
+    val weeklyLogs by viewModel.weeklyFitness.collectAsState()
 
     val didMove = todayLog?.moved == true
     val todayMinutes = todayLog?.minutes ?: 30
@@ -41,7 +41,6 @@ fun FitnessScreen(onBack: () -> Unit) {
 
     val movementTypes = listOf("הליכה", "ריצה", "אימון כוח", "יוגה", "אופניים", "שחייה", "אחר")
 
-    // Streak calculation (consecutive days moved)
     val streakCount = remember(weeklyLogs) {
         var count = 0
         for (log in weeklyLogs.sortedByDescending { it.date }) {
@@ -74,7 +73,6 @@ fun FitnessScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Streak & Motivation Box
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -107,7 +105,6 @@ fun FitnessScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Today's Check-in Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -117,20 +114,17 @@ fun FitnessScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("בדיקת תנועה להיום", fontWeight = FontWeight.Bold, fontSize = 15.sp)
 
-                    // Big Toggle Button: האם זזתי היום?
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
                             onClick = {
-                                scope.launch {
-                                    repo.saveTodayFitness(
-                                        moved = true,
-                                        minutes = selectedMinutes,
-                                        type = selectedType
-                                    )
-                                }
+                                viewModel.saveTodayFitness(
+                                    moved = true,
+                                    minutes = selectedMinutes,
+                                    type = selectedType
+                                )
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
@@ -145,13 +139,11 @@ fun FitnessScreen(onBack: () -> Unit) {
 
                         OutlinedButton(
                             onClick = {
-                                scope.launch {
-                                    repo.saveTodayFitness(
-                                        moved = false,
-                                        minutes = 0,
-                                        type = "מנוחה"
-                                    )
-                                }
+                                viewModel.saveTodayFitness(
+                                    moved = false,
+                                    minutes = 0,
+                                    type = "מנוחה"
+                                )
                             },
                             modifier = Modifier.weight(0.7f),
                             shape = RoundedCornerShape(12.dp)
@@ -163,7 +155,6 @@ fun FitnessScreen(onBack: () -> Unit) {
                     if (didMove) {
                         HorizontalDivider()
 
-                        // Minutes slider / selector
                         Text("כמה דקות זזת? ($selectedMinutes דקות)", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Slider(
                             value = selectedMinutes.toFloat(),
@@ -171,20 +162,17 @@ fun FitnessScreen(onBack: () -> Unit) {
                                 selectedMinutes = it.toInt()
                             },
                             onValueChangeFinished = {
-                                scope.launch {
-                                    repo.saveTodayFitness(
-                                        moved = true,
-                                        minutes = selectedMinutes,
-                                        type = selectedType
-                                    )
-                                }
+                                viewModel.saveTodayFitness(
+                                    moved = true,
+                                    minutes = selectedMinutes,
+                                    type = selectedType
+                                )
                             },
                             valueRange = 10f..120f,
                             steps = 10,
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        // Movement Type Chips
                         Text("סוג הפעילות:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -195,13 +183,11 @@ fun FitnessScreen(onBack: () -> Unit) {
                                     selected = selectedType == t,
                                     onClick = {
                                         selectedType = t
-                                        scope.launch {
-                                            repo.saveTodayFitness(
-                                                moved = true,
-                                                minutes = selectedMinutes,
-                                                type = t
-                                            )
-                                        }
+                                        viewModel.saveTodayFitness(
+                                            moved = true,
+                                            minutes = selectedMinutes,
+                                            type = t
+                                        )
                                     },
                                     label = { Text(t, fontSize = 11.sp) }
                                 )
@@ -211,7 +197,6 @@ fun FitnessScreen(onBack: () -> Unit) {
                 }
             }
 
-            // 7-Day Weekly View
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -228,9 +213,9 @@ fun FitnessScreen(onBack: () -> Unit) {
                         val last7Days = (0..6).map { daysAgo ->
                             val cal = java.util.Calendar.getInstance()
                             cal.add(java.util.Calendar.DAY_OF_YEAR, -daysAgo)
-                            val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(cal.time)
-                            val dayName = java.text.SimpleDateFormat("E", java.util.Locale("he")).format(cal.time)
-                            val log = weeklyLogs.firstOrNull { it.date == dateStr }
+                            val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cal.time)
+                            val dayName = java.text.SimpleDateFormat("E", Locale.forLanguageTag("he")).format(cal.time)
+                            val log = weeklyLogs.firstOrNull { ModelMappers.formatLocalDate(it.date) == dateStr }
                             Triple(dayName, dateStr, log?.moved == true)
                         }.reversed()
 

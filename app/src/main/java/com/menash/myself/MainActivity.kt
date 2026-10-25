@@ -14,14 +14,15 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.menash.myself.auth.SignInScreen
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
+import com.menash.myself.core.di.AppContainer
+import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.firestore.MigrationManager
-import com.menash.myself.data.models.Household
+import com.menash.myself.ui.MainViewModel
 import com.menash.myself.ui.calculators.CalculatorsHubScreen
 import com.menash.myself.ui.calculators.ai.AiSubscriptionsScreen
 import com.menash.myself.ui.calculators.car.CarComparisonScreen
@@ -38,21 +39,24 @@ import com.menash.myself.ui.tasks.TasksScreen
 import com.menash.myself.ui.theme.MyApplicationTheme
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val context = LocalContext.current
+            val appContainer = remember { AppContainer(context.applicationContext) }
+
             MyApplicationTheme {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                CompositionLocalProvider(
+                    LocalLayoutDirection provides LayoutDirection.Rtl,
+                    LocalAppContainer provides appContainer
+                ) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        val context = LocalContext.current
-                        val scope = rememberCoroutineScope()
                         val auth = Firebase.auth
                         var currentUser by remember { mutableStateOf(auth.currentUser) }
 
@@ -85,27 +89,22 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
+                            val mainViewModel: MainViewModel = viewModel(
+                                factory = MainViewModel.factory(appContainer)
+                            )
                             val navController = rememberNavController()
-                            val lifeRepo = remember { LifeHubRepository(context) }
-                            val householdRepo = remember { HouseholdRepository(context) }
-                            val lifeError by lifeRepo.errorFlow.collectAsState()
-                            val householdError by householdRepo.errorFlow.collectAsState()
-                            var household by remember { mutableStateOf<Household?>(null) }
+                            val activeError by mainViewModel.activeError.collectAsState()
                             var showQuickCapture by remember { mutableStateOf(false) }
 
                             LaunchedEffect(currentUser) {
                                 if (currentUser != null) {
-                                    household = householdRepo.getOrCreateHousehold()
-                                    householdRepo.observeHousehold().collect { h ->
-                                        if (h != null) household = h
-                                    }
+                                    mainViewModel.initializeHouseholdForUser()
                                 }
                             }
 
                             Box(modifier = Modifier.fillMaxSize()) {
                                 Column(modifier = Modifier.fillMaxSize()) {
                                     // Surface Firestore errors in UI
-                                    val activeError = lifeError ?: householdError
                                     if (activeError != null) {
                                         Surface(
                                             modifier = Modifier.fillMaxWidth(),
@@ -117,14 +116,13 @@ class MainActivity : ComponentActivity() {
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
                                                 Text(
-                                                    text = activeError,
+                                                    text = activeError!!,
                                                     color = MaterialTheme.colorScheme.onErrorContainer,
                                                     fontSize = 12.sp,
                                                     modifier = Modifier.weight(1f)
                                                 )
                                                 TextButton(onClick = {
-                                                    lifeRepo.clearError()
-                                                    householdRepo.clearError()
+                                                    mainViewModel.clearErrors()
                                                 }) {
                                                     Text("סגור", fontSize = 12.sp)
                                                 }
@@ -165,6 +163,7 @@ class MainActivity : ComponentActivity() {
                                             HouseholdScreen(
                                                 onBack = { navController.popBackStack() },
                                                 onSignOut = {
+                                                    appContainer.householdSession.setHouseholdId(null)
                                                     currentUser = null
                                                     bypassSignIn = false
                                                 }
@@ -193,8 +192,7 @@ class MainActivity : ComponentActivity() {
                                     QuickCaptureDialog(
                                         onDismiss = { showQuickCapture = false },
                                         onSave = { text, space ->
-                                            scope.launch {
-                                                lifeRepo.addInboxItem(text, space, household)
+                                            mainViewModel.addQuickCapture(text, space) {
                                                 showQuickCapture = false
                                             }
                                         }

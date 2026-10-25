@@ -1,8 +1,5 @@
 package com.menash.myself.ui.dreams
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,45 +10,52 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
-import com.menash.myself.data.models.DreamItem
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.designsystem.component.SpaceBadge
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.core.domain.model.Dream
+import com.menash.myself.core.domain.model.Money
+import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.data.models.DreamStatus
 import com.menash.myself.data.models.SpaceType
-import kotlinx.coroutines.launch
+import com.menash.myself.feature.dreams.DreamsViewModel
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DreamsScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val repo = remember { LifeHubRepository(context) }
-    val householdRepo = remember { HouseholdRepository(context) }
+    val appContainer = LocalAppContainer.current
+    val viewModel: DreamsViewModel = viewModel(
+        factory = DreamsViewModel.factory(
+            dreamRepository = appContainer.dreamRepository,
+            householdRepository = appContainer.householdRepository
+        )
+    )
 
-    val household by householdRepo.observeHousehold().collectAsState(initial = null)
+    val selectedListFilter by viewModel.listFilter.collectAsState()
+    val visibilityFilter by viewModel.visibilityFilter.collectAsState()
+    val dreams by viewModel.dreams.collectAsState()
+    val viewerUid = remember { runCatching { Firebase.auth.currentUser?.uid }.getOrNull() ?: "" }
 
-    var selectedListFilter by remember { mutableStateOf<String?>(null) }
-    var selectedSpaceFilter by remember { mutableStateOf<String?>(null) }
     var isBoardView by remember { mutableStateOf(false) }
-
-    val dreams by repo.observeDreams(selectedListFilter, selectedSpaceFilter, household).collectAsState(initial = emptyList())
-
     var showCreateDialog by remember { mutableStateOf(false) }
-    var selectedDreamForAppIdea by remember { mutableStateOf<DreamItem?>(null) }
+    var selectedDreamForAppIdea by remember { mutableStateOf<Dream?>(null) }
 
     val defaultLists = listOf("הכל", "לבית", "טיסות משפחה", "פיתוח ואפליקציות")
 
@@ -67,7 +71,7 @@ fun DreamsScreen(onBack: () -> Unit) {
                 actions = {
                     IconButton(onClick = { isBoardView = !isBoardView }) {
                         Icon(
-                            if (isBoardView) Icons.Default.ViewList else Icons.Default.ViewKanban,
+                            if (isBoardView) Icons.AutoMirrored.Filled.ViewList else Icons.Default.ViewKanban,
                             contentDescription = "החלף תצוגה"
                         )
                     }
@@ -94,35 +98,36 @@ fun DreamsScreen(onBack: () -> Unit) {
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Filters Row: Lists & Spaces
+            // Filters Row: Lists & Typed VisibilityFilter
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                // List filter chips
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     items(defaultLists) { listName ->
                         FilterChip(
                             selected = (selectedListFilter == null && listName == "הכל") || selectedListFilter == listName,
-                            onClick = { selectedListFilter = if (listName == "הכל") null else listName },
+                            onClick = { viewModel.setListFilter(if (listName == "הכל") null else listName) },
                             label = { Text(listName, fontSize = 12.sp) }
                         )
                     }
                 }
 
-                // Space filter chips
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val spaces = listOf("הכל", "משותף", "שלי", "של אשתי")
-                    spaces.forEach { s ->
-                        val isSelected = (selectedSpaceFilter == null && s == "הכל") || selectedSpaceFilter == s
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedSpaceFilter = if (s == "הכל") null else s },
-                            label = { Text(s, fontSize = 11.sp) }
-                        )
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
+                        onClick = { viewModel.setVisibilityFilter(VisibilityFilter.MINE_AND_BOTH) },
+                        label = { Text("שלי + של שנינו", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("dreams_filter_mine_and_both")
+                    )
+                    FilterChip(
+                        selected = visibilityFilter == VisibilityFilter.ALL,
+                        onClick = { viewModel.setVisibilityFilter(VisibilityFilter.ALL) },
+                        label = { Text("הצג הכל", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("dreams_filter_all")
+                    )
                 }
             }
 
@@ -131,7 +136,7 @@ fun DreamsScreen(onBack: () -> Unit) {
                 DreamBoardView(
                     dreams = dreams,
                     onStatusChange = { dream, newStatus ->
-                        scope.launch { repo.updateDreamStatus(dream.id, newStatus) }
+                        viewModel.updateDreamStatus(dream, newStatus)
                     },
                     onOpenAppIdea = { selectedDreamForAppIdea = it }
                 )
@@ -145,14 +150,15 @@ fun DreamsScreen(onBack: () -> Unit) {
                     items(dreams, key = { it.id }) { dream ->
                         DreamCard(
                             dream = dream,
+                            viewerUid = viewerUid,
                             onStatusChange = { newStatus ->
-                                scope.launch { repo.updateDreamStatus(dream.id, newStatus) }
+                                viewModel.updateDreamStatus(dream, newStatus)
                             },
                             onAddSavings = { amount ->
-                                scope.launch { repo.updateDreamSavings(dream.id, dream.savedAmount + amount) }
+                                viewModel.addDreamSavings(dream, amount)
                             },
                             onOpenAppIdea = { selectedDreamForAppIdea = dream },
-                            onDelete = { scope.launch { repo.deleteDream(dream.id) } }
+                            onDelete = { viewModel.deleteDream(dream) }
                         )
                     }
                     item { Spacer(modifier = Modifier.height(72.dp)) }
@@ -167,24 +173,20 @@ fun DreamsScreen(onBack: () -> Unit) {
             defaultList = selectedListFilter ?: "לבית",
             onDismiss = { showCreateDialog = false },
             onSave = { newDream ->
-                scope.launch {
-                    repo.createDream(newDream, household)
-                    showCreateDialog = false
-                }
+                viewModel.createDream(newDream)
+                showCreateDialog = false
             }
         )
     }
 
-    // App Idea Template Dialog (7 questions + next action)
+    // App Idea Template Dialog
     selectedDreamForAppIdea?.let { dream ->
         AppIdeaTemplateDialog(
             dream = dream,
             onDismiss = { selectedDreamForAppIdea = null },
             onSave = { questions, nextAction ->
-                scope.launch {
-                    repo.updateDreamAppIdea(dream.id, questions, nextAction)
-                    selectedDreamForAppIdea = null
-                }
+                viewModel.updateDreamAppIdea(dream, questions, nextAction)
+                selectedDreamForAppIdea = null
             }
         )
     }
@@ -192,7 +194,8 @@ fun DreamsScreen(onBack: () -> Unit) {
 
 @Composable
 fun DreamCard(
-    dream: DreamItem,
+    dream: Dream,
+    viewerUid: String = "",
     onStatusChange: (String) -> Unit,
     onAddSavings: (Double) -> Unit,
     onOpenAppIdea: () -> Unit,
@@ -208,7 +211,6 @@ fun DreamCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Header: Title, List tag, Space chip, Delete
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -216,10 +218,18 @@ fun DreamCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(dream.title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.padding(top = 2.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
                         Text(dream.list, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                         Text("•", fontSize = 11.sp, color = Color.Gray)
-                        Text(SpaceType.fromId(dream.space).displayName, fontSize = 11.sp, color = Color.Gray)
+                        SpaceBadge(
+                            forWhom = dream.forWhom,
+                            ownerUid = dream.ownerUid.ifBlank { viewerUid },
+                            viewerUid = viewerUid
+                        )
                     }
                 }
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
@@ -227,7 +237,6 @@ fun DreamCard(
                 }
             }
 
-            // Status Pipeline Selector
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -248,15 +257,14 @@ fun DreamCard(
                 }
             }
 
-            // Money Dream Savings Progress Bar (if estimatedCost > 0)
-            if (dream.estimatedCost > 0) {
+            if (dream.estimatedCost.agoras > 0) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "נחסך: ₪${fmt.format(dream.savedAmount.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.toInt())}",
+                            "נחסך: ₪${fmt.format(dream.savedAmount.shekels.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.shekels.toInt())}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -297,7 +305,6 @@ fun DreamCard(
                 }
             }
 
-            // App Idea Template trigger (7 questions)
             if (isAppIdea) {
                 Button(
                     onClick = onOpenAppIdea,
@@ -321,9 +328,9 @@ fun DreamCard(
 
 @Composable
 fun DreamBoardView(
-    dreams: List<DreamItem>,
-    onStatusChange: (DreamItem, String) -> Unit,
-    onOpenAppIdea: (DreamItem) -> Unit
+    dreams: List<Dream>,
+    onStatusChange: (Dream, String) -> Unit,
+    onOpenAppIdea: (Dream) -> Unit
 ) {
     val statuses = DreamStatus.entries.map { it.displayName }
     val scrollState = rememberScrollState()
@@ -367,8 +374,8 @@ fun DreamBoardView(
                                 Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                     Text(d.title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                     Text(d.list, fontSize = 10.sp, color = MaterialTheme.colorScheme.primary)
-                                    if (d.estimatedCost > 0) {
-                                        Text("₪${d.savedAmount.toInt()} / ₪${d.estimatedCost.toInt()}", fontSize = 10.sp, color = Color.Gray)
+                                    if (d.estimatedCost.agoras > 0) {
+                                        Text("₪${d.savedAmount.shekels.toInt()} / ₪${d.estimatedCost.shekels.toInt()}", fontSize = 10.sp, color = Color.Gray)
                                     }
                                 }
                             }
@@ -384,13 +391,12 @@ fun DreamBoardView(
 fun CreateDreamDialog(
     defaultList: String,
     onDismiss: () -> Unit,
-    onSave: (DreamItem) -> Unit
+    onSave: (Dream) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
     var list by remember { mutableStateOf(if (defaultList == "הכל") "לבית" else defaultList) }
     var estimatedCostInput by remember { mutableStateOf("") }
     var space by remember {
-        // Default: home and trips = shared; app ideas = mine
         mutableStateOf(if (list == "פיתוח ואפליקציות") SpaceType.MINE else SpaceType.SHARED)
     }
 
@@ -408,7 +414,6 @@ fun CreateDreamDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // List selector
                 Text("רשימה:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     availableLists.forEach { l ->
@@ -423,7 +428,6 @@ fun CreateDreamDialog(
                     }
                 }
 
-                // Estimated cost
                 OutlinedTextField(
                     value = estimatedCostInput,
                     onValueChange = { estimatedCostInput = it },
@@ -432,7 +436,6 @@ fun CreateDreamDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // Space selector
                 Text("מרחב:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     SpaceType.entries.forEach { s ->
@@ -449,12 +452,14 @@ fun CreateDreamDialog(
             Button(
                 onClick = {
                     if (title.isNotBlank()) {
+                        val (forWhom, isPrivate) = ModelMappers.legacySpaceToForWhom(space.id)
                         onSave(
-                            DreamItem(
+                            Dream(
                                 title = title.trim(),
                                 list = list,
-                                estimatedCost = estimatedCostInput.toDoubleOrNull() ?: 0.0,
-                                space = space.id
+                                estimatedCost = Money.fromShekels(estimatedCostInput.toDoubleOrNull() ?: 0.0),
+                                forWhom = forWhom,
+                                isPrivate = isPrivate
                             )
                         )
                     }
@@ -472,7 +477,7 @@ fun CreateDreamDialog(
 
 @Composable
 fun AppIdeaTemplateDialog(
-    dream: DreamItem,
+    dream: Dream,
     onDismiss: () -> Unit,
     onSave: (questions: Map<String, String>, nextAction: String) -> Unit
 ) {

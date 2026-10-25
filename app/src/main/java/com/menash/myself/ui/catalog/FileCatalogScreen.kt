@@ -4,7 +4,6 @@ import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,12 +21,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.io.CsvHelper
-import com.menash.myself.data.models.DreamItem
 import com.menash.myself.data.models.SpaceType
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.feature.importcatalog.FileCatalogViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
 import kotlinx.coroutines.launch
 
@@ -45,9 +43,13 @@ data class FileTypeItem(
 fun FileCatalogScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { LifeHubRepository(context) }
-    val householdRepo = remember { HouseholdRepository(context) }
-    val household by householdRepo.observeHousehold().collectAsState(initial = null)
+    val appContainer = LocalAppContainer.current
+    val viewModel: FileCatalogViewModel = viewModel(
+        factory = FileCatalogViewModel.factory(
+            taskRepository = appContainer.taskRepository,
+            dreamRepository = appContainer.dreamRepository
+        )
+    )
 
     var currentImportType by remember { mutableStateOf<FileTypeItem?>(null) }
     var showCsvMapping by remember { mutableStateOf(false) }
@@ -178,7 +180,6 @@ fun FileCatalogScreen(onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            // Download / Share Template
                             OutlinedButton(
                                 onClick = {
                                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -196,7 +197,6 @@ fun FileCatalogScreen(onBack: () -> Unit) {
                                 Text("הורד תבנית", fontSize = 12.sp)
                             }
 
-                            // Import Flow Button
                             Button(
                                 onClick = {
                                     if (item.isPhase2) {
@@ -221,7 +221,6 @@ fun FileCatalogScreen(onBack: () -> Unit) {
         }
     }
 
-    // Mapping Dialog for Catalog Imports
     if (showCsvMapping && currentImportType != null && importedRows.isNotEmpty()) {
         val targetItem = currentImportType!!
         CsvMappingDialog(
@@ -236,44 +235,10 @@ fun FileCatalogScreen(onBack: () -> Unit) {
                 scope.launch {
                     val dataRows = importedRows.drop(1)
                     if (targetItem.feedsModule == "משימות יומיות") {
-                        val titleIdx = mapping["שם המשימה"] ?: -1
-                        val nextIdx = mapping["צעד ראשון מיידי (Next Action)"] ?: -1
-                        val dateIdx = mapping["תאריך יעד"] ?: -1
-                        var count = 0
-                        dataRows.forEach { row ->
-                            val t = row.getOrNull(titleIdx)?.trim() ?: ""
-                            if (t.isNotBlank()) {
-                                repo.createTask(
-                                    title = t,
-                                    nextAction = row.getOrNull(nextIdx)?.trim() ?: "",
-                                    dueDate = row.getOrNull(dateIdx)?.trim() ?: "",
-                                    space = chosenSpaceForImport.id,
-                                    household = household
-                                )
-                                count++
-                            }
-                        }
+                        val count = viewModel.importTasks(dataRows, mapping, chosenSpaceForImport.id)
                         Toast.makeText(context, "יובאו $count משימות בהצלחה!", Toast.LENGTH_SHORT).show()
                     } else if (targetItem.feedsModule == "חלומות ורשימות") {
-                        val titleIdx = mapping["כותרת/שם החלום"] ?: -1
-                        val listIdx = mapping["רשימה"] ?: -1
-                        val costIdx = mapping["עלות משוערת"] ?: -1
-                        var count = 0
-                        dataRows.forEach { row ->
-                            val t = row.getOrNull(titleIdx)?.trim() ?: ""
-                            if (t.isNotBlank()) {
-                                repo.createDream(
-                                    DreamItem(
-                                        title = t,
-                                        list = row.getOrNull(listIdx)?.trim() ?: "לבית",
-                                        estimatedCost = row.getOrNull(costIdx)?.toDoubleOrNull() ?: 0.0,
-                                        space = chosenSpaceForImport.id
-                                    ),
-                                    household = household
-                                )
-                                count++
-                            }
-                        }
+                        val count = viewModel.importDreams(dataRows, mapping, chosenSpaceForImport.id)
                         Toast.makeText(context, "יובאו $count חלומות בהצלחה!", Toast.LENGTH_SHORT).show()
                     }
                     showCsvMapping = false

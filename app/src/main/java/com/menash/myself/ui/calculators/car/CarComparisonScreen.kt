@@ -29,11 +29,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.AppDatabase
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.entities.CarEntity
 import com.menash.myself.data.io.CsvHelper
+import com.menash.myself.feature.calculators.car.CarCalculatorViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -41,9 +42,11 @@ import java.util.Locale
 @Composable
 fun CarComparisonScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val dao = remember { AppDatabase.getDatabase(context).appDao() }
-    val cars by dao.getAllCarsFlow().collectAsState(initial = emptyList())
+    val appContainer = LocalAppContainer.current
+    val viewModel: CarCalculatorViewModel = viewModel(
+        factory = CarCalculatorViewModel.factory(appContainer.carRepository)
+    )
+    val cars by viewModel.cars.collectAsState()
 
     val baselineCar = cars.firstOrNull { it.isBaseline } ?: cars.firstOrNull()
 
@@ -117,22 +120,20 @@ fun CarComparisonScreen(onBack: () -> Unit) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    scope.launch {
-                        dao.insertCar(
-                            CarEntity(
-                                name = "רכב חדש ${cars.size + 1}",
-                                purchasePrice = 140000.0,
-                                resaleValueAfter5Years = 80000.0,
-                                energyCostYearly = 7000.0,
-                                insuranceYearly = 4500.0,
-                                trackerYearly = 600.0,
-                                maintenanceYearly = 1600.0,
-                                annualTestYearly = 1800.0,
-                                tires5YearsTotal = 2200.0,
-                                isBaseline = cars.isEmpty()
-                            )
+                    viewModel.insertCar(
+                        CarEntity(
+                            name = "רכב חדש ${cars.size + 1}",
+                            purchasePrice = 140000.0,
+                            resaleValueAfter5Years = 80000.0,
+                            energyCostYearly = 7000.0,
+                            insuranceYearly = 4500.0,
+                            trackerYearly = 600.0,
+                            maintenanceYearly = 1600.0,
+                            annualTestYearly = 1800.0,
+                            tires5YearsTotal = 2200.0,
+                            isBaseline = cars.isEmpty()
                         )
-                    }
+                    )
                 },
                 modifier = Modifier.testTag("add_car_fab")
             ) {
@@ -161,15 +162,9 @@ fun CarComparisonScreen(onBack: () -> Unit) {
                 CarCard(
                     car = car,
                     baselineCar = baselineCar,
-                    onUpdate = { updated -> scope.launch { dao.updateCar(updated) } },
-                    onDelete = { scope.launch { dao.deleteCar(car) } },
-                    onSetBaseline = {
-                        scope.launch {
-                            cars.forEach { c ->
-                                dao.updateCar(c.copy(isBaseline = c.id == car.id))
-                            }
-                        }
-                    },
+                    onUpdate = { updated -> viewModel.updateCar(updated) },
+                    onDelete = { viewModel.deleteCar(car) },
+                    onSetBaseline = { viewModel.setBaselineCar(car) },
                     onOpenEnergyHelper = { editingEnergyForCar = car }
                 )
             }
@@ -184,9 +179,7 @@ fun CarComparisonScreen(onBack: () -> Unit) {
             initialEnergy = car.energyCostYearly,
             onDismiss = { editingEnergyForCar = null },
             onApply = { calculated ->
-                scope.launch {
-                    dao.updateCar(car.copy(energyCostYearly = calculated))
-                }
+                viewModel.updateCar(car.copy(energyCostYearly = calculated))
                 editingEnergyForCar = null
             }
         )
@@ -200,35 +193,33 @@ fun CarComparisonScreen(onBack: () -> Unit) {
             targetFields = listOf("דגם רכב", "מחיר קנייה", "מכירה (5 שנים)", "אנרגיה שנתית", "ביטוח שנתי", "טיפולים", "צמיגים ל-5 שנים"),
             onDismiss = { showCsvMapping = false },
             onConfirmMap = { mapping ->
-                scope.launch {
-                    val dataRows = importedCsvRows.drop(1)
-                    val newCars = dataRows.mapNotNull { row ->
-                        try {
-                            val name = row.getOrNull(mapping["דגם רכב"] ?: -1) ?: "רכב מיובא"
-                            val purchase = row.getOrNull(mapping["מחיר קנייה"] ?: -1)?.toDoubleOrNull() ?: 120000.0
-                            val resale = row.getOrNull(mapping["מכירה (5 שנים)"] ?: -1)?.toDoubleOrNull() ?: 60000.0
-                            val energy = row.getOrNull(mapping["אנרגיה שנתית"] ?: -1)?.toDoubleOrNull() ?: 7000.0
-                            val insurance = row.getOrNull(mapping["ביטוח שנתי"] ?: -1)?.toDoubleOrNull() ?: 4500.0
-                            val maintenance = row.getOrNull(mapping["טיפולים"] ?: -1)?.toDoubleOrNull() ?: 1500.0
-                            val tires = row.getOrNull(mapping["צמיגים ל-5 שנים"] ?: -1)?.toDoubleOrNull() ?: 2000.0
-                            CarEntity(
-                                name = name,
-                                purchasePrice = purchase,
-                                resaleValueAfter5Years = resale,
-                                energyCostYearly = energy,
-                                insuranceYearly = insurance,
-                                trackerYearly = 600.0,
-                                maintenanceYearly = maintenance,
-                                annualTestYearly = 1800.0,
-                                tires5YearsTotal = tires,
-                                isBaseline = false
-                            )
-                        } catch (e: Exception) { null }
-                    }
-                    dao.insertCars(newCars)
-                    Toast.makeText(context, "יובאו ${newCars.size} רכבים בהצלחה!", Toast.LENGTH_SHORT).show()
-                    showCsvMapping = false
+                val dataRows = importedCsvRows.drop(1)
+                val newCars = dataRows.mapNotNull { row ->
+                    try {
+                        val name = row.getOrNull(mapping["דגם רכב"] ?: -1) ?: "רכב מיובא"
+                        val purchase = row.getOrNull(mapping["מחיר קנייה"] ?: -1)?.toDoubleOrNull() ?: 120000.0
+                        val resale = row.getOrNull(mapping["מכירה (5 שנים)"] ?: -1)?.toDoubleOrNull() ?: 60000.0
+                        val energy = row.getOrNull(mapping["אנרגיה שנתית"] ?: -1)?.toDoubleOrNull() ?: 7000.0
+                        val insurance = row.getOrNull(mapping["ביטוח שנתי"] ?: -1)?.toDoubleOrNull() ?: 4500.0
+                        val maintenance = row.getOrNull(mapping["טיפולים"] ?: -1)?.toDoubleOrNull() ?: 1500.0
+                        val tires = row.getOrNull(mapping["צמיגים ל-5 שנים"] ?: -1)?.toDoubleOrNull() ?: 2000.0
+                        CarEntity(
+                            name = name,
+                            purchasePrice = purchase,
+                            resaleValueAfter5Years = resale,
+                            energyCostYearly = energy,
+                            insuranceYearly = insurance,
+                            trackerYearly = 600.0,
+                            maintenanceYearly = maintenance,
+                            annualTestYearly = 1800.0,
+                            tires5YearsTotal = tires,
+                            isBaseline = false
+                        )
+                    } catch (e: Exception) { null }
                 }
+                viewModel.insertCars(newCars)
+                Toast.makeText(context, "יובאו ${newCars.size} רכבים בהצלחה!", Toast.LENGTH_SHORT).show()
+                showCsvMapping = false
             }
         )
     }

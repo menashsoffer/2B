@@ -1,13 +1,13 @@
 package com.menash.myself.ui.inbox
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,23 +19,29 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
-import com.menash.myself.data.models.DreamItem
-import com.menash.myself.data.models.InboxItem
-import com.menash.myself.data.models.SpaceType
-import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.menash.myself.core.designsystem.component.SpaceBadge
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.core.domain.model.InboxItem
+import com.menash.myself.feature.inbox.InboxViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxTriageScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val repo = remember { LifeHubRepository(context) }
-    val householdRepo = remember { HouseholdRepository(context) }
+    val appContainer = LocalAppContainer.current
+    val viewModel: InboxViewModel = viewModel(
+        factory = InboxViewModel.factory(
+            inboxRepository = appContainer.inboxRepository,
+            taskRepository = appContainer.taskRepository,
+            dreamRepository = appContainer.dreamRepository
+        )
+    )
 
-    val household by householdRepo.observeHousehold().collectAsState(initial = null)
-    val inboxItems by repo.observeInbox(household).collectAsState(initial = emptyList())
+    val inboxItems by viewModel.inboxItems.collectAsState()
+    val viewerUid = remember { runCatching { Firebase.auth.currentUser?.uid }.getOrNull() ?: "" }
 
     Scaffold(
         topBar = {
@@ -88,56 +94,29 @@ fun InboxTriageScreen(onBack: () -> Unit) {
                 items(inboxItems, key = { it.id }) { item ->
                     InboxItemCard(
                         item = item,
+                        viewerUid = viewerUid,
                         onTriageToTask = {
-                            scope.launch {
-                                // Default task title starting with verb
-                                val taskTitle = if (item.text.startsWith("ל") || item.text.startsWith("ה")) item.text else "לטפל ב-${item.text}"
-                                repo.createTask(
-                                    title = taskTitle,
-                                    nextAction = "צעד ראשון",
-                                    space = item.space,
-                                    household = household
-                                )
-                                repo.markInboxTriaged(item.id, "task")
+                            viewModel.triageToTask(item) {
                                 Toast.makeText(context, "הועבר למשימות!", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onTriageToDream = {
-                            scope.launch {
-                                repo.createDream(
-                                    DreamItem(
-                                        title = item.text,
-                                        list = if (item.space == SpaceType.MINE.id) "פיתוח ואפליקציות" else "לבית",
-                                        space = item.space
-                                    ),
-                                    household = household
-                                )
-                                repo.markInboxTriaged(item.id, "dream")
+                            viewModel.triageToDream(item) {
                                 Toast.makeText(context, "הועבר לחלומות!", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onTriageToIdea = {
-                            scope.launch {
-                                repo.createDream(
-                                    DreamItem(
-                                        title = item.text,
-                                        list = "פיתוח ואפליקציות",
-                                        space = SpaceType.MINE.id
-                                    ),
-                                    household = household
-                                )
-                                repo.markInboxTriaged(item.id, "idea")
+                            viewModel.triageToIdea(item) {
                                 Toast.makeText(context, "נשמר כרעיון לפיתוח!", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onTriageToNote = {
-                            scope.launch {
-                                repo.markInboxTriaged(item.id, "note")
+                            viewModel.triageToNote(item) {
                                 Toast.makeText(context, "סומן כפתק!", Toast.LENGTH_SHORT).show()
                             }
                         },
                         onDelete = {
-                            scope.launch { repo.deleteInboxItem(item.id) }
+                            viewModel.deleteItem(item)
                         }
                     )
                 }
@@ -149,6 +128,7 @@ fun InboxTriageScreen(onBack: () -> Unit) {
 @Composable
 fun InboxItemCard(
     item: InboxItem,
+    viewerUid: String = "",
     onTriageToTask: () -> Unit,
     onTriageToDream: () -> Unit,
     onTriageToIdea: () -> Unit,
@@ -167,12 +147,10 @@ fun InboxItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                SuggestionChip(
-                    onClick = {},
-                    label = { Text(SpaceType.fromId(item.space).displayName, fontSize = 11.sp) },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                    )
+                SpaceBadge(
+                    forWhom = item.forWhom,
+                    ownerUid = item.ownerUid.ifBlank { viewerUid },
+                    viewerUid = viewerUid
                 )
                 IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Default.Delete, contentDescription = "מחק", tint = Color.LightGray)
@@ -189,7 +167,6 @@ fun InboxItemCard(
 
             HorizontalDivider(color = Color(0xFFF1F5F9))
 
-            // 1-Tap Triage Buttons Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -233,7 +210,7 @@ fun InboxItemCard(
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
                 ) {
-                    Icon(Icons.Default.Notes, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Icon(Icons.AutoMirrored.Filled.Notes, contentDescription = null, modifier = Modifier.size(14.dp))
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("פתק", fontSize = 11.sp)
                 }

@@ -25,21 +25,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.AppDatabase
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.entities.PensionFundEntity
 import com.menash.myself.data.io.CsvHelper
+import com.menash.myself.feature.calculators.pension.PensionCalculatorViewModel
 import com.menash.myself.ui.common.CsvMappingDialog
-import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PensionSavingsScreen(onBack: () -> Unit) {
+fun PensionSavingsScreen(
+    onBack: () -> Unit,
+    appContainer: com.menash.myself.core.di.AppContainer = LocalAppContainer.current,
+    viewModel: PensionCalculatorViewModel = viewModel(
+        factory = PensionCalculatorViewModel.factory(appContainer.pensionFundRepository)
+    )
+) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val dao = remember { AppDatabase.getDatabase(context).appDao() }
-    val funds by dao.getAllPensionFundsFlow().collectAsState(initial = emptyList())
+    val funds by viewModel.funds.collectAsStateWithLifecycle()
 
     var selectedTypeFilter by remember { mutableStateOf<String?>(null) }
     var showCsvMapping by remember { mutableStateOf(false) }
@@ -132,19 +138,17 @@ fun PensionSavingsScreen(onBack: () -> Unit) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    scope.launch {
-                        dao.insertPensionFund(
-                            PensionFundEntity(
-                                fundType = "קרן השתלמות",
-                                provider = "חברה מנהלת",
-                                currentValue = 50000.0,
-                                totalDeposits = 40000.0,
-                                feeOnBalancePercent = 0.25,
-                                feeOnDepositsPercent = 0.0,
-                                notes = ""
-                            )
+                    viewModel.insertPensionFund(
+                        PensionFundEntity(
+                            fundType = "קרן השתלמות",
+                            provider = "חברה מנהלת",
+                            currentValue = 50000.0,
+                            totalDeposits = 40000.0,
+                            feeOnBalancePercent = 0.25,
+                            feeOnDepositsPercent = 0.0,
+                            notes = ""
                         )
-                    }
+                    )
                 },
                 modifier = Modifier.testTag("add_fund_fab")
             ) {
@@ -305,8 +309,8 @@ fun PensionSavingsScreen(onBack: () -> Unit) {
                     fund = fund,
                     isHighestBalance = isHighestBalance,
                     isHighestDeposit = isHighestDeposit,
-                    onUpdate = { updated -> scope.launch { dao.updatePensionFund(updated) } },
-                    onDelete = { scope.launch { dao.deletePensionFund(fund) } }
+                    onUpdate = { updated -> viewModel.updatePensionFund(updated) },
+                    onDelete = { viewModel.deletePensionFund(fund) }
                 )
             }
 
@@ -322,33 +326,31 @@ fun PensionSavingsScreen(onBack: () -> Unit) {
             targetFields = listOf("סוג חיסכון", "גוף מנהל", "שווי נוכחי", "סך הפקדות", "דמי ניהול מצבירה (%)", "דמי ניהול מהפקדה (%)", "הערות"),
             onDismiss = { showCsvMapping = false },
             onConfirmMap = { mapping ->
-                scope.launch {
-                    val dataRows = importedCsvRows.drop(1)
-                    val newFunds = dataRows.mapNotNull { row ->
-                        try {
-                            val type = row.getOrNull(mapping["סוג חיסכון"] ?: -1) ?: "קרן פנסיה"
-                            val provider = row.getOrNull(mapping["גוף מנהל"] ?: -1) ?: "גוף מנהל"
-                            val currentVal = row.getOrNull(mapping["שווי נוכחי"] ?: -1)?.toDoubleOrNull() ?: 50000.0
-                            val deposits = row.getOrNull(mapping["סך הפקדות"] ?: -1)?.toDoubleOrNull() ?: 40000.0
-                            val feeBalance = row.getOrNull(mapping["דמי ניהול מצבירה (%)"] ?: -1)?.toDoubleOrNull() ?: 0.2
-                            val feeDeposit = row.getOrNull(mapping["דמי ניהול מהפקדה (%)"] ?: -1)?.toDoubleOrNull() ?: 0.0
-                            val notes = row.getOrNull(mapping["הערות"] ?: -1) ?: ""
+                val dataRows = importedCsvRows.drop(1)
+                val newFunds = dataRows.mapNotNull { row ->
+                    try {
+                        val type = row.getOrNull(mapping["סוג חיסכון"] ?: -1) ?: "קרן פנסיה"
+                        val provider = row.getOrNull(mapping["גוף מנהל"] ?: -1) ?: "גוף מנהל"
+                        val currentVal = row.getOrNull(mapping["שווי נוכחי"] ?: -1)?.toDoubleOrNull() ?: 50000.0
+                        val deposits = row.getOrNull(mapping["סך הפקדות"] ?: -1)?.toDoubleOrNull() ?: 40000.0
+                        val feeBalance = row.getOrNull(mapping["דמי ניהול מצבירה (%)"] ?: -1)?.toDoubleOrNull() ?: 0.2
+                        val feeDeposit = row.getOrNull(mapping["דמי ניהול מהפקדה (%)"] ?: -1)?.toDoubleOrNull() ?: 0.0
+                        val notes = row.getOrNull(mapping["הערות"] ?: -1) ?: ""
 
-                            PensionFundEntity(
-                                fundType = type,
-                                provider = provider,
-                                currentValue = currentVal,
-                                totalDeposits = deposits,
-                                feeOnBalancePercent = feeBalance,
-                                feeOnDepositsPercent = feeDeposit,
-                                notes = notes
-                            )
-                        } catch (e: Exception) { null }
-                    }
-                    dao.insertPensionFunds(newFunds)
-                    Toast.makeText(context, "יובאו ${newFunds.size} קופות וקרנות בהצלחה!", Toast.LENGTH_SHORT).show()
-                    showCsvMapping = false
+                        PensionFundEntity(
+                            fundType = type,
+                            provider = provider,
+                            currentValue = currentVal,
+                            totalDeposits = deposits,
+                            feeOnBalancePercent = feeBalance,
+                            feeOnDepositsPercent = feeDeposit,
+                            notes = notes
+                        )
+                    } catch (e: Exception) { null }
                 }
+                viewModel.insertPensionFunds(newFunds)
+                Toast.makeText(context, "יובאו ${newFunds.size} קופות וקרנות בהצלחה!", Toast.LENGTH_SHORT).show()
+                showCsvMapping = false
             }
         )
     }

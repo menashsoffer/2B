@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,11 +20,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.auth.AuthManager
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.models.Household
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.menash.myself.auth.AuthManager
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.feature.household.HouseholdViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,20 +36,16 @@ fun HouseholdScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repo = remember { HouseholdRepository(context) }
+    val appContainer = LocalAppContainer.current
+    val viewModel: HouseholdViewModel = viewModel(
+        factory = HouseholdViewModel.factory(appContainer.householdRepository)
+    )
     val currentUser = Firebase.auth.currentUser
 
-    var household by remember { mutableStateOf<Household?>(null) }
+    val household by viewModel.household.collectAsState()
     var partnerEmailInput by remember { mutableStateOf("") }
     var isInviting by remember { mutableStateOf(false) }
     var showSignOutConfirm by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        household = repo.getOrCreateHousehold()
-        repo.observeHousehold().collect { h ->
-            if (h != null) household = h
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -74,7 +72,6 @@ fun HouseholdScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Signed-in user card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
@@ -106,7 +103,6 @@ fun HouseholdScreen(
                 }
             }
 
-            // Spaces explanation card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -129,25 +125,24 @@ fun HouseholdScreen(
                     SpaceInfoRow(
                         icon = Icons.Default.Person,
                         color = Color(0xFF2563EB),
-                        title = "שלי (פרטי)",
-                        desc = "רק אתה רואה ועורך. מתאים למשימות אישיות ורעיונות לפיתוח."
+                        title = "שלי",
+                        desc = "משימות ופריטים שמיועדים עבורך."
                     )
                     SpaceInfoRow(
                         icon = Icons.Default.Favorite,
                         color = Color(0xFFEC4899),
-                        title = "של אשתי (פרטי)",
-                        desc = "רק אשתך רואה ועורכת כשהיא מחוברת מחשבונה."
+                        title = "של אשתי",
+                        desc = "משימות ופריטים שמיועדים עבור בת הזוג."
                     )
                     SpaceInfoRow(
                         icon = Icons.Default.Groups,
                         color = Color(0xFF16A34A),
-                        title = "משותף (לשנינו)",
+                        title = "של שנינו (משותף)",
                         desc = "משימות לבית, טיסות, קניות, וכל מה שמנוהל יחד."
                     )
                 }
             }
 
-            // Partner Invitation Card
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -226,7 +221,7 @@ fun HouseholdScreen(
                             isInviting = true
                             scope.launch {
                                 try {
-                                    repo.invitePartner(hid, email)
+                                    viewModel.invitePartner(hid, email)
                                     Toast.makeText(context, "ההזמנה נשמרה בהצלחה!", Toast.LENGTH_SHORT).show()
                                     partnerEmailInput = ""
                                 } catch (e: Exception) {
@@ -249,14 +244,13 @@ fun HouseholdScreen(
                 }
             }
 
-            // Sign out button
             OutlinedButton(
                 onClick = { showSignOutConfirm = true },
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().testTag("sign_out_button")
             ) {
-                Icon(Icons.Default.ExitToApp, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("התנתק מחשבון Google")
             }

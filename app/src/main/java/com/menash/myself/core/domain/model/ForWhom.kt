@@ -21,19 +21,24 @@ enum class ForWhom {
      *     PARTNER (owner created for partner) -> "שלי" (it belongs to the viewer!)
      *     BOTH -> "של שנינו"
      */
-    fun labelForViewer(isOwner: Boolean, partnerName: String = "בן/בת הזוג"): String {
+    fun labelForViewer(
+        isOwner: Boolean,
+        partnerName: String = "בן/בת הזוג",
+        mineLabel: String = "שלי",
+        bothLabel: String = "של שנינו"
+    ): String {
         val effectivePartnerName = partnerName.trim().ifEmpty { "בן/בת הזוג" }
         return if (isOwner) {
             when (this) {
-                ME -> "שלי"
+                ME -> mineLabel
                 PARTNER -> effectivePartnerName
-                BOTH -> "של שנינו"
+                BOTH -> bothLabel
             }
         } else {
             when (this) {
                 ME -> effectivePartnerName
-                PARTNER -> "שלי"
-                BOTH -> "של שנינו"
+                PARTNER -> mineLabel
+                BOTH -> bothLabel
             }
         }
     }

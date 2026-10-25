@@ -27,24 +27,30 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class LifeHubRepository(private val db: FirebaseFirestore) {
+open class LifeHubRepository(
+    private val db: FirebaseFirestore? = null,
+    private val uidProvider: () -> String? = { runCatching { Firebase.auth.currentUser?.uid }.getOrNull() }
+) {
 
     constructor(context: Context) : this(FirestoreManager.get(context))
 
-    private val auth = Firebase.auth
     private val TAG = "LifeHubRepository"
 
     private val _errorFlow = MutableStateFlow<String?>(null)
     val errorFlow: StateFlow<String?> = _errorFlow.asStateFlow()
 
+    private fun requireDb(): FirebaseFirestore {
+        return db ?: throw IllegalStateException("FirebaseFirestore instance not provided")
+    }
+
     private fun requireUid(): String {
-        return auth.currentUser?.uid ?: throw IllegalStateException("User not authenticated")
+        return uidProvider() ?: throw IllegalStateException("User not authenticated")
     }
 
     private fun reportError(action: String, error: Throwable) {
         val code = (error as? FirebaseFirestoreException)?.code?.name ?: "ERROR"
         val message = "שגיאת Firestore ב-$action ($code): ${error.localizedMessage ?: error.message}"
-        Log.e(TAG, message, error)
+        runCatching { Log.e(TAG, message, error) }
         _errorFlow.value = message
     }
 
@@ -52,14 +58,14 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         _errorFlow.value = null
     }
 
-    suspend fun resolveHouseholdId(explicitHid: String = ""): String {
+    open suspend fun resolveHouseholdId(explicitHid: String = ""): String {
         if (explicitHid.isNotBlank()) {
             return explicitHid
         }
-        val uid = auth.currentUser?.uid
+        val uid = uidProvider()
             ?: throw IllegalStateException("Active household session required: User is not authenticated")
         return try {
-            val query = db.collection("households").whereArrayContains("memberUids", uid).limit(1).get().await()
+            val query = requireDb().collection("households").whereArrayContains("memberUids", uid).limit(1).get().await()
             val hid = query.documents.firstOrNull()?.id
                 ?: throw IllegalStateException("Active household session required: No household found for user")
             hid
@@ -69,11 +75,17 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    // --- TASKS (Scoped under households/{hid}/tasks & users/{uid}/private) ---
+    // --- TASKS (Scoped under households/{hid}/tasks & users/{uid}/private/{collection}/items/{id}) ---
 
-    fun observePrivateTasks(uid: String): Flow<List<TaskItem>> = callbackFlow {
-        val listener = db.collection("users").document(uid).collection("private")
-            .whereEqualTo("itemType", "tasks")
+    fun privateCollection(uid: String, collection: String) =
+        requireDb().collection("users")
+            .document(uid)
+            .collection("private")
+            .document(collection)
+            .collection("items")
+
+    open fun observePrivateTasks(uid: String): Flow<List<TaskItem>> = callbackFlow {
+        val listener = privateCollection(uid, "tasks")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -88,8 +100,8 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    fun observeTasks(spaceFilter: String? = null, household: Household? = null): Flow<List<TaskItem>> = callbackFlow {
-        val uid = auth.currentUser?.uid
+    open fun observeTasks(spaceFilter: String? = null, household: Household? = null): Flow<List<TaskItem>> = callbackFlow {
+        val uid = uidProvider()
         val hid = household?.id?.trim()
         if (uid == null || hid.isNullOrBlank()) {
             trySend(emptyList())
@@ -97,7 +109,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
             return@callbackFlow
         }
 
-        val listener = db.collection("households").document(hid).collection("tasks")
+        val listener = requireDb().collection("households").document(hid).collection("tasks")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -121,8 +133,8 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    fun observeMergedTasks(household: Household?): Flow<List<TaskItem>> {
-        val uid = auth.currentUser?.uid
+    open fun observeMergedTasks(household: Household?): Flow<List<TaskItem>> {
+        val uid = uidProvider()
         val hid = household?.id?.trim()
         if (hid.isNullOrBlank()) return flowOf(emptyList())
 
@@ -134,7 +146,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun createTask(
+    open suspend fun createTask(
         title: String,
         nextAction: String = "",
         isTop3: Boolean = false,
@@ -144,9 +156,9 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         household: Household? = null
     ) {
         val uid = requireUid()
-        if (space == "private" || space == SpaceType.PRIVATE.id) {
+        if (space == "private") {
             try {
-                val docRef = db.collection("users").document(uid).collection("private").document()
+                val docRef = privateCollection(uid, "tasks").document()
                 val payload = mapOf(
                     "title" to title.trim(),
                     "nextAction" to nextAction.trim(),
@@ -157,8 +169,6 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
                     "space" to "private",
                     "userId" to uid,
                     "householdId" to "private",
-                    "itemType" to "tasks",
-                    "collection" to "tasks",
                     "createdAt" to FieldValue.serverTimestamp()
                 )
                 docRef.set(payload).await()
@@ -169,7 +179,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             val hid = household?.id ?: throw IllegalStateException("Household ID required to create task")
             try {
-                val docRef = db.collection("households").document(hid).collection("tasks").document()
+                val docRef = requireDb().collection("households").document(hid).collection("tasks").document()
                 val payload = mapOf(
                     "title" to title.trim(),
                     "nextAction" to nextAction.trim(),
@@ -190,12 +200,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun toggleTaskDone(task: TaskItem) {
-        val uid = auth.currentUser?.uid
+    open suspend fun toggleTaskDone(task: TaskItem) {
+        val uid = uidProvider()
         if (task.space == "private" || task.householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(task.id)
+                privateCollection(uid, "tasks").document(task.id)
                     .update("isDone", !task.isDone)
                     .await()
             } catch (e: Exception) {
@@ -205,7 +215,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
             try {
-                db.collection("households").document(hid).collection("tasks").document(task.id)
+                requireDb().collection("households").document(hid).collection("tasks").document(task.id)
                     .update("isDone", !task.isDone)
                     .await()
             } catch (e: Exception) {
@@ -215,12 +225,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun setTaskTop3(task: TaskItem, isTop3: Boolean) {
-        val uid = auth.currentUser?.uid
+    open suspend fun setTaskTop3(task: TaskItem, isTop3: Boolean) {
+        val uid = uidProvider()
         if (task.space == "private" || task.householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(task.id)
+                privateCollection(uid, "tasks").document(task.id)
                     .update("isTop3", isTop3)
                     .await()
             } catch (e: Exception) {
@@ -230,7 +240,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
             try {
-                db.collection("households").document(hid).collection("tasks").document(task.id)
+                requireDb().collection("households").document(hid).collection("tasks").document(task.id)
                     .update("isTop3", isTop3)
                     .await()
             } catch (e: Exception) {
@@ -240,12 +250,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun setTaskFiveBefore11(task: TaskItem, isFive: Boolean) {
-        val uid = auth.currentUser?.uid
+    open suspend fun setTaskFiveBefore11(task: TaskItem, isFive: Boolean) {
+        val uid = uidProvider()
         if (task.space == "private" || task.householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(task.id)
+                privateCollection(uid, "tasks").document(task.id)
                     .update("isFiveBefore11", isFive)
                     .await()
             } catch (e: Exception) {
@@ -255,7 +265,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             val hid = task.householdId.ifBlank { throw IllegalStateException("Household ID required") }
             try {
-                db.collection("households").document(hid).collection("tasks").document(task.id)
+                requireDb().collection("households").document(hid).collection("tasks").document(task.id)
                     .update("isFiveBefore11", isFive)
                     .await()
             } catch (e: Exception) {
@@ -265,12 +275,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun updateTaskDate(taskId: String, date: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun updateTaskDate(taskId: String, date: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(taskId)
+                privateCollection(uid, "tasks").document(taskId)
                     .update("dueDate", date)
                     .await()
             } catch (e: Exception) {
@@ -280,7 +290,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("tasks").document(taskId)
+                requireDb().collection("households").document(hid).collection("tasks").document(taskId)
                     .update("dueDate", date)
                     .await()
             } catch (e: Exception) {
@@ -290,12 +300,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun deleteTask(taskId: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun deleteTask(taskId: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(taskId)
+                privateCollection(uid, "tasks").document(taskId)
                     .delete()
                     .await()
             } catch (e: Exception) {
@@ -305,7 +315,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("tasks").document(taskId)
+                requireDb().collection("households").document(hid).collection("tasks").document(taskId)
                     .delete()
                     .await()
             } catch (e: Exception) {
@@ -315,11 +325,10 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    // --- DREAMS & LISTS (Scoped under households/{hid}/dreams & users/{uid}/private) ---
+    // --- DREAMS & LISTS (Scoped under households/{hid}/dreams & users/{uid}/private/dreams/items/{id}) ---
 
-    fun observePrivateDreams(uid: String): Flow<List<DreamItem>> = callbackFlow {
-        val listener = db.collection("users").document(uid).collection("private")
-            .whereEqualTo("itemType", "dreams")
+    open fun observePrivateDreams(uid: String): Flow<List<DreamItem>> = callbackFlow {
+        val listener = privateCollection(uid, "dreams")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -334,8 +343,8 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    fun observeDreams(listFilter: String? = null, spaceFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> = callbackFlow {
-        val uid = auth.currentUser?.uid
+    open fun observeDreams(listFilter: String? = null, spaceFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> = callbackFlow {
+        val uid = uidProvider()
         val hid = household?.id?.trim()
         if (uid == null || hid.isNullOrBlank()) {
             trySend(emptyList())
@@ -343,7 +352,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
             return@callbackFlow
         }
 
-        val listener = db.collection("households").document(hid).collection("dreams")
+        val listener = requireDb().collection("households").document(hid).collection("dreams")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -365,8 +374,8 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    fun observeMergedDreams(listFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> {
-        val uid = auth.currentUser?.uid
+    open fun observeMergedDreams(listFilter: String? = null, household: Household? = null): Flow<List<DreamItem>> {
+        val uid = uidProvider()
         val hid = household?.id?.trim()
         if (hid.isNullOrBlank()) return flowOf(emptyList())
 
@@ -381,11 +390,11 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun createDream(dream: DreamItem, household: Household? = null) {
+    open suspend fun createDream(dream: DreamItem, household: Household? = null) {
         val uid = requireUid()
         if (dream.space == "private" || dream.householdId == "private") {
             try {
-                val docRef = db.collection("users").document(uid).collection("private").document()
+                val docRef = privateCollection(uid, "dreams").document()
                 val payload = mapOf(
                     "title" to dream.title.trim(),
                     "list" to dream.list.trim(),
@@ -399,8 +408,6 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
                     "space" to "private",
                     "userId" to uid,
                     "householdId" to "private",
-                    "itemType" to "dreams",
-                    "collection" to "dreams",
                     "appIdeaQuestions" to dream.appIdeaQuestions,
                     "nextAction" to dream.nextAction.trim(),
                     "createdAt" to FieldValue.serverTimestamp()
@@ -413,7 +420,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             val hid = resolveHouseholdId(household?.id ?: dream.householdId)
             try {
-                val docRef = db.collection("households").document(hid).collection("dreams").document()
+                val docRef = requireDb().collection("households").document(hid).collection("dreams").document()
                 val payload = mapOf(
                     "title" to dream.title.trim(),
                     "list" to dream.list.trim(),
@@ -439,12 +446,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun updateDreamStatus(dreamId: String, status: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun updateDreamStatus(dreamId: String, status: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(dreamId)
+                privateCollection(uid, "dreams").document(dreamId)
                     .update("status", status)
                     .await()
             } catch (e: Exception) {
@@ -454,7 +461,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                requireDb().collection("households").document(hid).collection("dreams").document(dreamId)
                     .update("status", status)
                     .await()
             } catch (e: Exception) {
@@ -464,12 +471,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun updateDreamSavings(dreamId: String, savedAmount: Double, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun updateDreamSavings(dreamId: String, savedAmount: Double, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(dreamId)
+                privateCollection(uid, "dreams").document(dreamId)
                     .update("savedAmount", savedAmount)
                     .await()
             } catch (e: Exception) {
@@ -479,7 +486,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                requireDb().collection("households").document(hid).collection("dreams").document(dreamId)
                     .update("savedAmount", savedAmount)
                     .await()
             } catch (e: Exception) {
@@ -489,12 +496,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun updateDreamAppIdea(dreamId: String, questions: Map<String, String>, nextAction: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun updateDreamAppIdea(dreamId: String, questions: Map<String, String>, nextAction: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(dreamId)
+                privateCollection(uid, "dreams").document(dreamId)
                     .update(
                         mapOf(
                             "appIdeaQuestions" to questions,
@@ -508,7 +515,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                requireDb().collection("households").document(hid).collection("dreams").document(dreamId)
                     .update(
                         mapOf(
                             "appIdeaQuestions" to questions,
@@ -522,12 +529,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun deleteDream(dreamId: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun deleteDream(dreamId: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(dreamId)
+                privateCollection(uid, "dreams").document(dreamId)
                     .delete()
                     .await()
             } catch (e: Exception) {
@@ -537,7 +544,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("dreams").document(dreamId)
+                requireDb().collection("households").document(hid).collection("dreams").document(dreamId)
                     .delete()
                     .await()
             } catch (e: Exception) {
@@ -547,12 +554,10 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    // --- INBOX (QUICK CAPTURE) (Scoped under households/{hid}/inbox & users/{uid}/private) ---
+    // --- INBOX (QUICK CAPTURE) (Scoped under households/{hid}/inbox & users/{uid}/private/inbox/items/{id}) ---
 
-    fun observePrivateInbox(uid: String): Flow<List<InboxItem>> = callbackFlow {
-        val listener = db.collection("users").document(uid).collection("private")
-            .whereEqualTo("itemType", "inbox")
-            .whereEqualTo("status", "inbox")
+    open fun observePrivateInbox(uid: String): Flow<List<InboxItem>> = callbackFlow {
+        val listener = privateCollection(uid, "inbox")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -561,14 +566,14 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
                 }
                 val items = snapshot?.documents?.mapNotNull { doc ->
                     doc.toObject(InboxItem::class.java)?.copy(id = doc.id, householdId = "private", space = "private")
-                } ?: emptyList()
+                }?.filter { it.status == "inbox" } ?: emptyList()
                 trySend(items)
             }
         awaitClose { listener.remove() }
     }
 
-    fun observeInbox(household: Household? = null): Flow<List<InboxItem>> = callbackFlow {
-        val uid = auth.currentUser?.uid
+    open fun observeInbox(household: Household? = null): Flow<List<InboxItem>> = callbackFlow {
+        val uid = uidProvider()
         val hid = household?.id?.trim()
         if (uid == null || hid.isNullOrBlank()) {
             trySend(emptyList())
@@ -576,7 +581,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
             return@callbackFlow
         }
 
-        val listener = db.collection("households").document(hid).collection("inbox")
+        val listener = requireDb().collection("households").document(hid).collection("inbox")
             .whereEqualTo("status", "inbox")
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
@@ -594,8 +599,8 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    fun observeMergedInbox(household: Household?): Flow<List<InboxItem>> {
-        val uid = auth.currentUser?.uid
+    open fun observeMergedInbox(household: Household?): Flow<List<InboxItem>> {
+        val uid = uidProvider()
         val hid = household?.id?.trim()
         if (hid.isNullOrBlank()) return flowOf(emptyList())
 
@@ -607,11 +612,11 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun addInboxItem(text: String, space: String = SpaceType.SHARED.id, household: Household? = null) {
+    open suspend fun addInboxItem(text: String, space: String = SpaceType.SHARED.id, household: Household? = null) {
         val uid = requireUid()
-        if (space == "private" || space == SpaceType.PRIVATE.id) {
+        if (space == "private") {
             try {
-                val docRef = db.collection("users").document(uid).collection("private").document()
+                val docRef = privateCollection(uid, "inbox").document()
                 val payload = mapOf(
                     "text" to text.trim(),
                     "space" to "private",
@@ -619,8 +624,6 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
                     "triagedType" to "",
                     "userId" to uid,
                     "householdId" to "private",
-                    "itemType" to "inbox",
-                    "collection" to "inbox",
                     "createdAt" to FieldValue.serverTimestamp()
                 )
                 docRef.set(payload).await()
@@ -631,7 +634,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             val hid = resolveHouseholdId(household?.id ?: "")
             try {
-                val docRef = db.collection("households").document(hid).collection("inbox").document()
+                val docRef = requireDb().collection("households").document(hid).collection("inbox").document()
                 val payload = mapOf(
                     "text" to text.trim(),
                     "space" to space,
@@ -649,12 +652,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun markInboxTriaged(itemId: String, triagedType: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun markInboxTriaged(itemId: String, triagedType: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(itemId)
+                privateCollection(uid, "inbox").document(itemId)
                     .update(
                         mapOf(
                             "status" to "triaged",
@@ -668,7 +671,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("inbox").document(itemId)
+                requireDb().collection("households").document(hid).collection("inbox").document(itemId)
                     .update(
                         mapOf(
                             "status" to "triaged",
@@ -682,12 +685,12 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
     }
 
-    suspend fun deleteInboxItem(itemId: String, householdId: String = "") {
-        val uid = auth.currentUser?.uid
+    open suspend fun deleteInboxItem(itemId: String, householdId: String = "") {
+        val uid = uidProvider()
         if (householdId == "private") {
             if (uid == null) throw IllegalStateException("User not authenticated")
             try {
-                db.collection("users").document(uid).collection("private").document(itemId)
+                privateCollection(uid, "inbox").document(itemId)
                     .delete()
                     .await()
             } catch (e: Exception) {
@@ -697,7 +700,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         } else {
             try {
                 val hid = resolveHouseholdId(householdId)
-                db.collection("households").document(hid).collection("inbox").document(itemId)
+                requireDb().collection("households").document(hid).collection("inbox").document(itemId)
                     .delete()
                     .await()
             } catch (e: Exception) {
@@ -713,8 +716,8 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         return SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
     }
 
-    fun observeTodayFitness(): Flow<FitnessLog?> = callbackFlow {
-        val uid = auth.currentUser?.uid
+    open fun observeTodayFitness(): Flow<FitnessLog?> = callbackFlow {
+        val uid = uidProvider()
         if (uid == null) {
             trySend(null)
             close()
@@ -722,7 +725,7 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         }
 
         val today = getTodayDateString()
-        val listener = db.collection("users").document(uid).collection("fitness").document(today)
+        val listener = requireDb().collection("users").document(uid).collection("fitness").document(today)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     reportError("observeTodayFitness", error)
@@ -735,15 +738,15 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    fun observeWeeklyFitness(): Flow<List<FitnessLog>> = callbackFlow {
-        val uid = auth.currentUser?.uid
+    open fun observeWeeklyFitness(): Flow<List<FitnessLog>> = callbackFlow {
+        val uid = uidProvider()
         if (uid == null) {
             trySend(emptyList())
             close()
             return@callbackFlow
         }
 
-        val listener = db.collection("users").document(uid).collection("fitness")
+        val listener = requireDb().collection("users").document(uid).collection("fitness")
             .orderBy("date", Query.Direction.DESCENDING)
             .limit(7)
             .addSnapshotListener { snapshot, error ->
@@ -760,11 +763,11 @@ class LifeHubRepository(private val db: FirebaseFirestore) {
         awaitClose { listener.remove() }
     }
 
-    suspend fun saveTodayFitness(moved: Boolean, minutes: Int, type: String) {
+    open suspend fun saveTodayFitness(moved: Boolean, minutes: Int, type: String) {
         val uid = requireUid()
         val today = getTodayDateString()
         try {
-            val docRef = db.collection("users").document(uid).collection("fitness").document(today)
+            val docRef = requireDb().collection("users").document(uid).collection("fitness").document(today)
             docRef.set(
                 mapOf(
                     "date" to today,

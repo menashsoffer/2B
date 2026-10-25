@@ -126,6 +126,14 @@ object ModelMappers {
         }
     }
 
+    var lastLoggedWarning: String? = null
+        private set
+
+    private fun logWarning(message: String) {
+        lastLoggedWarning = message
+        runCatching { android.util.Log.w("ModelMappers", message) }
+    }
+
     fun legacySpaceToForWhom(space: String?): Pair<ForWhom, Boolean> {
         val clean = space?.trim()?.lowercase() ?: ""
         return when (clean) {
@@ -134,7 +142,7 @@ object ModelMappers {
             "wife", "partner", "של אשתי" -> Pair(ForWhom.PARTNER, false)
             "shared", "משותף" -> Pair(ForWhom.BOTH, false)
             else -> {
-                android.util.Log.w("ModelMappers", "Unknown space value: '$space', defaulting to ME (never BOTH)")
+                logWarning("Unknown space value: '$space', defaulting to ME (never BOTH)")
                 Pair(ForWhom.ME, false)
             }
         }
@@ -159,7 +167,7 @@ object ModelMappers {
         } catch (_: Exception) {}
 
         // 3. Unparseable -> keep raw string, never overwrite with empty
-        android.util.Log.w("ModelMappers", "Unparseable legacy date: '$dateStr', preserving raw string")
+        logWarning("Unparseable legacy date: '$dateStr', preserving raw string")
         return Pair(null, trimmed)
     }
 

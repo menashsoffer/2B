@@ -22,11 +22,11 @@ data class Dream(
     val nextAction: String = "",
     val createdAt: Instant? = null
 ) {
-    val progressPercent: Double
+    val progressPercent: Float
         get() = if (estimatedCost.isPositive()) {
-            ((savedAmount.shekels / estimatedCost.shekels) * 100.0).coerceIn(0.0, 100.0)
+            (savedAmount.shekels / estimatedCost.shekels).toFloat().coerceIn(0f, 1f)
         } else {
-            0.0
+            0f
         }
 
     val remainingAmount: Money

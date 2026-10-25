@@ -12,6 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,18 +27,16 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import com.menash.myself.calendar.CalendarHelper
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
-import com.menash.myself.data.models.CalendarEvent
-import com.menash.myself.data.models.DreamItem
-import com.menash.myself.data.models.FitnessLog
-import com.menash.myself.data.models.Household
-import com.menash.myself.data.models.SpaceType
-import com.menash.myself.data.models.TaskItem
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.launch
+import com.menash.myself.calendar.CalendarHelper
+import com.menash.myself.core.designsystem.component.SpaceBadge
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.core.domain.model.Dream
+import com.menash.myself.core.domain.model.Task
+import com.menash.myself.data.models.CalendarEvent
+import com.menash.myself.feature.home.LifeHomeViewModel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -47,17 +47,25 @@ fun LifeHomeScreen(
     onOpenQuickCapture: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val user = Firebase.auth.currentUser
-    val lifeRepo = remember { LifeHubRepository(context) }
-    val householdRepo = remember { HouseholdRepository(context) }
+    val appContainer = LocalAppContainer.current
+    val viewModel: LifeHomeViewModel = viewModel(
+        factory = LifeHomeViewModel.factory(
+            householdRepository = appContainer.householdRepository,
+            taskRepository = appContainer.taskRepository,
+            dreamRepository = appContainer.dreamRepository,
+            inboxRepository = appContainer.inboxRepository,
+            fitnessRepository = appContainer.fitnessRepository
+        )
+    )
 
-    var household by remember { mutableStateOf<Household?>(null) }
-    val allTasks by lifeRepo.observeTasks(null, household).collectAsState(initial = emptyList())
-    val allDreams by lifeRepo.observeDreams(null, null, household).collectAsState(initial = emptyList())
-    val inboxItems by lifeRepo.observeInbox(household).collectAsState(initial = emptyList())
-    val todayFitness by lifeRepo.observeTodayFitness().collectAsState(initial = null)
-    val weeklyFitness by lifeRepo.observeWeeklyFitness().collectAsState(initial = emptyList())
+    val user = Firebase.auth.currentUser
+    val viewerUid = user?.uid ?: ""
+    val household by viewModel.household.collectAsState()
+    val allTasks by viewModel.allTasks.collectAsState()
+    val allDreams by viewModel.allDreams.collectAsState()
+    val inboxItems by viewModel.inboxItems.collectAsState()
+    val todayFitness by viewModel.todayFitness.collectAsState()
+    val weeklyFitness by viewModel.weeklyFitness.collectAsState()
 
     var calendarEvents by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
     var hasCalendarPermission by remember {
@@ -75,31 +83,21 @@ fun LifeHomeScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        household = householdRepo.getOrCreateHousehold()
-        householdRepo.observeHousehold().collect { h ->
-            if (h != null) household = h
-        }
-    }
-
     LaunchedEffect(hasCalendarPermission) {
         if (hasCalendarPermission) {
             calendarEvents = CalendarHelper.getTodayEvents(context)
         }
     }
 
-    // Top 3 tasks for today
     val top3Tasks = remember(allTasks) {
         allTasks.filter { it.isTop3 && !it.isDone }.take(3)
     }
 
-    // Featured dream (prioritize status: in planning or highest estimated cost)
     val featuredDream = remember(allDreams) {
         allDreams.firstOrNull { it.status == "חוסכים/מתכננים" || it.status == "בבדיקה" }
             ?: allDreams.firstOrNull { it.status == "חלום" }
     }
 
-    // Fitness streak calculation
     val streakDays = remember(weeklyFitness) {
         weeklyFitness.takeWhile { it.moved }.size
     }
@@ -125,7 +123,6 @@ fun LifeHomeScreen(
                     }
                 },
                 actions = {
-                    // Inbox triage badge button
                     IconButton(
                         onClick = { onNavigate("inbox") },
                         modifier = Modifier.testTag("home_inbox_button")
@@ -146,7 +143,6 @@ fun LifeHomeScreen(
                         }
                     }
 
-                    // Household & Profile button
                     IconButton(
                         onClick = { onNavigate("household") },
                         modifier = Modifier.testTag("home_household_button")
@@ -181,7 +177,7 @@ fun LifeHomeScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp),
             contentPadding = PaddingValues(top = 12.dp, bottom = 80.dp)
         ) {
-            // --- SECTION 1: TOP 3 TASKS (MAX 3 ITEMS) ---
+            // --- SECTION 1: TOP 3 TASKS ---
             item {
                 HomeSectionHeader(
                     title = "3 המשימות של היום (Top 3)",
@@ -220,7 +216,8 @@ fun LifeHomeScreen(
                         top3Tasks.forEach { task ->
                             TopTaskItemCard(
                                 task = task,
-                                onToggle = { scope.launch { lifeRepo.toggleTaskDone(task) } },
+                                viewerUid = viewerUid,
+                                onToggle = { viewModel.toggleTaskDone(task) },
                                 onCardClick = { onNavigate("tasks") }
                             )
                         }
@@ -228,7 +225,7 @@ fun LifeHomeScreen(
                 }
             }
 
-            // --- SECTION 2: TODAY'S CALENDAR (MAX 2 ITEMS) ---
+            // --- SECTION 2: TODAY'S CALENDAR ---
             item {
                 HomeSectionHeader(
                     title = "אירועים ביומן להיום",
@@ -340,7 +337,7 @@ fun LifeHomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            if (didMove) Icons.Default.DirectionsRun else Icons.Default.FitnessCenter,
+                            if (didMove) Icons.AutoMirrored.Filled.DirectionsRun else Icons.Default.FitnessCenter,
                             contentDescription = null,
                             tint = if (didMove) Color(0xFF16A34A) else Color.Gray,
                             modifier = Modifier.size(32.dp)
@@ -362,13 +359,11 @@ fun LifeHomeScreen(
                         Switch(
                             checked = didMove,
                             onCheckedChange = { checked ->
-                                scope.launch {
-                                    lifeRepo.saveTodayFitness(
-                                        moved = checked,
-                                        minutes = if (checked && (todayFitness?.minutes ?: 0) == 0) 30 else (todayFitness?.minutes ?: 0),
-                                        type = todayFitness?.type ?: "הליכה"
-                                    )
-                                }
+                                viewModel.saveTodayFitness(
+                                    moved = checked,
+                                    minutes = if (checked && (todayFitness?.minutes ?: 0) == 0) 30 else (todayFitness?.minutes ?: 0),
+                                    type = todayFitness?.type ?: "הליכה"
+                                )
                             },
                             modifier = Modifier.testTag("home_fitness_quick_switch")
                         )
@@ -440,7 +435,7 @@ fun LifeHomeScreen(
                         onClick = { onNavigate("catalog") }
                     )
                     QuickNavButton(
-                        icon = Icons.Default.ListAlt,
+                        icon = Icons.AutoMirrored.Filled.ListAlt,
                         label = "חלומות ורשימות",
                         badge = "${allDreams.size}",
                         modifier = Modifier.weight(1f),
@@ -449,7 +444,7 @@ fun LifeHomeScreen(
                 }
             }
 
-            // --- SECTION 6: COLLAPSIBLE ROADMAP (PHASES 2 & 3) ---
+            // --- SECTION 6: COLLAPSIBLE ROADMAP ---
             item {
                 Card(
                     shape = RoundedCornerShape(14.dp),
@@ -539,7 +534,8 @@ private fun HomeSectionHeader(
 
 @Composable
 private fun TopTaskItemCard(
-    task: TaskItem,
+    task: Task,
+    viewerUid: String = "",
     onToggle: () -> Unit,
     onCardClick: () -> Unit
 ) {
@@ -578,32 +574,23 @@ private fun TopTaskItemCard(
                     )
                 }
             }
-            if (task.space == SpaceType.SHARED.id || task.space == SpaceType.SHARED.displayName) {
-                Surface(
-                    color = Color(0xFFDCFCE7),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        "משותף",
-                        color = Color(0xFF166534),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
-            }
+            SpaceBadge(
+                forWhom = task.forWhom,
+                ownerUid = task.ownerUid.ifBlank { viewerUid },
+                viewerUid = viewerUid
+            )
         }
     }
 }
 
 @Composable
 private fun FeaturedDreamCard(
-    dream: DreamItem,
+    dream: Dream,
     onClick: () -> Unit
 ) {
     val fmt = NumberFormat.getNumberInstance(Locale.US)
-    val hasMoneyGoal = dream.estimatedCost > 0
-    val progress = if (hasMoneyGoal) (dream.savedAmount / dream.estimatedCost).toFloat().coerceIn(0f, 1f) else 0f
+    val hasMoneyGoal = dream.estimatedCost.agoras > 0
+    val progress = dream.progressPercent
 
     Card(
         shape = RoundedCornerShape(14.dp),
@@ -642,7 +629,7 @@ private fun FeaturedDreamCard(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "נחסך: ₪${fmt.format(dream.savedAmount.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.toInt())}",
+                            "נחסך: ₪${fmt.format(dream.savedAmount.shekels.toInt())} מתוך ₪${fmt.format(dream.estimatedCost.shekels.toInt())}",
                             fontSize = 11.sp,
                             color = Color.DarkGray
                         )

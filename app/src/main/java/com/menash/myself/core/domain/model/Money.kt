@@ -11,6 +11,9 @@ import java.util.Locale
  */
 data class Money(val agorot: Long) : Comparable<Money> {
 
+    val agoras: Long
+        get() = agorot
+
     val shekels: Double
         get() = agorot / 100.0
 

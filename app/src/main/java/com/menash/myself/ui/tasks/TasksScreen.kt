@@ -1,11 +1,8 @@
 package com.menash.myself.ui.tasks
 
-import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,17 +13,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.designsystem.component.SpaceBadge
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.core.domain.model.Task
+import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.data.models.SpaceType
-import com.menash.myself.data.models.TaskItem
-import kotlinx.coroutines.launch
+import com.menash.myself.feature.tasks.TasksViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -34,23 +35,25 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TasksScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val repo = remember { LifeHubRepository(context) }
-    val householdRepo = remember { HouseholdRepository(context) }
+    val appContainer = LocalAppContainer.current
+    val viewModel: TasksViewModel = viewModel(
+        factory = TasksViewModel.factory(
+            taskRepository = appContainer.taskRepository,
+            householdRepository = appContainer.householdRepository
+        )
+    )
 
-    val household by householdRepo.observeHousehold().collectAsState(initial = null)
-    var selectedSpaceFilter by remember { mutableStateOf<String?>(null) }
-
-    val tasks by repo.observeTasks(selectedSpaceFilter, household).collectAsState(initial = emptyList())
+    val visibilityFilter by viewModel.visibilityFilter.collectAsState()
+    val tasks by viewModel.tasks.collectAsState()
+    val viewerUid = remember { runCatching { Firebase.auth.currentUser?.uid }.getOrNull() ?: "" }
 
     var showCreateDialog by remember { mutableStateOf(false) }
-    var taskToSchedule by remember { mutableStateOf<TaskItem?>(null) }
+    var taskToSchedule by remember { mutableStateOf<Task?>(null) }
 
     // Partition tasks
     val top3Tasks = tasks.filter { it.isTop3 && !it.isDone }
     val fiveBefore11Tasks = tasks.filter { it.isFiveBefore11 && !it.isDone }
-    val undatedTasks = tasks.filter { it.dueDate.isBlank() && !it.isDone && !it.isTop3 && !it.isFiveBefore11 }
+    val undatedTasks = tasks.filter { it.dueDate == null && it.rawDueDate.isNullOrBlank() && !it.isDone && !it.isTop3 && !it.isFiveBefore11 }
     val regularTasks = tasks.filter { !it.isDone && !it.isTop3 && !it.isFiveBefore11 }
     val completedTasks = tasks.filter { it.isDone }
 
@@ -88,18 +91,21 @@ fun TasksScreen(onBack: () -> Unit) {
         ) {
             item { Spacer(modifier = Modifier.height(4.dp)) }
 
-            // Spaces filter
+            // Typed VisibilityFilter chips (MINE_AND_BOTH vs ALL)
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    val spaces = listOf("הכל", "משותף", "שלי", "של אשתי")
-                    spaces.forEach { s ->
-                        val isSelected = (selectedSpaceFilter == null && s == "הכל") || selectedSpaceFilter == s
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { selectedSpaceFilter = if (s == "הכל") null else s },
-                            label = { Text(s, fontSize = 11.sp) }
-                        )
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = visibilityFilter == VisibilityFilter.MINE_AND_BOTH,
+                        onClick = { viewModel.setVisibilityFilter(VisibilityFilter.MINE_AND_BOTH) },
+                        label = { Text("שלי + של שנינו", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("filter_mine_and_both")
+                    )
+                    FilterChip(
+                        selected = visibilityFilter == VisibilityFilter.ALL,
+                        onClick = { viewModel.setVisibilityFilter(VisibilityFilter.ALL) },
+                        label = { Text("הצג הכל", fontSize = 11.sp) },
+                        modifier = Modifier.testTag("filter_all")
+                    )
                 }
             }
 
@@ -126,10 +132,11 @@ fun TasksScreen(onBack: () -> Unit) {
                             top3Tasks.forEach { task ->
                                 TaskRow(
                                     task = task,
-                                    onToggleDone = { scope.launch { repo.toggleTaskDone(task) } },
-                                    onToggleTop3 = { scope.launch { repo.setTaskTop3(task, false) } },
-                                    onToggleFiveBefore11 = { scope.launch { repo.setTaskFiveBefore11(task, !task.isFiveBefore11) } },
-                                    onDelete = { scope.launch { repo.deleteTask(task.id) } }
+                                    viewerUid = viewerUid,
+                                    onToggleDone = { viewModel.toggleTaskDone(task) },
+                                    onToggleTop3 = { viewModel.setTaskTop3(task, false) },
+                                    onToggleFiveBefore11 = { viewModel.setTaskFiveBefore11(task, !task.isFiveBefore11) },
+                                    onDelete = { viewModel.deleteTask(task) }
                                 )
                             }
                         }
@@ -137,7 +144,7 @@ fun TasksScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Five Before 11 (5 short tasks that depend only on me, done by 11:00)
+            // Five Before 11
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -160,10 +167,11 @@ fun TasksScreen(onBack: () -> Unit) {
                             fiveBefore11Tasks.forEach { task ->
                                 TaskRow(
                                     task = task,
-                                    onToggleDone = { scope.launch { repo.toggleTaskDone(task) } },
-                                    onToggleTop3 = { scope.launch { repo.setTaskTop3(task, !task.isTop3) } },
-                                    onToggleFiveBefore11 = { scope.launch { repo.setTaskFiveBefore11(task, false) } },
-                                    onDelete = { scope.launch { repo.deleteTask(task.id) } }
+                                    viewerUid = viewerUid,
+                                    onToggleDone = { viewModel.toggleTaskDone(task) },
+                                    onToggleTop3 = { viewModel.setTaskTop3(task, !task.isTop3) },
+                                    onToggleFiveBefore11 = { viewModel.setTaskFiveBefore11(task, false) },
+                                    onDelete = { viewModel.deleteTask(task) }
                                 )
                             }
                         }
@@ -171,7 +179,7 @@ fun TasksScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Weekly Prompt for Undated Tasks ("קבע מועד או מחק")
+            // Weekly Prompt for Undated Tasks
             if (undatedTasks.isNotEmpty()) {
                 item {
                     Card(
@@ -207,15 +215,16 @@ fun TasksScreen(onBack: () -> Unit) {
             items(regularTasks, key = { it.id }) { task ->
                 TaskRow(
                     task = task,
-                    onToggleDone = { scope.launch { repo.toggleTaskDone(task) } },
-                    onToggleTop3 = { scope.launch { repo.setTaskTop3(task, true) } },
-                    onToggleFiveBefore11 = { scope.launch { repo.setTaskFiveBefore11(task, true) } },
-                    onDelete = { scope.launch { repo.deleteTask(task.id) } },
+                    viewerUid = viewerUid,
+                    onToggleDone = { viewModel.toggleTaskDone(task) },
+                    onToggleTop3 = { viewModel.setTaskTop3(task, true) },
+                    onToggleFiveBefore11 = { viewModel.setTaskFiveBefore11(task, true) },
+                    onDelete = { viewModel.deleteTask(task) },
                     onScheduleClick = { taskToSchedule = task }
                 )
             }
 
-            // Completed Tasks (Collapsed at bottom)
+            // Completed Tasks
             if (completedTasks.isNotEmpty()) {
                 item {
                     Text("הושלמו (${completedTasks.size})", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, color = Color.Gray)
@@ -223,10 +232,11 @@ fun TasksScreen(onBack: () -> Unit) {
                 items(completedTasks, key = { it.id }) { task ->
                     TaskRow(
                         task = task,
-                        onToggleDone = { scope.launch { repo.toggleTaskDone(task) } },
+                        viewerUid = viewerUid,
+                        onToggleDone = { viewModel.toggleTaskDone(task) },
                         onToggleTop3 = {},
                         onToggleFiveBefore11 = {},
-                        onDelete = { scope.launch { repo.deleteTask(task.id) } }
+                        onDelete = { viewModel.deleteTask(task) }
                     )
                 }
             }
@@ -240,18 +250,15 @@ fun TasksScreen(onBack: () -> Unit) {
         CreateTaskDialog(
             onDismiss = { showCreateDialog = false },
             onSave = { title, nextAction, isTop3, isFive, date, space ->
-                scope.launch {
-                    repo.createTask(
-                        title = title,
-                        nextAction = nextAction,
-                        isTop3 = isTop3,
-                        isFiveBefore11 = isFive,
-                        dueDate = date,
-                        space = space,
-                        household = household
-                    )
-                    showCreateDialog = false
-                }
+                viewModel.createTask(
+                    title = title,
+                    nextAction = nextAction,
+                    isTop3 = isTop3,
+                    isFiveBefore11 = isFive,
+                    dueDateStr = date,
+                    space = space
+                )
+                showCreateDialog = false
             }
         )
     }
@@ -262,16 +269,12 @@ fun TasksScreen(onBack: () -> Unit) {
             task = task,
             onDismiss = { taskToSchedule = null },
             onSetDate = { newDate ->
-                scope.launch {
-                    repo.updateTaskDate(task.id, newDate)
-                    taskToSchedule = null
-                }
+                viewModel.updateTaskDate(task, newDate)
+                taskToSchedule = null
             },
             onDelete = {
-                scope.launch {
-                    repo.deleteTask(task.id)
-                    taskToSchedule = null
-                }
+                viewModel.deleteTask(task)
+                taskToSchedule = null
             }
         )
     }
@@ -279,13 +282,16 @@ fun TasksScreen(onBack: () -> Unit) {
 
 @Composable
 fun TaskRow(
-    task: TaskItem,
+    task: Task,
+    viewerUid: String = "",
     onToggleDone: () -> Unit,
     onToggleTop3: () -> Unit,
     onToggleFiveBefore11: () -> Unit,
     onDelete: () -> Unit,
     onScheduleClick: (() -> Unit)? = null
 ) {
+    val dueDateDisplay = task.dueDate?.let { ModelMappers.formatLocalDate(it) } ?: (task.rawDueDate ?: "")
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -323,16 +329,17 @@ fun TaskRow(
                 }
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 2.dp)
                 ) {
-                    Text(
-                        text = SpaceType.fromId(task.space).displayName,
-                        fontSize = 10.sp,
-                        color = Color.Gray
+                    SpaceBadge(
+                        forWhom = task.forWhom,
+                        ownerUid = task.ownerUid.ifBlank { viewerUid },
+                        viewerUid = viewerUid
                     )
-                    if (task.dueDate.isNotBlank()) {
+                    if (dueDateDisplay.isNotBlank()) {
                         Text(
-                            text = "• ${task.dueDate}",
+                            text = "• $dueDateDisplay",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.secondary
                         )
@@ -348,7 +355,6 @@ fun TaskRow(
             }
 
             if (!task.isDone) {
-                // Top 3 action button
                 IconButton(onClick = onToggleTop3, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = if (task.isTop3) Icons.Default.Star else Icons.Default.StarOutline,
@@ -358,7 +364,6 @@ fun TaskRow(
                     )
                 }
 
-                // Five before 11 action button
                 IconButton(onClick = onToggleFiveBefore11, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.Default.Bolt,
@@ -456,7 +461,7 @@ fun CreateTaskDialog(
 
 @Composable
 fun ScheduleTaskDialog(
-    task: TaskItem,
+    task: Task,
     onDismiss: () -> Unit,
     onSetDate: (String) -> Unit,
     onDelete: () -> Unit

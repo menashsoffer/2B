@@ -291,13 +291,19 @@ test("Private items: stored under users/{uid}/private and readable only by owner
   await setupHousehold("house_1", ALICE_UID, [ALICE_UID, BOB_UID], BOB_EMAIL);
 
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    // Owner Alice creates a private task
-    await context.firestore().collection("users").doc(ALICE_UID).collection("private").doc("task_private_alice").set({
-      title: "משימה אישית סודית של אליס",
-      userId: ALICE_UID,
-      itemType: "tasks",
-      space: "private"
-    });
+    // Owner Alice creates a private task under users/{uid}/private/tasks/items/{id}
+    await context.firestore()
+      .collection("users")
+      .doc(ALICE_UID)
+      .collection("private")
+      .doc("tasks")
+      .collection("items")
+      .doc("task_private_alice")
+      .set({
+        title: "משימה אישית סודית של אליס",
+        userId: ALICE_UID,
+        space: "private"
+      });
   });
 
   const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
@@ -305,16 +311,16 @@ test("Private items: stored under users/{uid}/private and readable only by owner
 
   // Alice can read her private task
   await assertSucceeds(
-    aliceDb.collection("users").doc(ALICE_UID).collection("private").doc("task_private_alice").get()
+    aliceDb.collection("users").doc(ALICE_UID).collection("private").doc("tasks").collection("items").doc("task_private_alice").get()
   );
 
   // Bob (household partner) is DENIED access to Alice's private task
   await assertFails(
-    bobDb.collection("users").doc(ALICE_UID).collection("private").doc("task_private_alice").get()
+    bobDb.collection("users").doc(ALICE_UID).collection("private").doc("tasks").collection("items").doc("task_private_alice").get()
   );
 
-  // Bob is also DENIED listing Alice's private collection
+  // Bob is also DENIED listing Alice's private tasks subcollection
   await assertFails(
-    bobDb.collection("users").doc(ALICE_UID).collection("private").get()
+    bobDb.collection("users").doc(ALICE_UID).collection("private").doc("tasks").collection("items").get()
   );
 });
