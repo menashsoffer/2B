@@ -1,14 +1,34 @@
-package com.menash.myself.feature.tasks.domain
+package com.menash.myself.feature.tasks.domain.phase2
 
 import com.menash.myself.core.domain.model.ForWhom
 import java.time.LocalTime
 
-data class TaskItemDomain(
+/**
+ * PHASE 2 - LOCKED IN ROADMAP.MD
+ * Untouched by current Phase 1 screens.
+ */
+enum class EnergyState {
+    SHARP,
+    STEADY,
+    EXHAUSTED
+}
+
+enum class EnergyTier {
+    DEEP,
+    ROUTINE,
+    LIGHT;
+
+    companion object {
+        val DEFAULT = ROUTINE
+    }
+}
+
+data class Phase2TaskItem(
     val id: String,
     val title: String,
     val isCompleted: Boolean = false,
     val tag: String = "",
-    val energyLevel: String = "", // "LOW", "MEDIUM", "HIGH" or blank
+    val energyTier: EnergyTier = EnergyTier.DEFAULT,
     val isAnchor: Boolean = false,
     val anchorTimeWindowStart: LocalTime? = null,
     val anchorTimeWindowEnd: LocalTime? = null,
@@ -27,42 +47,43 @@ data class TaskItemDomain(
 }
 
 data class DoNowFilterResult(
-    val matchedTasks: List<TaskItemDomain>,
+    val matchedTasks: List<Phase2TaskItem>,
     val isEmpty: Boolean
 )
 
-object TaskScheduler {
+object TaskSchedulerPhase2 {
 
     private val ELEVEN_AM = LocalTime.of(11, 0)
 
     /**
      * Filters tasks for "DO NOW".
      * Shows empty state when nothing matches.
-     * Respects energy level filtering if provided.
+     * Matches user's current energy state to compatible energy tiers:
+     * - SHARP: DEEP, ROUTINE, LIGHT
+     * - STEADY: ROUTINE, LIGHT
+     * - EXHAUSTED: LIGHT only
      */
     fun filterDoNow(
-        tasks: List<TaskItemDomain>,
-        userEnergyLevel: String? = null,
+        tasks: List<Phase2TaskItem>,
+        userEnergyState: EnergyState? = null,
         currentTime: LocalTime = LocalTime.now()
     ): DoNowFilterResult {
         val pending = tasks.filter { !it.isCompleted }
 
         val filtered = pending.filter { task ->
-            // If task has specific energy requirement and user has an active energy state, filter by it
-            val energyMatches = if (!userEnergyLevel.isNullOrBlank() && task.energyLevel.isNotBlank()) {
-                task.energyLevel.equals(userEnergyLevel, ignoreCase = true)
-            } else {
-                true
+            val energyMatches = when (userEnergyState) {
+                null -> true
+                EnergyState.SHARP -> true // All tiers compatible
+                EnergyState.STEADY -> task.energyTier == EnergyTier.ROUTINE || task.energyTier == EnergyTier.LIGHT
+                EnergyState.EXHAUSTED -> task.energyTier == EnergyTier.LIGHT
             }
 
-            // Anchors appear only in their time window
             val anchorWindowMatches = if (task.isAnchor && task.anchorTimeWindowStart != null && task.anchorTimeWindowEnd != null) {
                 !currentTime.isBefore(task.anchorTimeWindowStart) && !currentTime.isAfter(task.anchorTimeWindowEnd)
             } else {
                 true
             }
 
-            // Five Before 11 is hidden after 11:00
             val fiveBefore11Matches = if (task.isFiveBefore11) {
                 currentTime.isBefore(ELEVEN_AM)
             } else {
@@ -78,10 +99,6 @@ object TaskScheduler {
         )
     }
 
-    /**
-     * Determines whether the Five Before 11 card should be visible on Home.
-     * Hidden strictly after 11:00.
-     */
     fun shouldShowFiveBefore11(currentTime: LocalTime): Boolean {
         return currentTime.isBefore(ELEVEN_AM)
     }

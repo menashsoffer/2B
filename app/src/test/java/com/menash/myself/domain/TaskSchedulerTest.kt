@@ -1,8 +1,9 @@
 package com.menash.myself.domain
 
-import com.menash.myself.core.domain.model.ForWhom
-import com.menash.myself.feature.tasks.domain.TaskItemDomain
-import com.menash.myself.feature.tasks.domain.TaskScheduler
+import com.menash.myself.feature.tasks.domain.phase2.EnergyState
+import com.menash.myself.feature.tasks.domain.phase2.EnergyTier
+import com.menash.myself.feature.tasks.domain.phase2.Phase2TaskItem
+import com.menash.myself.feature.tasks.domain.phase2.TaskSchedulerPhase2
 import org.junit.Assert.*
 import org.junit.Test
 import java.time.LocalTime
@@ -11,64 +12,75 @@ class TaskSchedulerTest {
 
     @Test
     fun untaggedTask_defaultsToShotef() {
-        val taskWithNoTag = TaskItemDomain(id = "1", title = "לתקן ברז במטבח", tag = "")
+        val taskWithNoTag = Phase2TaskItem(id = "1", title = "לתקן ברז במטבח", tag = "")
         assertEquals("שוטף", taskWithNoTag.effectiveTag)
 
-        val taskWithBlankTag = TaskItemDomain(id = "2", title = "לקנות חלב", tag = "   ")
+        val taskWithBlankTag = Phase2TaskItem(id = "2", title = "לקנות חלב", tag = "   ")
         assertEquals("שוטף", taskWithBlankTag.effectiveTag)
 
-        val taskWithCustomTag = TaskItemDomain(id = "3", title = "השקעות", tag = "פיננסים")
+        val taskWithCustomTag = Phase2TaskItem(id = "3", title = "השקעות", tag = "פיננסים")
         assertEquals("פיננסים", taskWithCustomTag.effectiveTag)
+    }
+
+    @Test
+    fun energyTier_defaultsToRoutine() {
+        val defaultTask = Phase2TaskItem(id = "1", title = "משימה רגילה")
+        assertEquals(EnergyTier.ROUTINE, defaultTask.energyTier)
     }
 
     @Test
     fun filterDoNow_emptyStateWhenNothingMatches() {
         val tasks = listOf(
-            TaskItemDomain(id = "1", title = "משימה שהושלמה", isCompleted = true),
-            TaskItemDomain(id = "2", title = "משימה באנרגיה גבוהה", energyLevel = "HIGH")
+            Phase2TaskItem(id = "1", title = "משימה שהושלמה", isCompleted = true),
+            Phase2TaskItem(id = "2", title = "עבודה עמוקה", energyTier = EnergyTier.DEEP)
         )
 
-        val result = TaskScheduler.filterDoNow(tasks, userEnergyLevel = "LOW")
+        // When user is EXHAUSTED, DEEP tasks do not match -> empty state
+        val result = TaskSchedulerPhase2.filterDoNow(tasks, userEnergyState = EnergyState.EXHAUSTED)
         assertTrue(result.isEmpty)
         assertEquals(0, result.matchedTasks.size)
     }
 
     @Test
-    fun filterDoNow_matchesPendingWithMatchingEnergy() {
+    fun filterDoNow_matchesPendingWithCompatibleEnergy() {
         val tasks = listOf(
-            TaskItemDomain(id = "1", title = "משימת אנרגיה נמוכה", energyLevel = "LOW"),
-            TaskItemDomain(id = "2", title = "משימת אנרגיה גבוהה", energyLevel = "HIGH")
+            Phase2TaskItem(id = "1", title = "סידור קל", energyTier = EnergyTier.LIGHT),
+            Phase2TaskItem(id = "2", title = "תכנות מורכב", energyTier = EnergyTier.DEEP)
         )
 
-        val result = TaskScheduler.filterDoNow(tasks, userEnergyLevel = "LOW")
-        assertFalse(result.isEmpty)
-        assertEquals(1, result.matchedTasks.size)
-        assertEquals("1", result.matchedTasks.first().id)
+        // When user is EXHAUSTED, only LIGHT matches
+        val exhaustedResult = TaskSchedulerPhase2.filterDoNow(tasks, userEnergyState = EnergyState.EXHAUSTED)
+        assertEquals(1, exhaustedResult.matchedTasks.size)
+        assertEquals("1", exhaustedResult.matchedTasks.first().id)
+
+        // When user is SHARP, both match
+        val sharpResult = TaskSchedulerPhase2.filterDoNow(tasks, userEnergyState = EnergyState.SHARP)
+        assertEquals(2, sharpResult.matchedTasks.size)
     }
 
     @Test
     fun fiveBefore11_hiddenAfter11AM() {
-        assertTrue(TaskScheduler.shouldShowFiveBefore11(LocalTime.of(10, 59)))
-        assertFalse(TaskScheduler.shouldShowFiveBefore11(LocalTime.of(11, 0)))
-        assertFalse(TaskScheduler.shouldShowFiveBefore11(LocalTime.of(14, 30)))
+        assertTrue(TaskSchedulerPhase2.shouldShowFiveBefore11(LocalTime.of(10, 59)))
+        assertFalse(TaskSchedulerPhase2.shouldShowFiveBefore11(LocalTime.of(11, 0)))
+        assertFalse(TaskSchedulerPhase2.shouldShowFiveBefore11(LocalTime.of(14, 30)))
 
         val tasks = listOf(
-            TaskItemDomain(id = "1", title = "חמש לפני 11", isFiveBefore11 = true)
+            Phase2TaskItem(id = "1", title = "חמש לפני 11", isFiveBefore11 = true)
         )
 
         // Before 11:00 -> matched
-        val morningResult = TaskScheduler.filterDoNow(tasks, currentTime = LocalTime.of(9, 30))
+        val morningResult = TaskSchedulerPhase2.filterDoNow(tasks, currentTime = LocalTime.of(9, 30))
         assertEquals(1, morningResult.matchedTasks.size)
 
         // After 11:00 -> excluded
-        val afternoonResult = TaskScheduler.filterDoNow(tasks, currentTime = LocalTime.of(11, 15))
+        val afternoonResult = TaskSchedulerPhase2.filterDoNow(tasks, currentTime = LocalTime.of(11, 15))
         assertEquals(0, afternoonResult.matchedTasks.size)
         assertTrue(afternoonResult.isEmpty)
     }
 
     @Test
     fun anchorTasks_filteredByTimeWindow() {
-        val anchorTask = TaskItemDomain(
+        val anchorTask = Phase2TaskItem(
             id = "anchor1",
             title = "איסוף ילדים מבית ספר",
             isAnchor = true,
@@ -78,11 +90,11 @@ class TaskSchedulerTest {
         val list = listOf(anchorTask)
 
         // Inside window -> matches
-        val inWindow = TaskScheduler.filterDoNow(list, currentTime = LocalTime.of(13, 30))
+        val inWindow = TaskSchedulerPhase2.filterDoNow(list, currentTime = LocalTime.of(13, 30))
         assertEquals(1, inWindow.matchedTasks.size)
 
         // Outside window -> excluded
-        val outWindow = TaskScheduler.filterDoNow(list, currentTime = LocalTime.of(12, 30))
+        val outWindow = TaskSchedulerPhase2.filterDoNow(list, currentTime = LocalTime.of(12, 30))
         assertEquals(0, outWindow.matchedTasks.size)
         assertTrue(outWindow.isEmpty)
     }

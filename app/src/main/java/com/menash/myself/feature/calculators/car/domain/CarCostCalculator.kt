@@ -1,7 +1,5 @@
 package com.menash.myself.feature.calculators.car.domain
 
-import java.text.NumberFormat
-import java.util.Locale
 import kotlin.math.max
 
 data class CarCostInput(
@@ -38,8 +36,7 @@ data class EnergyCostInput(
 data class BaselineComparisonResult(
     val isSaving: Boolean,
     val diffFromBaseline: Double,
-    val diffMonthly: Int,
-    val text: String
+    val diffMonthly: Int
 )
 
 object CarCostCalculator {
@@ -104,34 +101,25 @@ object CarCostCalculator {
 
     /**
      * Compares a car's net 5-year cost to a baseline car.
+     * Pure calculation: returns numbers only (isSaving, diffFromBaseline, diffMonthly).
+     * UI formats the string using strings.xml and NumberFormat.
      * Truncation towards zero via .toInt() locked by:
      * car_baselineDiff_savingTruncationTowardZero_locksCurrentOutput and
      * car_baselineDiff_expensiveTruncationTowardZero_locksCurrentOutput (KNOWN_ISSUES § 1.2)
      */
     fun calculateBaselineComparison(
         carNet5YearCost: Double,
-        baselineNet5YearCost: Double,
-        baselineCarName: String,
-        fmt: NumberFormat = NumberFormat.getNumberInstance(Locale.US)
+        baselineNet5YearCost: Double
     ): BaselineComparisonResult {
         val diff = baselineNet5YearCost - carNet5YearCost
         val isSaving = diff >= 0
         // Verbatim behavior: diffMonthly truncates toward zero via .toInt()
         val diffMonthly = (diff / 60.0).toInt()
-        val absDiffStr = fmt.format(kotlin.math.abs(diff).toInt())
-        val absMonthlyStr = fmt.format(kotlin.math.abs(diffMonthly))
-
-        val text = if (isSaving) {
-            "חיסכון של ₪$absDiffStr מול $baselineCarName (₪$absMonthlyStr/חודש)"
-        } else {
-            "יקר ב-₪$absDiffStr מול $baselineCarName (₪$absMonthlyStr/חודש)"
-        }
 
         return BaselineComparisonResult(
             isSaving = isSaving,
             diffFromBaseline = diff,
-            diffMonthly = diffMonthly,
-            text = text
+            diffMonthly = diffMonthly
         )
     }
 }

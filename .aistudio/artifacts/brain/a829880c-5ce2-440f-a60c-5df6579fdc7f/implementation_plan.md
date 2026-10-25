@@ -107,39 +107,40 @@
 ---
 
 ### שלב 3: שכבת ה-Domain ובדיקות יחידה טהורות (Pure Kotlin + Unit Tests) — הושלם (100% ירוק) ✅
-- **`core/domain/model/` (פרימיטיבים ומודלים טהורים):**
-  - `Money`: ייצוג מדויק באגורות (`Long`), מניעת שגיאות עיגול, אופרטורים חשבוניים (`+`, `-`, `*`, `/`), המרות שקלים, ועיצוב עברי תקני (`₪1,250` / `-₪500`).
-  - `ForWhom`: טיפוס `ME`, `PARTNER`, `BOTH` עם פונקציית `labelForViewer(isOwner, partnerName)` לפי חוקי התצוגה המותאמת, וסינון עומס קוגניטיבי (`mine + both` כברירת מחדל, והצגת הכל בבחירה).
-  - `DateRange`: טווח תאריכים מבוסס `java.time.LocalDate` עם בדיקת הכלה וספירת ימים/חודשים.
-- **`feature/*/domain` (חישובים ייעודיים כפונקציות טהורות נטולות אנדרואיד):**
-  - `CarCostCalculator.kt`: חישוב עלות 5-שנתית, תחימת עלות חודשית לאפס (KNOWN_ISSUES § 1.1), חישוב אנרגיה לדלק וחשמל, פענוח קמ/ל (KNOWN_ISSUES § 1.4), והשוואת בסיס עם קיטום כלפי מטה (KNOWN_ISSUES § 1.2).
-  - `AiSubscriptionCalculator.kt`: חישוב עלות מנויים בדולר ובשקלים, סינון מנויים לא פעילים, וסיכום חודשי/שנתי.
-  - `PensionSavingsCalculator.kt`: חישוב רווח, אחוז תשואה עם הגנה מחלוקה באפס (KNOWN_ISSUES § 2.1), וסיכום תיק עם זיהוי דמי הניהול הגבוהים ביותר.
-  - `DreamSavingsCalculator.kt`: חישוב יתרת חיסכון, אחוז התקדמות, וחודשים נדרשים להשגת היעד.
-  - `TaskScheduler.kt`: סינון DO NOW עם התאמת אנרגיה ומצב ריק כשאין התאמה, תג ברירת מחדל "שוטף" למשימות ללא תיוג, הסתרת "חמש לפני 11" אחרי 11:00, וסינון חלונות זמן לעוגנים.
-- **בדיקות יחידה טהורות (Unit Tests):**
-  - נוצרו 8 קבצי בדיקות חדשים ב-`app/src/test/java/com/menash/myself/domain/`:
-    `MoneyTest`, `ForWhomTest`, `DateRangeTest`, `CarCostCalculatorTest`, `AiSubscriptionCalculatorTest`, `PensionSavingsCalculatorTest`, `DreamSavingsCalculatorTest`, `TaskSchedulerTest`.
-  - כל הבדיקות עברו בהצלחה (100% ירוק ב-`gradle :app:testDebugUnitTest`).
+- **מימוש יחיד ללוגיקת החישובים (Single Implementation):**
+  - הוסר שכפול הלוגיקה: הגטרים המחושבים ב-`CarEntity` וב-`CarCalculationVerbatimHelpers` מאצילים ישירות ל-`CarCostCalculator`.
+  - הגטרים ב-`AiSubscriptionEntity` מאצילים ישירות ל-`AiSubscriptionCalculator`.
+  - הגטרים ב-`PensionFundEntity` מאצילים ישירות ל-`PensionSavingsCalculator`.
+  - ישויות ה-Room שמרו על מבנה הסכמה הקפוא שלהן במלואו.
+- **בדיקות שוויון (Parity Tests):**
+  - נוצר קובץ בדיקות ייעודי `CalculatorParityTest.kt` המוודא שוויון ערכים מוחלט בין פונקציות ה-Domain לבין הגטרים המקוריים והעוזרים עבור כל 17 תרחישי האפיון.
+- **Money ומדיניות עיגול:**
+  - המחשבונים נשארים על `Double` בשלב זה לשימור התנהגות קיימת (הסבה ל-`Money` תתבצע בשלב 9.5 ייעודי).
+  - ב-`Money`: הוטמעה מדיניות עיגול אחידה `HALF_UP` בכפל ובחילוק (ללא קיטום מספרים שלמים), ונוספו בדיקות מקיפות למקרים של `.5` ומספרים שליליים.
+- **הפרדה מלאה מ-UI:**
+  - הוסרו מחרוזות ו-`NumberFormat` משכבת ה-Domain. `CarCostCalculator.calculateBaselineComparison` מחזיר מספרים טהורים בלבד (`isSaving`, `diffFromBaseline`, `diffMonthly`).
+- **בידוד TaskScheduler (Phase 2):**
+  - הועבר לחבילה נפרדת `feature/tasks/domain/phase2` ללא מגע במסכי Phase 1 הקיימים.
+  - שימוש ב-Enums המדויקים לפי המפרט הנעול: `EnergyState {SHARP, STEADY, EXHAUSTED}` ו-`EnergyTier {DEEP, ROUTINE, LIGHT}` עם ברירת מחדל `ROUTINE`.
 
 ---
 
-### שלב 4: ממשקי נתונים ב-`core/data` וחיבור Room בלבד (השלב הבא)
-- **`core/data/repository/` (ממשקים בלבד):** `TaskRepository`, `DreamRepository`, `InboxRepository`, `FitnessRepository`, `HouseholdRepository`, `CalculatorRepository`.
-- **`core/data/local/`:**
-  - ישויות Room קפואות לחלוטין ללא שינוי מבנה או שמות.
-  - מימושי Repository המבוססים על Room בלבד עבור המחשבונים, המבצעים המרה מפורשת באגורות (`Long`) ו-`java.time` בגבול השכבה (Repository boundary).
-  - סריאליזציית Moshi אחידה: שחזור = החלפה מלאה (עם אישור וגיבוי מקדים); ייבוא = בדיקת שורות קפדנית ודחיית שורות שגויות עם פירוט מלא.
-  - מטמון מקומי ב-DataStore (לשער בנק ישראל ונתוני Hebcal).
-- פיצ'רים תלויים אך ורק בממשקים ב-`core/data`.
+### שלב 4: ממשקי נתונים ב-`core/data` וחיבור המימושים הקיימים — הושלם (100% ירוק) ✅
+- **`core/data/repository/` (ממשקים בלבד):**
+  - `CarRepository`, `AiSubscriptionRepository`, `PensionFundRepository`
+  - `TaskRepository`, `DreamRepository`, `InboxRepository`, `FitnessRepository`, `HouseholdRepositoryInterface`
+- **`core/data/repository/impl/` (עטיפת המימושים הקיימים):**
+  - עטיפות Room: `RoomCarRepository`, `RoomAiSubscriptionRepository`, `RoomPensionFundRepository` עוטפות את `AppDao` / `AppDatabase` (קובץ `"my_calculators.db"`).
+  - עטיפות Firestore: `FirestoreTaskRepository`, `FirestoreDreamRepository`, `FirestoreInboxRepository`, `FirestoreFitnessRepository`, `FirestoreHouseholdRepository` עוטפות את `LifeHubRepository` ו-`HouseholdRepository`.
+- **`core/di/AppContainer.kt`:** מכולת תלויות ידנית המרכזת את כל הממשקים ומאפשרת לשכבות הפיצ'רים להיות תלויות אך ורק בממשקים הנקיים.
+- **בדיקות עטיפה (Unit Tests):** `RepositoryWrappersTest.kt` מוודא האצלה תקינה של כל הפעולות ל-Room DAO.
 
-### שלב 4: הקמת `core/designsystem` (עיצוב מונחה הפחתת עומס)
+---
+
+### שלב 5: הקמת `core/designsystem` (עיצוב מונחה הפחתת עומס) (השלב הבא)
 - **טוקנים:** `Spacing.kt` (4, 8, 16, 24, 32 dp), `Type.kt`, `ColorTokens.kt`.
 - **צבעי `SpaceBadge`:** צבעים מובחנים לפי `forWhom` (שלי / בן/בת הזוג / של שנינו).
 - **רכיבים משותפים:** `AppCard`, `ListRow`, `MoneyText`, `StatusChip`, `SpaceBadge`, `EmptyState`, `LoadingState`, `ErrorState`, `OfflineIndicator`, `CaptureSheet`.
-
-### שלב 5: מכולת תלויות ידנית (`core/di/AppContainer.kt`)
-- `AppContainer` יחיד המחבר את מימושי הנתונים לממשקים ומזריק אותם ל-ViewModels (שומר על מקור אמת יחיד).
 
 ### שלב 6: ארגון הפיצ'רים ופיצול קבצים (Feature Packages & Screen Splitting)
 - הקפדה על פחות מ-300 שורות לקובץ ופחות מ-80 שורות לקומפוננטה.
@@ -174,6 +175,10 @@
 - **אידמפוטנטיות ובטיחות:** יצירת מזהים יציבים (Stable IDs) ודגל `migratedAt` המונע כפילויות בכל הרצה חוזרת.
 - **אימות כפול:** גיבוי מקומי מלא של בסיס הנתונים Room לפני המיגרציה, ובדיקת כמויות שורות מלאה מול מסמכי Firestore.
 - **הסרת Room:** רק לאחר אימות סופי ומוחלט של כל הנתונים ב-Firestore, ניתוק Room והסרתו מהפרויקט.
+
+### שלב 9.5: הסבת מחשבונים ל-Money (Calculators → Money)
+- הסבת המחשבונים (`CarCostCalculator`, `AiSubscriptionCalculator`, `PensionSavingsCalculator`) לעבודה עם טיפוס `Money` באגורות במקום `Double`.
+- הוספת בדיקות מאפיינות ובדיקות יחידה ייעודיות לדיוק אגורות ללא שגיאות עיגול.
 
 ---
 

@@ -5,12 +5,8 @@ import com.menash.myself.feature.calculators.car.domain.CarCostInput
 import com.menash.myself.feature.calculators.car.domain.EnergyCostInput
 import org.junit.Assert.*
 import org.junit.Test
-import java.text.NumberFormat
-import java.util.Locale
 
 class CarCostCalculatorTest {
-
-    private val fmt = NumberFormat.getNumberInstance(Locale.US)
 
     @Test
     fun calculate5YearCost_standardCalculation_matchesCharacterization() {
@@ -94,25 +90,19 @@ class CarCostCalculatorTest {
         // Saving
         val saving = CarCostCalculator.calculateBaselineComparison(
             carNet5YearCost = 143545.0,
-            baselineNet5YearCost = 144500.0,
-            baselineCarName = "קורולה בסיס",
-            fmt = fmt
+            baselineNet5YearCost = 144500.0
         )
         assertTrue(saving.isSaving)
         assertEquals(955.0, saving.diffFromBaseline, 0.001)
         assertEquals(15, saving.diffMonthly)
-        assertEquals("חיסכון של ₪955 מול קורולה בסיס (₪15/חודש)", saving.text)
 
         // Expensive
         val expensive = CarCostCalculator.calculateBaselineComparison(
             carNet5YearCost = 145455.0,
-            baselineNet5YearCost = 144500.0,
-            baselineCarName = "קורולה בסיס",
-            fmt = fmt
+            baselineNet5YearCost = 144500.0
         )
         assertFalse(expensive.isSaving)
         assertEquals(-955.0, expensive.diffFromBaseline, 0.001)
         assertEquals(-15, expensive.diffMonthly)
-        assertEquals("יקר ב-₪955 מול קורולה בסיס (₪15/חודש)", expensive.text)
     }
 }

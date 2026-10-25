@@ -3,6 +3,9 @@ package com.menash.myself.data.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+import com.menash.myself.feature.calculators.ai.domain.AiSubscriptionCalculator
+import com.menash.myself.feature.calculators.ai.domain.AiSubscriptionInput
+
 @Entity(tableName = "ai_subscriptions")
 data class AiSubscriptionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -14,17 +17,21 @@ data class AiSubscriptionEntity(
     val price: Double = 0.0,
     val notes: String = ""
 ) {
-    fun priceInIls(usdRate: Double): Double {
-        return if (currency.equals("USD", ignoreCase = true)) price * usdRate else price
-    }
+    private fun toInput() = AiSubscriptionInput(
+        name = name,
+        category = category,
+        isActive = isActive,
+        billingCycle = billingCycle,
+        currency = currency,
+        price = price
+    )
 
-    fun monthlyCostIls(usdRate: Double): Double {
-        val inIls = priceInIls(usdRate)
-        return if (billingCycle.equals("YEARLY", ignoreCase = true)) inIls / 12.0 else inIls
-    }
+    fun priceInIls(usdRate: Double): Double =
+        AiSubscriptionCalculator.calculateCost(toInput(), usdRate).priceInIls
 
-    fun yearlyCostIls(usdRate: Double): Double {
-        val inIls = priceInIls(usdRate)
-        return if (billingCycle.equals("MONTHLY", ignoreCase = true)) inIls * 12.0 else inIls
-    }
+    fun monthlyCostIls(usdRate: Double): Double =
+        AiSubscriptionCalculator.calculateCost(toInput(), usdRate).monthlyCostIls
+
+    fun yearlyCostIls(usdRate: Double): Double =
+        AiSubscriptionCalculator.calculateCost(toInput(), usdRate).yearlyCostIls
 }

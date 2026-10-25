@@ -1,5 +1,7 @@
 package com.menash.myself.ui.calculators.car
 
+import com.menash.myself.feature.calculators.car.domain.CarCostCalculator
+import com.menash.myself.feature.calculators.car.domain.EnergyCostInput
 import java.text.NumberFormat
 
 data class BaselineDiffResult(
@@ -12,7 +14,7 @@ data class BaselineDiffResult(
 object CarCalculationVerbatimHelpers {
 
     /**
-     * Extracted VERBATIM from EnergyHelperDialog in CarComparisonScreen.kt
+     * Delegates to feature/calculators/car/domain/CarCostCalculator.
      */
     fun calculateEnergyCostVerbatim(
         isFuel: Boolean,
@@ -24,17 +26,22 @@ object CarCalculationVerbatimHelpers {
         publicSessionsCount: Double,
         publicSessionCost: Double
     ): Double {
-        return if (isFuel) {
-            if (kmPerLiter > 0.0) (annualKm / kmPerLiter) * fuelPrice else 0.0
-        } else {
-            val homeTotal = (annualKm / 100.0) * kwhPer100Km * homeKwhPrice
-            val publicTotal = publicSessionsCount * publicSessionCost
-            homeTotal + publicTotal
-        }
+        return CarCostCalculator.calculateEnergyCost(
+            EnergyCostInput(
+                isFuel = isFuel,
+                annualKm = annualKm,
+                kmPerLiter = kmPerLiter,
+                fuelPrice = fuelPrice,
+                kwhPer100Km = kwhPer100Km,
+                homeKwhPrice = homeKwhPrice,
+                publicSessionsCount = publicSessionsCount,
+                publicSessionCost = publicSessionCost
+            )
+        )
     }
 
     /**
-     * Extracted VERBATIM from CarCard in CarComparisonScreen.kt
+     * Delegates pure numbers calculation to CarCostCalculator, then formats the UI string.
      */
     fun calculateBaselineDiffVerbatim(
         carNet5YearCost: Double,
@@ -42,27 +49,27 @@ object CarCalculationVerbatimHelpers {
         baselineCarName: String,
         fmt: NumberFormat
     ): BaselineDiffResult {
-        val diffFromBaseline = baselineNet5YearCost - carNet5YearCost
-        val isSaving = diffFromBaseline >= 0
-        val diffMonthly = (diffFromBaseline / 60.0).toInt()
-        val text = if (isSaving) {
-            "חיסכון של ₪${fmt.format(diffFromBaseline.toInt())} מול $baselineCarName (₪$diffMonthly/חודש)"
+        val comparison = CarCostCalculator.calculateBaselineComparison(
+            carNet5YearCost = carNet5YearCost,
+            baselineNet5YearCost = baselineNet5YearCost
+        )
+        val text = if (comparison.isSaving) {
+            "חיסכון של ₪${fmt.format(comparison.diffFromBaseline.toInt())} מול $baselineCarName (₪${comparison.diffMonthly}/חודש)"
         } else {
-            "יקר ב-₪${fmt.format((-diffFromBaseline).toInt())} מול $baselineCarName (₪${-diffMonthly}/חודש)"
+            "יקר ב-₪${fmt.format((-comparison.diffFromBaseline).toInt())} מול $baselineCarName (₪${-comparison.diffMonthly}/חודש)"
         }
         return BaselineDiffResult(
-            diffFromBaseline = diffFromBaseline,
-            isSaving = isSaving,
-            diffMonthly = diffMonthly,
+            diffFromBaseline = comparison.diffFromBaseline,
+            isSaving = comparison.isSaving,
+            diffMonthly = comparison.diffMonthly,
             text = text
         )
     }
 
     /**
-     * Extracted VERBATIM from CarComparisonScreen.kt
-     * Known issue 1.4: empty or invalid string falls back to 1.0, inflating fuel cost.
+     * Delegates to CarCostCalculator.parseKmPerLiter.
      */
     fun parseKmPerLiterVerbatim(input: String): Double {
-        return input.toDoubleOrNull() ?: 1.0
+        return CarCostCalculator.parseKmPerLiter(input)
     }
 }

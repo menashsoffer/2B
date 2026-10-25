@@ -1,12 +1,13 @@
 package com.menash.myself.core.domain.model
 
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
-import kotlin.math.roundToLong
 
 /**
  * Pure domain value object representing money in agorot (1 NIS = 100 agorot).
- * Prevents floating point inaccuracy across financial calculations.
+ * Uses consistent HALF_UP rounding policy for multiplication and division.
  */
 data class Money(val agorot: Long) : Comparable<Money> {
 
@@ -17,7 +18,10 @@ data class Money(val agorot: Long) : Comparable<Money> {
 
     operator fun minus(other: Money): Money = Money(agorot - other.agorot)
 
-    operator fun times(factor: Double): Money = Money((agorot * factor).roundToLong())
+    operator fun times(factor: Double): Money {
+        val bd = BigDecimal.valueOf(agorot).multiply(BigDecimal.valueOf(factor))
+        return Money(bd.setScale(0, RoundingMode.HALF_UP).longValueExact())
+    }
 
     operator fun times(factor: Long): Money = Money(agorot * factor)
 
@@ -25,12 +29,16 @@ data class Money(val agorot: Long) : Comparable<Money> {
 
     operator fun div(divisor: Long): Money {
         require(divisor != 0L) { "Divisor cannot be zero" }
-        return Money(agorot / divisor)
+        val bd = BigDecimal.valueOf(agorot).divide(BigDecimal.valueOf(divisor), 0, RoundingMode.HALF_UP)
+        return Money(bd.longValueExact())
     }
 
-    operator fun div(divisor: Int): Money {
-        require(divisor != 0) { "Divisor cannot be zero" }
-        return Money(agorot / divisor.toLong())
+    operator fun div(divisor: Int): Money = div(divisor.toLong())
+
+    operator fun div(divisor: Double): Money {
+        require(divisor != 0.0) { "Divisor cannot be zero" }
+        val bd = BigDecimal.valueOf(agorot).divide(BigDecimal.valueOf(divisor), 0, RoundingMode.HALF_UP)
+        return Money(bd.longValueExact())
     }
 
     operator fun unaryMinus(): Money = Money(-agorot)
@@ -66,7 +74,10 @@ data class Money(val agorot: Long) : Comparable<Money> {
 
         fun fromAgorot(agorot: Long): Money = Money(agorot)
 
-        fun fromShekels(shekels: Double): Money = Money((shekels * 100.0).roundToLong())
+        fun fromShekels(shekels: Double): Money {
+            val bd = BigDecimal.valueOf(shekels).multiply(BigDecimal.valueOf(100.0))
+            return Money(bd.setScale(0, RoundingMode.HALF_UP).longValueExact())
+        }
 
         fun fromShekels(shekels: Long): Money = Money(shekels * 100L)
     }

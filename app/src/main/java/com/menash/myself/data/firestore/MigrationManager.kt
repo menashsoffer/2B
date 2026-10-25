@@ -182,25 +182,4 @@ object MigrationManager {
         }
         foundDocs
     }
-
-    /**
-     * Lists any leftover documents in old top-level tasks/dreams/inbox collections without modifying them.
-     */
-    suspend fun listOldTopLevelDocs(context: Context): Map<String, List<String>> = withContext(Dispatchers.IO) {
-        val uid = Firebase.auth.currentUser?.uid ?: return@withContext emptyMap()
-        val firestore = FirestoreManager.get(context)
-        val collections = listOf("tasks", "dreams", "inbox")
-        val results = mutableMapOf<String, List<String>>()
-
-        for (colName in collections) {
-            try {
-                val snapshot = firestore.collection(colName).whereEqualTo("userId", uid).get().await()
-                results[colName] = snapshot.documents.map { it.id }
-            } catch (e: Exception) {
-                Log.d(TAG, "Checking top-level $colName: ${e.message} (expected if denied by rules or non-existent)")
-                results[colName] = emptyList()
-            }
-        }
-        results
-    }
 }

@@ -38,6 +38,52 @@ class MoneyTest {
     }
 
     @Test
+    fun roundingPolicy_halfUpOnPointFiveCases() {
+        // 5 / 2 = 2.5 -> rounds HALF_UP to 3
+        val divHalf = Money.fromAgorot(5L) / 2
+        assertEquals(3L, divHalf.agorot)
+
+        // 1 * 1.5 = 1.5 -> rounds HALF_UP to 2
+        val timesHalf = Money.fromAgorot(1L) * 1.5
+        assertEquals(2L, timesHalf.agorot)
+
+        // 1 * 1.4 = 1.4 -> rounds down to 1
+        val timesBelowHalf = Money.fromAgorot(1L) * 1.4
+        assertEquals(1L, timesBelowHalf.agorot)
+
+        // 7 / 3 = 2.333... -> rounds to 2
+        val divThird = Money.fromAgorot(7L) / 3
+        assertEquals(2L, divThird.agorot)
+
+        // 8 / 3 = 2.666... -> rounds to 3
+        val divTwoThirds = Money.fromAgorot(8L) / 3
+        assertEquals(3L, divTwoThirds.agorot)
+    }
+
+    @Test
+    fun roundingPolicy_negativeNumbersAndHalfUp() {
+        // -5 / 2 = -2.5 -> rounds HALF_UP to -3 (away from zero for .5)
+        val divNegHalf = Money.fromAgorot(-5L) / 2
+        assertEquals(-3L, divNegHalf.agorot)
+
+        // -1 * 1.5 = -1.5 -> rounds HALF_UP to -2
+        val timesNegHalf = Money.fromAgorot(-1L) * 1.5
+        assertEquals(-2L, timesNegHalf.agorot)
+
+        // -1 * 1.4 = -1.4 -> rounds to -1
+        val timesNegBelow = Money.fromAgorot(-1L) * 1.4
+        assertEquals(-1L, timesNegBelow.agorot)
+
+        // Unary minus
+        val pos = Money.fromShekels(50.0)
+        val neg = -pos
+        assertEquals(-5000L, neg.agorot)
+        assertTrue(neg.isNegative())
+        assertFalse(neg.isPositive())
+        assertFalse(neg.isZero())
+    }
+
+    @Test
     fun formatting_formatsHebrewShekelsProperly() {
         val m1 = Money.fromShekels(1250.0)
         assertEquals("₪1,250", m1.formatShekels(includeAgorot = false))
@@ -51,8 +97,10 @@ class MoneyTest {
 
     @Test
     fun compareTo_ordersCorrectly() {
+        val mNeg = Money.fromShekels(-10.0)
         val m10 = Money.fromShekels(10.0)
         val m20 = Money.fromShekels(20.0)
+        assertTrue(mNeg < m10)
         assertTrue(m10 < m20)
         assertEquals(0, m10.compareTo(Money.fromShekels(10.0)))
     }

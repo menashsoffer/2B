@@ -3,6 +3,9 @@ package com.menash.myself.data.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+import com.menash.myself.feature.calculators.pension.domain.PensionFundInput
+import com.menash.myself.feature.calculators.pension.domain.PensionSavingsCalculator
+
 @Entity(tableName = "pension_funds")
 data class PensionFundEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -14,12 +17,23 @@ data class PensionFundEntity(
     val feeOnDepositsPercent: Double = 0.0, // דמי ניהול מהפקדה באחוזים (לדוגמה 1.49)
     val notes: String = ""
 ) {
+    private fun fundResult() = PensionSavingsCalculator.calculateFund(
+        PensionFundInput(
+            fundType = fundType,
+            provider = provider,
+            currentValue = currentValue,
+            totalDeposits = totalDeposits,
+            feeOnBalancePercent = feeOnBalancePercent,
+            feeOnDepositsPercent = feeOnDepositsPercent
+        )
+    )
+
     val profit: Double
-        get() = currentValue - totalDeposits
+        get() = fundResult().profit
 
     val profitPercent: Double
-        get() = if (totalDeposits > 0.0) ((currentValue - totalDeposits) / totalDeposits) * 100.0 else 0.0
+        get() = fundResult().profitPercent
 
     val yearlyBalanceFeeEstimate: Double
-        get() = currentValue * (feeOnBalancePercent / 100.0)
+        get() = fundResult().yearlyBalanceFeeEstimate
 }
