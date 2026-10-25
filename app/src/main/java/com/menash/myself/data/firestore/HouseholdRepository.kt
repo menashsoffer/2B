@@ -131,19 +131,32 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
     private suspend fun joinInvitedHousehold(householdId: String, uid: String): Household? {
         try {
             val docRef = db.collection("households").document(householdId)
-            val doc = docRef.get().await()
-            val household = doc.toObject(Household::class.java) ?: return null
-
-            val updatedMembers = (household.memberUids + uid).distinct()
-            // Narrow update rule: affectedKeys().hasOnly(['memberUids', 'partnerUid'])
+            // Do not read before joining (non-members cannot read).
+            // Update using arrayUnion and set partnerUid:
             docRef.update(
                 mapOf(
-                    "memberUids" to updatedMembers,
+                    "memberUids" to FieldValue.arrayUnion(uid),
                     "partnerUid" to uid
                 )
             ).await()
+
+            // After join succeeds, caller is in memberUids and can now read the document
+            val doc = docRef.get().await()
+            val household = doc.toObject(Household::class.java)?.copy(id = doc.id)
+
+            // Clean up the invite doc
+            val email = userEmail()
+            if (email.isNotEmpty()) {
+                try {
+                    db.collection("invites").document(email).delete().await()
+                    Log.i(TAG, "Deleted invite document for $email after successful join")
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to delete invite document after join: ${e.message}")
+                }
+            }
+
             Log.i(TAG, "Successfully joined invited household $householdId")
-            return household.copy(id = doc.id, memberUids = updatedMembers, partnerUid = uid)
+            return household
         } catch (e: Exception) {
             reportError("joinInvitedHousehold", e)
             return null

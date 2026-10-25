@@ -84,10 +84,12 @@ service cloud.firestore {
                                isHouseholdMember(incoming().householdId) &&
                                get(/databases/$(database)/documents/households/$(incoming().householdId)).data.ownerUid == request.auth.uid;
 
-      allow delete: if isSignedIn() &&
-                       existing().householdId is string &&
-                       isHouseholdMember(existing().householdId) &&
-                       get(/databases/$(database)/documents/households/$(existing().householdId)).data.ownerUid == request.auth.uid;
+      allow delete: if isSignedIn() && (
+                       (request.auth.token.email != null && request.auth.token.email.lower() == emailLower) ||
+                       (existing().householdId is string &&
+                        isHouseholdMember(existing().householdId) &&
+                        get(/databases/$(database)/documents/households/$(existing().householdId)).data.ownerUid == request.auth.uid)
+                     );
     }
 
     // --- Households & Scoped Subcollections ---
@@ -104,16 +106,26 @@ service cloud.firestore {
       allow update: if isSignedIn() &&
                        isValidId(householdId) &&
                        isValidHousehold(incoming()) && (
-                         // 1. Owner can update fields (including partnerEmail), but cannot change ownerUid
+                         // 1. Owner can update fields (including partnerEmail and memberUids), but cannot change ownerUid
                          (existing().ownerUid == request.auth.uid && incoming().ownerUid == existing().ownerUid) ||
-                         // 2. Member (partner) can update fields, but CANNOT change ownerUid or partnerEmail
+                         // 2. Member (partner) can update fields, but CANNOT change ownerUid or partnerEmail,
+                         //    and CANNOT change memberUids except removing themselves
                          (
                            request.auth.uid in existing().memberUids &&
+                           existing().ownerUid != request.auth.uid &&
                            incoming().ownerUid == existing().ownerUid &&
-                           incoming().partnerEmail == existing().partnerEmail
+                           incoming().partnerEmail == existing().partnerEmail &&
+                           (
+                             incoming().memberUids == existing().memberUids ||
+                             incoming().memberUids == existing().memberUids.removeAll([request.auth.uid])
+                           )
                          ) ||
-                         // 3. Join flow: invitee can only add their uid to memberUids and set partnerUid
+                         // 3. Join flow: invitee can only add their uid to memberUids and set partnerUid,
+                         //    requiring an existing invite for caller to this householdId
                          (
+                           request.auth.token.email != null &&
+                           exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())) &&
+                           get(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())).data.householdId == householdId &&
                            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'partnerUid']) &&
                            incoming().memberUids == existing().memberUids.concat([request.auth.uid]) &&
                            incoming().partnerUid == request.auth.uid
@@ -125,24 +137,24 @@ service cloud.firestore {
       // Subcollection: Tasks scoped to household
       match /tasks/{taskId} {
         allow get, list: if isHouseholdMember(householdId);
-        allow create: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming());
-        allow update: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming());
+        allow create: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(taskId);
       }
 
       // Subcollection: Dreams scoped to household
       match /dreams/{dreamId} {
         allow get, list: if isHouseholdMember(householdId);
-        allow create: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming());
-        allow update: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming());
+        allow create: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(dreamId);
       }
 
       // Subcollection: Inbox scoped to household
       match /inbox/{itemId} {
         allow get, list: if isHouseholdMember(householdId);
-        allow create: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming());
-        allow update: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming());
+        allow create: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(itemId);
       }
     }

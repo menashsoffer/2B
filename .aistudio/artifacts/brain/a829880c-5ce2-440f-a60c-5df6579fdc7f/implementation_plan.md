@@ -58,92 +58,73 @@
 
 ## סדר שלבי הביצוע המדויק (Step-by-Step Execution Plan)
 
-### שלב 0: בדיקות מאפיינות ותיעוד התנהגות קיימת — הושלם (100% ירוק)
-- בדיקות המאפיינות ב-`CharacterizationTests.kt` רצות ועוברות בהצלחה (15/15 בדיקות ירוקות).
+### שלב 0: בדיקות מאפיינות ותיעוד התנהגות קיימת — הושלם (100% ירוק) ✅
+- בדיקות המאפיינות ב-`CharacterizationTests.kt` רצות ועוברות בהצלחה (17/17 בדיקות ירוקות).
 - מסמך `docs/KNOWN_ISSUES.md` מתעד את ההתנהגויות הנעולות תוך הפניה לשמות הבדיקות (כולל התנהגות עתידית מיועדת ל-1.4: "הזן צריכה").
 
-### שלב 1: מסמך חוקי הפיתוח (`docs/RULES.md`) — הושלם
+### שלב 1: מסמך חוקי הפיתוח (`docs/RULES.md`), תכונות עתידיות (`docs/ROADMAP.md`), ו-Namespace — הושלם ✅
 - `docs/RULES.md` נוצר ומעגן את עקרונות הפיתוח, מודל המרחבים, שם בסיס הנתונים Room `"my_calculators.db"`, ואיסור מחיקת מידע.
-- מסמך תכונות עתידיות `docs/ROADMAP.md` נוצר, עודכן עם 5 התיקונים של המשתמש, וסומן כ-LOCKED.
-- עדכון Namespace וחבילות ל-`com.menash.myself` הושלם ונבדק בהצלחה בקומפילציה.
+- מסמך תכונות עתידיות `docs/ROADMAP.md` עודכן עם 5 התיקונים של המשתמש, וסומן כ-LOCKED.
+- עדכון Namespace וחבילות ל-`com.menash.myself` הושלם ונבדק בהצלחה בקומפילציה ובבדיקות.
 
 ---
 
-### שלב 1.5: ייצוב ותיקון שכבת Firebase (Stabilize Firebase) — השלב הבא לביצוע
-מתבצע לפי סדר מדויק, כאשר כל תיקון מגובה בבדיקה ייעודית:
-
+### שלב 2 (1.5): ייצוב ותיקון שכבת Firebase (Stabilize Firebase) — הושלם (100% ירוק) ✅
 1. **השבתת הרצה אוטומטית של MigrationManager:**
-   - השבתת ההרצה האוטומטית ב-`MainActivity.kt` בעת כניסת משתמש (השארת הקוד קיים מאחורי דגל `AUTO_MIGRATE_ENABLED = false`).
-   - איסור מחיקת מסמכי `calculator_sync` קיימים — הפקת רשימה ברורה של המסמכים הקיימים והצגתם למשתמש.
-   - **בדיקה:** בדיקת יחידה שמוודאת ש-`MigrationManager.checkAndMigrate()` אינו מופעל אוטומטית כשהדגל כבוי.
-
+   - `AUTO_MIGRATE_ENABLED` הוגדר כ-`const val = false`.
+   - מסמכי `calculator_sync` ישנים נשמרים ללא מחיקה; פונקציית בדיקה ייעודית מפיקה את רשימתם.
 2. **מבנה נתונים משותף תחת משק הבית (Data Layout):**
    - מעבר לנתיב היררכי: `households/{hid}/{collection}/{itemId}` (עבור `tasks`, `dreams`, `inbox`).
-   - חוקי האבטחה ב-`firestore.rules` בודקים חברות במשק הבית באמצעות שאילתת קשר:
-     `get(/databases/$(database)/documents/households/$(hid)).data.memberUids`
-   - הסרת השדה העודף `householdMembers` מכל מסמך אינדיבידואלי.
-   - **בדיקה:** חוקי אבטחה ב-`firestore.test.js` ובדיקת Repository על הנתיב ההיררכי.
-
+   - חוקי האבטחה בודקים חברות באמצעות `get(/databases/$(database)/documents/households/$(hid)).data.memberUids`.
 3. **תיחום מלא של כל השאילתות (Scoped Queries Only):**
-   - כל שאילתות ה-Firestore באפליקציה מתוחמות לנתיב ה-household הספציפי (`households/{hid}/...`) או לנתיב המשתמש האישי (`users/{uid}/...`).
-   - מחיקת כל שאילתות ה-Collection הרחבות שאינן מתוחמות.
-   - נתוני כושר (`fitness`) מתוחמים פר-משתמש בנתיב `users/{uid}/fitness/{logId}`.
-   - **בדיקה:** בדיקות יחידה לשכבת ה-Repository המוודאות יצירת שאילתות מתוחמות בלבד.
-
+   - כל שאילתות Firestore מתוחמות לנתיב ה-household או ל-`users/{uid}/...`.
+   - נתוני כושר מתוחמים ב-`users/{uid}/fitness/{logId}`.
 4. **זרימת הזמנות והצטרפות למשק בית (Join Flow):**
-   - יצירת מסמך הזמנה ייעודי בנתיב: `invites/{emailLower}` המכיל `{ householdId }`.
-   - הרשאת קריאה מוגבלת אך ורק לבעל כתובת המייל: `request.auth.token.email.lower() == emailLower`.
-   - הצטרפות למשק הבית מעדכנת את מסמך ה-household תוך הגבלה קפדנית:
-     `request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'partnerUid'])`
-     ומוודאת כי `memberUids == existing + [request.auth.uid]`.
-   - רק הבעלים המקורי (`ownerUid`) מורשה לעדכן את `partnerEmail` או `ownerUid`.
-   - אם למשתמשת המצטרפת יש כבר משק בית ריק שיצרה בעבר, המערכת מזהה זאת, מציעה לה להצטרף למשק הבית המוזמן, ומוחקת את משק הבית הריק.
-   - **בדיקה:** בדיקות חוקי אבטחה ותרחישי הצטרפות ב-`firestore.test.js`.
-
-5. **הצפת שגיאות Firestore בממשק (Never Swallow Errors):**
-   - ביטול כל בלוקי ה-`catch` הבולעים שגיאות בשקט או מחזירים רשימות ריקות ללא חיווי.
-   - שמירה על מצב שגיאה גלוי (`ErrorState`) ב-UI ורישום לוג מדויק עם קוד השגיאה (`PERMISSION_DENIED`, `UNAVAILABLE` וכו').
-   - **בדיקה:** בדיקת זרימת State בעת זריקת חריגה מ-Firestore.
-
-6. **עבודה חופשית במחשבונים ללא צורך בהתחברות (Calculators Work Offline/Without Sign-In):**
-   - המחשבונים (`cars`, `ai`, `pension`) נשענים על נתוני Room מקומיים ועובדים בצורה מלאה וחופשית גם ללא משתמש מחובר וללא רשת.
-   - התחברות לחשבון Google נדרשת אך ורק עבור תכונות משק הבית השיתופי (חלומות, משימות, אינבוקס).
-   - **בדיקה:** בדיקת יחידה לפעולת ה-DAO וה-ViewModel של המחשבונים במצב `auth.currentUser == null`.
-
-7. **קריאת מופעי לוח שנה מורחבים (Calendar Instances):**
-   - מעבר מקריאת `CalendarContract.Events` לקריאת `CalendarContract.Instances` (המרחיב אירועים חוזרים ומחשב מופעים בפועל בטווח התאריכים הרלוונטי).
-   - **בדיקה:** בדיקת שליפת אירועים ביומן המוודאת פריסה נכונה של אירוע שבועי/חודשי חוזר.
-
+   - מסמך הזמנה ייעודי ב-`invites/{emailLower}`.
+   - חוק העדכון למשק הבית דורש קיום הזמנה תואמת: `exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())) && get(...).data.householdId == householdId`.
+   - חברים שאינם בעלים אינם מורשים לשנות את `memberUids` (מלבד הסרת עצמם - יציאה).
+   - הצטרפות לקוח (Client join): מתבצעת ישירות באמצעות `FieldValue.arrayUnion(uid)` ו-`partnerUid = uid` **ללא קריאה מוקדמת** (שכן משתמש שאינו חבר אינו מורשה לקרוא).
+   - מחיקת ההזמנה מתבצעת לאחר הצטרפות מוצלחת על ידי המצטרף או הבעלים.
+5. **אי-בליעת שגיאות Firestore (Never Swallow Errors):**
+   - חשיפת `errorFlow` בממשק והצגת הודעת שגיאה ברורה עם קוד השגיאה.
+6. **עבודה חופשית במחשבונים ללא התחברות (Offline Room Calculators):**
+   - המחשבונים עובדים מקומית מול Room ללא צורך בחשבון מחובר.
+7. **הרחבת אירועי לוח שנה חוזרים:**
+   - קריאת `CalendarContract.Instances` במקום `Events`.
 8. **בדיקות מקיפות באמולטור לחוקי אבטחה (`firestore.test.js`):**
-   - חבר משק בית רשאי לבצע list ו-get לפריטי ה-household שלו.
-   - משתמש חיצוני שאינו חבר נדחה (`assertFails`).
-   - מוזמנת יכולה לקרוא אך ורק את מסמך ההזמנה שלה לפי כתובת המייל שלה ולהצטרף.
-   - בן/בת הזוג אינם מורשים לשנות את הבעלים (`ownerUid`) או את ה-`partnerEmail`.
-   - פריטים פרטיים תחת `users/{uid}/private` נגישים לקריאה ולכתיבה אך ורק לבעל הפריט.
-   - **בדיקה:** הרצת מערך הבדיקות ב-`firestore.test.js` מול האמולטור.
-
+   - הורצו 10/10 בדיקות ירוקות באמולטור, כולל תרחישים שליליים:
+     - זר ללא הזמנה נדחה.
+     - מוזמן לבית 1 אינו יכול להצטרף לבית 2.
+     - שותף אינו יכול להסיר את הבעלים או להוסיף משתמש שלישי.
+     - הצטרפות דרך `arrayUnion` מצליחה ללא קריאה מוקדמת, וההזמנה נמחקת.
+     - יצירה ועדכון של פריטים דורשים `userId == request.auth.uid` ואי-שינוי ה-`userId`.
 9. **חילוץ פענוח קמ/ליטר ובדיקת אפיון מדויקת (KNOWN_ISSUES 1.4):**
-   - חילוץ לוגיקת הפענוח של מחרוזת קמ/ליטר מתוך ה-Composable לפונקציה ייעודית (ללא שינוי לוגיקה בשלב זה).
-   - נעילת ההתנהגות הקיימת (ערך ריק מוביל ל-1.0) בבדיקה ישירה של הפונקציה המחולצת ב-`CharacterizationTests.kt` במקום שכפול הלוגיקה.
-   - **בדיקה:** הרצת הבדיקה המאפיינת המעודכנת.
-
-10. **ניקוי תלויות וספריות מיותרות (Step 1 Cleanup):**
-    - הסרת התלות הלא-נחוצה `libs.firebase.ai` מ-`app/build.gradle.kts`.
-    - הסרת תלויות App Check שאינן מאותחלות (`libs.firebase.appcheck.recaptcha`, `libs.firebase.appcheck.debug`) מ-`app/build.gradle.kts` (איסור מוחלט על אספקת debug provider בגרסת release).
-    - **בדיקה:** הרצת `compile_applet` לוודא בנייה נקייה ותקינה לחלוטין.
+   - חולץ וננעל בבדיקה ייעודית.
+10. **ניקוי תלויות מיותרות:**
+    - הוסרו `firebase.ai` ורכיבי App Check הלא מאותחלים.
+    - נוסף `firestore.indexes.json` עם אינדקס מורכב עבור `households/{hid}/inbox` (`status` ASC + `createdAt` DESC) ומקושר ב-`firebase.json`.
 
 ---
 
-### שלב 2: שכבת ה-Domain ובדיקות יחידה טהורות (Pure Kotlin + Unit Tests)
-- **`core/domain` (פרימיטיבים משותפים בלבד):**
-  - `Money`: ייצוג באגורות (`Long`), פונקציות המרה `toShekels()`, `fromShekels()`, ועיצוב תצוגה עברית.
-  - `ForWhom`: טיפוס `ME`, `PARTNER`, `BOTH` עם פונקציית חישוב תווית לפי צופה.
-  - `DateRange`: טווח תאריכים מבוסס `java.time.LocalDate`.
+### שלב 3: שכבת ה-Domain ובדיקות יחידה טהורות (Pure Kotlin + Unit Tests) — הושלם (100% ירוק) ✅
+- **`core/domain/model/` (פרימיטיבים ומודלים טהורים):**
+  - `Money`: ייצוג מדויק באגורות (`Long`), מניעת שגיאות עיגול, אופרטורים חשבוניים (`+`, `-`, `*`, `/`), המרות שקלים, ועיצוב עברי תקני (`₪1,250` / `-₪500`).
+  - `ForWhom`: טיפוס `ME`, `PARTNER`, `BOTH` עם פונקציית `labelForViewer(isOwner, partnerName)` לפי חוקי התצוגה המותאמת, וסינון עומס קוגניטיבי (`mine + both` כברירת מחדל, והצגת הכל בבחירה).
+  - `DateRange`: טווח תאריכים מבוסס `java.time.LocalDate` עם בדיקת הכלה וספירת ימים/חודשים.
 - **`feature/*/domain` (חישובים ייעודיים כפונקציות טהורות נטולות אנדרואיד):**
-  - `CarCostCalculator.kt`, `AiSubscriptionCalculator.kt`, `PensionSavingsCalculator.kt`, `DreamSavingsCalculator.kt`, `TaskScheduler.kt`.
-- בדיקות יחידה מקיפות לכל פונקציית Domain חדשה.
+  - `CarCostCalculator.kt`: חישוב עלות 5-שנתית, תחימת עלות חודשית לאפס (KNOWN_ISSUES § 1.1), חישוב אנרגיה לדלק וחשמל, פענוח קמ/ל (KNOWN_ISSUES § 1.4), והשוואת בסיס עם קיטום כלפי מטה (KNOWN_ISSUES § 1.2).
+  - `AiSubscriptionCalculator.kt`: חישוב עלות מנויים בדולר ובשקלים, סינון מנויים לא פעילים, וסיכום חודשי/שנתי.
+  - `PensionSavingsCalculator.kt`: חישוב רווח, אחוז תשואה עם הגנה מחלוקה באפס (KNOWN_ISSUES § 2.1), וסיכום תיק עם זיהוי דמי הניהול הגבוהים ביותר.
+  - `DreamSavingsCalculator.kt`: חישוב יתרת חיסכון, אחוז התקדמות, וחודשים נדרשים להשגת היעד.
+  - `TaskScheduler.kt`: סינון DO NOW עם התאמת אנרגיה ומצב ריק כשאין התאמה, תג ברירת מחדל "שוטף" למשימות ללא תיוג, הסתרת "חמש לפני 11" אחרי 11:00, וסינון חלונות זמן לעוגנים.
+- **בדיקות יחידה טהורות (Unit Tests):**
+  - נוצרו 8 קבצי בדיקות חדשים ב-`app/src/test/java/com/menash/myself/domain/`:
+    `MoneyTest`, `ForWhomTest`, `DateRangeTest`, `CarCostCalculatorTest`, `AiSubscriptionCalculatorTest`, `PensionSavingsCalculatorTest`, `DreamSavingsCalculatorTest`, `TaskSchedulerTest`.
+  - כל הבדיקות עברו בהצלחה (100% ירוק ב-`gradle :app:testDebugUnitTest`).
 
-### שלב 3: ממשקי נתונים ב-`core/data` וחיבור Room בלבד
+---
+
+### שלב 4: ממשקי נתונים ב-`core/data` וחיבור Room בלבד (השלב הבא)
 - **`core/data/repository/` (ממשקים בלבד):** `TaskRepository`, `DreamRepository`, `InboxRepository`, `FitnessRepository`, `HouseholdRepository`, `CalculatorRepository`.
 - **`core/data/local/`:**
   - ישויות Room קפואות לחלוטין ללא שינוי מבנה או שמות.
