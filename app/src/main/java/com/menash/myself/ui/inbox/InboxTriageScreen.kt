@@ -60,7 +60,7 @@ fun InboxTriageScreen(onBack: () -> Unit) {
                 title = {
                     Column {
                         Text("מיון Inbox", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        Text("${inboxItems.size} פריטים ממתינים למיון", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
+                        Text("${inboxItems.orEmpty().size} פריטים ממתינים למיון", fontSize = 12.sp, color = Color.White.copy(alpha = 0.85f))
                     }
                 },
                 navigationIcon = {

@@ -64,7 +64,7 @@ fun CalculatorsHubScreen(
     val needsBackupWarning = daysSinceBackup >= 30
 
     val calculators = remember(cars, aiSubs, pensionFunds, usdRate) {
-        buildCalculatorItems(cars, aiSubs, pensionFunds, usdRate)
+        buildCalculatorItems(cars.orEmpty(), aiSubs.orEmpty(), pensionFunds.orEmpty(), usdRate)
     }
 
     Scaffold(

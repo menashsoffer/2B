@@ -177,16 +177,14 @@ private fun AuthenticatedShell(
             }
         },
         floatingActionButton = {
-            if (currentRoute != "home") {
-                FloatingActionButton(
-                    onClick = { showQuickCapture = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White,
-                    shape = CircleShape,
-                    modifier = Modifier.testTag("persistent_capture_fab")
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "לכידה מהירה")
-                }
+            FloatingActionButton(
+                onClick = { showQuickCapture = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = Color.White,
+                shape = CircleShape,
+                modifier = Modifier.testTag("persistent_capture_fab")
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "לכידה מהירה")
             }
         }
     ) { innerPadding ->

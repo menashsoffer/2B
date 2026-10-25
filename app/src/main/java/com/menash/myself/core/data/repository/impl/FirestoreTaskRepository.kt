@@ -1,6 +1,7 @@
 package com.menash.myself.core.data.repository.impl
 
 import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.data.mapper.TaskMappers
 import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.TaskRepository
 import com.menash.myself.core.data.session.HouseholdSession
@@ -39,7 +40,7 @@ class FirestoreTaskRepository(
                 val dummyHousehold = Household(id = hid, name = "", ownerUid = "")
                 lifeHub.observeMergedTasks(dummyHousehold)
                     .map { list ->
-                        list.map { ModelMappers.taskToDomain(it) }
+                        list.map { TaskMappers.taskToDomain(it) }
                             .filter { task ->
                                 when (filter) {
                                     VisibilityFilter.ALL -> true

@@ -11,73 +11,46 @@ import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.InboxItem
 import com.menash.myself.core.domain.model.UiState
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.menash.myself.core.ui.BaseViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 class InboxViewModel(
     private val inboxRepository: InboxRepository,
     private val taskRepository: TaskRepository,
     private val dreamRepository: DreamRepository,
-    private val errorReporter: ErrorReporter? = null
-) : ViewModel() {
+    errorReporter: ErrorReporter? = null
+) : BaseViewModel(errorReporter) {
 
-    private val _errorState = MutableStateFlow<String?>(null)
-    val errorState: StateFlow<String?> = _errorState.asStateFlow()
-
-    val inboxItems: StateFlow<List<InboxItem>> = inboxRepository.observeInbox()
+    val inboxItems: StateFlow<List<InboxItem>?> = inboxRepository.observeInbox()
+        .map<List<InboxItem>, List<InboxItem>?> { it }
         .catch { e ->
             handleException("observeInbox", e)
-            emit(emptyList())
+            emit(null)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val uiState: StateFlow<UiState<List<InboxItem>>> = combine(inboxItems, _errorState) { list, error ->
         when {
-            error != null && list.isEmpty() -> UiState.Error(error)
+            error != null && list.isNullOrEmpty() -> UiState.Error(error)
+            list == null -> UiState.Loading
             list.isEmpty() -> UiState.Empty
             else -> UiState.Content(list)
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UiState.Loading)
-
-    fun clearError() {
-        _errorState.value = null
-        errorReporter?.clearError()
-    }
-
-    private fun handleException(action: String, e: Throwable) {
-        if (e is CancellationException) throw e
-        val msg = e.localizedMessage ?: e.message ?: "שגיאה ב-$action"
-        _errorState.value = msg
-        errorReporter?.reportError(action, e)
-    }
-
-    private fun launchCatching(action: String, block: suspend () -> Unit) {
-        viewModelScope.launch {
-            try {
-                block()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                handleException(action, e)
-            }
-        }
-    }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, UiState.Loading)
 
     fun addInboxItem(text: String, forWhom: ForWhom = ForWhom.BOTH, isPrivate: Boolean = false) {
-        launchCatching("addInboxItem") {
+        safeLaunch("addInboxItem") {
             inboxRepository.addInboxItem(text, forWhom, isPrivate)
         }
     }
 
     fun triageAsTask(item: InboxItem, title: String, nextAction: String, isTop3: Boolean) {
-        launchCatching("triageAsTask") {
+        safeLaunch("triageAsTask") {
             taskRepository.createTask(
                 title = title,
                 nextAction = nextAction,
@@ -90,7 +63,7 @@ class InboxViewModel(
     }
 
     fun triageAsDream(item: InboxItem, title: String, list: String, status: String = "חלום") {
-        launchCatching("triageAsDream") {
+        safeLaunch("triageAsDream") {
             dreamRepository.createDream(
                 Dream(
                     title = title,
@@ -105,13 +78,13 @@ class InboxViewModel(
     }
 
     fun triageAsNote(item: InboxItem) {
-        launchCatching("triageAsNote") {
+        safeLaunch("triageAsNote") {
             inboxRepository.markInboxTriaged(item.id, "note", item.isPrivate)
         }
     }
 
     fun deleteInboxItem(item: InboxItem) {
-        launchCatching("deleteInboxItem") {
+        safeLaunch("deleteInboxItem") {
             inboxRepository.deleteInboxItem(item.id, item.isPrivate)
         }
     }

@@ -64,6 +64,12 @@ fun DreamsScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { showCreateDialog = true },
+                        modifier = Modifier.testTag("add_dream_top_action")
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "הוסף חלום")
+                    }
                     IconButton(onClick = { isBoardView = !isBoardView }) {
                         Icon(
                             if (isBoardView) Icons.AutoMirrored.Filled.ViewList else Icons.Default.ViewKanban,
@@ -78,14 +84,6 @@ fun DreamsScreen(onBack: () -> Unit) {
                     actionIconContentColor = Color.White
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreateDialog = true },
-                modifier = Modifier.testTag("add_dream_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף חלום")
-            }
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {

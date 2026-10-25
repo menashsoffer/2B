@@ -70,17 +70,10 @@ fun PensionSavingsScreen(
         topBar = {
             PensionSavingsTopBar(
                 onBack = onBack,
+                onAddFund = { viewModel.insertPensionFund(createDefaultPensionFund()) },
                 onImportCsv = { csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*")) },
-                onExportCsv = { sharePensionFundsCsv(context, funds) }
+                onExportCsv = { sharePensionFundsCsv(context, funds.orEmpty()) }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.insertPensionFund(createDefaultPensionFund()) },
-                modifier = Modifier.testTag("add_fund_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף קרן או קופה")
-            }
         }
     ) { padding ->
         Column(
@@ -121,6 +114,7 @@ fun PensionSavingsScreen(
 @Composable
 private fun PensionSavingsTopBar(
     onBack: () -> Unit,
+    onAddFund: () -> Unit,
     onImportCsv: () -> Unit,
     onExportCsv: () -> Unit
 ) {
@@ -132,6 +126,9 @@ private fun PensionSavingsTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onAddFund, modifier = Modifier.testTag("add_fund_top_action")) {
+                Icon(Icons.Default.Add, contentDescription = "הוסף קרן או קופה")
+            }
             IconButton(onClick = onImportCsv, modifier = Modifier.testTag("pension_import_csv_button")) {
                 Icon(Icons.Default.UploadFile, contentDescription = "ייבוא CSV")
             }

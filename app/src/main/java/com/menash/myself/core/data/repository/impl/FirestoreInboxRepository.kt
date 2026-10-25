@@ -1,5 +1,6 @@
 package com.menash.myself.core.data.repository.impl
 
+import com.menash.myself.core.data.mapper.InboxMappers
 import com.menash.myself.core.data.mapper.ModelMappers
 import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.InboxRepository
@@ -36,7 +37,7 @@ class FirestoreInboxRepository(
             } else {
                 val dummyHousehold = Household(id = hid, name = "", ownerUid = "")
                 lifeHub.observeMergedInbox(dummyHousehold)
-                    .map { list -> list.map { ModelMappers.inboxToDomain(it) } }
+                    .map { list -> list.map { InboxMappers.inboxToDomain(it) } }
             }
         }
     }

@@ -73,17 +73,10 @@ fun AiSubscriptionsScreen(
         topBar = {
             AiSubscriptionsTopBar(
                 onBack = onBack,
+                onAddSubscription = { viewModel.insertAiSubscription(createDefaultAiSub()) },
                 onImportCsv = { csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*")) },
-                onExportCsv = { shareAiSubscriptionsCsv(context, subscriptions, usdRate) }
+                onExportCsv = { shareAiSubscriptionsCsv(context, subscriptions.orEmpty(), usdRate) }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.insertAiSubscription(createDefaultAiSub()) },
-                modifier = Modifier.testTag("add_ai_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף מנוי")
-            }
         }
     ) { padding ->
         Column(
@@ -125,6 +118,7 @@ fun AiSubscriptionsScreen(
 @Composable
 private fun AiSubscriptionsTopBar(
     onBack: () -> Unit,
+    onAddSubscription: () -> Unit,
     onImportCsv: () -> Unit,
     onExportCsv: () -> Unit
 ) {
@@ -136,6 +130,9 @@ private fun AiSubscriptionsTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onAddSubscription, modifier = Modifier.testTag("add_ai_top_action")) {
+                Icon(Icons.Default.Add, contentDescription = "הוסף מנוי")
+            }
             IconButton(onClick = onImportCsv, modifier = Modifier.testTag("ai_import_csv_button")) {
                 Icon(Icons.Default.UploadFile, contentDescription = "ייבוא CSV")
             }

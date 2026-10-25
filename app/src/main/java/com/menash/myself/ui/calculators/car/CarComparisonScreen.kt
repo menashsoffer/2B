@@ -53,7 +53,8 @@ fun CarComparisonScreen(
     val cars by viewModel.cars.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val baselineCar = cars.firstOrNull { it.isBaseline } ?: cars.firstOrNull()
+    val carList = cars.orEmpty()
+    val baselineCar = carList.firstOrNull { it.isBaseline } ?: carList.firstOrNull()
     var editingEnergyForCar by remember { mutableStateOf<Car?>(null) }
     var showCsvMapping by remember { mutableStateOf(false) }
     var importedCsvRows by remember { mutableStateOf<List<List<String>>>(emptyList()) }
@@ -70,17 +71,10 @@ fun CarComparisonScreen(
         topBar = {
             CarComparisonTopBar(
                 onBack = onBack,
+                onAddCar = { viewModel.insertCar(createDefaultCar(carList.isEmpty())) },
                 onImportCsv = { csvPicker.launch(arrayOf("text/csv", "text/comma-separated-values", "*/*")) },
-                onExportCsv = { shareCarsCsv(context, cars) }
+                onExportCsv = { shareCarsCsv(context, carList) }
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.insertCar(createDefaultCar(cars.isEmpty())) },
-                modifier = Modifier.testTag("add_car_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף רכב")
-            }
         }
     ) { padding ->
         Column(
@@ -133,6 +127,7 @@ fun CarComparisonScreen(
 @Composable
 private fun CarComparisonTopBar(
     onBack: () -> Unit,
+    onAddCar: () -> Unit,
     onImportCsv: () -> Unit,
     onExportCsv: () -> Unit
 ) {
@@ -144,6 +139,9 @@ private fun CarComparisonTopBar(
             }
         },
         actions = {
+            IconButton(onClick = onAddCar, modifier = Modifier.testTag("add_car_top_action")) {
+                Icon(Icons.Default.Add, contentDescription = "הוסף רכב")
+            }
             IconButton(onClick = onImportCsv, modifier = Modifier.testTag("car_import_csv_button")) {
                 Icon(Icons.Default.UploadFile, contentDescription = "ייבוא CSV")
             }

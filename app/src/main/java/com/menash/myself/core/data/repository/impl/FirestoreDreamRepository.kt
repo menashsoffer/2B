@@ -1,6 +1,6 @@
 package com.menash.myself.core.data.repository.impl
 
-import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.data.mapper.DreamMappers
 import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.DreamRepository
 import com.menash.myself.core.data.session.HouseholdSession
@@ -39,7 +39,7 @@ class FirestoreDreamRepository(
                 val dummyHousehold = Household(id = hid, name = "", ownerUid = "")
                 lifeHub.observeMergedDreams(listFilter, dummyHousehold)
                     .map { list ->
-                        list.map { ModelMappers.dreamToDomain(it) }
+                        list.map { DreamMappers.dreamToDomain(it) }
                             .filter { dream ->
                                 when (filter) {
                                     VisibilityFilter.ALL -> true
@@ -55,7 +55,7 @@ class FirestoreDreamRepository(
     override suspend fun createDream(dream: Dream) {
         val location = resolveLocation("createDream", dream.isPrivate)
         val hid = (location as? ItemLocation.Household)?.id ?: ""
-        val dataItem = ModelMappers.dreamToData(dream, hid)
+        val dataItem = DreamMappers.dreamToData(dream, hid)
         lifeHub.createDream(dataItem, location)
     }
 

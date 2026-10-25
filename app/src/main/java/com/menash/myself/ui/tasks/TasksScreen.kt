@@ -74,22 +74,23 @@ fun TasksScreen(onBack: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "חזור")
                     }
                 },
+                actions = {
+                    IconButton(
+                        onClick = { showCreateDialog = true },
+                        modifier = Modifier.testTag("add_task_top_action")
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "הוסף משימה")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    navigationIconContentColor = Color.White,
+                    actionIconContentColor = Color.White
                 )
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreateDialog = true },
-                modifier = Modifier.testTag("add_task_fab")
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף משימה")
-            }
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             OfflineIndicator(isOffline = false)

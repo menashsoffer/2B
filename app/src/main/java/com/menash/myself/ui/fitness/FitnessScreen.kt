@@ -53,7 +53,7 @@ fun FitnessScreen(onBack: () -> Unit) {
 
     val streakCount = remember(weeklyLogs) {
         var count = 0
-        for (log in weeklyLogs.sortedByDescending { it.date }) {
+        for (log in weeklyLogs.orEmpty().sortedByDescending { it.date }) {
             if (log.moved) count++ else break
         }
         count
@@ -96,7 +96,7 @@ fun FitnessScreen(onBack: () -> Unit) {
                         onTypeChange = { selectedType = it },
                         onSave = { moved, mins, type -> viewModel.saveTodayFitness(moved, mins, type) }
                     )
-                    FitnessWeeklyHistoryCard(weeklyLogs = weeklyLogs)
+                    FitnessWeeklyHistoryCard(weeklyLogs = weeklyLogs.orEmpty())
                 }
             }
         }

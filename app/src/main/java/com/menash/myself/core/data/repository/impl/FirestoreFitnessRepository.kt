@@ -1,6 +1,6 @@
 package com.menash.myself.core.data.repository.impl
 
-import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.data.mapper.FitnessMappers
 import com.menash.myself.core.data.repository.FitnessRepository
 import com.menash.myself.core.domain.model.FitnessEntry
 import com.menash.myself.data.firestore.LifeHubRepository
@@ -13,11 +13,11 @@ class FirestoreFitnessRepository(
 ) : FitnessRepository {
 
     override fun observeTodayFitness(): Flow<FitnessEntry?> {
-        return lifeHub.observeTodayFitness().map { it?.let { ModelMappers.fitnessToDomain(it) } }
+        return lifeHub.observeTodayFitness().map { it?.let { FitnessMappers.fitnessToDomain(it) } }
     }
 
     override fun observeWeeklyFitness(): Flow<List<FitnessEntry>> {
-        return lifeHub.observeWeeklyFitness().map { list -> list.map { ModelMappers.fitnessToDomain(it) } }
+        return lifeHub.observeWeeklyFitness().map { list -> list.map { FitnessMappers.fitnessToDomain(it) } }
     }
 
     override suspend fun saveTodayFitness(moved: Boolean, minutes: Int, type: String, date: LocalDate) {

@@ -1,6 +1,6 @@
 package com.menash.myself.core.data.repository.impl
 
-import com.menash.myself.core.data.mapper.ModelMappers
+import com.menash.myself.core.data.mapper.HouseholdMappers
 import com.menash.myself.core.data.repository.HouseholdRepositoryInterface
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.Household
@@ -22,7 +22,7 @@ class FirestoreHouseholdRepository(
     override suspend fun getOrCreateHousehold(): Household {
         val dataHousehold = householdRepo.getOrCreateHousehold()
         householdSession.setHouseholdId(dataHousehold.id)
-        return ModelMappers.householdToDomain(dataHousehold)
+        return HouseholdMappers.householdToDomain(dataHousehold)
     }
 
     override fun observeHousehold(): Flow<Household?> {
@@ -30,7 +30,7 @@ class FirestoreHouseholdRepository(
             .onEach { data ->
                 householdSession.setHouseholdId(data?.id)
             }
-            .map { it?.let { ModelMappers.householdToDomain(it) } }
+            .map { it?.let { HouseholdMappers.householdToDomain(it) } }
     }
 
     override suspend fun invitePartner(householdId: String, email: String) {

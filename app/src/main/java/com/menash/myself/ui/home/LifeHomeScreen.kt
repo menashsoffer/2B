@@ -94,19 +94,8 @@ fun LifeHomeScreen(
             LifeHomeTopBar(
                 userName = user?.displayName ?: "שלום",
                 hasPartner = !household?.partnerEmail.isNullOrEmpty(),
-                inboxCount = inboxItems.size,
+                inboxCount = inboxItems.orEmpty().size,
                 onNavigate = onNavigate
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onOpenQuickCapture,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("לכידה מהירה", fontWeight = FontWeight.Bold) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White,
-                shape = CircleShape,
-                modifier = Modifier.testTag("global_quick_capture_fab")
             )
         }
     ) { padding ->
@@ -117,10 +106,10 @@ fun LifeHomeScreen(
                 is UiState.Error -> ErrorState(message = state.message, onRetry = { viewModel.clearError() })
                 else -> LifeHomeDashboardContent(
                     visibilityFilter = visibilityFilter,
-                    allTasks = allTasks,
-                    allDreams = allDreams,
+                    allTasks = allTasks.orEmpty(),
+                    allDreams = allDreams.orEmpty(),
                     todayFitness = todayFitness,
-                    weeklyFitness = weeklyFitness,
+                    weeklyFitness = weeklyFitness.orEmpty(),
                     viewerUid = viewerUid,
                     hasCalendarPermission = hasCalendarPermission,
                     calendarEvents = calendarEvents,
