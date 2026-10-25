@@ -39,24 +39,17 @@ class BoiRateStore(private val dataStore: DataStore<Preferences>) {
         val rateDate = dateStr?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
         val fetchedAt = fetchedEpoch?.let { Instant.ofEpochMilli(it) }
 
-        if (cachedRate != null && cachedRate > 0.0 && rateDate != null && fetchedAt != null) {
-            val isStale = BoiStalenessPolicy.isStale(rateDate, fetchedAt, Instant.now())
+        val hasOfficial = cachedRate != null && cachedRate > 0.0 && rateDate != null && fetchedAt != null
+        val isStale = if (hasOfficial) BoiStalenessPolicy.isStale(rateDate!!, fetchedAt!!, Instant.now()) else false
+
+        if (hasOfficial || (manualRate != null && manualRate > 0.0)) {
             BoiRate(
-                officialRate = cachedRate,
-                officialRateDate = rateDate,
-                officialFetchedAt = fetchedAt,
+                officialRate = if (hasOfficial) cachedRate else null,
+                officialRateDate = if (hasOfficial) rateDate else null,
+                officialFetchedAt = if (hasOfficial) fetchedAt else null,
                 manualRate = manualRate,
                 isManualOverride = isManual,
                 isStale = isStale
-            )
-        } else if (manualRate != null && manualRate > 0.0) {
-            BoiRate(
-                officialRate = manualRate,
-                officialRateDate = rateDate ?: LocalDate.now(BoiStalenessPolicy.ISRAEL_ZONE),
-                officialFetchedAt = fetchedAt ?: Instant.now(),
-                manualRate = manualRate,
-                isManualOverride = isManual,
-                isStale = false
             )
         } else {
             null
@@ -65,9 +58,15 @@ class BoiRateStore(private val dataStore: DataStore<Preferences>) {
 
     suspend fun saveAutoRate(rate: BoiRate) {
         dataStore.edit { prefs ->
-            prefs[KEY_RATE] = rate.officialRate
-            prefs[KEY_RATE_DATE] = rate.officialRateDate.toString()
-            prefs[KEY_FETCHED_AT] = rate.officialFetchedAt.toEpochMilli()
+            if (rate.officialRate != null) {
+                prefs[KEY_RATE] = rate.officialRate
+            }
+            if (rate.officialRateDate != null) {
+                prefs[KEY_RATE_DATE] = rate.officialRateDate.toString()
+            }
+            if (rate.officialFetchedAt != null) {
+                prefs[KEY_FETCHED_AT] = rate.officialFetchedAt.toEpochMilli()
+            }
         }
     }
 

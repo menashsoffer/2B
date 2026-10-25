@@ -130,12 +130,13 @@ fun SettingsDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("בנק ישראל, שער יציג:", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     boiRateState?.let { r ->
-                        val dateFormatted = r.rateDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                        if (r.isManualOverride) {
-                            Text("שער ידני: ₪${r.rate} / שער רשמי: ₪${r.rate} ($dateFormatted)", fontSize = 12.sp)
+                        val officialDateStr = r.officialRateDate?.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")) ?: "טרם התקבל"
+                        val officialStr = if (r.officialRate != null) "₪${r.officialRate} ($officialDateStr)" else "טרם התקבל"
+                        if (r.isManualOverride && r.manualRate != null) {
+                            Text("שער ידני: ₪${r.manualRate} · שער רשמי: $officialStr", fontSize = 12.sp)
                             Text("דריסה ידנית פעילה", fontSize = 11.sp, color = MaterialTheme.colorScheme.tertiary)
                         } else {
-                            Text("שער עדכני: ₪${r.rate} ($dateFormatted)", fontSize = 12.sp)
+                            Text("שער רשמי: $officialStr", fontSize = 12.sp)
                         }
                         if (r.isStale) {
                             Text("לא עודכן לאחרונה", fontSize = 11.sp, color = MaterialTheme.colorScheme.error)

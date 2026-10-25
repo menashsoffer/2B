@@ -36,11 +36,19 @@ class BoiExchangeRateClient {
         }
     }
 
-    fun parseSdmxCsv(csvContent: String, nowInstant: Instant = Instant.now()): BoiRate {
-        val lines = csvContent.lines().filter { it.isNotBlank() }
-        if (lines.size < 2) {
-            throw IllegalArgumentException("Invalid SDMX CSV response: insufficient lines")
+    suspend fun fetchRateWindow(startDate: LocalDate, endDate: LocalDate): Result<List<Pair<LocalDate, Double>>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val startStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+            val endStr = endDate.format(DateTimeFormatter.ISO_LOCAL_DATE)
+            val urlStr = "$BASE_SDMX_URL&startPeriod=$startStr&endPeriod=$endStr&format=csv"
+            val csv = fetchUrl(urlStr)
+            parseSdmxCsvObservations(csv)
         }
+    }
+
+    fun parseSdmxCsvObservations(csvContent: String): List<Pair<LocalDate, Double>> {
+        val lines = csvContent.lines().filter { it.isNotBlank() }
+        if (lines.size < 2) return emptyList()
 
         val header = lines[0].split(",").map { it.trim().trim('"') }
         val timePeriodIdx = header.indexOf("TIME_PERIOD").takeIf { it >= 0 }
@@ -48,19 +56,25 @@ class BoiExchangeRateClient {
         val obsValueIdx = header.indexOf("OBS_VALUE").takeIf { it >= 0 }
             ?: throw IllegalArgumentException("Missing OBS_VALUE column in BOI CSV header")
 
-        val dataLine = lines.lastOrNull { line ->
+        return lines.drop(1).mapNotNull { line ->
             val cols = line.split(",").map { it.trim().trim('"') }
-            cols.size > maxOf(timePeriodIdx, obsValueIdx) && cols[obsValueIdx].toDoubleOrNull() != null
-        } ?: throw IllegalArgumentException("No valid observations found in BOI CSV")
+            if (cols.size > maxOf(timePeriodIdx, obsValueIdx)) {
+                val dStr = cols[timePeriodIdx].trim()
+                val vVal = cols[obsValueIdx].trim().toDoubleOrNull()
+                if (vVal != null) {
+                    runCatching { LocalDate.parse(dStr, DateTimeFormatter.ISO_LOCAL_DATE) to vVal }.getOrNull()
+                } else null
+            } else null
+        }.sortedBy { it.first }
+    }
 
-        val cols = dataLine.split(",").map { it.trim().trim('"') }
-        val dateStr = cols[timePeriodIdx].trim()
-        val rateVal = cols[obsValueIdx].trim().toDouble()
-        val rateDate = LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE)
+    fun parseSdmxCsv(csvContent: String, nowInstant: Instant = Instant.now()): BoiRate {
+        val observations = parseSdmxCsvObservations(csvContent)
+        val latest = observations.lastOrNull() ?: throw IllegalArgumentException("No valid observations found in BOI CSV")
 
         return BoiRate(
-            officialRate = rateVal,
-            officialRateDate = rateDate,
+            officialRate = latest.second,
+            officialRateDate = latest.first,
             officialFetchedAt = nowInstant,
             manualRate = null,
             isManualOverride = false,

@@ -1,54 +1,229 @@
-# Master Implementation Plan
+# תוכנית רה-פקטורינג מקיפה ומדויקת: "המחשבונים שלי" (Myself)
 
-## Step 1: Core Foundation & Calculators Setup
-- Establish Room database, data entities, and DAOs.
-- Implement calculators for Car Comparison, AI Subscriptions, and Pension Savings.
-- Set up M3 theme, navigation, and core architecture.
+תוכנית שלבית מוקפדת לרה-פקטורינג מבני מלא ללא שום שינוי התנהגות (Zero Behavior Change), נעילת תוצאות החישובים מראש באמצעות בדיקות מאפיינות (Characterization Tests), ייצוב תשתית ה-Firebase הקיימת (שלב 1.5), מודל משק בית משותף כברירת מחדל עם שיוך `forWhom`, שמירה על מקור אמת יחיד, ומיגרציית סכמה ומחשבונים אידמפוטנטית.
 
-## Step 2: Firestore Integration & Authentication
-- Provision Firebase Firestore and Authentication via Credential Manager (Google Sign-In).
-- Implement Firestore repositories for Tasks, Dreams, Inbox, and Household.
-- Set up secure zero-trust Firestore security rules.
+---
 
-## Step 3: Offline-First & Local Persistence
-- Ensure offline caching and synchronization flows.
-- Implement backup and restore features via JSON.
+## תיקון עובדתי של תמונת המצב (State of the Project)
 
-## Step 4: UI Refinement & Cognitive Load Management
-- Implement 5-tab bottom navigation with persistent quick capture FAB.
-- Enforce strict cognitive load rules (Top 3, Five Before 11, clean views).
+- **מצב הנתונים הנוכחי:**
+  - **Firestore (חי ופעיל):** חלומות (`dreams`), משימות (`tasks`), אינבוקס (`inbox`), ויומן כושר (`fitness_logs`) כבר נשמרים ומנוהלים ישירות ב-Firestore.
+  - **Room (מקומי בלבד):** מחזיק **אך ורק את המחשבונים** (`cars`, `ai_subscriptions`, `pension_funds`) בקובץ הקיים `"my_calculators.db"`.
+- **מסקנה ארכיטקטונית:**
+  - אין צורך להעביר חלומות, משימות ואינבוקס מ-Room — הם כבר ב-Firestore, אך המבנה שלהם והחוקים סביבם דורשים ייצוב מיידי (Step 1.5).
+  - **שלב 10 מתמקד בשני דברים:**
+    1. העברת נתוני המחשבונים בלבד מ-Room ל-Firestore.
+    2. מיגרציית סכמה (Schema migration) של המסמכים הקיימים ב-Firestore (`space` ← `ownerUid` + `forWhom` + `isPrivate`, המרת `Double` לאגורות, ותאריכים ל-ISO `yyyy-MM-dd`).
 
-## Step 5: Accessibility, RTL, and Design System
-- Apply Material Design 3 tokens, minimum 48dp touch targets, RTL layout direction, and content descriptions.
+---
 
-## Step 6: External Data Sources (BOI & Hebcal)
-- Set up Bank of Israel SDMX CSV client and Hebcal REST integration.
-- Implement DataStore caches for exchange rates and Hebrew calendar data.
+## עקרונות המפתח של מודל המרחבים (Household-First Space Model)
 
-## Step 7: Migration & CSV Imports
-- Implement CSV import wizard with column mapping for bank statements, cards, and list data.
+1. **שייכות למשק הבית כברירת מחדל:**
+   - כל פריט משותף נשמר תחת הנתיב ההיררכי: `households/{householdId}/{collection}/{itemId}`.
+   - שני בני הזוג החברים במשק הבית רשאים לקרוא את כל הפריטים הללו כברירת מחדל.
+2. **אוסף נפרד לחלוטין לפריטים פרטיים:**
+   - פריטים שסומנו עם `isPrivate = true` נשמרים אך ורק בנתיב `users/{uid}/private/{collection}/{itemId}` (ולא בתוך אוסף ה-household).
+   - **רציונל:** חוקי אבטחה ב-Firestore אינם מסננים שאילתות (Rules are not filters). שאילתה על אוסף ה-household שעלולה לפגוש מסמך פרטי תידחה במלואה (`PERMISSION_DENIED`).
+3. **שדות מזהה ושיוך:**
+   - לכל פריט יש `ownerUid` (מזהה היוצר) ושדה `forWhom`: `ME` / `PARTNER` / `BOTH`.
+4. **תוויות מחושבות לפי צופה (Viewer-Computed Labels):**
+   - אם `item.ownerUid == viewer.uid`:
+     - `ME` ← **"שלי"**
+     - `PARTNER` ← שמו/שמה הפרטי של בן/בת הזוג (במקום "שלו/שלה")
+     - `BOTH` ← **"של שנינו"**
+   - אם `item.ownerUid != viewer.uid` (בן/בת הזוג צופה):
+     - `ME` של היוצר מוצג עם שמו/שמה הפרטי של בן/בת הזוג
+     - `PARTNER` של היוצר מוצג כ-**"שלי"** (פריט שבן/בת הזוג יצר/ה עבורי נספר ומסומן כ"שלי")
+     - `BOTH` מוצג כ-**"של שנינו"**
+5. **הפחתת עומס קוגניטיבי:** תצוגת ברירת המחדל מציגה **"שלי + של שנינו"** (`mine + both`), ולחיצה על צ'יפ **"הצג הכל"** מציגה את כל פריטי הבית.
+6. **צבעי `SpaceBadge`:** נקבעים לפי `forWhom` (שלי / בן-בת הזוג / של שנינו).
+7. **שם קובץ Room DB:** נשמר בקפדנות כ-`"my_calculators.db"`.
 
-## Step 8: External Data Wiring & Automated Sync
-- Enqueue `BoiSyncWorker` as unique periodic work (`ExistingPeriodicWorkPolicy.UPDATE`) with network constraints and 16:30 Israel time initial delay (skipping Friday/Saturday).
-- On app startup, trigger non-blocking refreshes for exchange rates and Hebcal calendar data.
-- Add HomeHebcalCard showing Hebrew date, next holiday, candle lighting, havdalah, and "נתונים: Hebcal.com". If no city is chosen, show "בחר עיר" opening city picker.
-- **Current Round Fixes (Review Round 2)**:
-  1. Restore master plan and document in docs/RULES.md.
-  2. Use real downloaded samples for BOI and Hebcal test resources.
-  3. Strict historical rate query without fallback to today's rate.
-  4. Precise daily Hebrew date parsing via `d=on` parameter in Hebcal.
-  5. Official vs manual rate separation in DataStore and SettingsDialog, with periodic staleness check.
-  6. Staleness computed at check time (`isStale(now)`).
-  7. Correct work delay calculation and Friday/Saturday skip.
-  8. Remove hardcoded 3.11 from HomeHebcalCard.
-  9. Move RULES.md to docs/RULES.md (deleted app/RULES.md).
-  10. Extract all Hebrew strings to strings.xml.
-  11. Precise ErrorMapper classification.
-  12. Move HomeHebcalCard to `ui/home/HomeHebcalCard.kt` (<300 lines per file).
-  13. Hebcal city search/autocomplete in city picker.
-  14. Comprehensive unit tests for override, staleness, historical rates, and Hebrew dates.
-  15. Non-blocking error reporting via ErrorReporter in MainViewModel.
-  16. 4 decimals formatting with bidi isolation.
+---
 
-## Step 9: Advanced Analytics & Phase 2 Features
-- Monthly cashflow analysis, automated bank/card statement parsing, and advanced budgeting.
+## טבלת מיפוי המיגרציה ב-Step 10
+
+| סוג נתונים | מיקום נוכחי | יעד ב-Step 10 | שיוך `forWhom` | פרטיות (`isPrivate`) | זכויות צפייה |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **מחשבון רכבים (Cars)** | Room מקומי | `households/{hid}/cars` | `BOTH` ("של שנינו") | `false` | שני בני הזוג |
+| **מנויי AI (AI Subs)** | Room מקומי | `households/{hid}/ai_subscriptions` | `ME` ("שלי") | `false` | שני בני הזוג (מופיע ב"שלי") |
+| **פנסיה וחיסכון (Pensions)** | Room מקומי | `households/{hid}/pensions` | `ME` ("שלי") | `false` | שני בני הזוג (מופיע ב"שלי") |
+| **חלומות (Dreams)** | Firestore קיים (`/dreams`) | `households/{hid}/dreams` (שדרוג סכמה) | `BOTH` ("של שנינו") | `false` | שני בני הזוג |
+| **משימות (Tasks)** | Firestore קיים (`/tasks`) | `households/{hid}/tasks` (שדרוג סכמה) | `ME` ("שלי") | `false` | שני בני הזוג (מופיע ב"שלי") |
+| **אינבוקס (Inbox)** | Firestore קיים (`/inbox`) | `households/{hid}/inbox` (שדרוג סכמה) | `ME` ("שלי") | `false` | שני בני הזוג (מופיע ב"שלי") |
+| **כושר (Fitness)** | Firestore קיים (`/fitness_logs`) | `users/{uid}/fitness` (נשאר אישי) | `ME` ("שלי") | `false` | המשתמש בלבד |
+
+---
+
+## סדר שלבי הביצוע המדויק (Step-by-Step Execution Plan)
+
+### שלב 0: בדיקות מאפיינות ותיעוד התנהגות קיימת — הושלם (100% ירוק) ✅
+- בדיקות המאפיינות ב-`CharacterizationTests.kt` רצות ועוברות בהצלחה (17/17 בדיקות ירוקות).
+- מסמך `docs/KNOWN_ISSUES.md` מתעד את ההתנהגויות הנעולות תוך הפניה לשמות הבדיקות (כולל התנהגות עתידית מיועדת ל-1.4: "הזן צריכה").
+
+### שלב 1: מסמך חוקי הפיתוח (`docs/RULES.md`), תכונות עתידיות (`docs/ROADMAP.md`), ו-Namespace — הושלם ✅
+- `docs/RULES.md` נוצר ומעגן את עקרונות הפיתוח, מודל המרחבים, שם בסיס הנתונים Room `"my_calculators.db"`, ואיסור מחיקת מידע.
+- מסמך תכונות עתידיות `docs/ROADMAP.md` עודכן עם 5 התיקונים של המשתמש, וסומן כ-LOCKED.
+- עדכון Namespace וחבילות ל-`com.menash.myself` הושלם ונבדק בהצלחה בקומפילציה ובבדיקות.
+
+---
+
+### שלב 2 (1.5): ייצוב ותיקון שכבת Firebase (Stabilize Firebase) — הושלם (100% ירוק) ✅
+1. **השבתת הרצה אוטומטית של MigrationManager:**
+   - `AUTO_MIGRATE_ENABLED` הוגדר כ-`const val = false`.
+   - מסמכי `calculator_sync` ישנים נשמרים ללא מחיקה; פונקציית בדיקה ייעודית מפיקה את רשימתם.
+2. **מבנה נתונים משותף תחת משק הבית (Data Layout):**
+   - מעבר לנתיב היררכי: `households/{hid}/{collection}/{itemId}` (עבור `tasks`, `dreams`, `inbox`).
+   - חוקי האבטחה בודקים חברות באמצעות `get(/databases/$(database)/documents/households/$(hid)).data.memberUids`.
+3. **תיחום מלא של כל השאילתות (Scoped Queries Only):**
+   - כל שאילתות Firestore מתוחמות לנתיב ה-household או ל-`users/{uid}/...`.
+   - נתוני כושר מתוחמים ב-`users/{uid}/fitness/{logId}`.
+4. **זרימת הזמנות והצטרפות למשק בית (Join Flow):**
+   - מסמך הזמנה ייעודי ב-`invites/{emailLower}`.
+   - חוק העדכון למשק הבית דורש קיום הזמנה תואמת: `exists(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())) && get(...).data.householdId == householdId`.
+   - חברים שאינם בעלים אינם מורשים לשנות את `memberUids` (מלבד הסרת עצמם - יציאה).
+   - הצטרפות לקוח (Client join): מתבצעת ישירות באמצעות `FieldValue.arrayUnion(uid)` ו-`partnerUid = uid` **ללא קריאה מוקדמת** (שכן משתמש שאינו חבר אינו מורשה לקרוא).
+   - מחיקת ההזמנה מתבצעת לאחר הצטרפות מוצלחת על ידי המצטרף או הבעלים.
+5. **אי-בליעת שגיאות Firestore (Never Swallow Errors):**
+   - חשיפת `errorFlow` בממשק והצגת הודעת שגיאה ברורה עם קוד השגיאה.
+6. **עבודה חופשית במחשבונים ללא התחברות (Offline Room Calculators):**
+   - המחשבונים עובדים מקומית מול Room ללא צורך בחשבון מחובר.
+7. **הרחבת אירועי לוח שנה חוזרים:**
+   - קריאת `CalendarContract.Instances` במקום `Events`.
+8. **בדיקות מקיפות באמולטור לחוקי אבטחה (`firestore.test.js`):**
+   - הורצו 10/10 בדיקות ירוקות באמולטור, כולל תרחישים שליליים:
+     - זר ללא הזמנה נדחה.
+     - מוזמן לבית 1 אינו יכול להצטרף לבית 2.
+     - שותף אינו יכול להסיר את הבעלים או להוסיף משתמש שלישי.
+     - הצטרפות דרך `arrayUnion` מצליחה ללא קריאה מוקדמת, וההזמנה נמחקת.
+     - יצירה ועדכון של פריטים דורשים `userId == request.auth.uid` ואי-שינוי ה-`userId`.
+9. **חילוץ פענוח קמ/ליטר ובדיקת אפיון מדויקת (KNOWN_ISSUES 1.4):**
+   - חולץ וננעל בבדיקה ייעודית.
+10. **ניקוי תלויות מיותרות:**
+    - הוסרו `firebase.ai` ורכיבי App Check הלא מאותחלים.
+    - נוסף `firestore.indexes.json` עם אינדקס מורכב עבור `households/{hid}/inbox` (`status` ASC + `createdAt` DESC) ומקושר ב-`firebase.json`.
+
+---
+
+### שלב 3: שכבת ה-Domain ובדיקות יחידה טהורות (Pure Kotlin + Unit Tests) — הושלם (100% ירוק) ✅
+- **מימוש יחיד ללוגיקת החישובים (Single Implementation):**
+  - הוסר שכפול הלוגיקה: הגטרים המחושבים ב-`CarEntity` וב-`CarCalculationVerbatimHelpers` מאצילים ישירות ל-`CarCostCalculator`.
+  - הגטרים ב-`AiSubscriptionEntity` מאצילים ישירות ל-`AiSubscriptionCalculator`.
+  - הגטרים ב-`PensionFundEntity` מאצילים ישירות ל-`PensionSavingsCalculator`.
+  - ישויות ה-Room שמרו על מבנה הסכמה הקפוא שלהן במלואו.
+- **בדיקות שוויון (Parity Tests):**
+  - נוצר קובץ בדיקות ייעודי `CalculatorParityTest.kt` המוודא שוויון ערכים מוחלט בין פונקציות ה-Domain לבין הגטרים המקוריים והעוזרים עבור כל 17 תרחישי האפיון.
+- **Money ומדיניות עיגול:**
+  - המחשבונים נשארים על `Double` בשלב זה לשימור התנהגות קיימת (הסבה ל-`Money` תתבצע בשלב 9.5 ייעודי).
+  - ב-`Money`: הוטמעה מדיניות עיגול אחידה `HALF_UP` בכפל ובחילוק (ללא קיטום מספרים שלמים), ונוספו בדיקות מקיפות למקרים של `.5` ומספרים שליליים.
+- **הפרדה מלאה מ-UI:**
+  - הוסרו מחרוזות ו-`NumberFormat` משכבת ה-Domain. `CarCostCalculator.calculateBaselineComparison` מחזיר מספרים טהורים בלבד (`isSaving`, `diffFromBaseline`, `diffMonthly`).
+- **בידוד TaskScheduler (Phase 2):**
+  - הועבר לחבילה נפרדת `feature/tasks/domain/phase2` ללא מגע במסכי Phase 1 הקיימים.
+  - שימוש ב-Enums המדויקים לפי המפרט הנעול: `EnergyState {SHARP, STEADY, EXHAUSTED}` ו-`EnergyTier {DEEP, ROUTINE, LIGHT}` עם ברירת מחדל `ROUTINE`.
+
+---
+
+### שלב 4: ממשקי נתונים ב-`core/data` וחיבור המימושים הקיימים — הושלם (100% ירוק) ✅
+- **`core/data/repository/` (ממשקים בלבד):**
+  - `CarRepository`, `AiSubscriptionRepository`, `PensionFundRepository`
+  - `TaskRepository`, `DreamRepository`, `InboxRepository`, `FitnessRepository`, `HouseholdRepositoryInterface`
+- **`core/data/repository/impl/` (עטיפות המימושים הקיימים):**
+  - עטיפות Room: `RoomCarRepository`, `RoomAiSubscriptionRepository`, `RoomPensionFundRepository` עוטפות את `AppDao` / `AppDatabase` (קובץ `"my_calculators.db"`).
+  - עטיפות Firestore: `FirestoreTaskRepository`, `FirestoreDreamRepository`, `FirestoreInboxRepository`, `FirestoreFitnessRepository`, `FirestoreHouseholdRepository` עוטפות את `LifeHubRepository` ו-`HouseholdRepository`.
+- **`core/di/AppContainer.kt`:** מכולת תלויות ידנית המרכזת את כל הממשקים ומאפשרת לשכבות הפיצ'רים להיות תלויות אך ורק בממשקים הנקיים.
+- **בדיקות עטיפה (Unit Tests):** `RepositoryWrappersTest.kt` מוודא האצלה תקינה של כל הפעולות ל-Room DAO.
+
+---
+
+### שלב 5: הקמת `core/designsystem` (עיצוב מונחה הפחתת עומס) — הושלם (100% ירוק) ✅
+- **טוקנים (`core/designsystem/tokens/`):**
+  - `Spacing.kt`: רשת 8dp מדויקת (`xxs: 4.dp`, `xs: 8.dp`, `sm: 12.dp`, `md: 16.dp`, `lg: 24.dp`, `xl: 32.dp`, `xxl: 48.dp`).
+  - `TypographyTokens.kt`: סגנונות טיפוגרפיה סמנטיים (`HeadlineLarge/Medium`, `TitleMedium`, `BodyMedium/Small`, `LabelMedium`, `MoneyLarge/Medium`).
+  - `ColorTokens.kt`: ערכות צבעים ייעודיות ל-`SpaceBadge` עבור כל ערך של `ForWhom` (שלי / בן/בת הזוג / של שנינו) ואינדיקטורים פיננסיים (רווח/חיסכון בירוק, עלות באדום).
+- **רכיבים משותפים (`core/designsystem/component/`):**
+  - `MoneyText`: רכיב תצוגת מטבע שקלי (₪) מדויק (חולץ מ-`Money.formatShekels` כדי לנתק את ה-Domain מ-UI). תומך ב-`Money` וב-`Double` (עבור מחשבונים עד שלב 9.5).
+  - `AppCard`: מעטפת כרטיס Material 3 עם רדיוס 16dp, צל עדין, גבול ברור וריווח פנימי אחיד.
+  - `ListRow`: שורת פריט תקנית ברשימות (משימות, אינבוקס, כושר, חלומות, מחשבונים) עם שטח מגע נגיש של לפחות 48dp ואפקט ripple.
+  - `SpaceBadge`: תג ויזואלי מובחן המציג בעלות (`ME`, `PARTNER`, `BOTH`) עם צבעים נפרדים לזיהוי מהיר.
+  - `StatusChip`: צ'יפ סינון ומצב סטטוס (משימות, קטגוריות) עם תמיכה באייקון מוביל ובחירה.
+  - `EmptyState`: מצב ריק נגיש ומזמין בעברית עם אייקון, כותרת, תיאור וכפתור פעולה אופציונלי.
+  - `LoadingState`: רכיב התקדמות אחיד עם מחוון עגול והודעת טעינה.
+  - `ErrorState`: רכיב שגיאה אחיד עם אייקון, הודעה וכפתור נסה שוב.
+  - `OfflineIndicator`: באנר עדין המודיע על פעולה במצב לא מקוון ומקומי.
+  - `CaptureSheet`: תחתית מודאלית (ModalBottomSheet) ללכידה מהירה (+), המכבדת את סרגל הניווט של המערכת (`navigationBarsPadding`).
+
+- **תיקוני ביקורת לפני שלב 6 (Pre-Step 6 Review Fixes — 100% ירוק עם בדיקות):**
+  1. **`observe*` Flows עם `flatMapLatest`:** `observeTasks`, `observeDreams`, `observeInbox` נגזרים מ-`householdSession.currentHouseholdId` באמצעות `flatMapLatest`. כאשר המזהה `null` או ריק נפלט `emptyList()` (לעולם לא `emptyFlow()`), ומתבצע רישום מחדש אוטומטית בשינוי משק הבית (`TaskFlowReactivityTest.kt`).
+  2. **פריטים פרטיים באוסף נפרד (`users/{uid}/private/{collection}/items/{id}`):** שמירה של `isPrivate = true` מתבצעת אך ורק לנתיב הפרטי של המשתמש (לעולם לא לתת-האוסף של משק הבית), וקריאות ממזגות את פריטי משק הבית עם הפריטים הפרטיים של הצופה (`PrivateItemsRepositoryTest.kt` + `firestore.test.js`).
+  3. **מיפוי Legacy של מרחבים ותאריכים:** מיפוי `"mine"`/`"שלי"` ← `ME`, `"wife"`/`"partner"`/`"של אשתי"` ← `PARTNER`, `"shared"`/`"משותף"` ← `BOTH`, `"private"` ← `ME + isPrivate = true`, וערכים לא מוכרים ← `ME` עם תיעוד בלוג. תאריכים מפורסרים הן בפורמט `yyyy-MM-dd` והן ב-`dd/MM/yyyy`; ערכים שאינם ניתנים לפענוח נשמרים כמחרוזת גולמית (`rawDueDate` / `rawTargetDate`) ואינם נדרסים בריק בשמירה (`LegacyMappingTest.kt`, `ModelMappersTest.kt`).
+  4. **מימוש יחיד לחישובי רכב (Car Math Parity):** `Car` בשכבת ה-Domain מאציל ל-`CarCostCalculator.calculate5YearCost(car: Car)`. בדיקת שוויון (`CarMathParityTest.kt`) מוודאת התאמה מלאה מול חישובי `Double`, והפרשי חלקי-אגורה מתועדים ב-`docs/KNOWN_ISSUES.md` (§ 1.5).
+  5. **מערכת העיצוב (Design System):** `SpaceBadge` מקבל תווית מחושבת לפי צופה (`ForWhom.labelForViewer`) עם מחרוזות מ-`strings.xml`; נוספו טוקני צבע למצב כהה ב-`ColorTokens.kt` עם בדיקת ניגודיות WCAG AA (≥ 4.5:1); `MoneyText` עוטף סכומים בבידוד כיווניות יוניקוד (`\u2066...\u2069`) לתצוגה תקינה של מספרים שליליים בתוך טקסט RTL (`DesignSystemTokensTest.kt`).
+  6. **מסנן מוקלד (`VisibilityFilter`):** החלפת `spaceFilter: String?` ב-`VisibilityFilter` (`MINE_AND_BOTH`, `ALL`) בכל שכבות הנתונים וה-UI (`VisibilityFilterTest.kt`).
+
+---
+
+### שלב 6: חיבור `AppContainer` ל-ViewModels וניתוק ישיר של מסכי UI משכבת הנתונים — הושלם (100% ירוק) ✅
+- **`AppContainer` ו-`CompositionLocal`:**
+  - `LocalAppContainer` מסופק ב-`MainActivity` לכל עץ הקומפוזיה.
+  - נוסף `SettingsRepository` (`RoomSettingsRepository`) ל-`AppContainer` עבור הגדרות המחשבונים ושער הדולר.
+- **ViewModels ייעודיים לכל מסך ופיצ'ר (תלויים בממשקי Repository בלבד):**
+  - `MainViewModel`: ניהול משק הבית הפעיל, לכידה מהירה לאינבוקס, וזרם שגיאות.
+  - `LifeHomeViewModel`: סיכום יומי, משימות, חלומות, אינבוקס, כושר, ואירועי יומן.
+  - `TasksViewModel`, `DreamsViewModel`, `InboxViewModel`, `FitnessViewModel`, `HouseholdViewModel`, `FileCatalogViewModel`.
+  - `CalculatorsHubViewModel`, `CarCalculatorViewModel`, `AiCalculatorViewModel`, `PensionCalculatorViewModel`.
+- **ניתוק מוחלט של מסכי ה-UI ממימושי הדאטה:**
+  - כל מסכי ה-UI (`MainActivity`, `LifeHomeScreen`, `TasksScreen`, `DreamsScreen`, `InboxTriageScreen`, `FitnessScreen`, `HouseholdScreen`, `FileCatalogScreen`, `CalculatorsHubScreen`, `HomeScreen`, `CarComparisonScreen`, `AiSubscriptionsScreen`, `PensionSavingsScreen`) צורכים נתונים ופעולות אך ורק דרך ה-ViewModels שלהם ו-`LocalAppContainer`, ללא שום מופע ישיר של `LifeHubRepository`, `HouseholdRepository`, או `AppDatabase.getDatabase`.
+
+- **תיקוני ביקורת לפני שלב 7 (Pre-Step 7 Review Fixes — 100% ירוק עם בדיקות):**
+  1. **מניעת קריסות מפעולות ViewModel:** כל פעולת `viewModelScope.launch` (יצירה/עדכון/מחיקה/שינוי סטטוס) בכל 12 ה-ViewModels עטופה ב-`launchCatching`, כך שחריגות (כגון `requireHouseholdId` כאשר טרם הוגדר משק בית) מנותבות ל-`errorState` ול-`ErrorReporter` במקום לגרום לקריסה (`Step6And7ReviewFixesTest`).
+  2. **בעלות `AppContainer` ב-`MyselfApp : Application()`:** ה-`AppContainer` ו-`HouseholdSession` מוחזקים ב-`MyselfApp` הרשום ב-`AndroidManifest.xml`, ו-`LocalAppContainer` שואב אותם אוטומטית מה-Application כך שהם שורדים יצירה מחדש של ה-Activity (סיבוב מסך, מצב כהה, החלפת שפה).
+  3. **ברירת מחדל `VisibilityFilter.MINE_AND_BOTH`:** מוגדרת במשימות, חלומות ומסך הבית, עם צ'יפ "הצג הכל" במרחק לחיצה אחת.
+  4. **אפס ייבוא משכבת הדאטה ב-`feature/` או `ui/`:** הוסרו לחלוטין כל השימושים ב-`ModelMappers` וב-`com.menash.myself.data.*` משכבות ה-UI וה-Feature. ה-UI מעביר ערכים מוקלדים בלבד (`ForWhom`, `isPrivate`, `LocalDate?`).
+  5. **החלפת הסנטינל `"private"` בטיפוס מוקלד `ItemLocation`:** נוצר `sealed class ItemLocation { data class Household(val id: String); data class Private(val uid: String) }` בתוך `core/data` לניתוב מוקלד ובטוח בין מסמכי משק הבית לאוסף הפרטי של המשתמש.
+
+### שלב 7: ניווט 5 טאבים, פיצול מסכים ואינטראקציה (Navigation, Screen Splitting & UiState) — הושלם (100% ירוק) ✅
+- **פיצול מסכים מודולרי:** כל קובץ ב-`ui/` וב-`feature/` קצר מ-300 שורות וכל `@Composable` קצר מ-80 שורות (`TasksScreen` + `TaskCardComponents` + `TaskDialogs`, `DreamsScreen` + `DreamCardComponents` + `DreamDialogs`, `LifeHomeScreen` + `LifeHomeSections` + `LifeHomeCards`, `CarComparisonScreen` + `CarCardComponents` + `CarDialogs`, `AiSubscriptionsScreen` + `AiSubscriptionCardComponents`, `PensionSavingsScreen` + `PensionSummaryComponents` + `PensionCardComponents`, `HouseholdScreen` + `HouseholdCardComponents`, `MoreScreen`).
+- **`UiState` אחיד לכל מסך:** `Loading` / `Empty` / `Error` / `Content` בשילוב רכיבי מערכת העיצוב `LoadingState`, `EmptyState`, `ErrorState`, ו-`OfflineIndicator`.
+- **Bottom Navigation Bar (M3) עם 5 טאבים:** בית, חלומות, משימות, מחשבונים, עוד + כפתור לכידה מהירה קבוע (+ FAB).
+- **Snackbar עם Undo ודיאלוג אישור מחיקה:** Snackbar עם פעולת ביטול (Undo) בסימון משימה, ודיאלוג אישור לפני מחיקה כולל התראה מפורשת לפריטים משותפים (`ForWhom.BOTH`).
+
+### שלב 8: מקורות מידע חיצוניים רשמיים ומטמון DataStore (`core/external`)
+- **בנק ישראל (BOI SDMX CSV):** שאיבת שער דולר יציג רשמי ללא מפתח API; שמירה ב-DataStore מקומי; בדיקת עדכון יומית אחרי 16:00; תמיכה בעקיפה ידנית מסומנת.
+- **לוח עברי וזמני שבת (Hebcal REST API):** תאריך עברי, חגים, וזמני שבת לפי העיר שנבחרה בהגדרות; שמירה ב-DataStore מקומי; קרדיט רשמי "נתונים: Hebcal.com".
+
+### שלב 9: מיגרציית נתוני Room אל Firestore (Room → Firestore Migration)
+- מיגרציה מלאה של טבלאות Room (`cars`, `ai_subscriptions`, `pension_funds`) אל אוספי Firestore תחת משק הבית (`households/{hid}/...`).
+- בדיקות אידמפוטנטיות וגיבוי מקומי אוטומטי טרם ביצוע המיגרציה.
+
+### שלב 9.5: הסבת מחשבונים ל-Money (Calculators → Money)
+- הסבת המחשבונים (`CarCostCalculator`, `AiSubscriptionCalculator`, `PensionSavingsCalculator`) לעבודה עם טיפוס `Money` באגורות במקום `Double`.
+- הוספת בדיקות מאפיינות ובדיקות יחידה ייעודיות לדיוק אגורות ללא שגיאות עיגול.
+
+---
+
+### שלב 8 — סבבי תיקונים (Review Round 2 & Round 3)
+- **Round 2 (Commit e141373 & fixes):**
+  - הוספת `BoiSyncWorker` עם עבודה מחזורית (16:30, דילוג שישי-שבת).
+  - הוספת כרטיס Hebcal לבית (`HomeHebcalCard`) ו-`BoiExchangeRateClient`.
+  - חילוץ מחשבונים ורכיבי UI לקבצים מתחת ל-300 שורות.
+- **Round 3 (Current Fixes):**
+  - הפרדה מלאה בין שער רשמי לשער ידני (`officialRate` מול `manualRate` ב-`BoiRate` וב-`BoiRateStore`).
+  - חישוב staleness בזמן אמת עם שעון הניתן להזרקה (`BoiStalenessPolicy.isStale(date, fetchedAt, now)`).
+  - הוצאת לוגיקת HTTP ו-CSV של בנק ישראל בחזרה ל-`BoiExchangeRateClient` (`fetchRateWindow`), והשארת המיון והסינון ב-`BoiExchangeRateRepository`.
+  - ייצוב משימות הרקע של סנכרון בנק ישראל עם מדיניות `UPDATE` וחישוב השהיה מדויק.
+  - כרטיס הבית פותח כעת ישירות בורר ערים ייעודי (`CityPickerDialog`) במקום דיאלוג ההגדרות המלא.
+  - הוספת `Step8RoundThreeTest.kt` לבדיקת עקיפה, staleness, חלון היסטורי, השהיית עובד, ותאריך עברי יומי.
+
+---
+
+## ניתוח סיכונים ותוכנית בקרה (Risks & Mitigations)
+
+| סיכון | רמת סיכון | בקרה ומניעה |
+| :--- | :--- | :--- |
+| **חסימת שאילתות Firestore בגלל חוקי אבטחה** | קריטית | שלב 1.5 מייצב את המבנה ההיררכי ומפריד פריטים פרטיים לאוסף נפרד. |
+| **אובדן נתוני מחשבונים מקומיים** | גבוהה | ישויות Room קפואות עד שלב 9; גיבוי מלא לפני המיגרציה; קובץ DB נשאר `"my_calculators.db"`. |
+| **אי-זיהוי או דריסת נתונים קיימים ב-Firestore** | גבוהה | תיקון התוכנית מכיר בכך שחלומות/משימות כבר ב-Firestore ודורשים שדרוג סכמה ולא ייבוא מחדש. |
+| **שינוי לא רצוי בתוצאות החישובים** | גבוהה | בדיקות מאפיינות (שלב 0) עברו בהצלחה ומופעלות בכל צעד. |
+| **חסימת עדכוני APK** | גבוהה | שמירה מדויקת על `applicationId = "com.aistudio.mycalculators.qvxmzt"`. |

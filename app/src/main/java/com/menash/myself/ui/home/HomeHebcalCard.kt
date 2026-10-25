@@ -24,20 +24,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.ui.settings.CityPickerDialog
 
 @Composable
 fun HomeHebcalCard(onOpenSettings: () -> Unit) {
     val appContainer = LocalAppContainer.current
     val selectedCity by appContainer.hebcalRepository.selectedCityFlow.collectAsStateWithLifecycle()
     val hebcalData by appContainer.hebcalRepository.hebcalDataFlow.collectAsStateWithLifecycle()
-    val settings by appContainer.settingsRepository.getSettingsFlow().collectAsStateWithLifecycle(initialValue = null)
 
-    var showSettingsDialog by remember { mutableStateOf(false) }
+    var showCityPicker by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { showSettingsDialog = true }
+            .clickable { showCityPicker = true }
             .testTag("home_hebcal_card"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
@@ -72,12 +72,13 @@ fun HomeHebcalCard(onOpenSettings: () -> Unit) {
                 )
             } else {
                 val cityText = selectedCity?.nameHebrew ?: ""
-                val hebrewDate = hebcalData?.currentHebrewDate ?: "יום עברי"
+                val hebrewDate = hebcalData?.currentHebrewDate
+                val headerText = if (hebrewDate != null) "$cityText | $hebrewDate" else cityText
                 val candles = hebcalData?.upcomingShabbatCandles
                 val havdalah = hebcalData?.upcomingShabbatHavdalah
 
                 Text(
-                    text = "$cityText | $hebrewDate",
+                    text = headerText,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
@@ -91,15 +92,8 @@ fun HomeHebcalCard(onOpenSettings: () -> Unit) {
         }
     }
 
-    if (showSettingsDialog) {
-        val currentRateVal = settings?.usdToIlsRate ?: 3.11
-        val lastBackupVal = settings?.lastBackupTimestamp ?: 0L
-        com.menash.myself.ui.settings.SettingsDialog(
-            currentRate = currentRateVal,
-            lastBackupTimestamp = lastBackupVal,
-            onDismiss = { showSettingsDialog = false },
-            onSaveRate = { newRate ->
-            }
-        )
+    if (showCityPicker) {
+        CityPickerDialog(onDismiss = { showCityPicker = false })
     }
 }
+

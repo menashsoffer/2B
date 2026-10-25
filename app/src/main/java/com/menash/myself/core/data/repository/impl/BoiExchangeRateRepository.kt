@@ -43,47 +43,9 @@ class BoiExchangeRateRepository(
 
     override suspend fun fetchHistoricalRate(date: LocalDate): Result<BoiRate> {
         val startDate = date.minusDays(10)
-        val startStr = startDate.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-        val endStr = date.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE)
-        val urlStr = "${BoiExchangeRateClient.BASE_SDMX_URL}&startPeriod=$startStr&endPeriod=$endStr&format=csv"
-        
-        return runCatching {
-            val conn = (java.net.URL(urlStr).openConnection() as java.net.HttpURLConnection).apply {
-                requestMethod = "GET"
-                connectTimeout = 8000
-                readTimeout = 8000
-                setRequestProperty("User-Agent", "MyselfApp/1.0 (Android)")
-            }
-            val csv = try {
-                if (conn.responseCode in 200..299) {
-                    conn.inputStream.bufferedReader().use { it.readText() }
-                } else {
-                    throw java.io.IOException("HTTP error ${conn.responseCode}")
-                }
-            } finally {
-                runCatching { conn.disconnect() }
-            }
-
-            val lines = csv.lines().filter { it.isNotBlank() }
-            if (lines.size < 2) throw IllegalArgumentException("Insufficient data in historical window")
-            val header = lines[0].split(",").map { it.trim().trim('"') }
-            val timePeriodIdx = header.indexOf("TIME_PERIOD").takeIf { it >= 0 } ?: throw IllegalArgumentException("Missing TIME_PERIOD")
-            val obsValueIdx = header.indexOf("OBS_VALUE").takeIf { it >= 0 } ?: throw IllegalArgumentException("Missing OBS_VALUE")
-
-            val validLines = lines.drop(1).map { line ->
-                val cols = line.split(",").map { it.trim().trim('"') }
-                if (cols.size > maxOf(timePeriodIdx, obsValueIdx)) {
-                    val dStr = cols[timePeriodIdx]
-                    val vVal = cols[obsValueIdx].toDoubleOrNull()
-                    if (vVal != null) {
-                        runCatching { LocalDate.parse(dStr, java.time.format.DateTimeFormatter.ISO_LOCAL_DATE) to vVal }.getOrNull()
-                    } else null
-                } else null
-            }.filterNotNull()
-            .filter { !it.first.isAfter(date) }
-            .sortedBy { it.first }
-
-            val latest = validLines.lastOrNull() ?: throw IllegalArgumentException("No historical rate found in window on or before $date")
+        return client.fetchRateWindow(startDate, date).map { observations ->
+            val valid = observations.filter { !it.first.isAfter(date) }
+            val latest = valid.lastOrNull() ?: throw IllegalArgumentException("No historical rate found in window on or before $date")
             BoiRate(
                 officialRate = latest.second,
                 officialRateDate = latest.first,
