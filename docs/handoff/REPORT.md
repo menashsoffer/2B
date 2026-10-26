@@ -5,14 +5,15 @@ No product code was changed. The only tracked additions are the Gradle wrapper s
 ## Commits pushed to main
 
 - `556814d49a4da1f342d271d2287861cb1458175a` — `chore: add Gradle wrapper + Task 1 baseline report`
-- The commit that inserted the hash above is a follow-up on `main`, message `docs: record Task 1 baseline commit hash`. Its own hash cannot be stored inside itself; after that push, `git rev-parse origin/main` is that commit.
+- `2709eb26428bc29acc40d73b23bf090df5a5211c` — `docs: record Task 1 baseline commit hash`
+- Tip of `main`: one more commit, message `docs: record both Task 1 commit hashes`, parent `2709eb26428bc29acc40d73b23bf090df5a5211c`. It only writes the second hash into this file. A commit cannot contain its own hash, so that tip hash is `git rev-parse origin/main` after the push and is not copied here.
 
 ## a. Access
 
 | Check | Result | How |
 | --- | --- | --- |
 | Read the private repo | yes | Workspace is `https://github.com/menashsoffer/Myself-`. `git fetch origin main` succeeded. Local `main` matched `origin/main` at `b9199d0` before this task's commit. |
-| Push to `main` | yes | `git push origin main` succeeded (`b9199d0..556814d`). No branch protection blocked it. Direct push, no pull request. |
+| Push to `main` | yes | `git push origin main` succeeded (`b9199d0..556814d`, then `556814d..2709eb2`). No branch protection blocked it. Direct push, no pull request. |
 | Run Gradle (build + unit tests) | yes | Commands were `./gradlew assembleDebug` and `./gradlew testDebugUnitTest` (Gradle wrapper 9.3.1). JDK already on the VM: OpenJDK 21.0.12.1 (Ubuntu package `21.0.12.1+1-1-24.04.4-Ubuntu`). AGP 9.1.1's minimum JDK is 17. Android SDK was not installed; I installed it. |
 
 Android SDK, installed by me under `/home/ubuntu/android-sdk` (`/opt` was not writable):
