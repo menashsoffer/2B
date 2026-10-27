@@ -152,7 +152,7 @@
 - `KEYSTORE_BASE64` — ה-keystore של ה-release ב-base64
 - `KEYSTORE_PASSWORD`
 - `KEY_ALIAS`
-- `KEY_PASSWORD`
+- `KEY_PASSWORD` — for PKCS12 the key password equals the store password (`KEY_PASSWORD` = `KEYSTORE_PASSWORD`)
 - `GOOGLE_SERVICES_JSON` — JSON גולמי, לא base64
 - `FIREBASE_SERVICE_ACCOUNT` — מפתח JSON של service account עם תפקיד Firebase App Distribution Admin
 - `FIREBASE_APP_ID` — מזהה אפליקציית Android ב-Firebase (`1:…:android:…`)

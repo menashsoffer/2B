@@ -1,82 +1,66 @@
-# Task 3 — Install on our phones via Firebase App Distribution
+# Fix the first Distribute run
 
 commit: see git log
 
-Item 4 was not run. No workflow was triggered. The commit message contains `[skip ci]` so this push does not start a run while secrets are missing. No test was deleted, `@Ignore`d, or weakened. `debugConfig` and the gitignored `debug.keystore` are unchanged. No release password, keystore, or base64 is in the repo or in this report.
+No test was deleted, `@Ignore`d, or weakened. KSP, Kotlin, and AGP were not bumped. No secret value is in this report. This commit is the one that gets pushed; the workflow result is not in this file.
 
-## Raw Gradle line
+## What failed run 40433797515
 
-`./gradlew testDebugUnitTest --rerun-tasks`:
+https://github.com/menashsoffer/Myself-/actions/runs/40433797515 failed in **Build the signed release APK**. Both messages are in that step's log, in this order:
+
+1. First error line, on the background AWT thread, while KSP was still running. The step continued after it:
 
 ```
-BUILD SUCCESSFUL in 47s
+Exception in thread "AWT-EventQueue-0" java.lang.NullPointerException: Cannot invoke "ksp.com.intellij.openapi.application.Application.getService(java.lang.Class)" because the return value of "ksp.com.intellij.openapi.application.ApplicationManager.getApplication()" is null
 ```
 
-Gradle printed no test-count line on success. `app/build/test-results/testDebugUnitTest/TEST-*.xml` (25 files): tests=111, failures=0, errors=0, skipped=0.
+2. Later, the line that failed the step:
 
-## Release key fingerprints
+```
+> Task :app:packageRelease FAILED
+```
 
-- SHA-1: `1B:A8:5C:43:31:B2:F0:83:88:E6:80:26:13:6A:88:FB:11:71:FF:A7`
-- SHA-256: `B5:D3:22:D7:27:DB:1B:E9:BD:A4:FC:B6:93:9E:8E:80:6F:33:49:56:5D:B0:24:C9:8A:53:92:5D:62:E0:1E:22`
+```
+com.android.ide.common.signing.KeytoolException: Failed to read key *** from store "/home/runner/work/_temp/release.keystore": Get Key failed: Given final block not properly padded. Such issues can arise if a bad key is used during decryption.
+```
 
-Add both to the Firebase Android app. They are public.
+Gradle then printed `BUILD FAILED in 3m 30s` and the step ended with `Process completed with exit code 1`. The KeytoolException is what failed the step. The NPE did not stop Gradle.
 
-## Secrets
+## Root cause of the KeytoolException
 
-`gh secret set` for `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` failed: HTTP 403, `Resource not accessible by integration` on `https://api.github.com/repos/menashsoffer/Myself-/actions/secrets/public-key`. Values were passed on stdin, not on the command line.
+Task 3 generated a PKCS12 keystore with a separate `-keypass`. On this JDK, keytool prints:
 
-The keystore, the passwords file, and the base64 file are only in the agent store. `chmod 600` was rejected by that filesystem (`EPERM`). Modes now: directory `777`, files `666`.
+```
+Warning: Different store and key passwords not supported for PKCS12 KeyStores. Ignoring user-specified -keypass value.
+```
 
-Paths:
+A throwaway PKCS12 file built that way opens with the store password (`openssl pkcs12` exit 0) and rejects the separate key password (`Mac verify error: invalid password?`, exit 1). `passwords.env` had recorded the ignored key password. Android's signer then tried that password and failed with the padding error. The real release keystore was not used for this check. In the agent store, `KEY_PASSWORD` and `KEYSTORE_PASSWORD` now compare equal. The values were not printed.
 
-- `/cursor/stores/self/signing/myself-release/myself-release.keystore`
-- `/cursor/stores/self/signing/myself-release/passwords.env` — lines `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`
-- `/cursor/stores/self/signing/myself-release/keystore.b64`
+## Local Gradle commands
 
-Secret names still to add in GitHub (Settings → Secrets and variables → Actions):
+Throwaway PKCS12 keystore, key password equal to store password, alias `throwaway`. Not the release key. The local `app/google-services.json` is the fake unit-test file, so this APK is not for a phone.
 
-- `KEYSTORE_BASE64`
-- `KEYSTORE_PASSWORD`
-- `KEY_ALIAS`
-- `KEY_PASSWORD`
-- `GOOGLE_SERVICES_JSON` — raw real `google-services.json`, not the fake unit-test file, not base64
-- `FIREBASE_SERVICE_ACCOUNT` — service-account JSON key, role Firebase App Distribution Admin
-- `FIREBASE_APP_ID`
+`./gradlew testDebugUnitTest --no-daemon` exit 0. `testDebugUnitTest` was UP-TO-DATE:
 
-Click by click for Menash:
+```
+BUILD SUCCESSFUL in 9s
+```
 
-1. Open `https://github.com/menashsoffer/Myself-/settings/secrets/actions`.
-2. Click **New repository secret**.
-3. Name: `KEYSTORE_BASE64`. Value: copy the whole contents of `keystore.b64`. Click **Add secret**.
-4. Click **New repository secret** again. Name: `KEYSTORE_PASSWORD`. From `passwords.env`, copy only the text after `KEYSTORE_PASSWORD=`. Click **Add secret**.
-5. Same for `KEY_ALIAS` and `KEY_PASSWORD`: name is the left side, value is only the text after `=`.
-6. New secret `GOOGLE_SERVICES_JSON`: paste the real Firebase Android `google-services.json` as raw JSON.
-7. In Firebase, create a service account with role **Firebase App Distribution Admin**, download its JSON key. New secret `FIREBASE_SERVICE_ACCOUNT`: paste that JSON.
-8. New secret `FIREBASE_APP_ID`: the Android app id (`1:…:android:…`).
-9. Firebase Console → App Distribution → Testers & groups: create a group whose alias is exactly `family`, and add both phones' accounts.
-10. Project settings → the Android app: add the SHA-1 and SHA-256 above.
-11. Copy `myself-release.keystore` and `passwords.env` to an offline backup outside this machine and outside the repo. Losing the keystore means the installed app can never be updated in place.
+`./gradlew assembleRelease --no-daemon` exit 0. That log has no AWT NPE and no KeytoolException:
 
-After those seven secrets exist, say so. Item 4 (one workflow run) waits for that.
+```
+BUILD SUCCESSFUL in 1m 48s
+```
 
-## Task table
+APK: `app/build/outputs/apk/release/app-release.apk`. `apksigner verify --verbose` exit 0. Verified using v2 scheme: true. Signer DN: `CN=Throwaway`.
 
-| item | status | files changed | test that covers it |
-| --- | --- | --- | --- |
-| 1a. One release keystore | done, not in git | agent store `signing/myself-release/` only | no unit test |
-| 1b. GitHub secrets | blocked on permission | none in the repo | `gh secret set` → HTTP 403 |
-| 1c. CI signing from env; local debug keystore kept | done | `app/build.gradle.kts` | `testDebugUnitTest` still uses `debugConfig`; suite 111/0 |
-| 1d. Print SHA-1 and SHA-256 | done | this report and `docs/RULES.md` section 8 | no unit test |
-| 2. Workflow: test, then signed APK, then Firebase | written, not run | `.github/workflows/distribute.yml` | fail-fast is the first step; unit suite must pass before `assembleRelease` |
-| 3. Install and distribution docs | done | `docs/RULES.md` section 8 | no unit test |
-| 4. First workflow run | not run | none | waiting until the secrets above are confirmed |
+The same NPE is a known non-fatal KSP 2.3.5 message: https://github.com/google/ksp/issues/2763 ("does not break build checks"). KSP 2.3.6 release notes call it "a KSP version 2.3.5 CI error exception that does not break build checks" (https://github.com/google/ksp/releases/tag/2.3.6). It does not break the build, so KSP stays 2.3.5, Kotlin stays 2.2.10, AGP stays 9.1.1.
 
-Docs used for the upload:
+## What this commit changes
 
-- `https://firebase.google.com/docs/app-distribution/android/distribute-cli`
-- `https://firebase.google.com/docs/app-distribution/authenticate-service-account` (`GOOGLE_APPLICATION_CREDENTIALS` is a path to the JSON file)
+`actions/checkout@v4` to `@v5`, and `actions/setup-java@v4` to `@v5`. v5 of each action runs on Node 24 and needs Actions Runner v2.327.1 or newer. GitHub-hosted runners already meet that. checkout v5.0.0 is the Node 24 move (https://github.com/actions/checkout/releases/tag/v5.0.0). setup-java v5.0.0 is the same move (https://github.com/actions/setup-java/releases/tag/v5.0.0). The v4 deprecation warning on the failed run pointed at v5. No other action inputs changed.
 
-`versionCode` is `VERSION_CODE` when set, otherwise 1. The workflow sets it from `github.run_number`.
+`docs/RULES.md` section 8 now says that for PKCS12, `KEY_PASSWORD` equals `KEYSTORE_PASSWORD`.
 
 ## Who did the work
 
@@ -84,12 +68,10 @@ chief-architect scoped and dispatched; executed by a Cursor cloud coding agent.
 
 ## Noticed, not changed
 
-- `debugConfig` still uses store password and key password `android` with alias `androiddebugkey`. That was already in the repo. Release passwords are not.
-- The release signing block still falls back to `my-upload-key.jks` when `KEYSTORE_PATH` is unset. CI sets the path. Local `assembleRelease` is not how we build for the phones.
-- `enqueuePeriodicWork` is still a 1-day period. Task 2b left that as an open question. This task did not change it.
-- The agent-store files could not be mode `600`. They were not copied into the repo to work around that.
+- The local unit-test command did not re-execute tests; every test task was UP-TO-DATE.
+- `enqueuePeriodicWork` is still a 1-day period.
+- The release signing block still falls back to `my-upload-key.jks` when `KEYSTORE_PATH` is unset.
 
 ## Open questions
 
-1. After the seven secrets and the `family` group exist, may item 4 run once?
-2. The service-account JSON and the real `google-services.json` are not on this machine. They have to come from Menash.
+None for this commit. If the pushed run fails again on the same KeytoolException, the `KEY_PASSWORD` secret may have been copied from `passwords.env` before the store password and the key password were made the same.
