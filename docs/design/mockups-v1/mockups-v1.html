@@ -1,0 +1,362 @@
+<title>Myself, מסך אחרי מסך</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a gallery of phone mockups that wrap, each with a short "what and why" under it. Phones use the Night Blue tokens exactly. */
+:root{
+  --canvas:#E7EBF1; --ink:#1C2230; --ink2:#5B6476;
+  --bg:#F3F5F8; --card:#FFFFFF; --border:#E1E5EC; --t1:#1C2230; --t2:#667085;
+  --acc:#3F5F9E; --accS:#2F4C86; --soft:#E3E9F4; --on:#FFFFFF;
+  --ok:#3E6B4F; --okSoft:#E2EEE6; --warn:#7A5414; --warnSoft:#F4EAD6; --bad:#8E3D3D;
+  --frame:#C9D0DB; --shadow:0 1px 2px rgba(28,34,48,.06),0 8px 24px rgba(28,34,48,.06);
+  --f:"Rubik","Assistant","Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --canvas:#0A0D12; --ink:#E6E9EF; --ink2:#98A1B3;
+  --bg:#11141B; --card:#1A1F29; --border:#29303D; --t1:#E6E9EF; --t2:#98A1B3;
+  --acc:#8AA6DD; --accS:#A8BFE8; --soft:#1F2A3F; --on:#0F1626;
+  --ok:#A9CDB6; --okSoft:#1D2B23; --warn:#E4C98A; --warnSoft:#2E2717; --bad:#E4B0B0;
+  --frame:#2A303B; --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --canvas:#0A0D12; --ink:#E6E9EF; --ink2:#98A1B3;
+  --bg:#11141B; --card:#1A1F29; --border:#29303D; --t1:#E6E9EF; --t2:#98A1B3;
+  --acc:#8AA6DD; --accS:#A8BFE8; --soft:#1F2A3F; --on:#0F1626;
+  --ok:#A9CDB6; --okSoft:#1D2B23; --warn:#E4C98A; --warnSoft:#2E2717; --bad:#E4B0B0;
+  --frame:#2A303B; --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--canvas);color:var(--ink);font-family:var(--f);line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px;display:flex;flex-direction:column;gap:40px}
+h1{font-size:clamp(26px,4vw,36px);font-weight:700;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:22px;font-weight:600;margin:0 0 4px;text-wrap:balance}
+p{margin:0}
+.lead{color:var(--ink2);max-width:62ch;font-size:16px}
+.top{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:4px;gap:4px}
+.seg button{font:inherit;font-size:14px;border:0;background:transparent;color:var(--ink2);padding:6px 14px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--acc);color:var(--on)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;display:grid;gap:16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.cols>div{min-width:0}
+.cols h3{font-size:15px;font-weight:600;margin:0 0 6px}
+.cols ul{margin:0;padding-inline-start:18px;color:var(--ink2);font-size:14px;display:grid;gap:4px}
+.tag{display:inline-block;font-size:12px;font-weight:500;padding:2px 10px;border-radius:999px;background:var(--soft);color:var(--accS)}
+.tag.bad{background:var(--warnSoft);color:var(--warn)}
+
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:32px 24px}
+.shot{display:flex;flex-direction:column;gap:12px;min-width:0}
+.shot h3{font-size:17px;font-weight:600;margin:0;display:flex;gap:8px;align-items:center}
+.shot .n{font-size:12px;color:var(--ink2);font-weight:500}
+.shot ul{margin:0;padding-inline-start:18px;color:var(--ink2);font-size:14px;display:grid;gap:3px}
+
+/* phone */
+.phone{width:100%;max-width:320px;aspect-ratio:9/18.5;margin-inline:auto;border-radius:36px;border:6px solid var(--frame);background:var(--bg);color:var(--t1);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.status{height:22px;display:flex;justify-content:space-between;align-items:center;padding:0 18px;font-size:10px;color:var(--t2);flex:none}
+.scr{flex:1;padding:6px 14px 84px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.hdr .t{font-size:20px;font-weight:600;line-height:1.2}
+.hdr .s{font-size:11px;color:var(--t2)}
+.av{width:32px;height:32px;border-radius:50%;background:var(--soft);color:var(--accS);display:grid;place-items:center;font-weight:600;font-size:13px;flex:none}
+.back{width:32px;height:32px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:grid;place-items:center;flex:none}
+.c{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:14px;box-shadow:var(--shadow);min-width:0}
+.c.hero{background:var(--acc);border-color:transparent;color:var(--on)}
+.c.hero .lbl,.c.hero .sub{color:var(--on);opacity:.82}
+.lbl{font-size:11px;color:var(--t2);font-weight:500}
+.num{font-size:30px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.num.m{font-size:22px}
+.sub{font-size:11px;color:var(--t2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.row:last-child{border-bottom:0}
+.row .v{font-variant-numeric:tabular-nums;font-weight:500}
+.row .d{font-size:11px;color:var(--t2)}
+.ico{width:28px;height:28px;border-radius:10px;background:var(--soft);display:grid;place-items:center;flex:none}
+.ico svg,.back svg,.nav svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ico{color:var(--accS)}
+.lft{display:flex;align-items:center;gap:10px;min-width:0}
+.bar{height:8px;border-radius:999px;background:var(--soft);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.c.hero .bar{background:rgba(255,255,255,.25)}
+:root[data-theme="dark"] .c.hero .bar{background:rgba(15,22,38,.25)}
+.btn{display:flex;justify-content:center;align-items:center;gap:6px;height:44px;border-radius:999px;background:var(--acc);color:var(--on);font-weight:600;font-size:14px}
+.btn.ghost{background:var(--soft);color:var(--accS)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 10px;border-radius:999px;background:var(--soft);color:var(--accS);font-size:11px;font-weight:500;white-space:nowrap}
+.chip.ok{background:var(--okSoft);color:var(--ok)}
+.chip.warn{background:var(--warnSoft);color:var(--warn)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--card);border:1px solid var(--border);border-radius:999px;padding:3px;font-size:12px;text-align:center}
+.tabs span{padding:6px 0;border-radius:999px;color:var(--t2)}
+.tabs span.on{background:var(--soft);color:var(--accS);font-weight:600}
+.nav{position:absolute;bottom:12px;inset-inline:12px;height:58px;border-radius:999px;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:0 6px}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9.5px;color:var(--t2)}
+.nav div.on{color:var(--accS);font-weight:600}
+.nav div.on .pill{background:var(--soft)}
+.nav .pill{width:44px;height:24px;border-radius:999px;display:grid;place-items:center}
+.input{background:var(--card);border:1.5px solid var(--acc);border-radius:16px;padding:10px 14px}
+.input .lbl{color:var(--acc)}
+.input .num{color:var(--t1)}
+.field{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.field .v{font-weight:600;font-variant-numeric:tabular-nums;color:var(--t1)}
+.dots{display:flex;gap:4px}
+.dots i{height:4px;flex:1;border-radius:4px;background:var(--border)}
+.dots i.on{background:var(--acc)}
+.q{font-size:19px;font-weight:600;line-height:1.3;text-wrap:balance}
+.chk{width:20px;height:20px;border-radius:7px;border:1.5px solid var(--border);flex:none;display:grid;place-items:center}
+.chk.on{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.chk svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2.4}
+.strike{text-decoration:line-through;color:var(--t2)}
+.dream{display:flex;gap:10px;align-items:center}
+.sw{width:44px;height:44px;border-radius:14px;flex:none}
+.shared{display:inline-flex;align-items:center;gap:3px;color:var(--accS);font-size:10px}
+.shared svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--t2)}
+.legend b{display:inline-block;width:8px;height:8px;border-radius:3px;margin-inline-end:4px;vertical-align:middle}
+.cmp{display:grid;grid-template-columns:auto 1fr auto;gap:6px 8px;align-items:center;font-size:12px}
+.cmp .bar{height:10px}
+.note{font-size:10px;color:var(--t2);text-align:center}
+.yes{display:flex;gap:8px;align-items:flex-start}
+.yes .ico{background:var(--okSoft);color:var(--ok)}
+svg.chart{width:100%;height:auto;display:block}
+.example{font-size:13px;color:var(--ink2)}
+@media (prefers-reduced-motion:no-preference){.seg button{transition:background .2s,color .2s}}
+</style>
+
+<div class="wrap" dir="rtl" lang="he">
+
+  <div class="top">
+    <div style="display:grid;gap:8px;min-width:0">
+      <span class="tag">כיוון עיצובי לאישור, 27 באוקטובר</span>
+      <h1>Myself, מסך אחרי מסך</h1>
+      <p class="lead">אותו כחול לילה שבחרת, אבל בשפה של אפליקציות 2026: כרטיסים רכים, מספר אחד גדול בכל מסך, ניווט צף בצורת גלולה, ובלי פס עליון צבוע. כל הסכומים כאן הם נתוני דוגמה.</p>
+    </div>
+    <div class="seg" role="group" aria-label="ערכת צבעים">
+      <button type="button" id="th-light" data-t="light">בהיר</button>
+      <button type="button" id="th-dark" data-t="dark">כהה</button>
+      <button type="button" id="th-sys" data-t="" aria-pressed="true">לפי המכשיר</button>
+    </div>
+  </div>
+
+  <section class="panel">
+    <h2>מה נשבר בגרסה 4, ולמה</h2>
+    <div class="cols">
+      <div><h3><span class="tag bad">1</span> שתי ערכות צבעים באותו מסך</h3><ul><li>הטלפון שלך במצב כהה, ולכן הרקע נהיה כהה.</li><li>המסכים הישנים עדיין מציירים כרטיסים לבנים בצבע קבוע בקוד, אז יצא לבן על כהה.</li></ul></div>
+      <div><h3><span class="tag bad">2</span> הפס העליון בצבע הלא נכון</h3><ul><li>המסכים הישנים צובעים את הפס בצבע המבטא. במצב כהה המבטא תכלת בהיר, אז קיבלת פס תכלת דהוי.</li><li>בעיצוב החדש אין פס צבוע בכלל: כותרת על הרקע.</li></ul></div>
+      <div><h3><span class="tag bad">3</span> טקסט אפור על לבן</h3><ul><li>צבע הטקסט מגיע מהערכה הכהה (בהיר), והכרטיס מגיע מהקוד הישן (לבן). לכן הערכים בשדות כמעט לא נראים.</li><li>הכפתור הצף מכסה תוכן כי אין לו מקום שמור.</li></ul></div>
+    </div>
+    <p class="example">בשורה התחתונה: הבסיס החדש (R1) בסדר, אבל אף מסך עוד לא עבר אליו. הפתרון הוא לא לתקן את המסכים הישנים אלא להחליף אותם, מסך אחרי מסך, לפי מה שכאן.</p>
+  </section>
+
+  <section class="panel">
+    <h2>מה לקחתי מהאפליקציות המובילות</h2>
+    <div class="cols">
+      <div><h3>מספר אחד גדול</h3><ul><li>Copilot Money ו־Monarch פותחים כל מסך בנתון אחד ברור, והשאר משני.</li><li>אצלנו: "פנוי החודש" בבית ובכסף.</li></ul></div>
+      <div><h3>רשת קופסאות בגדלים שונים</h3><ul><li>במקום 4 ריבועים זהים, כרטיס ראשי רחב ושלושה קטנים. הגודל אומר מה חשוב.</li></ul></div>
+      <div><h3>Material 3 Expressive</h3><ul><li>Google עברה לצורות מעוגלות יותר, גלולות, וסרגל ניווט צף.</li><li>אצלנו: פינות 20, כפתורים בצורת גלולה, ניווט צף בתחתית.</li></ul></div>
+      <div><h3>ממשק רגוע ומצב כהה אמיתי</h3><ul><li>פחות אלמנטים מתחרים ומרווחים רחבים יותר. מצב כהה שמתוכנן בפני עצמו, לא היפוך של הבהיר.</li></ul></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:24px">
+    <h2>המסכים</h2>
+    <div class="gallery">
+
+      <!-- 1 home -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div><div class="t">ערב טוב, מנשה</div><div class="s">יום שלישי, 27 באוקטובר</div></div><div class="av">מ</div></div>
+            <div class="c hero"><div class="lbl">פנוי החודש, צפי</div><div class="num">₪3,240</div><div class="sub">אחרי קבועים, מנויים ותקציבים</div><div class="bar" style="margin-top:10px"><i style="width:72%;background:var(--on);opacity:.9"></i></div><div class="sub" style="margin-top:6px">נשארו 4 ימים לסגירת אוקטובר</div></div>
+            <div class="g2">
+              <div class="c"><div class="lbl">חלומות</div><div class="num m">4</div><div class="sub">2 משותפים</div></div>
+              <div class="c"><div class="lbl">קניות</div><div class="num m">7</div><div class="sub">ברשימת שבת</div></div>
+            </div>
+            <div class="c" style="display:flex;align-items:center;gap:12px">
+              <svg viewBox="0 0 44 44" width="44" height="44" aria-hidden="true"><circle cx="22" cy="22" r="18" fill="none" stroke="var(--soft)" stroke-width="5"/><circle cx="22" cy="22" r="18" fill="none" stroke="var(--acc)" stroke-width="5" stroke-linecap="round" stroke-dasharray="20.4 113" transform="rotate(-90 22 22)"/></svg>
+              <div><div class="lbl">מעקב</div><div style="font-weight:600;font-size:14px">כרית ביטחון 18%</div><div class="sub">0.5 מתוך 3 חודשים</div></div>
+            </div>
+          </div>
+          <nav class="nav"><div class="on"><span class="pill"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>בית</div><div><span class="pill"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg></span>כסף</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span>חלומות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 11h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>קניות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span>מעקב</div></nav>
+        </div>
+        <h3><span class="n">1</span> בית</h3>
+        <ul><li>ברכה לפי שעה ותאריך עברי, עיגול עם האות שלך לפתיחת הגדרות.</li><li>כרטיס כסף רחב וצבוע הוא הגיבור. שלושת האחרים קטנים ושקטים.</li><li>אין נתון? הכרטיס כותב "עוד אין נתונים" ולא 0.</li><li>ניווט צף בצורת גלולה, הלשונית הפעילה מסומנת ברקע רך.</li></ul>
+      </div>
+
+      <!-- 2 money month -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div class="t">כסף</div><div class="av">מ</div></div>
+            <div class="tabs"><span class="on">החודש</span><span>התמונה הגדולה</span></div>
+            <div class="c"><div class="lbl">פנוי צפוי באוקטובר</div><div class="num">₪3,240</div>
+              <div class="bar" style="margin-top:10px;height:10px"><i style="width:44%;background:var(--accS)"></i><i style="width:12%;background:var(--acc);opacity:.6"></i><i style="width:26%;background:var(--acc);opacity:.35"></i></div>
+              <div class="legend" style="margin-top:8px"><span><b style="background:var(--accS)"></b>קבועות</span><span><b style="background:var(--acc);opacity:.6"></b>מנויים</span><span><b style="background:var(--acc);opacity:.35"></b>משתנות</span><span><b style="background:var(--soft)"></b>פנוי</span></div>
+            </div>
+            <div class="c" style="padding-block:4px">
+              <div class="row"><div class="lft"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span><div>הכנסות<div class="d">ברירת מחדל, ערכת בספט׳</div></div></div><span class="v">₪18,000</span></div>
+              <div class="row"><div class="lft"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span><div>קבועות<div class="d">9 פריטים</div></div></div><span class="v">₪7,900</span></div>
+              <div class="row"><div class="lft"><span class="ico"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6.2M4 4v4h4"/></svg></span><div>מנויים<div class="d">6 פעילים</div></div></div><span class="v">₪2,180</span></div>
+              <div class="row"><div class="lft"><span class="ico"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 11h-11z"/></svg></span><div>תקציבים משתנים<div class="d">סופר, דלק, בילויים</div></div></div><span class="v">₪4,680</span></div>
+            </div>
+            <div class="btn">לסגור את אוקטובר</div>
+          </div>
+          <nav class="nav"><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>בית</div><div class="on"><span class="pill"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg></span>כסף</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span>חלומות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 11h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>קניות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span>מעקב</div></nav>
+        </div>
+        <h3><span class="n">2</span> כסף: החודש (מיקרו)</h3>
+        <ul><li>שתי לשוניות בלבד: החודש והתמונה הגדולה.</li><li>פס אחד מראה לאן הולך הכסף, בלי עוגה ובלי 6 צבעים.</li><li>ארבע שורות, כל אחת נפתחת לפריטים שלה. הסכומים הם ברירות מחדל שנשארות עד שמשנים.</li><li>הכפתור הראשי בתוך המסך, לא צף מעל תוכן.</li></ul>
+      </div>
+
+      <!-- 3 close month -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div class="back"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div><div class="s">סגירת אוקטובר · 2 מתוך 4</div><div style="width:32px"></div></div>
+            <div class="dots"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+            <div class="q" style="margin-top:8px">כמה נכנס לחשבון בפועל החודש?</div>
+            <div class="sub">ברירת המחדל היא מה שהזנת בספטמבר. אם זה אותו סכום, פשוט ממשיכים.</div>
+            <div class="input"><div class="lbl">הכנסה מעבודה, נטו</div><div class="num">₪18,000</div></div>
+            <div class="chips"><span class="chip">כמו בחודש שעבר</span><span class="chip">+ הכנסה חד־פעמית</span></div>
+            <div class="c" style="display:flex;gap:10px;align-items:center"><span class="ico"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.5-7 10-7 10z"/></svg></span><div><div style="font-size:13px;font-weight:500">יתווספו ₪1,800 למעשרות</div><div class="sub">10% מהכנסה מעבודה</div></div></div>
+            <div style="flex:1"></div>
+            <div class="btn">המשך</div>
+          </div>
+        </div>
+        <h3><span class="n">3</span> סגירת חודש</h3>
+        <ul><li>שאלה אחת בכל מסך, ארבעה צעדים, חמש דקות.</li><li>שדה ההזנה גדול, הערך בצבע טקסט ראשי והתווית בצבע המבטא, כך שהכול קריא.</li><li>רואים מיד מה זה עושה למעשרות.</li><li>אין סרגל ניווט, כדי שלא ייצאו באמצע.</li></ul>
+      </div>
+
+      <!-- 4 macro -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div class="t">כסף</div><div class="av">מ</div></div>
+            <div class="tabs"><span>החודש</span><span class="on">התמונה הגדולה</span></div>
+            <div class="c"><div class="lbl">שווי נקי</div><div class="num">₪412,600</div><div class="sub"><span style="color:var(--ok)">▲ ₪6,300</span> מאז ספטמבר</div>
+              <svg class="chart" viewBox="0 0 260 64" aria-hidden="true" style="margin-top:6px"><line x1="0" y1="62" x2="260" y2="62" stroke="var(--border)"/><path d="M0 50 L43 46 L86 48 L130 36 L173 30 L216 24 L260 14 L260 62 L0 62Z" fill="var(--soft)"/><path d="M0 50 L43 46 L86 48 L130 36 L173 30 L216 24 L260 14" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linejoin="round"/><circle cx="260" cy="14" r="3.5" fill="var(--acc)"/></svg>
+              <div class="legend" style="justify-content:space-between"><span>מאי</span><span>אוקטובר</span></div>
+            </div>
+            <div class="g2">
+              <div class="c"><div class="lbl">כרית ביטחון</div><div class="num m">0.5</div><div class="sub">מתוך 3 חודשים</div></div>
+              <div class="c"><div class="lbl">שיעור חיסכון</div><div class="num m">14%</div><div class="sub">ממוצע 3 סגירות</div></div>
+            </div>
+            <div class="c" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><div class="lbl">מעשרות וחומש</div><div style="font-weight:600;font-size:15px;font-variant-numeric:tabular-nums">חייבים ₪2,450</div></div><span class="chip warn">3 תרומות לא הוגשו</span></div>
+          </div>
+          <nav class="nav"><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>בית</div><div class="on"><span class="pill"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg></span>כסף</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span>חלומות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 11h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>קניות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span>מעקב</div></nav>
+        </div>
+        <h3><span class="n">4</span> כסף: התמונה הגדולה (מאקרו)</h3>
+        <ul><li>שווי נקי עם גרף קו אחד מסגירות החודש.</li><li>כרית, שיעור חיסכון ומעשרות כקופסאות קטנות.</li><li>תזכורת עדינה לתרומות שעוד לא הוגשו להחזר מס.</li></ul>
+      </div>
+
+      <!-- 5 can we afford -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div class="back"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div><div class="s">האם אפשר?</div><div style="width:32px"></div></div>
+            <div class="q">טיול לארה״ב ביוני 2027</div>
+            <div class="g2"><div class="field"><span class="d">עלות</span><span class="v">₪18,000</span></div><div class="field"><span class="d">עד</span><span class="v">06/2027</span></div></div>
+            <div class="c">
+              <div class="cmp">
+                <span class="sub">צריך</span><div class="bar"><i style="width:68%;background:var(--accS)"></i></div><span class="v" style="font-size:12px;font-weight:600">₪2,250</span>
+                <span class="sub">פנוי</span><div class="bar"><i style="width:56%;background:var(--acc);opacity:.6"></i></div><span class="v" style="font-size:12px;font-weight:600">₪1,860</span>
+              </div>
+              <div class="sub" style="margin-top:6px">לחודש, אחרי הכרית שמקבלת עדיפות</div>
+            </div>
+            <div class="c" style="display:grid;gap:10px">
+              <div class="yes"><span class="ico"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span><div><div style="font-weight:600;font-size:15px">כן, אם…</div><div class="sub">חסרים ₪390 בחודש. אחת מהאפשרויות מספיקה:</div></div></div>
+              <div class="chips"><span class="chip">לדחות לאוגוסט</span><span class="chip">להוריד בילויים ב־₪400</span></div>
+            </div>
+            <div class="btn">ליצור יעד</div>
+          </div>
+        </div>
+        <h3><span class="n">5</span> האם אפשר?</h3>
+        <ul><li>שני שדות, תשובה אחת גדולה: כן, כן אם, או לא עכשיו.</li><li>שני פסים בלבד: כמה צריך מול כמה פנוי.</li><li>ההצעות הן כפתורים שמשנים את החישוב מיד.</li></ul>
+      </div>
+
+      <!-- 6 car -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div class="back"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></div><div class="s">מחשבון רכב · 5 שנים</div><div style="width:32px"></div></div>
+            <div class="c"><div class="lbl">חיסכון מול הרכב הנוכחי</div><div class="num" style="color:var(--ok)">₪21,400</div><div class="sub">דגם B, כולל פחת, ביטוח, טעינה וטיפולים</div></div>
+            <div class="c">
+              <div class="cmp">
+                <span class="sub">הנוכחי</span><div class="bar"><i style="width:92%;background:var(--t2);opacity:.45"></i></div><span style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums">₪148K</span>
+                <span class="sub">דגם A</span><div class="bar"><i style="width:84%;background:var(--acc);opacity:.6"></i></div><span style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums">₪135K</span>
+                <span class="sub">דגם B</span><div class="bar"><i style="width:79%;background:var(--accS)"></i></div><span style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums">₪127K</span>
+              </div>
+            </div>
+            <div class="c" style="padding-block:4px">
+              <div class="row"><span>טעינות השנה</span><span class="v">38</span></div>
+              <div class="row"><span>קוט״ש בפועל</span><span class="v">1,420</span></div>
+              <div class="row"><span>עלות לק״מ</span><span class="v">₪0.11</span></div>
+            </div>
+            <div class="g2"><div class="btn ghost">+ טעינה</div><div class="btn">להוסיף לקבועות</div></div>
+          </div>
+        </div>
+        <h3><span class="n">6</span> מחשבון רכב</h3>
+        <ul><li>התשובה קודם: כמה חוסכים. הטבלה המלאה נפתחת בהקשה.</li><li>השוואה בפסים אופקיים, הרכב הנוכחי באפור.</li><li>יומן הטעינות מזין את החישוב בנתונים אמיתיים.</li><li>כל מחשבון נגמר ב"להוסיף לקבועות" או "ליצור יעד".</li></ul>
+      </div>
+
+      <!-- 7 dreams -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div class="t">חלומות</div><div class="av">מ</div></div>
+            <div class="tabs"><span class="on">הכול</span><span>משותפים</span></div>
+            <div class="c dream"><div class="sw" style="background:linear-gradient(135deg,var(--acc),var(--accS))"></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:6px"><span style="font-weight:600;font-size:14px">טיול לארה״ב</span><span class="shared"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4 4 0 0 1 7 0"/></svg>משותף</span></div><div class="bar" style="margin-top:6px"><i style="width:22%;background:var(--acc)"></i></div><div class="sub" style="margin-top:4px">22% · יוני 2027</div></div></div>
+            <div class="c dream"><div class="sw" style="background:var(--okSoft)"></div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;gap:6px"><span style="font-weight:600;font-size:14px">דירה ראשונה</span><span class="shared"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a4 4 0 0 1 7 0"/></svg>משותף</span></div><div class="sub" style="margin-top:4px">עוד בלי יעד כספי</div></div></div>
+            <div class="c dream"><div class="sw" style="background:var(--warnSoft)"></div><div style="flex:1;min-width:0"><span style="font-weight:600;font-size:14px">ללמוד גיטרה</span><div class="sub" style="margin-top:4px">רעיון · פרטי</div></div></div>
+            <div class="field" style="border-style:dashed;color:var(--t2)"><span>+ חלום חדש</span></div>
+          </div>
+          <nav class="nav"><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>בית</div><div><span class="pill"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg></span>כסף</div><div class="on"><span class="pill"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span>חלומות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 11h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>קניות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span>מעקב</div></nav>
+        </div>
+        <h3><span class="n">7</span> חלומות</h3>
+        <ul><li>כל חלום הוא כרטיס עם ריבוע צבע, שם, והתקדמות אם יש לו יעד כספי.</li><li>"משותף" מסומן באייקון קטן. פרטי לא מסומן בכלל.</li><li>הוספה היא שורה מקווקוות בסוף הרשימה, לא כפתור צף.</li><li>האפיון המלא של חלומות יבוא אחרי כסף.</li></ul>
+      </div>
+
+      <!-- 8 shopping -->
+      <div class="shot">
+        <div class="phone"><div class="status"><span>21:14</span><span>●●● 82%</span></div>
+          <div class="scr">
+            <div class="hdr"><div><div class="t">רשימת שבת</div><div class="s">משותפת · 7 נשארו</div></div><div class="av">מ</div></div>
+            <div class="chips"><span class="chip">שבת</span><span class="chip" style="background:var(--card);border:1px solid var(--border);color:var(--t2)">סופר פארם</span><span class="chip" style="background:var(--card);border:1px solid var(--border);color:var(--t2)">משלוח מנות</span></div>
+            <div class="c" style="padding-block:2px">
+              <div class="row"><div class="lft"><span class="chk"></span>חלה × 2</div><span class="d">ירקות ולחם</span></div>
+              <div class="row"><div class="lft"><span class="chk"></span>עגבניות שרי</div><span class="d">ירקות ולחם</span></div>
+              <div class="row"><div class="lft"><span class="chk"></span>יין לקידוש</div><span class="d">שתייה</span></div>
+              <div class="row"><div class="lft"><span class="chk"></span>שמן זית</div><span class="d">מזווה</span></div>
+              <div class="row"><div class="lft"><span class="chk on"><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg></span><span class="strike">ביצים</span></div><span class="d">נקנה</span></div>
+            </div>
+            <div class="field"><span style="color:var(--t2)">להוסיף פריט…</span><span class="chip">+</span></div>
+          </div>
+          <nav class="nav"><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>בית</div><div><span class="pill"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18"/></svg></span>כסף</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/></svg></span>חלומות</div><div class="on"><span class="pill"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 11h-11z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span>קניות</div><div><span class="pill"><svg viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></span>מעקב</div></nav>
+        </div>
+        <h3><span class="n">8</span> קניות</h3>
+        <ul><li>רשימות כשבבים בראש המסך, מעבר בהקשה.</li><li>סימון פריט מעביר אותו לתחתית עם קו חוצה.</li><li>שדה הוספה קבוע מעל הניווט, מקלידים ולוחצים אנטר.</li></ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>חוקים שגרוק יקבל, כדי שזה ייראה ככה בכל מסך</h2>
+    <div class="cols">
+      <div><h3>משטחים</h3><ul><li>אין פס עליון צבוע. כותרת על הרקע.</li><li>שלוש שכבות בלבד: רקע, כרטיס, כרטיס ראשי צבוע (אחד לכל היותר במסך).</li><li>פינות 20 לכרטיסים, גלולה לכפתורים ולשבבים.</li></ul></div>
+      <div><h3>טקסט וניגודיות</h3><ul><li>כל צבע מגיע מהערכה. אסור לבן או אפור קבועים בקוד.</li><li>ערך בשדה = טקסט ראשי. תווית = משני או מבטא.</li><li>בדיקה אוטומטית שכל מסך עובר AA בבהיר ובכהה.</li></ul></div>
+      <div><h3>היררכיה</h3><ul><li>מספר אחד גדול למסך. כל השאר בגודל גוף או כיתוב.</li><li>כפתור ראשי אחד למסך, בתוך התוכן. אין כפתור צף מעל רשימות.</li><li>ניווט צף בצורת גלולה, 5 לשוניות.</li></ul></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, btns=document.querySelectorAll('.seg button');
+  function set(t){ if(t){root.setAttribute('data-theme',t);}else{root.removeAttribute('data-theme');}
+    btns.forEach(function(b){b.setAttribute('aria-pressed', String(b.getAttribute('data-t')===t));});
+    try{localStorage.setItem('myself-theme',t);}catch(e){} }
+  btns.forEach(function(b){b.addEventListener('click',function(){set(b.getAttribute('data-t'));});});
+  var saved=''; try{saved=localStorage.getItem('myself-theme')||'';}catch(e){}
+  if(saved) set(saved);
+})();
+</script>
