@@ -69,8 +69,18 @@ android {
     }
   }
   compileOptions {
+    isCoreLibraryDesugaringEnabled = true
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
+  }
+  lint {
+    // Severities are in lint.xml. Exact ids beat id="all", so only NewApi
+    // is fatal. abortOnError fails the build on that fatal. warningsAsErrors
+    // stays false so the warning severity from id="all" does not fail the build.
+    // https://developer.android.com/studio/write/lint#gradle
+    abortOnError = true
+    warningsAsErrors = false
+    lintConfig = file("lint.xml")
   }
   buildFeatures {
     compose = true
@@ -107,6 +117,7 @@ roborazzi {
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
+  coreLibraryDesugaring(libs.desugar.jdk.libs)
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
   // implementation(libs.accompanist.permissions)

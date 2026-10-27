@@ -9,6 +9,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
+import com.menash.myself.core.designsystem.theme.appColors
 
 @Composable
 fun SignOutConfirmDialog(
@@ -22,7 +23,10 @@ fun SignOutConfirmDialog(
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.appColors.danger,
+                    contentColor = MaterialTheme.colorScheme.onError,
+                ),
             ) {
                 Text(stringResource(R.string.ui_str_179))
             }

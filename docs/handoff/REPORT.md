@@ -1,144 +1,142 @@
-# R2 — Floating 5-tab shell, home, Night Blue components, screenshot tests
+# R2.1 — desugaring, numberCompact, danger dialogs, AppShell goldens
 
 commit: see git log
 
-Integrator only. The four specialist patches were applied with `git am` in order (android, android-fix1, qa-spike, qa) on top of `8f3534dec0f120090949b83bfbd7d420653b72d6`, then squashed into this commit. No new feature code was written here. No test was deleted, `@Ignore`d, re-recorded, or given a threshold. No secret is in this report. `firestore.rules`, `firestore.indexes.json`, `firestore.test.js`, `firebase.json`, and `.github/workflows/*` were not changed.
+Base is `832b188` (R2 `b493c92` plus the money engine from PR #2). The three patches applied with `git am --3way` in order (devops `0fa00be`, android `e759791`, qa `8f8a244`) and were squashed into this commit. No new product or test code was written here. No test was disabled, skipped, re-recorded, or loosened. No secret is in this report.
+
+Money files are untouched. `git show --stat` for this commit has no path under `feature/money/domain`, `docs/money`, or `MoneyEngineTest.kt`. The other paths are the three patches plus this report:
+
+```
+.github/workflows/distribute.yml
+app/build.gradle.kts
+app/lint.xml
+auth/SignOutConfirmDialog.kt
+core/designsystem/component/MetricCard.kt
+core/designsystem/theme/Type.kt
+ui/home/HomeContent.kt
+ui/settings/SettingsDialog.kt
+core/designsystem/AppTypeNumberCompactTest.kt
+ui/shell/AppShellScreenshotTest.kt
+AppShellScreenshotTest.appShell_home_dark_font10.png
+AppShellScreenshotTest.appShell_home_light_font10.png
+HomeContentScreenshotTest.homeDreams128_dark_font13.png
+HomeContentScreenshotTest.homeDreams128_light_font13.png
+HomeContentScreenshotTest.homeDreams4_dark_font10.png
+HomeContentScreenshotTest.homeDreams4_dark_font13.png
+HomeContentScreenshotTest.homeDreams4_light_font10.png
+HomeContentScreenshotTest.homeDreams4_light_font13.png
+gradle/libs.versions.toml
+docs/handoff/REPORT.md
+```
+
+`firestore.rules`, `firestore.indexes.json`, `firestore.test.js`, `firebase.json`, and `.github/workflows/firestore-rules.yml` were not changed.
 
 ## Raw Gradle lines
 
-JDK `21.0.12.1` (OpenJDK 64-Bit, Ubuntu), arch `x86_64`. Roborazzi `verify=true` is in `gradle.properties`. A gitignored `app/google-services.json` was already on disk. `assembleRelease` used a throwaway PKCS12 keystore whose key password equals its store password (not the release key).
+JDK 21. Placeholder `app/google-services.json` was already on disk and gitignored. `assembleRelease` used a throwaway PKCS12 keystore whose key password equals its store password. Roborazzi stayed in verify mode (`roborazzi.test.verify=true`).
 
-`./gradlew testDebugUnitTest assembleRelease --no-daemon` exit 0:
+`./gradlew clean testDebugUnitTest assembleRelease lintDebug --no-daemon` exit 0:
 
 ```
-BUILD SUCCESSFUL in 2m 40s
-88 actionable tasks: 81 executed, 7 from cache
+BUILD SUCCESSFUL in 3m 58s
+99 actionable tasks: 92 executed, 7 from cache
 ```
 
 `finalizeTestRoborazziDebug` ran. No golden mismatched.
 
-`app/build/test-results/testDebugUnitTest/TEST-*.xml` (48 files): tests=190, failures=0, errors=0, skipped=0.
+JUnit XML (`app/build/test-results/testDebugUnitTest`, 51 files): tests=218, failures=0, errors=0, skipped=0.
 
-`./gradlew lintDebug` exit 1 (expected; not a CI gate):
-
-```
-Lint found 130 errors, 84 warnings.
-BUILD FAILED in 52s
-```
-
-First failure:
-
-```
-AppContainer.kt:84: Error: Call requires API level 26, or core library desugaring (current min is 24): java.time.Clock#system [NewApi]
-```
-
-| severity | id | count |
-| --- | --- | ---: |
-| Error | NewApi | 122 |
-| Error | StringFormatMatches | 8 |
-| Warning | UnusedResources | 37 |
-| Warning | GradleDependency | 24 |
-| Warning | NewerVersionAvailable | 9 |
-| Warning | IconLauncherShape | 5 |
-| Warning | AndroidGradlePluginVersion | 2 |
-| Warning | CredentialManagerMisuse | 2 |
-| Warning | RedundantLabel, SimpleDateFormat, StaticFieldLeak, TypographyEllipsis, UseKtx | 1 each |
-
-R2-added files have 0 NewApi. `SettingsDialog.kt` is touched and still has 3 NewApi issues, the same `java.time` calls at lines 143 and 151 that existed at `8f3534d`. The 8 StringFormatMatches errors are in legacy calculator and catalog files.
+Of those, `MoneyEngineTest` contributed tests=24, failures=0, errors=0, skipped=0. The other 194 are the R2.1 total (including `HomeContentScreenshotTest` 10, `AppShellScreenshotTest` 2, `HomeHalfWidthValueLayoutTest` 3, `AppTypeNumberCompactTest`).
 
 ## Task table
 
 | item | status | files | test |
 | --- | --- | --- | --- |
-| Shapes 20dp / pill, colorScheme surface guards, successSoft / warningSoft | done | `Palette.kt`, `Shape.kt`, `Theme.kt` | `NewComponentsContrastTest`, `NightBlueGuardTest` |
-| HeroCard, FloatingNavBar, PillTabs, Chip, ProfileAvatar | done | `core/designsystem/component/` | screenshot tests, `ProfileAvatarSemanticsTest` |
-| MetricCard half-width uses MetricValueStyle.Medium (20sp tabular). numberCompact not added | done | `MetricCard.kt`, `HomeContent.kt` | `HomeHalfWidthValueLayoutTest` (lineCount=1, font 1.3, dreams=128) |
-| LegacyColors | not present, nothing deleted | — | — |
-| 5-tab shell, per-tab back stack, no TopAppBar, start = home | done | `AppShell.kt`, `AppNavHost.kt`, `ShellTab.kt` | `HomeChromeTest`, `FloatingNavBarStructureTest` |
-| Account sheet (settings, household, sign-in / sign-out) | done | `AccountSheet.kt`, `SignOutConfirmDialog.kt`, `AuthManager.kt` | `AuthManagerSignOutTest`; contrast cases. No screenshot |
-| Home: money hero, dreams + shopping half width, tracking full width, no fake numbers | done | `HomeContent.kt`, `HomeViewModel.kt`, `HomeDreams.kt` | `HomeNoFakeNumberTest`, `HomeContentScreenshotTest`, `HomeDreamsTest` |
-| Money, dreams, shopping, tracking placeholders | done | `PlaceholderTab.kt` | `PlaceholderTabStructureTest`, `PlaceholderEmptyStateScreenshotTest` |
-| Gallery index "מסכים ישנים" | done | `GalleryIndex.kt`, `SettingsDialog.kt` | gallery entry unchanged (long-press on the version line) |
-| Greeting and Hebrew date | done | `HomeGreeting.kt` | `GreetingForTest`, `HebrewDateLineTest` |
-| Drop java.time from Home, remove the dead capture FAB | done | `HomeGreeting.kt`, `MainActivity.kt`, `Commit534f2feReviewFixesTest.kt` | FAB-absent assertion (stricter) |
-| Roborazzi 1.77.0, verify=true | done | `gradle.properties`, `libs.versions.toml`, `build.gradle.kts` | 44 goldens under `app/src/test/snapshots/designsystem` |
-| Desugaring / minSdk change | not in R2 | — | — |
+| 1. coreLibraryDesugaring + desugar_jdk_libs 2.1.5; lint.xml (all=warning, NewApi=fatal); `lintDebug` in distribute.yml after assembleRelease | done | `app/build.gradle.kts`, `app/lint.xml`, `gradle/libs.versions.toml`, `.github/workflows/distribute.yml` | `lintDebug` exit 0; NewApi count 0 |
+| 2. AppType.numberCompact 28sp (tnum, line height 33.6sp) on half-width Dreams and Shopping | done | `Type.kt`, `MetricCard.kt`, `HomeContent.kt` | `AppTypeNumberCompactTest`; `HomeHalfWidthValueLayoutTest` unedited, lineCount=1 at font 1.3, dreams=128 |
+| 3. Sign-out confirm uses appColors.danger and colorScheme.onError; backup timestamp uses AppType.caption and appColors.textSecondary | done | `SignOutConfirmDialog.kt`, `SettingsDialog.kt` | compiles in the unit-test and release build; no new golden |
+| 4. Re-record the six HomeContent count goldens; add two AppShell goldens | done, with the deviation below | `AppShellScreenshotTest.kt` and the eight PNGs | both screenshot classes passed in verify mode |
 
-## Who did what
+## Lint before / after
 
-- chief-architect: plan, brief, split, routing, decisions (MetricValueStyle.Medium instead of numberCompact; no desugaring in R2), integration review. Wrote no code.
-- ux-ui-designer: design spec R2-spec.md (tokens, shapes, components, home layout, contrast table); final design review of goldens — APPROVE.
-- android-kotlin-expert: spikes (icons, Dream status strings); all production code (tokens/shapes/colorScheme guards, HeroCard, FloatingNavBar, PillTabs, Chip, ProfileAvatar, MetricCard, 5-tab shell with per-tab back stack, AccountSheet, Home + HomeViewModel/HomeContent, placeholders, gallery index "מסכים ישנים", NightBlueGuardTest extension, GreetingForTest/HebrewDateLineTest/HomeDreamsTest, AuthManagerSignOutTest, SignOutConfirmDialog); fix round 1 (android-fix1).
-- qa-expert: Roborazzi 1.77.0 spike (works on AGP 9.1.1, verify=true in gradle.properties); full §8 test matrix (44 goldens, NewComponentsContrastTest, semantics/structure tests, ContentPaddingTest, HomeNoFakeNumberTest, half-width number at font 1.3 with dreams=128).
-- security-expert: reviewed android.patch (1 fix: sample name), android-fix1, qa.patch PNGs — APPROVE.
-- code-reviewer: reviewed android.patch (blocking: java.time on minSdk 24, dead FAB, hardcoded greetings), android-fix1, qa patches — APPROVE.
-- integrator (this cloud agent): applied patches, single commit, local CI, push, Distribute.
+Before, from devops.md at `b493c92` (`./gradlew lintDebug`): 130 errors (122 NewApi + 8 StringFormatMatches), 84 warnings. `BUILD FAILED`.
+
+After, this run on `832b188` plus R2.1: 0 errors, 110 warnings. NewApi is 0, including inside the money files. Text report ends with `0 errors, 110 warnings`.
+
+| severity | id | count |
+| --- | --- | ---: |
+| Warning | UnusedResources | 37 |
+| Warning | GradleDependency | 24 |
+| Warning | NewerVersionAvailable | 9 |
+| Warning | StringFormatMatches | 8 |
+| Warning | DuplicateStrings | 5 |
+| Warning | IconLauncherShape | 5 |
+| Warning | LogConditional | 5 |
+| Warning | TypographyQuotes | 4 |
+| Warning | AndroidGradlePluginVersion | 2 |
+| Warning | CredentialManagerMisuse | 2 |
+| Warning | InvalidPackage | 2 |
+| Warning | ConvertToWebp, RedundantLabel, SimpleDateFormat, StaticFieldLeak, SyntheticAccessor, TypographyEllipsis, UseKtx | 1 each |
+
+The original 84 warnings are still warnings. The 8 StringFormatMatches moved from Error to Warning. Eighteen more warnings come from checks that `id="all"` turns on (DuplicateStrings, LogConditional, TypographyQuotes, InvalidPackage, ConvertToWebp, SyntheticAccessor).
+
+## Goldens
+
+Changed (6), under `app/src/test/snapshots/designsystem/`. Cause: the Dreams count moved from 20sp Medium to 28sp numberCompact.
+
+- `HomeContentScreenshotTest.homeDreams4_light_font10.png`
+- `HomeContentScreenshotTest.homeDreams4_light_font13.png`
+- `HomeContentScreenshotTest.homeDreams4_dark_font10.png`
+- `HomeContentScreenshotTest.homeDreams4_dark_font13.png`
+- `HomeContentScreenshotTest.homeDreams128_light_font13.png`
+- `HomeContentScreenshotTest.homeDreams128_dark_font13.png`
+
+Added (2):
+
+- `AppShellScreenshotTest.appShell_home_light_font10.png`
+- `AppShellScreenshotTest.appShell_home_dark_font10.png`
+
+The four `homeEmpty_*` goldens were not re-recorded.
 
 ## Allow-lists (NightBlueGuardTest)
 
-| list | at 8f3534d | now |
-| --- | ---: | ---: |
-| colour (`Color(0x` outside theme) | 16 | 16 |
-| raw `.sp` | 32 | 31 |
-| legacyChrome | absent | 28 |
+Read from the test source after this commit. Unchanged from R2.
 
-Colour: unchanged (same 16 calculator, home, and task files). `.sp`: `MainActivity.kt` removed, nothing added. legacyChrome: 28 pre-existing files (raw `Color.White/Black/Gray/LightGray`, `TopAppBar(`, `containerColor = MaterialTheme.colorScheme.primary`).
+| list | size |
+| --- | ---: |
+| colour (`Color(0x` outside theme) | 16 |
+| raw `.sp` | 31 |
+| legacyChrome | 28 |
 
-## Contrast
+`SettingsDialog.kt` stays on the `.sp` list and the legacyChrome list. It is not on the colour list.
 
-Expected ratios are from R2-spec §8.2. `NewComponentsContrastTest` reads `NightBlue` and asserts the floors. It does not hardcode the ratios. Text floor 4.5:1. `AppType.number` (40sp) and icons 3:1. Closest pairs: textSecondary/bg 4.55 and Hero α0.82 4.83. Do not lower that alpha or lighten textSecondary.
+## Who did what
 
-| component | pair | light | dark | floor |
-| --- | --- | ---: | ---: | ---: |
-| Header greeting / date | textPrimary/bg · textSecondary/bg | 14.56 · 4.55 | 15.15 · 7.09 | 4.5 |
-| ProfileAvatar | accentStrong/accentSoft | 6.89 | 7.72 | 4.5 |
-| MetricCard label·detail / value | textSecondary/card · textPrimary/card | 4.97 · 15.90 | 6.36 · 13.58 | 4.5 |
-| HeroCard value | onAccent/accent | 6.28 | 7.38 | 3.0 |
-| HeroCard label·message α0.82 | onAccent82/accent | 4.83 | 5.39 | 4.5 |
-| FloatingNavBar active label / icon | accentStrong/card · accentStrong/accentSoft | 8.40 · 6.89 | 8.87 · 7.72 | 4.5 · 3.0 |
-| FloatingNavBar · PillTabs inactive | textSecondary/card | 4.97 | 6.36 | 4.5 |
-| PillTabs selected · Chip Default | accentStrong/accentSoft | 6.89 | 7.72 | 4.5 |
-| Chip Success / Warning | success/successSoft · warning/warningSoft | 5.15 · 5.66 | 8.51 · 9.18 | 4.5 |
-| PrimaryButton | onAccent/accent | 6.28 | 7.38 | 4.5 |
-| Sheet "התנתקות" | danger/card | 7.28 | 8.76 | 4.5 |
-| Forbidden (not a passing case) | textSecondary/accentSoft | 4.08 fail | 5.53 | — |
-
-The test also asserts, at the same floors, an opaque Hero message (`onAccent/accent`, 4.5), EmptyState description (`textSecondary/background`, 4.5), and the AccountSheet settings icon (`accent/card`, 3.0). Spec §8.2 does not list a ratio for that icon pair.
-
-## Home screenshots
-
-Goldens, verified on this machine (x86_64, OpenJDK 21.0.12.1). Fixed clock 2026-10-27 21:14, sample name "דנה".
-
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeEmpty_light_font10.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeEmpty_light_font13.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeEmpty_dark_font10.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeEmpty_dark_font13.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeDreams4_light_font10.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeDreams4_light_font13.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeDreams4_dark_font10.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeDreams4_dark_font13.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeDreams128_light_font13.png`
-- `app/src/test/snapshots/designsystem/HomeContentScreenshotTest.homeDreams128_dark_font13.png`
+| Item | Specialist | Patch | Summary |
+| --- | --- | --- | --- |
+| 1 desugaring + lint NewApi gate + CI step | devops-expert | devops.patch 0fa00be | coreLibraryDesugaring + desugar_jdk_libs 2.1.5; app/lint.xml (all=warning, NewApi=fatal) via lintConfig, abortOnError=true; distribute.yml `./gradlew lintDebug --no-daemon` after assembleRelease, before upload. Gate proven with probes (NotificationChannel -> Fatal exit 1; WrongConstant -> warning exit 0). |
+| 2 AppType.numberCompact 28sp | android-kotlin-expert | android.patch e759791 | numberCompact 28sp tnum, lh 33.6sp; MetricValueStyle.Compact on half-width Dreams+Shopping cards; AppTypeNumberCompactTest; HomeHalfWidthValueLayoutTest unedited, passes (1.3, dreams=128, lineCount=1). |
+| 3 dialogs | android-kotlin-expert | android.patch e759791 | SignOutConfirmDialog appColors.danger + contentColor colorScheme.onError (AA 7.28 light / 9.58 dark); SettingsDialog backup line AppType.caption + appColors.textSecondary. |
+| 2 goldens + 4 AppShell goldens | qa-expert | qa.patch 8f8a244 | Re-recorded only 6 HomeContentScreenshotTest goldens: homeDreams4_{light,dark}_font{10,13}, homeDreams128_{light,dark}_font13. New AppShellScreenshotTest (2 goldens light/dark, RTL via LocalLayoutDirection). |
+| Reviews | security-expert, code-reviewer, ux-ui-designer | security.md, review.md, design.md | All APPROVED. |
+| Planning, decisions, integration routing | chief-architect | — | No code. Continued on `832b188` because the patches do not touch the money engine. |
+| Integration, one commit, CI run, push | integrator (this cloud agent) | — | Applied the three patches on `832b188`, squashed, ran the clean CI command, amended this report. |
 
 ## Decisions
 
-- Half-width cards use MetricValueStyle.Medium (AppType.title.tabular(), 20sp) per spec §3; no numberCompact added. Proven by screenshot + lineCount=1 assertion at font 1.3, dreams=128. (Claude may overrule.)
-- 2 PrimaryButton spike goldens re-recorded because AppShapes.control changed 12dp → pill (spec §1); deterministic, no threshold.
-- Commit534f2feReviewFixesTest: "capture FAB present" assertion inverted to "FAB absent" (spec §5 hides it) — reviewer judged stricter.
-- Settings: last-backup row now hidden when no real backup timestamp (old "טרם בוצע גיבוי" text dropped).
+- Strict "NewApi only" via lint.xml rather than abortOnError + per-id downgrades.
+- Item 4 deviation: the AppShell golden does not compose `AppShell()`. It composes `HomeContentAtFixedClock` plus `r2NavBar`, placed the way AppShell places the bar, with RTL pinned through `LocalLayoutDirection`. `AppShell()` builds `MainViewModel` and `AppContainer`, which reach Firestore. The golden can drift from the real shell without a failing test. Proposed follow-up: a stateless `AppShellContent(state, onNav...)` seam that `AppShell` calls, then point the golden at that seam.
+- 28sp barely grows at fontScale 1.3 (39 to 40 px ink): Android 14+ nonlinear font scaling. The ux-ui-designer accepts that. No workaround was added.
+- Continue on `832b188` instead of `b493c92`. The money engine from PR #2 stays as merged. This commit does not edit it.
 
 ## Noticed, not changed
 
-- lintDebug: 122 NewApi (pre-existing java.time call sites: BOI, Hebcal, mappers, fitness, tasks, SettingsDialog:143/151) + 8 StringFormatMatches (legacy calculator/catalog). This run: 130 errors (122 NewApi + 8 StringFormatMatches) and 84 warnings. minSdk 24 without desugaring → possible crash on Android 7.0–7.1. Proposed follow-up: enable coreLibraryDesugaring + desugar_jdk_libs and make lintDebug a CI gate. Needs owner sign-off.
-- Legacy SettingsDialog last-backup line uses 12.sp + Color.DarkGray (unreadable in dark mode).
-- SettingsDialog.kt ~298 lines — split before next edit. Commit534f2feReviewFixesTest.kt ~312 lines (was ~308) and its test name still says "visible on all tabs".
-- SignOutConfirmDialog.kt:25 uses colorScheme.error instead of appColors.danger; ui_str_249 may be unused.
-- Tab state lost on sign-in (sign-in replaces AppShell); legacy root routes leave no tab selected; PillTabs uses alpha 0f instead of Color.Transparent.
-- Tests follow-ups: HomeChromeTest renders a test shell not real AppShell; ContentPaddingTest reflects on internal setInsets (breaks on BOM upgrade, loudly); FloatingNavBarStructureTest only covers Home selected; RTL not pinned via LocalLayoutDirection in captureTagged; home/shell goldens live under snapshots/designsystem; AccountSheet not screenshotted.
-- Goldens recorded on x86_64 OpenJDK 21.0.12.1; if CI (ubuntu-latest) disagrees, investigate, never add a threshold.
-- Auto sign-in at launch (MainActivity) relies on signOut clearing credential state — now guarded by AuthManagerSignOutTest.
-
-## Open questions
-
-1. Desugaring vs minSdk 26 for the 122 pre-existing java.time sites (recommend desugaring, separate task).
-2. Accept MetricValueStyle.Medium for half-width cards (no numberCompact)?
+- Other destructive buttons (DreamDialogs, TaskDialogs, household sign-out) still use colorScheme.error.
+- 8 StringFormatMatches lint findings are real bugs to fix later.
+- lintDebug runs after assembleRelease; a PR-time workflow would need google-services.json secret on PRs.
+- docs/RULES.md stale: claims app builds without google-services.json; does not mention lint step.
+- Pre-existing: firebase-tools version unpinned in upload step; actions/checkout@v5 and setup-java@v5 tag-pinned, not SHA.
+- Never upload lint reports as artifacts while google-services.json/keystore are on disk.
+- Shell goldens use dreamsActive=null; nav-bar modifiers copied into the test.
+- Mockup .num.m is 22px; brief value 28sp is binding.
+- Optional later: golden at fontScale 2.0.

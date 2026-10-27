@@ -104,6 +104,11 @@ jobs:
           VERSION_CODE: ${{ github.run_number }}
         run: ./gradlew assembleRelease --no-daemon
 
+      - name: Lint debug
+        # lint.xml: NewApi is fatal, every other id is a warning.
+        # abortOnError fails this step only on NewApi, before the upload.
+        run: ./gradlew lintDebug --no-daemon
+
       - name: Upload to Firebase App Distribution
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

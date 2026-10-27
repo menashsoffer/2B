@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!--
+      Exact ids are matched before id="all", so NewApi stays fatal.
+      https://googlesamples.github.io/android-custom-lint-rules/usage/lintxml.md.html
+    -->
+    <issue id="all" severity="warning" />
+    <issue id="NewApi" severity="fatal" />
+</lint>

@@ -197,8 +197,8 @@ fun SettingsDialog(
                         .format(Date(lastBackupTimestamp))
                     Text(
                         stringResource(R.string.ui_lastbackuptext_244, lastBackupText),
-                        fontSize = 12.sp,
-                        color = Color.DarkGray,
+                        style = AppType.caption,
+                        color = MaterialTheme.appColors.textSecondary,
                     )
                 }
                 Text(

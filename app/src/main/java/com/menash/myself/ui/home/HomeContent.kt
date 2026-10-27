@@ -101,7 +101,7 @@ fun HomeContent(
                 value = dreamsValue,
                 detail = dreamsDetail,
                 onClick = { onOpenRoute(ShellRoute.Dreams) },
-                valueStyle = MetricValueStyle.Medium,
+                valueStyle = MetricValueStyle.Compact,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
@@ -111,7 +111,7 @@ fun HomeContent(
                 value = null,
                 detail = stringResource(R.string.home_no_data),
                 onClick = { onOpenRoute(ShellRoute.Shopping) },
-                valueStyle = MetricValueStyle.Medium,
+                valueStyle = MetricValueStyle.Compact,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),

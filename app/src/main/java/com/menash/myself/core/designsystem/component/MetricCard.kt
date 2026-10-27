@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.menash.myself.core.designsystem.theme.AppShapes
@@ -29,6 +30,13 @@ import com.menash.myself.core.designsystem.theme.tabular
 enum class MetricValueStyle {
     Large,
     Medium,
+    Compact,
+}
+
+internal fun MetricValueStyle.metricValueTextStyle(): TextStyle = when (this) {
+    MetricValueStyle.Large -> AppType.number
+    MetricValueStyle.Medium -> AppType.title.tabular()
+    MetricValueStyle.Compact -> AppType.numberCompact
 }
 
 @Composable
@@ -42,10 +50,7 @@ fun MetricCard(
     valueStyle: MetricValueStyle = MetricValueStyle.Large,
 ) {
     val colors = MaterialTheme.appColors
-    val valueTextStyle = when (valueStyle) {
-        MetricValueStyle.Large -> AppType.number
-        MetricValueStyle.Medium -> AppType.title.tabular()
-    }
+    val valueTextStyle = valueStyle.metricValueTextStyle()
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },

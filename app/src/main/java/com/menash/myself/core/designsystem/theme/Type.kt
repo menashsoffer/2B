@@ -16,7 +16,8 @@ val Rubik = FontFamily(
 )
 
 /**
- * The four text styles. [number] is the one large figure on a card, with tabular figures.
+ * Text styles for new screens. [number] and [numberCompact] are card figures with tabular figures.
+ * [numberCompact] keeps [number]'s line-height ratio (48/40).
  */
 object AppType {
     val number = TextStyle(
@@ -24,6 +25,15 @@ object AppType {
         fontWeight = FontWeight.Medium,
         fontSize = 40.sp,
         lineHeight = 48.sp,
+        fontFeatureSettings = "tnum",
+    )
+
+    /** Half-width metric figure. 28sp, same 1.2 line-height ratio as [number]. */
+    val numberCompact = TextStyle(
+        fontFamily = Rubik,
+        fontWeight = FontWeight.Medium,
+        fontSize = 28.sp,
+        lineHeight = 33.6.sp,
         fontFeatureSettings = "tnum",
     )
     val title = TextStyle(
