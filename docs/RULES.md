@@ -170,3 +170,38 @@
 - SHA-256: `B5:D3:22:D7:27:DB:1B:E9:BD:A4:FC:B6:93:9E:8E:80:6F:33:49:56:5D:B0:24:C9:8A:53:92:5D:62:E0:1E:22`
 
 ה-keystore וסיסמאותיו **אינם בריפו**. הגיבוי שלהם נשמר מחוץ ל-git. איבוד ה-keystore אומר שאי אפשר לעדכן את האפליקציה המותקנת במקום, לעולם. בנייה מקומית נשארת על `debug.keystore` (gitignore) ועל `debugConfig`. אין סיסמת release בקוד.
+
+---
+
+## 9. Crashlytics (release only)
+
+Crashlytics is a no-cost Firebase product on the Spark plan and on Blaze. No billing change and no plan upgrade.
+
+- Pricing: `https://firebase.google.com/docs/projects/billing/firebase-pricing-plans` (Crashlytics is listed under no-cost products, including production use on Spark).
+- Product page: `https://firebase.google.com/products/crashlytics` ("There's no cost to using Crashlytics.").
+- SDK setup: `https://firebase.google.com/docs/crashlytics/android/get-started`. The SDK is `firebase-crashlytics` from the existing BoM (`firebaseBom` in `gradle/libs.versions.toml`), so it has no version of its own. The Gradle plugin is `com.google.firebase.crashlytics` `3.0.8` (`firebaseCrashlyticsGradle`).
+
+Collection is on for release and off for debug:
+
+- `app/src/release/AndroidManifest.xml` sets `firebase_crashlytics_collection_enabled` to `true`.
+- `app/src/debug/AndroidManifest.xml` sets it to `false`.
+- Doc: `https://firebase.google.com/docs/crashlytics/android/customize-crash-reports#enable-opt-in-reporting`.
+- `CrashlyticsNonFatal.record` returns immediately when `BuildConfig.DEBUG` is true, so a debug non-fatal is not buffered and uploaded later by a release process. The SDK can still store automatic debug crashes locally while collection is disabled, and send that buffer if a later launch enables collection on the same install. Debug and release share application id `com.aistudio.mycalculators.qvxmzt`.
+
+Non-fatals are recorded from `DefaultErrorReporter.reportError(action, throwable)` and from `FirestoreErrors.report`. Fatals are recorded by the Crashlytics handler that `FirebaseInitProvider` installs before `Application.onCreate` (`eagerInDefaultApp` on `CrashlyticsRegistrar`, then `CrashlyticsCore.onPreExecute`). `MyselfApp.onCreate` wraps that handler. Both paths pass `CrashlyticsNonFatal.sanitized`: the same exception class and stack frames, with the message removed at every cause and suppressed throwable. A `FirebaseFirestoreException` copy keeps `code.name` as its message (`NOT_FOUND`, and the other code names). That name is not personal data. A cycle in the cause chain is not followed again. If sanitizing throws, the wrapper still forwards a message-less `RuntimeException` that keeps the original stack, so Crashlytics still records the fatal. If no previous handler is installed, the wrapper calls `Process.killProcess` and `exitProcess(10)` instead of returning. The original throwable is written with `Log.e` only when `BuildConfig.DEBUG` is true. There are no custom keys. `lastTechnicalError` is unchanged and stays on the device.
+
+Handler order: `https://github.com/firebase/firebase-android-sdk/blob/master/firebase-common/src/main/java/com/google/firebase/provider/FirebaseInitProvider.java` (`onCreate` is called before `Application.onCreate`), `https://github.com/firebase/firebase-android-sdk/blob/master/firebase-crashlytics/src/main/java/com/google/firebase/crashlytics/CrashlyticsRegistrar.java`, `https://github.com/firebase/firebase-android-sdk/blob/master/firebase-crashlytics/src/main/java/com/google/firebase/crashlytics/internal/common/CrashlyticsCore.java`, `https://developer.android.com/reference/android/app/Application#onCreate()`.
+
+R8, minify, and mapping upload (`https://firebase.google.com/docs/crashlytics/android/get-deobfuscated-reports`):
+
+- Release `isMinifyEnabled` is still `false`. R8 does not write `app/build/outputs/mapping/release/mapping.txt`, so there is nothing to deobfuscate and the upload is a no-op. Stack traces are readable without a mapping file.
+- When minify is turned on, the Crashlytics Gradle plugin uploads that mapping file during the release build if `mappingFileUploadEnabled` is true. Release sets that flag only when `app/google-services.json` is present. Debug sets it to `false`.
+- The real `google-services.json` has to be on disk before `assembleRelease`. CI already writes it from the `GOOGLE_SERVICES_JSON` secret before the build. Do not commit the file, and do not upload mappings with the unit-test fake: the upload is stored against the Firebase Android app id inside that json.
+- The upload task needs outbound network from the build. No new GitHub secret is required while `GOOGLE_SERVICES_JSON` is the real Android app config. `.github/workflows` is intentionally unchanged.
+- A checkout with no `google-services.json` still compiles: `missingGoogleServicesStrategy` is `WARN` and `googleServices.missing.passthrough=true`. Mapping upload stays off in that case.
+
+Firebase console, for the existing Android app (the same one App Distribution uses):
+
+- If the Crashlytics page asks to enable Crashlytics, enable it. The first report from a release build finishes setup. No test-crash button is shipped in the app.
+- Do not add user ids or custom keys.
+- Google Analytics is not a dependency of this change. Breadcrumb logs stay off until Analytics is added on purpose.

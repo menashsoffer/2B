@@ -1,5 +1,6 @@
 package com.menash.myself.core.ui
 
+import com.google.firebase.firestore.FirebaseFirestoreException
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -18,10 +19,10 @@ object ErrorMapper {
         if (throwable == null) return MSG_UNKNOWN
 
         // Check FirebaseFirestoreException code
-        if (throwable is com.google.firebase.firestore.FirebaseFirestoreException) {
+        if (throwable is FirebaseFirestoreException) {
             when (throwable.code) {
-                com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED -> return MSG_PERMISSION_DENIED
-                com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE -> return MSG_OFFLINE
+                FirebaseFirestoreException.Code.PERMISSION_DENIED -> return MSG_PERMISSION_DENIED
+                FirebaseFirestoreException.Code.UNAVAILABLE -> return MSG_OFFLINE
                 else -> {}
             }
         }
@@ -55,5 +56,24 @@ object ErrorMapper {
         if (isNoHousehold) return MSG_NO_HOUSEHOLD
 
         return MSG_UNKNOWN
+    }
+
+    /**
+     * Exception type plus a technical code, for Crashlytics non-fatals.
+     * The raw exception message is not included. It can contain task titles, amounts,
+     * names, emails, or household ids.
+     */
+    fun technicalDetail(throwable: Throwable): String {
+        val typeName = throwable.javaClass.name
+        if (throwable is FirebaseFirestoreException) {
+            return "$typeName: ${throwable.code.name}"
+        }
+        val token = when (toFriendlyMessage(throwable)) {
+            MSG_OFFLINE -> "network"
+            MSG_PERMISSION_DENIED -> "permission_denied"
+            MSG_NO_HOUSEHOLD -> "no_household"
+            else -> "unknown"
+        }
+        return "$typeName: $token"
     }
 }

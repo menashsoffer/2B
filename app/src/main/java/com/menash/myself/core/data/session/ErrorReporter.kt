@@ -1,6 +1,7 @@
 package com.menash.myself.core.data.session
 
 import android.util.Log
+import com.menash.myself.core.crash.CrashlyticsNonFatal
 import com.menash.myself.core.ui.ErrorMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +35,7 @@ class DefaultErrorReporter : ErrorReporter {
         runCatching {
             Log.e("ErrorReporter", "Action '$action' failed: ${throwable.message}", throwable)
         }
+        CrashlyticsNonFatal.record(throwable)
         _errorState.value = ErrorMapper.toFriendlyMessage(throwable)
     }
 

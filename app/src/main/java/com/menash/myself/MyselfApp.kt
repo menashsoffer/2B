@@ -1,6 +1,7 @@
 package com.menash.myself
 
 import android.app.Application
+import com.menash.myself.core.crash.SanitizingUncaughtExceptionHandler
 import com.menash.myself.core.di.AppContainer
 
 /**
@@ -14,6 +15,7 @@ class MyselfApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        SanitizingUncaughtExceptionHandler.install()
         com.menash.myself.core.external.boi.BoiSyncWorker.enqueue(this)
     }
 }

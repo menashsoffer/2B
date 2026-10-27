@@ -1,3 +1,4 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
@@ -6,6 +7,7 @@ plugins {
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
+  alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -49,11 +51,20 @@ android {
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("release")
+      // R8 is off, so no mapping.txt is produced and this upload is a no-op.
+      // When minify is turned on, the real google-services.json (CI secret) must be present
+      // or the mapping would be skipped. See docs/RULES.md section 9.
+      configure<CrashlyticsExtension> {
+        mappingFileUploadEnabled = file("google-services.json").isFile
+      }
     }
     debug {
       // Do not remove or modify this signingConfig assignment. It is necessary for Android apps in
       // AI Studio.
       signingConfig = signingConfigs.getByName("debugConfig")
+      configure<CrashlyticsExtension> {
+        mappingFileUploadEnabled = false
+      }
     }
   }
   compileOptions {
@@ -111,6 +122,7 @@ dependencies {
   implementation(libs.converter.moshi)
   // Uncomment to use Firestore:
   implementation(libs.firebase.firestore)
+  implementation(libs.firebase.crashlytics)
 
   // Uncomment ALL FOUR of the following dependencies together to use Firebase Auth and Google
   // Sign-In via Credential Manager:
