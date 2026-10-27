@@ -37,6 +37,7 @@ datastorePreferences = "1.1.7"
 workRuntimeKtx = "2.10.0"
 workTesting = "2.10.0"
 robolectric = "4.16.1"
+roborazzi = "1.77.0"
 firebaseBom = "34.17.0"
 firebaseCrashlyticsGradle = "3.0.8"
 secretsGradlePlugin = "2.0.1"
@@ -90,6 +91,9 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 androidx-work-testing = { group = "androidx.work", name = "work-testing", version.ref = "workTesting" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", version.ref = "roborazzi" }
+roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
+roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai" }
 firebase-appcheck-recaptcha = { group = "com.google.firebase", name = "firebase-appcheck-recaptcha" }
@@ -104,6 +108,7 @@ googleid = { group = "com.google.android.libraries.identity.googleid", name = "g
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
+roborazzi = { id = "io.github.takahirom.roborazzi", version.ref = "roborazzi" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 google-devtools-ksp = { id = "com.google.devtools.ksp", version.ref = "googleDevtoolsKsp" }
 secrets = { id = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }

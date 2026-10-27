@@ -26,7 +26,7 @@ fun TextInput(
         label = { Text(text = label, style = AppType.caption) },
         textStyle = AppType.body,
         singleLine = true,
-        shape = AppShapes.control,
+        shape = AppShapes.field,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = colors.accent,
             unfocusedBorderColor = colors.cardBorder,

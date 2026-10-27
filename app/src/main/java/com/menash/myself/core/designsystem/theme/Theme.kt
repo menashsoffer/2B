@@ -3,8 +3,10 @@ package com.menash.myself.core.designsystem.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
@@ -21,7 +23,7 @@ val MaterialTheme.appColors: Palette
 
 private fun Palette.toColorScheme(dark: Boolean): ColorScheme {
     val roles = this
-    return if (dark) {
+    val base = if (dark) {
         darkColorScheme(
             primary = roles.accent,
             onPrimary = roles.onAccent,
@@ -70,7 +72,31 @@ private fun Palette.toColorScheme(dark: Boolean): ColorScheme {
             onErrorContainer = roles.textPrimary,
         )
     }
+    return base.withPaletteSurfaces(roles)
 }
+
+private fun ColorScheme.withPaletteSurfaces(roles: Palette): ColorScheme = copy(
+    surface = roles.card,
+    surfaceContainerLowest = roles.card,
+    surfaceContainerLow = roles.card,
+    surfaceContainer = roles.card,
+    surfaceContainerHigh = roles.card,
+    surfaceContainerHighest = roles.card,
+    surfaceBright = roles.card,
+    surfaceDim = roles.background,
+    surfaceTint = Color.Transparent,
+    outlineVariant = roles.cardBorder,
+    inverseSurface = roles.textPrimary,
+    inverseOnSurface = roles.card,
+    scrim = roles.textPrimary.copy(alpha = 0.32f),
+)
+
+private val AppMaterialShapes = Shapes(
+    small = AppShapes.pill,
+    medium = AppShapes.card,
+    large = AppShapes.card,
+    extraLarge = AppShapes.card,
+)
 
 @Composable
 fun MyApplicationTheme(
@@ -85,6 +111,7 @@ fun MyApplicationTheme(
         MaterialTheme(
             colorScheme = palette.toColorScheme(darkTheme),
             typography = AppTypography,
+            shapes = AppMaterialShapes,
             content = content,
         )
     }

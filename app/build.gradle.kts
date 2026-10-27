@@ -8,6 +8,7 @@ plugins {
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
   alias(libs.plugins.firebase.crashlytics)
+  alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -75,7 +76,14 @@ android {
     compose = true
     buildConfig = true
   }
-  testOptions { unitTests { isIncludeAndroidResources = true } }
+  testOptions {
+    unitTests {
+      isIncludeAndroidResources = true
+      all {
+        it.systemProperties["robolectric.pixelCopyRenderMode"] = "hardware"
+      }
+    }
+  }
   dependenciesInfo {
     includeInApk = false
     includeInBundle = true
@@ -91,6 +99,10 @@ secrets {
 }
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
+
+roborazzi {
+  outputDir.set(file("src/test/snapshots/designsystem"))
+}
 
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
@@ -144,6 +156,9 @@ dependencies {
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.androidx.work.testing)
   testImplementation(libs.robolectric)
+  testImplementation(libs.roborazzi)
+  testImplementation(libs.roborazzi.compose)
+  testImplementation(libs.roborazzi.junit.rule)
   androidTestImplementation(platform(libs.androidx.compose.bom))
   androidTestImplementation(libs.androidx.compose.ui.test.junit4)
   androidTestImplementation(libs.androidx.espresso.core)

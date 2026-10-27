@@ -39,6 +39,14 @@ class NightBlueGuardTest {
     }
 
     @Test
+    fun noLegacyChromeOutsideAllowList() {
+        val pattern = Regex(
+            """Color\.White\b|Color\.Black\b|Color\.Gray\b|Color\.LightGray\b|TopAppBar\(|containerColor = MaterialTheme\.colorScheme\.primary\b"""
+        )
+        assertAllowList(legacyChromeAllowList) { text -> pattern.containsMatchIn(text) }
+    }
+
+    @Test
     fun noNewRawSpOutsideTheme() {
         val pattern = Regex("""(?<![A-Za-z0-9_])\d+(?:\.\d+)?\.sp\b""")
         assertAllowList(fontSizeAllowList) { text -> pattern.containsMatchIn(text) }
@@ -58,6 +66,8 @@ class NightBlueGuardTest {
             "success" to palette.success.toArgb(),
             "warning" to palette.warning.toArgb(),
             "danger" to palette.danger.toArgb(),
+            "successSoft" to palette.successSoft.toArgb(),
+            "warningSoft" to palette.warningSoft.toArgb(),
         )
         assertEquals(expected, actual)
     }
@@ -124,6 +134,8 @@ class NightBlueGuardTest {
         "success" to 0xFF3E6B4F.toInt(),
         "warning" to 0xFF7A5414.toInt(),
         "danger" to 0xFF8E3D3D.toInt(),
+        "successSoft" to 0xFFE2EEE6.toInt(),
+        "warningSoft" to 0xFFF4EAD6.toInt(),
     )
 
     private val darkHex = mapOf(
@@ -139,6 +151,8 @@ class NightBlueGuardTest {
         "success" to 0xFFA9CDB6.toInt(),
         "warning" to 0xFFE4C98A.toInt(),
         "danger" to 0xFFE4B0B0.toInt(),
+        "successSoft" to 0xFF1D2B23.toInt(),
+        "warningSoft" to 0xFF2E2717.toInt(),
     )
 
     private val colorAllowList = setOf(
@@ -160,8 +174,38 @@ class NightBlueGuardTest {
         "java/com/menash/myself/ui/tasks/TaskDialogs.kt",
     )
 
+    private val legacyChromeAllowList = setOf(
+        "java/com/menash/myself/auth/SignInScreen.kt",
+        "java/com/menash/myself/ui/calculators/CalculatorsHubCards.kt",
+        "java/com/menash/myself/ui/calculators/CalculatorsHubScreen.kt",
+        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionCardComponents.kt",
+        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionsScreen.kt",
+        "java/com/menash/myself/ui/calculators/car/CarCardComponents.kt",
+        "java/com/menash/myself/ui/calculators/car/CarComparisonScreen.kt",
+        "java/com/menash/myself/ui/calculators/pension/PensionCardComponents.kt",
+        "java/com/menash/myself/ui/calculators/pension/PensionSavingsScreen.kt",
+        "java/com/menash/myself/ui/calculators/pension/PensionSummaryComponents.kt",
+        "java/com/menash/myself/ui/calendar/CalendarScreen.kt",
+        "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
+        "java/com/menash/myself/ui/common/CsvMappingDialog.kt",
+        "java/com/menash/myself/ui/dreams/DreamCardComponents.kt",
+        "java/com/menash/myself/ui/dreams/DreamsScreen.kt",
+        "java/com/menash/myself/ui/fitness/FitnessScreen.kt",
+        "java/com/menash/myself/ui/home/HomeHebcalCard.kt",
+        "java/com/menash/myself/ui/home/LifeHomeCards.kt",
+        "java/com/menash/myself/ui/home/LifeHomeScreen.kt",
+        "java/com/menash/myself/ui/home/LifeHomeSections.kt",
+        "java/com/menash/myself/ui/household/HouseholdCardComponents.kt",
+        "java/com/menash/myself/ui/household/HouseholdScreen.kt",
+        "java/com/menash/myself/ui/inbox/InboxTriageScreen.kt",
+        "java/com/menash/myself/ui/more/MoreScreen.kt",
+        "java/com/menash/myself/ui/settings/CityPickerDialog.kt",
+        "java/com/menash/myself/ui/settings/SettingsDialog.kt",
+        "java/com/menash/myself/ui/tasks/TaskCardComponents.kt",
+        "java/com/menash/myself/ui/tasks/TasksScreen.kt",
+    )
+
     private val fontSizeAllowList = setOf(
-        "java/com/menash/myself/MainActivity.kt",
         "java/com/menash/myself/auth/SignInScreen.kt",
         "java/com/menash/myself/ui/calculators/CalculatorsHubCards.kt",
         "java/com/menash/myself/ui/calculators/CalculatorsHubScreen.kt",

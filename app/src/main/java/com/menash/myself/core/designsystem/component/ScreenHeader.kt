@@ -7,6 +7,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
@@ -19,7 +21,12 @@ fun ScreenHeader(
 ) {
     val colors = MaterialTheme.appColors
     Column(modifier = modifier) {
-        Text(text = title, style = AppType.title, color = colors.textPrimary)
+        Text(
+            text = title,
+            style = AppType.title,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
         if (!subtitle.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(Spacing.s4))
             Text(text = subtitle, style = AppType.caption, color = colors.textSecondary)

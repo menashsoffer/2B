@@ -126,7 +126,11 @@ fun CalculatorsHubScreen(
             onSaveRate = { newRate ->
                 viewModel.saveRate(newRate)
                 showSettingsDialog = false
-            }
+            },
+            onOpenLegacyScreen = { route ->
+                showSettingsDialog = false
+                navController.navigate(route)
+            },
         )
     }
 

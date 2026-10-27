@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="greeting_morning">בוקר טוב</string>
+    <string name="greeting_afternoon">צהריים טובים</string>
+    <string name="greeting_evening">ערב טוב</string>
+    <string name="nav_home">בית</string>
+    <string name="nav_money">כסף</string>
+    <string name="nav_dreams">חלומות</string>
+    <string name="nav_shopping">קניות</string>
+    <string name="nav_tracking">מעקב</string>
+    <string name="home_money_message">יתחיל לעבוד אחרי שנגדיר את החודש הראשון</string>
+    <string name="home_no_data">עוד אין נתונים</string>
+    <string name="home_dreams_active_one">חלום פעיל</string>
+    <string name="home_dreams_active_many">חלומות פעילים</string>
+    <string name="account_menu">תפריט חשבון</string>
+    <string name="account_settings">הגדרות</string>
+    <string name="account_household">משק בית</string>
+    <string name="account_sign_out">התנתקות</string>
+    <string name="account_sign_in">התחברות</string>
+    <string name="placeholder_building">העמוד הזה בבנייה</string>
+    <string name="gallery_title">גלריה</string>
+    <string name="gallery_design_system">מערכת העיצוב</string>
+    <string name="gallery_legacy_screens">מסכים ישנים</string>
+    <string name="gallery_close">סגירה</string>
+    <string name="hero_open">פתיחה</string>
+    <string name="legacy_home">בית ישן</string>
+    <string name="legacy_tasks">משימות</string>
+    <string name="legacy_dreams">חלומות ישנים</string>
+    <string name="legacy_calculators">מחשבונים</string>
+    <string name="legacy_car">מחשבון רכב</string>
+    <string name="legacy_ai">מנויי AI</string>
+    <string name="legacy_pension">פנסיה</string>
+    <string name="legacy_more">עוד</string>
+    <string name="legacy_inbox">אינבוקס</string>
+    <string name="legacy_fitness">כושר</string>
+    <string name="legacy_calendar">יומן</string>
+    <string name="legacy_catalog">קטלוג</string>
+    <string name="pill_month">החודש</string>
+    <string name="pill_big_picture">התמונה הגדולה</string>
+    <string name="chip_paid">שולם</string>
+    <string name="chip_pending">ממתין</string>
+    <string name="sample_name">דנה</string>
+    <string name="gallery_light">בהיר</string>
+    <string name="gallery_dark">כהה</string>
+</resources>

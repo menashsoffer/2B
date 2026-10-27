@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ fun ListRow(
     leadingContent: @Composable (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
     onClick: (() -> Unit)? = null,
+    titleColor: Color? = null,
     testTag: String = "list_row"
 ) {
     val clickableModifier = if (onClick != null) {
@@ -73,7 +75,7 @@ fun ListRow(
             Text(
                 text = title,
                 style = AppType.title,
-                color = MaterialTheme.appColors.textPrimary,
+                color = titleColor ?: MaterialTheme.appColors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

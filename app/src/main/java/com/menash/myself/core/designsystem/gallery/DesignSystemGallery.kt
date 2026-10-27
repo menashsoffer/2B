@@ -41,11 +41,13 @@ import com.menash.myself.core.designsystem.theme.appColors
 @Composable
 fun DesignSystemGallery(
     onClose: (() -> Unit)? = null,
+    showHeader: Boolean = true,
+    modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.appColors
     var draft by rememberSaveable { mutableStateOf("חלב ולחם") }
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(colors.background)
             .verticalScroll(rememberScrollState())
@@ -63,7 +65,10 @@ fun DesignSystemGallery(
                     .testTag("design_system_gallery_close"),
             )
         }
-        ScreenHeader(title = "מערכת העיצוב", subtitle = "לילה כחול")
+        if (showHeader) {
+            ScreenHeader(title = "מערכת העיצוב", subtitle = "לילה כחול")
+        }
+        DesignSystemGallerySamples()
         MetricCard(
             label = "יתרה משותפת",
             value = "24,680",

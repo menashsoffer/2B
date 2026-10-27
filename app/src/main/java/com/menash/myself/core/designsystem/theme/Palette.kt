@@ -19,6 +19,8 @@ data class Palette(
     val success: Color,
     val warning: Color,
     val danger: Color,
+    val successSoft: Color,
+    val warningSoft: Color,
 )
 
 data class PaletteFamily(
@@ -40,6 +42,8 @@ val NightBlue = PaletteFamily(
         success = Color(0xFF3E6B4F),
         warning = Color(0xFF7A5414),
         danger = Color(0xFF8E3D3D),
+        successSoft = Color(0xFFE2EEE6),
+        warningSoft = Color(0xFFF4EAD6),
     ),
     dark = Palette(
         background = Color(0xFF11141B),
@@ -54,6 +58,8 @@ val NightBlue = PaletteFamily(
         success = Color(0xFFA9CDB6),
         warning = Color(0xFFE4C98A),
         danger = Color(0xFFE4B0B0),
+        successSoft = Color(0xFF1D2B23),
+        warningSoft = Color(0xFF2E2717),
     ),
 )
 

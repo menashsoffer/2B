@@ -189,7 +189,11 @@ class Commit534f2feReviewFixesTest {
         }
 
         val mainActivityText = File(srcRoot, "MainActivity.kt").readText()
-        assertTrue("MainActivity must render persistent_capture_fab", mainActivityText.contains("persistent_capture_fab"))
+        assertFalse(
+            "MainActivity must not declare a capture FAB",
+            mainActivityText.contains("persistent_capture_fab") ||
+                mainActivityText.contains("FloatingActionButton("),
+        )
         assertFalse(
             "MainActivity must not hide capture FAB on home tab",
             mainActivityText.contains("selectedTab != \"home\"")

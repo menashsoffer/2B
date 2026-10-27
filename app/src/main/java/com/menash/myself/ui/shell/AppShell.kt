@@ -1,0 +1,194 @@
+package com.menash.myself.ui.shell
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseUser
+import com.menash.myself.R
+import com.menash.myself.core.designsystem.component.FloatingNavBar
+import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
+import com.menash.myself.core.designsystem.component.FloatingNavItem
+import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Spacing
+import com.menash.myself.core.designsystem.theme.appColors
+import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.ui.MainViewModel
+import com.menash.myself.ui.settings.SettingsDialog
+import kotlinx.coroutines.launch
+
+@Composable
+fun AppShell(
+    mainViewModel: MainViewModel,
+    currentUser: FirebaseUser?,
+    onRequestSignIn: () -> Unit,
+    onSignedOut: () -> Unit,
+) {
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val selectedRoute = shellTabs.firstOrNull { tab ->
+        backStackEntry?.destination?.hierarchy?.any { it.route == tab.route } == true
+    }?.route.orEmpty()
+    val activeError by mainViewModel.errorFlow.collectAsStateWithLifecycle(initialValue = null)
+    val vmError by mainViewModel.errorState.collectAsStateWithLifecycle()
+    var showAccount by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
+    val appContainer = LocalAppContainer.current
+    val scope = rememberCoroutineScope()
+    val backupSettings by appContainer.settingsRepository.getSettingsFlow()
+        .collectAsStateWithLifecycle(initialValue = null)
+
+    fun openRoute(route: String) {
+        val destination = navController.currentDestination
+        val alreadyOpen = destination?.hierarchy?.any { it.route == route } == true
+        if (alreadyOpen) return
+        if (route in shellTabRoutes) {
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        } else {
+            navController.navigate(route)
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            val errorMessage = activeError ?: vmError
+            if (errorMessage != null) {
+                ShellErrorBanner(
+                    message = errorMessage,
+                    onDismiss = { mainViewModel.clearErrors() },
+                )
+            }
+            AppNavHost(
+                navController = navController,
+                displayName = currentUser?.displayName,
+                onOpenRoute = ::openRoute,
+                onOpenAccount = { showAccount = true },
+                onSignedOut = onSignedOut,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        FloatingNavBar(
+            items = shellTabs.map { tab ->
+                FloatingNavItem(
+                    route = tab.route,
+                    label = stringResource(tab.labelRes),
+                    icon = tab.icon,
+                    testTag = tab.testTag,
+                )
+            },
+            selectedRoute = selectedRoute,
+            onSelect = ::openRoute,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(
+                    start = FloatingNavBarDefaults.outerMargin,
+                    end = FloatingNavBarDefaults.outerMargin,
+                    bottom = FloatingNavBarDefaults.outerMargin,
+                ),
+        )
+    }
+
+    if (showAccount) {
+        AccountSheet(
+            signedIn = currentUser != null,
+            displayName = currentUser?.displayName?.takeIf { it.isNotBlank() },
+            email = currentUser?.email?.takeIf { it.isNotBlank() },
+            onDismiss = { showAccount = false },
+            onSettings = {
+                showAccount = false
+                showSettings = true
+            },
+            onHousehold = {
+                showAccount = false
+                openRoute(ShellRoute.Household)
+            },
+            onSignIn = {
+                showAccount = false
+                onRequestSignIn()
+            },
+            onSignedOut = {
+                showAccount = false
+                onSignedOut()
+            },
+        )
+    }
+
+    if (showSettings) {
+        val rate by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
+        SettingsDialog(
+            currentRate = rate?.rate ?: 0.0,
+            lastBackupTimestamp = backupSettings?.lastBackupTimestamp ?: 0L,
+            onDismiss = { showSettings = false },
+            onSaveRate = { newRate ->
+                scope.launch { appContainer.exchangeRateRepository.setManualRate(newRate) }
+                showSettings = false
+            },
+            onOpenLegacyScreen = { route ->
+                showSettings = false
+                openRoute(route)
+            },
+        )
+    }
+
+    LaunchedEffect(currentUser?.uid) {
+        if (currentUser != null) {
+            mainViewModel.initializeHouseholdForUser()
+        }
+    }
+}
+
+@Composable
+private fun ShellErrorBanner(
+    message: String,
+    onDismiss: () -> Unit,
+) {
+    val colors = MaterialTheme.appColors
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("global_error_banner")
+            .padding(horizontal = Spacing.s16, vertical = Spacing.s8),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = message,
+            style = AppType.caption,
+            color = colors.danger,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onDismiss) {
+            Text(text = stringResource(R.string.ui_str_2), style = AppType.caption)
+        }
+    }
+}

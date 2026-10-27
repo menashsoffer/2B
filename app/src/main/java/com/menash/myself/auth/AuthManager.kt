@@ -115,9 +115,10 @@ object AuthManager {
         context: Context,
         credentialManager: CredentialManager,
         onSignOutComplete: () -> Unit,
-        scope: CoroutineScope
+        scope: CoroutineScope,
+        signOutOfFirebase: () -> Unit = { Firebase.auth.signOut() },
     ) {
-        Firebase.auth.signOut()
+        signOutOfFirebase()
         scope.launch {
             try {
                 credentialManager.clearCredentialState(ClearCredentialStateRequest())

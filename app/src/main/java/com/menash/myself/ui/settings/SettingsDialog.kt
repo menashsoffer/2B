@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.BuildConfig
 import com.menash.myself.R
-import com.menash.myself.core.designsystem.gallery.DesignSystemGallery
+import com.menash.myself.ui.shell.GalleryIndex
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
@@ -48,7 +48,8 @@ fun SettingsDialog(
     onDismiss: () -> Unit,
     onSaveRate: (Double) -> Unit,
     onBackupNow: (() -> Unit)? = null,
-    onRestoreJson: ((String) -> Unit)? = null
+    onRestoreJson: ((String) -> Unit)? = null,
+    onOpenLegacyScreen: (String) -> Unit = {}
 ) {
     var rateInput by remember { mutableStateOf(currentRate.toString()) }
     val context = LocalContext.current
@@ -191,16 +192,15 @@ fun SettingsDialog(
                 HorizontalDivider()
 
                 Text(stringResource(R.string.ui_json_248), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                val lastBackupText = if (lastBackupTimestamp == 0L) {
-                    stringResource(R.string.ui_str_249)
-                } else {
-                    SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(lastBackupTimestamp))
+                if (lastBackupTimestamp > 0L) {
+                    val lastBackupText = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                        .format(Date(lastBackupTimestamp))
+                    Text(
+                        stringResource(R.string.ui_lastbackuptext_244, lastBackupText),
+                        fontSize = 12.sp,
+                        color = Color.DarkGray,
+                    )
                 }
-                Text(
-                    stringResource(R.string.ui_lastbackuptext_244, lastBackupText),
-                    fontSize = 12.sp,
-                    color = Color.DarkGray
-                )
                 Text(
                     stringResource(R.string.ui_str_243),
                     fontSize = 11.sp,
@@ -289,7 +289,10 @@ fun SettingsDialog(
             onDismissRequest = { showDesignGallery = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            DesignSystemGallery(onClose = { showDesignGallery = false })
+            GalleryIndex(onClose = { showDesignGallery = false }, onOpenLegacy = { route ->
+                showDesignGallery = false
+                onOpenLegacyScreen(route)
+            })
         }
     }
 }

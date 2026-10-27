@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.menash.myself.core.designsystem.theme.AppType
@@ -57,7 +59,8 @@ fun EmptyState(
             text = title,
             style = AppType.title,
             color = MaterialTheme.appColors.textPrimary,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            modifier = Modifier.semantics { heading() },
         )
 
         if (!description.isNullOrBlank()) {

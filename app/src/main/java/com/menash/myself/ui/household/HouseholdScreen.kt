@@ -20,6 +20,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.menash.myself.auth.AuthManager
+import com.menash.myself.auth.SignOutConfirmDialog
 import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.LoadingState
 import com.menash.myself.core.designsystem.component.OfflineIndicator
@@ -120,32 +121,18 @@ fun HouseholdScreen(
     }
 
     if (showSignOutConfirm) {
-        AlertDialog(
-            onDismissRequest = { showSignOutConfirm = false },
-            title = { Text(stringResource(R.string.ui_str_176)) },
-            text = { Text(stringResource(R.string.ui_str_172)) },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showSignOutConfirm = false
-                        val credentialManager = androidx.credentials.CredentialManager.create(context)
-                        AuthManager.signOut(
-                            context = context,
-                            credentialManager = credentialManager,
-                            scope = scope,
-                            onSignOutComplete = onSignOut
-                        )
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text(stringResource(R.string.ui_str_179))
-                }
+        SignOutConfirmDialog(
+            onDismiss = { showSignOutConfirm = false },
+            onConfirm = {
+                showSignOutConfirm = false
+                val credentialManager = androidx.credentials.CredentialManager.create(context)
+                AuthManager.signOut(
+                    context = context,
+                    credentialManager = credentialManager,
+                    scope = scope,
+                    onSignOutComplete = onSignOut,
+                )
             },
-            dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) {
-                    Text(stringResource(R.string.ui_str_92))
-                }
-            }
         )
     }
 }
