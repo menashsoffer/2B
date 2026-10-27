@@ -1,4 +1,4 @@
-package com.menash.myself.core.designsystem.tokens
+package com.menash.myself.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 import com.menash.myself.core.domain.model.ForWhom
@@ -10,12 +10,10 @@ data class BadgeColorScheme(
 )
 
 object ColorTokens {
-    // Primary brand accents
     val TealPrimary = Color(0xFF0D9488)
     val TealContainer = Color(0xFFCCFBF1)
     val TealOnContainer = Color(0xFF115E59)
 
-    // ForWhom Badges — Light Theme (verified WCAG AA/AAA contrast >= 5:1)
     val MineBackgroundLight = Color(0xFFE0F2FE)
     val MineContentLight = Color(0xFF0369A1)
     val MineBorderLight = Color(0xFFBAE6FD)
@@ -28,7 +26,6 @@ object ColorTokens {
     val BothContentLight = Color(0xFF92400E)
     val BothBorderLight = Color(0xFFFDE68A)
 
-    // ForWhom Badges — Dark Theme (verified WCAG AAA contrast >= 7:1)
     val MineBackgroundDark = Color(0xFF082F49)
     val MineContentDark = Color(0xFF7DD3FC)
     val MineBorderDark = Color(0xFF0369A1)
@@ -41,7 +38,6 @@ object ColorTokens {
     val BothContentDark = Color(0xFFFCD34D)
     val BothBorderDark = Color(0xFFB45309)
 
-    // Financial Indicators
     val FinancialGain = Color(0xFF16A34A)
     val FinancialGainContainer = Color(0xFFDCFCE7)
     val FinancialLoss = Color(0xFFDC2626)

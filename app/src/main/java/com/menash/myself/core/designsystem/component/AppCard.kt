@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.menash.myself.core.designsystem.tokens.Spacing
+import com.menash.myself.core.designsystem.theme.Spacing
 
 /**
  * Standard Material 3 card container adhering to the design system.

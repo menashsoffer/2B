@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,6 +13,9 @@ import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +28,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.menash.myself.BuildConfig
 import com.menash.myself.R
+import com.menash.myself.core.designsystem.gallery.DesignSystemGallery
+import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.core.external.hebcal.IsraeliCity
 import kotlinx.coroutines.launch
@@ -48,6 +56,7 @@ fun SettingsDialog(
     val appContainer = LocalAppContainer.current
 
     var showCityDropdown by remember { mutableStateOf(false) }
+    var showDesignGallery by remember { mutableStateOf(false) }
     val boiRateState by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
     val selectedCityState by appContainer.hebcalRepository.selectedCityFlow.collectAsStateWithLifecycle()
     var useManualRate by remember(boiRateState?.isManualOverride) { mutableStateOf(boiRateState?.isManualOverride == true) }
@@ -234,6 +243,18 @@ fun SettingsDialog(
                         Text(stringResource(R.string.ui_str_250))
                     }
                 }
+
+                Text(
+                    text = "גרסה ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                    style = AppType.caption,
+                    color = MaterialTheme.appColors.textSecondary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("settings_version_line")
+                        .pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { showDesignGallery = true })
+                        },
+                )
             }
         },
         confirmButton = {
@@ -263,4 +284,12 @@ fun SettingsDialog(
             }
         }
     )
+    if (showDesignGallery) {
+        Dialog(
+            onDismissRequest = { showDesignGallery = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            DesignSystemGallery(onClose = { showDesignGallery = false })
+        }
+    }
 }

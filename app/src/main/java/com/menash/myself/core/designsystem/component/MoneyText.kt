@@ -6,7 +6,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
-import com.menash.myself.core.designsystem.tokens.TypographyTokens
+import com.menash.myself.core.designsystem.theme.TypographyTokens
+import com.menash.myself.core.designsystem.theme.tabular
 import com.menash.myself.core.domain.model.Money
 import java.text.NumberFormat
 import java.util.Locale
@@ -62,7 +63,7 @@ fun MoneyText(
     Text(
         text = MoneyFormatter.format(money, includeAgorot),
         color = color,
-        style = style,
+        style = style.tabular(),
         modifier = modifier.testTag(testTag)
     )
 }
@@ -79,7 +80,7 @@ fun MoneyText(
     Text(
         text = MoneyFormatter.format(shekels, includeAgorot),
         color = color,
-        style = style,
+        style = style.tabular(),
         modifier = modifier.testTag(testTag)
     )
 }

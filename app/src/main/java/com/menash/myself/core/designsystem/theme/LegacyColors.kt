@@ -1,7 +1,8 @@
-package com.menash.myself.ui.theme
+package com.menash.myself.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
+/** Previous Navy / Emerald / Amber names, kept so older call sites can still resolve them. */
 val NavyPrimary = Color(0xFF0F2E4A)
 val NavyOnPrimary = Color(0xFFFFFFFF)
 val NavyContainer = Color(0xFFE2EDF8)

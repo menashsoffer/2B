@@ -19,8 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.menash.myself.core.designsystem.tokens.Spacing
-import com.menash.myself.core.designsystem.tokens.TypographyTokens
+import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Spacing
+import com.menash.myself.core.designsystem.theme.appColors
 
 /**
  * Standard list row for list screens (tasks, inbox, fitness, calculators).
@@ -71,16 +72,16 @@ fun ListRow(
         ) {
             Text(
                 text = title,
-                style = TypographyTokens.TitleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                style = AppType.title,
+                color = MaterialTheme.appColors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             if (!subtitle.isNullOrBlank()) {
                 Text(
                     text = subtitle,
-                    style = TypographyTokens.BodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = AppType.caption,
+                    color = MaterialTheme.appColors.textSecondary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )

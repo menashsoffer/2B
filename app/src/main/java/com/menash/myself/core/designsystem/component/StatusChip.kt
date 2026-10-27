@@ -22,8 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import com.menash.myself.core.designsystem.tokens.Spacing
-import com.menash.myself.core.designsystem.tokens.TypographyTokens
+import com.menash.myself.core.designsystem.theme.Spacing
+import com.menash.myself.core.designsystem.theme.TypographyTokens
 
 /**
  * Filter and status indicator chip for task states, dream categories, and quick filters.

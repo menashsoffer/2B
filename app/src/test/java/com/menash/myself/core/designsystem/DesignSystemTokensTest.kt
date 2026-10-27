@@ -3,7 +3,7 @@ package com.menash.myself.core.designsystem
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.menash.myself.core.designsystem.component.MoneyFormatter
-import com.menash.myself.core.designsystem.tokens.ColorTokens
+import com.menash.myself.core.designsystem.theme.ColorTokens
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Money
 import org.junit.Assert.assertEquals

@@ -52,7 +52,7 @@ import com.menash.myself.ui.inbox.InboxTriageScreen
 import com.menash.myself.ui.more.MoreScreen
 import com.menash.myself.ui.quickcapture.QuickCaptureDialog
 import com.menash.myself.ui.tasks.TasksScreen
-import com.menash.myself.ui.theme.MyApplicationTheme
+import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 
 import com.menash.myself.R
 import androidx.compose.ui.res.stringResource

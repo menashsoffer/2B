@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inbox
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,8 +19,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.menash.myself.core.designsystem.tokens.Spacing
-import com.menash.myself.core.designsystem.tokens.TypographyTokens
+import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Spacing
+import com.menash.myself.core.designsystem.theme.appColors
 
 /**
  * Standard empty state component shown when a list, filter, or search returns no results.
@@ -48,15 +48,15 @@ fun EmptyState(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            tint = MaterialTheme.appColors.accent.copy(alpha = 0.5f)
         )
 
         Spacer(modifier = Modifier.height(Spacing.md))
 
         Text(
             text = title,
-            style = TypographyTokens.TitleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = AppType.title,
+            color = MaterialTheme.appColors.textPrimary,
             textAlign = TextAlign.Center
         )
 
@@ -64,20 +64,19 @@ fun EmptyState(
             Spacer(modifier = Modifier.height(Spacing.xs))
             Text(
                 text = description,
-                style = TypographyTokens.BodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = AppType.body,
+                color = MaterialTheme.appColors.textSecondary,
                 textAlign = TextAlign.Center
             )
         }
 
         if (actionLabel != null && onActionClick != null) {
             Spacer(modifier = Modifier.height(Spacing.lg))
-            Button(
+            PrimaryButton(
+                text = actionLabel,
                 onClick = onActionClick,
                 modifier = Modifier.testTag("${testTag}_action")
-            ) {
-                Text(text = actionLabel)
-            }
+            )
         }
     }
 }

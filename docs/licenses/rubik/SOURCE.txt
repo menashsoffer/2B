@@ -1,0 +1,5 @@
+Rubik by The Rubik Project Authors.
+Downloaded unmodified from the official google/fonts repository.
+Source: https://github.com/google/fonts/tree/main/ofl/rubik
+File: Rubik[wght].ttf, bundled as app/src/main/res/font/rubik.ttf
+Licence: OFL.txt in this directory (SIL Open Font License 1.1).

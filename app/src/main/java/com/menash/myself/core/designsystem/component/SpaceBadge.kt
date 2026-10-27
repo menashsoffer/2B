@@ -17,9 +17,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.menash.myself.R
-import com.menash.myself.core.designsystem.tokens.ColorTokens
-import com.menash.myself.core.designsystem.tokens.Spacing
-import com.menash.myself.core.designsystem.tokens.TypographyTokens
+import com.menash.myself.core.designsystem.theme.ColorTokens
+import com.menash.myself.core.designsystem.theme.Spacing
+import com.menash.myself.core.designsystem.theme.TypographyTokens
 import com.menash.myself.core.domain.model.ForWhom
 
 /**
