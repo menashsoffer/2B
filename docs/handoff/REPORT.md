@@ -1,165 +1,87 @@
-# Task 1 — Onboarding and baseline
+# Task 2 — Close step 8
 
-No product code was changed. The only tracked additions are the Gradle wrapper scripts and jar (the wrapper properties file was already on `main` and was not modified) and this report.
+commit: see git log
 
-## Commits pushed to main
+No test was deleted, `@Ignore`d, or weakened. Signing was not changed. `app/google-services.json` and `debug.keystore` stayed untracked. Step 9 was not started.
 
-- `556814d49a4da1f342d271d2287861cb1458175a` — `chore: add Gradle wrapper + Task 1 baseline report`
-- `2709eb26428bc29acc40d73b23bf090df5a5211c` — `docs: record Task 1 baseline commit hash`
-- `4ca921170cc4e5dd508ecb14e43e481ca937c041` — `docs: record both Task 1 commit hashes`
-- `d09ede5e4d12402cbc06a246cc68363861c2bfa4` — `docs: record the third Task 1 hash`
-- Tip of `main` is the commit with message `docs: record the fourth Task 1 hash`, parent `d09ede5e4d12402cbc06a246cc68363861c2bfa4`. It only adds that fourth hash to this list. Its own hash is not copied here; it is `git rev-parse origin/main`.
+## Raw Gradle lines
 
-## a. Access
-
-| Check | Result | How |
-| --- | --- | --- |
-| Read the private repo | yes | Workspace is `https://github.com/menashsoffer/Myself-`. `git fetch origin main` succeeded. Local `main` matched `origin/main` at `b9199d0` before this task's commit. |
-| Push to `main` | yes | `git push origin main` succeeded (`b9199d0..556814d`, `556814d..2709eb2`, `2709eb2..4ca9211`, `4ca9211..d09ede5`), plus the tip commit described above. No branch protection blocked it. Direct push, no pull request. |
-| Run Gradle (build + unit tests) | yes | Commands were `./gradlew assembleDebug` and `./gradlew testDebugUnitTest` (Gradle wrapper 9.3.1). JDK already on the VM: OpenJDK 21.0.12.1 (Ubuntu package `21.0.12.1+1-1-24.04.4-Ubuntu`). AGP 9.1.1's minimum JDK is 17. Android SDK was not installed; I installed it. |
-
-Android SDK, installed by me under `/home/ubuntu/android-sdk` (`/opt` was not writable):
-
-- Command-line tools: `commandlinetools-linux-15859902_latest.zip` from `dl.google.com`, placed at `cmdline-tools/latest`. Licenses accepted.
-- `platforms;android-36.1` — matches `compileSdk { version = release(36) { minorApiLevel = 1 } }`.
-- `build-tools;36.0.0` (AGP 9.1 default) and `build-tools;36.1.0`.
-- `platform-tools`.
-- Gitignored `local.properties` with `sdk.dir=/home/ubuntu/android-sdk`. `ANDROID_HOME` and `ANDROID_SDK_ROOT` were set to that path for the Gradle runs. Not committed.
-
-Wrapper version: AGP `9.1.1` (`gradle/libs.versions.toml`). The AGP compatibility table lists Gradle **9.3.1** as both the minimum and the default for AGP 9.1 (Android Gradle plugin 9.1.1 release notes and https://developer.android.com/build/releases/about-agp). `gradle/wrapper/gradle-wrapper.properties` already pointed at `gradle-9.3.1-bin.zip`. I generated the missing `gradlew`, `gradlew.bat`, and `gradle/wrapper/gradle-wrapper.jar` with the Gradle 9.3.1 binary: `gradle wrapper --gradle-version 9.3.1 --distribution-type bin`. The properties file content is unchanged (`git diff` empty).
-
-## b. `git log -5 --oneline` of `origin/main` before this task's commit
+First `./gradlew testDebugUnitTest` after removing the duplicate `import java.time.LocalDate` and before any other fix (fake `app/google-services.json` present):
 
 ```
-b9199d0 feat: improve error tracking and BOI sync
-fe04f75 refactor: improve BOI exchange rate staleness logic
-51b2980 fix(exchange-rate): improve BOI rate handling robustness
-d31d220 refactor: enhance manual exchange rate override
-e141373 feat(ui): add Hebcal integration to home screen
+106 tests completed, 4 failed
 ```
 
-## c. Gradle wrapper
-
-Added (only these, plus this report):
-
-- `gradlew`
-- `gradlew.bat`
-- `gradle/wrapper/gradle-wrapper.jar`
-
-Already present, not modified: `gradle/wrapper/gradle-wrapper.properties` (`distributionUrl` = Gradle 9.3.1 bin).
-
-## d. Build and unit tests
-
-`google-services.json` is not in the repo. The google-services plugin is set to `MissingGoogleServicesStrategy.WARN`, and `gradle.properties` has `googleServices.missing.passthrough=true`.
-
-`app/build.gradle.kts` signs debug with signing config `debugConfig`, which requires `/workspace/debug.keystore`. That file is gitignored and was not in the repo. The first `assembleDebug` (no json, no keystore) died at signing before Kotlin compile finished.
-
-I then created a **local, gitignored** debug keystore with the alias and passwords already written in `app/build.gradle.kts` (`androiddebugkey` / `android`). It was not committed. I also created an **untracked, fake** `app/google-services.json` (package name `com.aistudio.mycalculators.qvxmzt`, project id `fake-local-not-a-real-firebase-project`, API key `FAKE_LOCAL_NOT_A_REAL_API_KEY`, web client id `000000000000-fakelocalonlynotarealclient.apps.googleusercontent.com`). It was not committed. `app/google-services.json` is **not** in `.gitignore`.
-
-### Without `google-services.json` (local debug keystore present, so compile actually ran)
-
-`./gradlew assembleDebug`
-
 ```
-BUILD FAILED in 19s
+BUILD FAILED in 31s
 ```
 
-`./gradlew testDebugUnitTest`
+Final `./gradlew testDebugUnitTest` after the fixes. Gradle printed no test count on success:
 
 ```
-BUILD FAILED in 23s
+BUILD SUCCESSFUL in 12s
 ```
 
-Both failed in `:app:compileDebugKotlin` before any test ran. Compiler lines:
+`app/build/test-results/testDebugUnitTest/TEST-*.xml` (25 files): tests=111, failures=0, errors=0, skipped=0.
 
-- `e: file:///workspace/app/src/main/java/com/menash/myself/auth/AuthManager.kt:36:40 Unresolved reference 'default_web_client_id'.`
-- `e: file:///workspace/app/src/main/java/com/menash/myself/auth/AuthManager.kt:82:40 Unresolved reference 'default_web_client_id'.`
+## Why an assertion changed
 
-Earlier attempt, no keystore and no json — `./gradlew assembleDebug`:
+`Step6And7ReviewFixesTest` expected `lastTechnicalError` to be `Active household session required`. The failure was `expected:<...old session required[]> but was:<...old session required[. User must be in a household.]>`. That expectation was wrong. `ErrorReporter.reportError` stores `throwable.message`, and `HouseholdSession.requireHouseholdId` throws `IllegalStateException("Active household session required. User must be in a household.")`. The friendly `MSG_NO_HOUSEHOLD` check in the same test was already right. Production was not changed. The assertion is now the full message.
 
-```
-BUILD FAILED in 1m 32s
-```
+`testSafeLaunchDoesNotSwallowJvmError` failed `assertTrue(caught)` with a bare `AssertionError`. That expectation was wrong. The `CoroutineExceptionHandler` sat on a `GlobalScope` job that only called `testSafeLaunchError()` and then finished normally. `safeLaunch` starts a different coroutine on `viewModelScope`. It catches `Exception` and rethrows other `Throwable`s, so `AssertionError` is not stored in `errorState`. The handler never saw it, so `caught` stayed false. The test now passes a `CoroutineScope` with a `CoroutineExceptionHandler` into `ViewModel` (that scope is `viewModelScope`) and asserts the `AssertionError` arrives with message `JVM AssertionError must propagate` and that `errorState` stays null. `BaseViewModel` gained a protected constructor that forwards that scope. The existing constructor is unchanged.
 
-First line of that failure: `Keystore file '/workspace/debug.keystore' not found for signing config 'debugConfig'.` The plugin had already printed `File google-services.json is missing.` as a warning, not as the failure.
+`testWorkerDelay` failed `expected:<27000000> but was:<51805260>`. The assertion was not changed. `computeInitialDelay` used `ZonedDateTime.now(clock.zone)`, which reads the wall clock in that zone and ignores the fixed instant. The run was about 02:06 Asia/Jerusalem on 2026-10-27, so the delay until 16:30 that day was 51805260 ms, not the Sunday 09:00 fixture's 27000000 ms (7.5 hours). The fix is `ZonedDateTime.now(clock)`. Thursday 17:00 still targets Friday 16:30. It was not moved to Sunday.
 
-### With the untracked fake `app/google-services.json` (and the local debug keystore)
+The old combined "fresh" check never ran (the class crashed earlier on `ApplicationProvider`). Its fixture was still wrong for "does not fetch": official date 2026-10-25, fetched `2026-10-25T10:00:00Z` (12:00 Israel), clock `2026-10-25T17:00:00Z` (19:00 Israel). `BoiStalenessPolicy` treats that Sunday as a business day and a fetch before 16:00 as stale once now is after 16:00. Case (c) uses a rate fetched at 16:30 Israel (`2026-10-25T14:30:00Z`), after that cutoff, and asserts no fetch.
 
-`./gradlew assembleDebug`
+## Item 4 — what I opened
 
-```
-BUILD SUCCESSFUL in 38s
-```
+Schedule page `https://www.boi.org.il/roles/markets/reprate/` (curl HTTP 200). Sentences on that page:
 
-`./gradlew testDebugUnitTest`
+- "בנק ישראל מחשב את השערים היציגים פעם אחת ביום, בימי העבודה במטבע חוץ בלבד"
+- "בימי שבת וראשון ובימי שבתון בישראל אין שערים יציגים"
+- "השער היציג מתפרסם כיום זמן קצר אחרי השעה 15.15. (בימי ו', בחול המועד ובערבי חגים – זמן קצר אחרי השעה 12.15)"
+- The same page says this time is not guaranteed ("מועד זה אינו מובטח").
 
-```
-BUILD FAILED in 14s
-```
+Friday is a publication day (shortly after 12:15). Sunday is not. The "Thursday after publication → Sunday" condition was not met, so `computeInitialDelay` / `testWorkerDelay` were not retargeted for that reason.
 
-No test method ran. `:app:compileDebugUnitTestKotlin` failed first. There is no test class / test name / assertion failure to list. The compiler lines are:
+SDMX, series `RER_USD_ILS`, `DATA_TYPE=OF00`:
 
-- class file `com.menash.myself.Step8ExternalDataAndFixesTest` — no test name (did not execute) — `e: file:///workspace/app/src/test/java/com/menash/myself/Step8ExternalDataAndFixesTest.kt:23:18 Conflicting import: imported name 'LocalDate' is ambiguous.`
-- same class — no test name — `e: file:///workspace/app/src/test/java/com/menash/myself/Step8ExternalDataAndFixesTest.kt:33:18 Conflicting import: imported name 'LocalDate' is ambiguous.`
+- `https://edge.boi.org.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS?c%5BDATA_TYPE%5D=OF00&lastNObservations=3&format=csv` returned `2026-10-22` 3.107, `2026-10-23` 3.112, `2026-10-26` 3.078.
+- Same host, `startPeriod=2026-09-01&endPeriod=2026-10-26`: 38 rows, Monday–Friday only, no Sunday and no Saturday. Weekday gaps in that window: `2026-09-11` (Friday) and `2026-09-21` (Monday). I did not confirm those two dates from a holiday calendar.
+- `https://edge.boi.gov.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS?c%5BDATA_TYPE%5D=OF00&lastNObservations=1&format=csv` via curl: HTTP 200, one row, `RER_USD_ILS`, `2026-10-26`, `3.078`. A WebFetch of that same URL returned HTTP 500; curl returned the CSV. `edge.boi.org.il` with `lastNObservations=1` returned the same row.
 
-Cause, not fixed: `import java.time.LocalDate` appears twice in that file (lines 23 and 33). Nothing was disabled, ignored, or deleted.
-
-Gradle also printed, on these builds: `Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered.` The assemble with the fake json still finished successfully.
-
-## e. Implementation plan (not edited)
-
-File: `.aistudio/artifacts/brain/a829880c-5ce2-440f-a60c-5df6579fdc7f/implementation_plan.md`.
-
-We are on **Step 8** (official external sources and DataStore: Bank of Israel and Hebcal), **Round 3**, which the plan titles "Current Fixes" and does **not** mark complete. Steps 0, 1, 2 (called 1.5), 3, 4, 5, 6, and 7 are marked complete.
-
-Round 3, as written, is: separate `officialRate` from `manualRate`; staleness via an injectable clock (`BoiStalenessPolicy.isStale`); HTTP/CSV back in `BoiExchangeRateClient.fetchRateWindow`; WorkManager `UPDATE` and an exact delay; home Hebcal card opens `CityPickerDialog`; `Step8RoundThreeTest.kt`.
-
-Still open in the plan:
-
-- Step 8 itself has no completion mark (unlike steps 0–7). Round 3 is labeled current, not done.
-- Step 9: sign in, create/join household, copy calculators from Room to `households/{hid}/...`, schema migration of existing Firestore docs (`space` to `ownerUid` + `forWhom` + `isPrivate`, money to agorot, dates to ISO `yyyy-MM-dd`), then remove Room only after a verified backup and counts. Not started.
-- Step 9.5: calculators move from `Double` to `Money`. Not started.
-- Phase 2 stays locked until Phase 1 is finished. Not started.
-
-## f. Architecture (10 lines)
-
-1. Package `com.menash.myself`, applicationId stays `com.aistudio.mycalculators.qvxmzt`. `core/` is shared infrastructure (repository interfaces, manual DI, design system, session, BOI and Hebcal clients). `feature/` modules (home, capture, dreams, tasks, fitness, calendar, import catalog, settings, household, calculators) use `ui/`, `viewmodel/`, and pure `domain/`.
-2. Features depend only on interfaces in `core/data/repository`. They do not import Firestore.
-3. `AppContainer` is manual DI, owned by `MyselfApp`, exposed as `LocalAppContainer`, and it survives activity recreation. It builds Room repositories for calculators and settings (`my_calculators.db`, usable with no signed-in user) and Firestore repositories for household data.
-4. `HouseholdSession` is the active `householdId`. Firestore observe flows follow it with `flatMapLatest` and emit an empty list when the id is missing. `requireHouseholdId()` throws if a write would use an empty path.
-5. Shared items live under `households/{id}/...`. Items with `isPrivate = true` live only under `users/{uid}/private/...`. Fitness stays on the user.
-6. ViewModel actions go through `BaseViewModel.safeLaunch`, which stores a Hebrew message from `ErrorMapper` on `errorState` and on `ErrorReporter`. Cancellation is rethrown. JVM `Error` is rethrown.
-7. Firestore `LifeHubRepository` and `HouseholdRepository` each expose `errorFlow`. `AppContainer.errorFlow` combines the reporter with those two flows.
-8. `MainActivity` collects that flow and `MainViewModel.errorState` and shows `GlobalErrorBanner`. Screens also render `UiState.Error` with the shared `ErrorState` composable. Loading, empty, error, and offline are the four screen states.
+This matches the israel-finance-expert note (Mon–Fri, Friday is a publication day, Sunday is not, ~15:15 / Friday ~12:15, the three latest values, 38 rows since 2026-09-01, series id correct). I also saw the two weekday gaps and the gov.il WebFetch 500 versus curl 200.
 
 ## Task table
 
 | item | status | files changed | test that covers it |
 | --- | --- | --- | --- |
-| a. Access: read repo, push, Gradle | done | none | no unit test; `git fetch` and the two `./gradlew` commands |
-| b. `git log -5 --oneline` of `origin/main` | done | none | no unit test |
-| c. Gradle wrapper matching AGP 9.1.1 (Gradle 9.3.1) | done | `gradlew`, `gradlew.bat`, `gradle/wrapper/gradle-wrapper.jar` (`gradle-wrapper.properties` unchanged) | no unit test; both Gradle commands ran via `./gradlew` |
-| d. `assembleDebug` and `testDebugUnitTest`, nothing fixed | done | none committed (untracked fake `app/google-services.json`; gitignored `debug.keystore` and `local.properties`) | no test ran. `compileDebugUnitTestKotlin` failed on duplicate `LocalDate` import in `Step8ExternalDataAndFixesTest` |
-| e. Plan step and round, file not edited | done | none | no unit test |
-| f. Architecture note | done | none | no unit test |
+| 1a. Remove duplicate `LocalDate` import | done | `app/src/test/java/com/menash/myself/Step8ExternalDataAndFixesTest.kt` | class compiles; final suite 111/0 |
+| 1b. First unit run, before other fixes | done | none | the run above: `BUILD FAILED in 31s`, 106 tests, 4 failed |
+| 1c. Fix the four failures | done | `BaseViewModel.kt`, `BoiSyncWorker.kt`, `Step6And7ReviewFixesTest.kt`, `Step8ExternalDataAndFixesTest.kt` | `testSafeLaunchDoesNotSwallowJvmError`, `fix 1 - createTask with no household...`, `testWorkerDelay`; final suite 111/0 |
+| 2a. Gitignore `app/google-services.json`, `*.jks`, `*.keystore` | done | `.gitignore` | no unit test |
+| 2b. Local build section | done | `docs/RULES.md` section 7 | no unit test |
+| 3. Split BOI repository tests (a–f) | done | `BoiExchangeRateRepositoryTest.kt` | `manualOverrideOnly_noOfficialRate_fetchesOnce`, `officialRateStale_whileOverrideActive_fetches`, `officialRateFresh_doesNotFetch`, `historical_saturdayRequest_returnsThursdayRateAndDate`, `historical_emptyWindow_isFailure`, `historical_sourceFailure_isFailure` |
+| 4. Verify BOI days; do not move Thursday → Sunday | done | `docs/RULES.md` section 6.5 (schedule, URL, series). `computeInitialDelay` only gained use of the clock instant | `testWorkerDelay` still expects Thursday 17:00 → Friday 16:30 and passed |
+| 5. Mark step 8 complete | done | `implementation_plan.md` heading only | suite green, so the mark was applied |
+
+Historical cases (d–f) passed with no production change. `fetchHistoricalRate` already returns Thursday's rate for a Saturday request when the window is Thursday then Sunday, and `Result.failure` for an empty window and for a source failure.
 
 ## Who did the work
 
-chief-architect (eng manager) scoped and dispatched; executed by a Cursor cloud coding agent; android-kotlin-expert and devops-expert were not involved in execution of this task.
+chief-architect scoped and dispatched; executed by a Cursor cloud coding agent. israel-finance-expert independently verified BOI schedule and SDMX series from official sources.
 
 ## Noticed, not changed
 
-- `Step8ExternalDataAndFixesTest.kt` imports `java.time.LocalDate` twice, so `testDebugUnitTest` does not compile. Not fixed.
-- `AuthManager` reads `R.string.default_web_client_id`, which exists only after the google-services plugin processes a json that has an OAuth client of type 3. Without that file, `assembleDebug` does not compile.
-- `app/google-services.json` is not listed in `.gitignore`. The fake file is untracked. `git add -A` would pick it up. I did not add a gitignore rule.
-- Debug signing requires a gitignored `debug.keystore` that is not in the repo. `assembleDebug` cannot finish without one (or a signing change, which I did not make).
-- SDK cmdline-tools warned that they only understand SDK XML up to version 3 and saw version 4. Assemble still succeeded with the fake json.
-- `docs/KNOWN_ISSUES.md` locked calculator behaviors were not touched. Calculators are still on `Double` until Step 9.5.
-- Instrumentation tests and `firestore.test.js` were not run. This task asked only for `assembleDebug` and `testDebugUnitTest`.
+- `BoiStalenessPolicy.kt` lines 18–22 treat Sunday–Thursday as business days and omit Friday. Line 16 sets `PUBLISH_TIME` to 16:00. Lines 36–40 use that cutoff. Official page: no representative rate on Saturday or Sunday; Friday is a publication day; publish shortly after 15:15, and on Friday / Hol Hamoed / holiday eves shortly after 12:15; the time is not guaranteed.
+- `BoiSyncWorker.doWork` lines 53–54 return success without fetching on Friday and Saturday, so Sunday is still treated as a sync day and Friday is skipped.
+- `computeInitialDelay` still aims at 16:30, including Friday, not at ~15:15 or Friday ~12:15. Only the ignored-clock bug was fixed.
+- `BoiRateStore.rateFlow` computes `isStale` with `Instant.now()` and does not use the result. Not this task.
+- The step 8 body in `implementation_plan.md` still says a daily check after 16:00 and a worker that skips Friday–Saturday. Item 5 allowed only the completion mark on the heading.
+- `edge.boi.gov.il` WebFetch returned HTTP 500 while curl of the same URL returned HTTP 200 and the CSV. Not a code change.
 
 ## Open questions for Claude
 
-1. Is Step 8 Round 3 accepted? The plan still says "Current Fixes" and does not check Step 8 off, while `origin/main` already has the BOI and Hebcal commits through `b9199d0`.
-2. May a later task fix the duplicate `LocalDate` import so unit tests compile? This task forbade that fix.
-3. Should `google-services.json` be gitignored, and should CI inject a fake one so `default_web_client_id` resolves? I did not change ignore rules.
-4. Should `debug.keystore` be supplied another way so `assembleDebug` works on a clean clone? I did not change signing.
+1. Next task: retarget `BoiStalenessPolicy` and `BoiSyncWorker.doWork` (and the 16:30 delay) from Sunday–Thursday / 16:00 to Monday–Friday, shortly after 15:15, and Friday / eves shortly after 12:15? The time is officially not guaranteed.
+2. Should a later edit also replace the step 8 plan sentences that still say 16:00 and "skip Friday–Saturday"?

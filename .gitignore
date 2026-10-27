@@ -16,4 +16,7 @@
 local.properties
 .env
 debug.keystore
+app/google-services.json
+*.jks
+*.keystore
 *-debug.log

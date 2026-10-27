@@ -30,7 +30,6 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 @RunWith(RobolectricTestRunner::class)
 @org.robolectric.annotation.Config(sdk = [36])
@@ -38,7 +37,9 @@ import java.time.LocalDate
 class Step8ExternalDataAndFixesTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
-    private class TestViewModel : BaseViewModel(DefaultErrorReporter()) {
+    private class TestViewModel : BaseViewModel {
+        constructor() : super(DefaultErrorReporter())
+        constructor(scope: kotlinx.coroutines.CoroutineScope) : super(DefaultErrorReporter(), scope)
         fun testSafeLaunchException() {
             safeLaunch("testAction") {
                 throw IOException("Network connection timeout")
@@ -73,28 +74,19 @@ class Step8ExternalDataAndFixesTest {
 
     @Test
     fun testSafeLaunchDoesNotSwallowJvmError() = runTest {
-        Dispatchers.setMain(testDispatcher)
-        try {
-            val vm = TestViewModel()
-            var caught = false
-            val handler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
-                if (throwable is AssertionError) caught = true
-            }
-            // Use handler in VM
-            // ... Actually this might require updating TestViewModel. 
-            // Just asserting the job is fine for now as per instructions "Assert it with a CoroutineExceptionHandler"
-            
-            // Re-read: "Assert it with a CoroutineExceptionHandler, or by checking that the job completed exceptionally"
-            // Let's do checking job completed exceptionally
-            
-            val job = kotlinx.coroutines.GlobalScope.launch(handler) {
-                vm.testSafeLaunchError()
-            }
-            job.join()
-            assertTrue(caught)
-        } finally {
-            Dispatchers.resetMain()
+        var caught: Throwable? = null
+        val handler = kotlinx.coroutines.CoroutineExceptionHandler { _, throwable ->
+            caught = throwable
         }
+        val scope = kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + UnconfinedTestDispatcher(testScheduler) + handler
+        )
+        val vm = TestViewModel(scope)
+        vm.testSafeLaunchError()
+        testScheduler.advanceUntilIdle()
+        assertTrue(caught is AssertionError)
+        assertEquals("JVM AssertionError must propagate", caught?.message)
+        assertNull(vm.errorState.value)
     }
 
     @Test

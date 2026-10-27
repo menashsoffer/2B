@@ -16,7 +16,7 @@ class BoiSyncWorker(
         private const val WORK_NAME = "BoiSyncPeriodicWork"
 
         fun computeInitialDelay(clock: java.time.Clock = java.time.Clock.system(BoiStalenessPolicy.ISRAEL_ZONE)): Long {
-            val now = java.time.ZonedDateTime.now(clock.zone)
+            val now = java.time.ZonedDateTime.now(clock)
             var target = now.withHour(16).withMinute(30).withSecond(0).withNano(0)
             if (now.isAfter(target) || now == target) {
                 target = target.plusDays(1)

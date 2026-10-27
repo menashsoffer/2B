@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,9 +16,17 @@ import kotlinx.coroutines.launch
  * action/flow errors into friendly Hebrew [errorState] and [ErrorReporter] while
  * always rethrowing [CancellationException] and propagating JVM [Error]s.
  */
-abstract class BaseViewModel(
+abstract class BaseViewModel : ViewModel {
+
     protected val errorReporter: ErrorReporter
-) : ViewModel() {
+
+    constructor(errorReporter: ErrorReporter) : super() {
+        this.errorReporter = errorReporter
+    }
+
+    protected constructor(errorReporter: ErrorReporter, scope: CoroutineScope) : super(scope) {
+        this.errorReporter = errorReporter
+    }
 
     protected val _errorState = MutableStateFlow<String?>(null)
     val errorState: StateFlow<String?> = _errorState.asStateFlow()

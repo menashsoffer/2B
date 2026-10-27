@@ -150,7 +150,10 @@ class Step6And7ReviewFixesTest {
         val err = viewModel.errorState.value
         assertNotNull("Expected errorState to be populated instead of crashing", err)
         assertEquals(com.menash.myself.core.ui.ErrorMapper.MSG_NO_HOUSEHOLD, err)
-        assertEquals("Active household session required", errorReporter.lastTechnicalError)
+        assertEquals(
+            "Active household session required. User must be in a household.",
+            errorReporter.lastTechnicalError
+        )
     }
 
     @Test
