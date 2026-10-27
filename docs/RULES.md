@@ -134,3 +134,39 @@
 - **JDK:** OpenJDK 21.0.12.1 (המינימום של AGP 9.1 הוא 17). **Gradle:** 9.3.1 דרך ה-wrapper. **Android SDK:** `platforms;android-36.1` (תואם `compileSdk` 36 עם `minorApiLevel = 1`), Build-Tools `36.0.0` (ברירת המחדל של AGP 9.1; במכונה הזו הותקן גם `36.1.0`).
 - **קבצים ששיבוט נקי צריך ואינם ב-git:** `app/google-services.json` (הפלאגין מייצר ממנו את `default_web_client_id`) ו-`debug.keystore` בשורש הפרויקט (ה-debug signing הקיים, `debugConfig`, לא משתנה).
 - **כלל:** בנייה עם `google-services.json` מזויף מיועדת לבדיקות יחידה בלבד. אסור להתקין אותה על טלפון.
+
+---
+
+## 8. התקנה והפצה (Install and distribution)
+
+דחיפה ל-`main` מפעילה את `.github/workflows/distribute.yml`, וגם הפעלה ידנית (workflow_dispatch). הודעת קומיט שמכילה `[skip ci]` מדלגת על הריצה. כך מגיעה גרסה לטלפונים, בלי Android Studio ובלי כבל:
+
+1. אם סוד חסר, הריצה נעצרת מיד ומדפיסה את **שם** הסוד. אין build ואין העלאה.
+2. `app/google-services.json` נכתב מהסוד `GOOGLE_SERVICES_JSON` — הקובץ האמיתי, לא הקובץ המזויף של בדיקות היחידה.
+3. `./gradlew testDebugUnitTest`. כישלון בדיקות עוצר את ההפצה.
+4. `./gradlew assembleRelease` בונה APK חתום. `versionCode` מגיע ממשתנה הסביבה `VERSION_CODE`; ב-CI זה `github.run_number`, כדי שכל בנייה תהיה חדשה והטלפון יקבל עדכון במקום.
+5. Firebase CLI מעלה את `app/build/outputs/apk/release/app-release.apk` לקבוצת הבודקים שה-alias שלה `family`. הערות השחרור הן הודעת הקומיט.
+
+**שמות הסודות** (Settings → Secrets and variables → Actions). הערכים אינם במסמך הזה ואינם ב-git:
+
+- `KEYSTORE_BASE64` — ה-keystore של ה-release ב-base64
+- `KEYSTORE_PASSWORD`
+- `KEY_ALIAS`
+- `KEY_PASSWORD`
+- `GOOGLE_SERVICES_JSON` — JSON גולמי, לא base64
+- `FIREBASE_SERVICE_ACCOUNT` — מפתח JSON של service account עם תפקיד Firebase App Distribution Admin
+- `FIREBASE_APP_ID` — מזהה אפליקציית Android ב-Firebase (`1:…:android:…`)
+
+ב-Firebase Console חייבת להיות קבוצת בודקים עם alias `family`, ובה מנש ואשתו.
+
+תיעוד ששימש את הזרימה:
+
+- `https://firebase.google.com/docs/app-distribution/android/distribute-cli` — `firebase appdistribution:distribute` עם `--app`, `--groups`, `--release-notes-file`
+- `https://firebase.google.com/docs/app-distribution/authenticate-service-account` — `GOOGLE_APPLICATION_CREDENTIALS` הוא **נתיב** לקובץ ה-JSON, לא תוכן ה-JSON
+
+טביעות האצבע הציבוריות של מפתח ה-release (להוספה באפליקציית Android ב-Firebase):
+
+- SHA-1: `1B:A8:5C:43:31:B2:F0:83:88:E6:80:26:13:6A:88:FB:11:71:FF:A7`
+- SHA-256: `B5:D3:22:D7:27:DB:1B:E9:BD:A4:FC:B6:93:9E:8E:80:6F:33:49:56:5D:B0:24:C9:8A:53:92:5D:62:E0:1E:22`
+
+ה-keystore וסיסמאותיו **אינם בריפו**. הגיבוי שלהם נשמר מחוץ ל-git. איבוד ה-keystore אומר שאי אפשר לעדכן את האפליקציה המותקנת במקום, לעולם. בנייה מקומית נשארת על `debug.keystore` (gitignore) ועל `debugConfig`. אין סיסמת release בקוד.

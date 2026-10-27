@@ -16,7 +16,7 @@ android {
     applicationId = "com.aistudio.mycalculators.qvxmzt"
     minSdk = 24
     targetSdk = 36
-    versionCode = 1
+    versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -26,10 +26,11 @@ android {
   // and updating Android apps in AI Studio.
   signingConfigs {
     create("release") {
+      // CI provides these. No release password is stored in the repo.
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
       storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
+      storePassword = System.getenv("KEYSTORE_PASSWORD")
+      keyAlias = System.getenv("KEY_ALIAS")
       keyPassword = System.getenv("KEY_PASSWORD")
     }
     create("debugConfig") {
