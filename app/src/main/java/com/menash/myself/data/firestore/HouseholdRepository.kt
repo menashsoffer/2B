@@ -7,7 +7,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +25,9 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
     private val _errorFlow = MutableStateFlow<String?>(null)
     val errorFlow: StateFlow<String?> = _errorFlow.asStateFlow()
 
+    var lastTechnicalError: String? = null
+        private set
+
     private fun requireUid(): String {
         return auth.currentUser?.uid ?: throw IllegalStateException("User not authenticated")
     }
@@ -35,14 +37,14 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
     }
 
     private fun reportError(action: String, error: Throwable) {
-        val code = (error as? FirebaseFirestoreException)?.code?.name ?: "ERROR"
-        val message = "שגיאת Firestore ב-$action ($code): ${error.localizedMessage ?: error.message}"
-        Log.e(TAG, message, error)
-        _errorFlow.value = message
+        FirestoreErrors.report(TAG, action, error, _errorFlow) { technical ->
+            lastTechnicalError = technical
+        }
     }
 
     fun clearError() {
         _errorFlow.value = null
+        lastTechnicalError = null
     }
 
     suspend fun getOrCreateHousehold(): Household {

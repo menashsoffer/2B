@@ -1,66 +1,67 @@
-# Fix the first Distribute run
+# Task 4 — Deploy rules from the repo + first device bugs
 
 commit: see git log
 
-No test was deleted, `@Ignore`d, or weakened. KSP, Kotlin, and AGP were not bumped. No secret value is in this report. This commit is the one that gets pushed; the workflow result is not in this file.
+Not pushed. The new workflow's `paths` include `.github/workflows/firestore-rules.yml` and `firestore.test.js`. This commit changes both, so a push to `main` would start that workflow and, after the emulator tests, run `firebase deploy --only firestore:rules,firestore:indexes`. The `github-distribution` service account is not known to have the rules and index roles yet, so the commit stays local.
 
-## What failed run 40433797515
+No test was deleted, `@Ignore`d, or weakened. No secret value is in this report. `distribute.yml` was not changed.
 
-https://github.com/menashsoffer/Myself-/actions/runs/40433797515 failed in **Build the signed release APK**. Both messages are in that step's log, in this order:
+## Raw Gradle lines
 
-1. First error line, on the background AWT thread, while KSP was still running. The step continued after it:
-
-```
-Exception in thread "AWT-EventQueue-0" java.lang.NullPointerException: Cannot invoke "ksp.com.intellij.openapi.application.Application.getService(java.lang.Class)" because the return value of "ksp.com.intellij.openapi.application.ApplicationManager.getApplication()" is null
-```
-
-2. Later, the line that failed the step:
+`./gradlew testDebugUnitTest --no-daemon` exit 0:
 
 ```
-> Task :app:packageRelease FAILED
+BUILD SUCCESSFUL in 57s
 ```
 
-```
-com.android.ide.common.signing.KeytoolException: Failed to read key *** from store "/home/runner/work/_temp/release.keystore": Get Key failed: Given final block not properly padded. Such issues can arise if a bad key is used during decryption.
-```
+`app/build/test-results/testDebugUnitTest/TEST-*.xml` (25 files): tests=112, failures=0, errors=0, skipped=0.
 
-Gradle then printed `BUILD FAILED in 3m 30s` and the step ended with `Process completed with exit code 1`. The KeytoolException is what failed the step. The NPE did not stop Gradle.
-
-## Root cause of the KeytoolException
-
-Task 3 generated a PKCS12 keystore with a separate `-keypass`. On this JDK, keytool prints:
+`./gradlew assembleRelease --no-daemon` exit 0, with a throwaway PKCS12 keystore whose key password equals its store password (not the release key):
 
 ```
-Warning: Different store and key passwords not supported for PKCS12 KeyStores. Ignoring user-specified -keypass value.
+BUILD SUCCESSFUL in 55s
 ```
 
-A throwaway PKCS12 file built that way opens with the store password (`openssl pkcs12` exit 0) and rejects the separate key password (`Mac verify error: invalid password?`, exit 1). `passwords.env` had recorded the ignored key password. Android's signer then tried that password and failed with the padding error. The real release keystore was not used for this check. In the agent store, `KEY_PASSWORD` and `KEYSTORE_PASSWORD` now compare equal. The values were not printed.
-
-## Local Gradle commands
-
-Throwaway PKCS12 keystore, key password equal to store password, alias `throwaway`. Not the release key. The local `app/google-services.json` is the fake unit-test file, so this APK is not for a phone.
-
-`./gradlew testDebugUnitTest --no-daemon` exit 0. `testDebugUnitTest` was UP-TO-DATE:
+Firestore emulator command, the same one the new workflow runs (`firebase emulators:exec --only firestore --project demo-no-project "node --test firestore.test.js"`), exit 0:
 
 ```
-BUILD SUCCESSFUL in 9s
+# tests 10
+# pass 10
+# fail 0
+# cancelled 0
 ```
 
-`./gradlew assembleRelease --no-daemon` exit 0. That log has no AWT NPE and no KeytoolException:
+## IAM roles for github-distribution
 
-```
-BUILD SUCCESSFUL in 1m 48s
-```
+Least privilege, both on the Firebase project:
 
-APK: `app/build/outputs/apk/release/app-release.apk`. `apksigner verify --verbose` exit 0. Verified using v2 scheme: true. Signer DN: `CN=Throwaway`.
+1. **Firebase Rules Admin** (`roles/firebaserules.admin`). It can create rulesets and releases. https://cloud.google.com/iam/docs/roles-permissions/firebaserules
+2. **Cloud Datastore Index Admin** (`roles/datastore.indexAdmin`). The index page lists this role, not a broader owner role, as enough to create indexes. https://firebase.google.com/docs/firestore/query-data/indexing and https://firebase.google.com/docs/firestore/security/iam
 
-The same NPE is a known non-fatal KSP 2.3.5 message: https://github.com/google/ksp/issues/2763 ("does not break build checks"). KSP 2.3.6 release notes call it "a KSP version 2.3.5 CI error exception that does not break build checks" (https://github.com/google/ksp/releases/tag/2.3.6). It does not break the build, so KSP stays 2.3.5, Kotlin stays 2.2.10, AGP stays 9.1.1.
+Deploy command and named-database config: https://firebase.google.com/docs/rules/manage-deploy
 
-## What this commit changes
+## Enterprise edition
 
-`actions/checkout@v4` to `@v5`, and `actions/setup-java@v4` to `@v5`. v5 of each action runs on Node 24 and needs Actions Runner v2.327.1 or newer. GitHub-hosted runners already meet that. checkout v5.0.0 is the Node 24 move (https://github.com/actions/checkout/releases/tag/v5.0.0). setup-java v5.0.0 is the same move (https://github.com/actions/setup-java/releases/tag/v5.0.0). The v4 deprecation warning on the failed run pointed at v5. No other action inputs changed.
+https://firebase.google.com/docs/firestore/enterprise/create-databases says an Enterprise database in Native mode has Cloud Firestore Security Rules (test mode or production mode) and can enable realtime listeners. https://firebase.google.com/docs/rules/manage-deploy says rules for a named database are deployed from the `database` entry in `firebase.json` (`firebase deploy --only firestore:rules`, or `firebase deploy --only firestore:<databaseId>`). Index deploy uses the same CLI (`firebase deploy --only firestore:indexes`). `firebase.json` already points rules and indexes at `ai-studio-android-a829880c-5ce2-440f-a60c-5df6579fdc7f`, and the workflow deploys only that config. A live deploy against that Enterprise database was not run.
 
-`docs/RULES.md` section 8 now says that for PKCS12, `KEY_PASSWORD` equals `KEYSTORE_PASSWORD`.
+## What changed
+
+Rules deploy is a separate workflow, `.github/workflows/firestore-rules.yml`. It runs on `workflow_dispatch` and on push to `main` when one of these changes: `firestore.rules`, `firestore.indexes.json`, `firestore.test.js`, `firebase.json`, or the workflow file. It fails first if `FIREBASE_SERVICE_ACCOUNT` is missing, runs the emulator tests, and only then deploys. The project id is read from that service-account JSON at deploy time.
+
+Firestore `errorFlow` values now go through `ErrorMapper`. The banner gets the Hebrew text. The technical `action (code): message` string is logged and stored in `lastTechnicalError`.
+
+The BOI worker is a self-rescheduling `OneTimeWorkRequest` (`BoiSyncWork`, `ExistingWorkPolicy.REPLACE`) with exponential backoff. `doWork` uses the injected `Clock`. A run at Friday 12:45 schedules Monday 15:45. The old periodic name is cancelled.
+
+`firestore.test.js` loads `firebase/compat` from `NODE_PATH` instead of a machine-specific absolute path. That is what the emulator run above used.
+
+## Task table
+
+| item | status | files changed | test that covers it |
+| --- | --- | --- | --- |
+| 1. CI deploys rules and indexes only after emulator tests | written, not pushed | `.github/workflows/firestore-rules.yml`, `firestore.test.js` | emulator: `# tests 10`, `# pass 10`, `# fail 0` |
+| 2. Friendly Firestore errors | done | `FirestoreErrors.kt`, `LifeHubRepository.kt`, `HouseholdRepository.kt` | `firestoreErrorFlow_permissionDenied_isFriendlyHebrew` |
+| 3. Worker reschedules itself | done | `BoiSyncWorker.kt`, `MyselfApp.kt` | `testWorkerDelay` (Friday 12:45 → Monday 15:45) |
+| 4. Backlog note for the non-fatal KSP annotation | done | `docs/BACKLOG_STEP8.md` | no unit test |
 
 ## Who did the work
 
@@ -68,10 +69,12 @@ chief-architect scoped and dispatched; executed by a Cursor cloud coding agent.
 
 ## Noticed, not changed
 
-- The local unit-test command did not re-execute tests; every test task was UP-TO-DATE.
-- `enqueuePeriodicWork` is still a 1-day period.
-- The release signing block still falls back to `my-upload-key.jks` when `KEYSTORE_PATH` is unset.
+- `distribute.yml` still builds and uploads an APK on every push to `main`. It does not deploy rules.
+- KSP stays 2.3.5. The AWT `ApplicationManager.getApplication()` NPE is still the non-fatal annotation from https://github.com/google/ksp/issues/2763.
+- `firebase.json` has no `edition` field. The edition is a property of the existing database.
+- Holiday and holiday-eve rates are still not in the schedule.
+- `enqueue` uses `REPLACE` while `doWork` is still the running unique work. That is what the task asked for.
 
 ## Open questions
 
-None for this commit. If the pushed run fails again on the same KeytoolException, the `KEY_PASSWORD` secret may have been copied from `passwords.env` before the store password and the key password were made the same.
+1. After `roles/firebaserules.admin` and `roles/datastore.indexAdmin` are on `github-distribution`, may this commit be pushed?

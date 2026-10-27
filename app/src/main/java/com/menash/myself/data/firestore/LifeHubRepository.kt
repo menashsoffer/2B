@@ -1,11 +1,9 @@
 package com.menash.myself.data.firestore
 
 import android.content.Context
-import android.util.Log
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.FirebaseFirestoreException
 import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.data.models.DreamItem
 import com.menash.myself.data.models.FitnessLog
@@ -35,6 +33,9 @@ open class LifeHubRepository(
     private val _errorFlow = MutableStateFlow<String?>(null)
     val errorFlow: StateFlow<String?> = _errorFlow.asStateFlow()
 
+    var lastTechnicalError: String? = null
+        private set
+
     fun currentUid(): String? = uidProvider()
 
     private fun requireDb(): FirebaseFirestore {
@@ -46,14 +47,14 @@ open class LifeHubRepository(
     }
 
     fun reportError(action: String, error: Throwable) {
-        val code = (error as? FirebaseFirestoreException)?.code?.name ?: "ERROR"
-        val message = "שגיאה ב-$action ($code): ${error.localizedMessage ?: error.message}"
-        runCatching { Log.e(TAG, message, error) }
-        _errorFlow.value = message
+        FirestoreErrors.report(TAG, action, error, _errorFlow) { technical ->
+            lastTechnicalError = technical
+        }
     }
 
     fun clearError() {
         _errorFlow.value = null
+        lastTechnicalError = null
     }
 
     open suspend fun resolveHouseholdId(explicitHid: String = ""): String {

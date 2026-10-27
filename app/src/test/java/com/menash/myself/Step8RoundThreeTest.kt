@@ -129,6 +129,12 @@ class Step8RoundThreeTest {
             from = ZonedDateTime.of(2026, 10, 25, 9, 0, 0, 0, israelZone),
             to = ZonedDateTime.of(2026, 10, 26, 15, 45, 0, 0, israelZone)
         )
+        // A run that starts at Friday 12:45 is not before that slot, so the next one is Monday 15:45.
+        assertDelay(
+            israelZone,
+            from = ZonedDateTime.of(2026, 10, 23, 12, 45, 0, 0, israelZone),
+            to = ZonedDateTime.of(2026, 10, 26, 15, 45, 0, 0, israelZone)
+        )
     }
 
     private fun assertDelay(zone: ZoneId, from: ZonedDateTime, to: ZonedDateTime) {

@@ -1,0 +1,67 @@
+# Emulator tests, then rules and index deploy for the named database in firebase.json.
+# Rules role: https://cloud.google.com/iam/docs/roles-permissions/firebaserules
+# Index role: https://firebase.google.com/docs/firestore/query-data/indexing
+# Named database: https://firebase.google.com/docs/rules/manage-deploy
+# This file is in `paths`, so the push that adds it starts a deploy.
+name: Firestore rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - firestore.rules
+      - firestore.indexes.json
+      - firestore.test.js
+      - firebase.json
+      - .github/workflows/firestore-rules.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if FIREBASE_SERVICE_ACCOUNT is missing
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT}" ]; then
+            echo "Missing GitHub Actions secret(s): FIREBASE_SERVICE_ACCOUNT"
+            echo "No emulator test or deploy was started."
+            exit 1
+          fi
+          echo "FIREBASE_SERVICE_ACCOUNT is present."
+
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Firebase CLI and rules-test packages
+        run: |
+          set -euo pipefail
+          npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools firebase @firebase/rules-unit-testing
+
+      - name: Firestore emulator tests
+        run: |
+          set -euo pipefail
+          export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
+          export NODE_PATH="${RUNNER_TEMP}/firebase/node_modules${NODE_PATH:+:$NODE_PATH}"
+          firebase emulators:exec --only firestore --project demo-no-project "node --test firestore.test.js"
+
+      - name: Deploy rules and indexes
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          cred="${RUNNER_TEMP}/firebase-service-account.json"
+          printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${cred}"
+          export GOOGLE_APPLICATION_CREDENTIALS="${cred}"
+          export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
+          project="$(python3 -c 'import json,os; print(json.load(open(os.environ["GOOGLE_APPLICATION_CREDENTIALS"]))["project_id"])')"
+          firebase deploy --non-interactive --project "${project}" --only firestore:rules,firestore:indexes

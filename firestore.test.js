@@ -6,8 +6,8 @@ const {
 const { test, before, after, beforeEach } = require("node:test");
 const fs = require("node:fs");
 
-const firebase = require("/usr/local/lib/node_modules/@firebase/rules-unit-testing/node_modules/firebase/compat/app");
-require("/usr/local/lib/node_modules/@firebase/rules-unit-testing/node_modules/firebase/compat/firestore");
+const firebase = require("firebase/compat/app");
+require("firebase/compat/firestore");
 const FieldValue = firebase.firestore.FieldValue;
 
 let testEnv;

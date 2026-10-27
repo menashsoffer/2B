@@ -8,6 +8,7 @@ import com.menash.myself.core.external.hebcal.HebcalClient
 import com.menash.myself.core.external.hebcal.IsraeliCity
 import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.core.ui.ErrorMapper
+import com.menash.myself.data.firestore.LifeHubRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -125,6 +126,19 @@ class Step8ExternalDataAndFixesTest {
         assertEquals(3.112, parsed.rate, 0.0001)
         assertEquals(LocalDate.of(2026, 10, 23), parsed.rateDate)
         assertFalse(parsed.isManualOverride)
+    }
+
+    @Test
+    fun firestoreErrorFlow_permissionDenied_isFriendlyHebrew() {
+        val repo = LifeHubRepository(db = null, uidProvider = { "uid" })
+        val technical = RuntimeException("PERMISSION_DENIED: Missing or insufficient permissions.")
+        repo.reportError("observeTasks", technical)
+        assertEquals(ErrorMapper.MSG_PERMISSION_DENIED, repo.errorFlow.value)
+        assertEquals(
+            "observeTasks (ERROR): PERMISSION_DENIED: Missing or insufficient permissions.",
+            repo.lastTechnicalError
+        )
+        assertFalse(repo.errorFlow.value!!.contains("PERMISSION_DENIED"))
     }
 
     @Test

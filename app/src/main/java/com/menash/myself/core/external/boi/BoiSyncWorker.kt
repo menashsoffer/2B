@@ -1,21 +1,36 @@
 package com.menash.myself.core.external.boi
 
 import android.content.Context
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.time.Clock
+import java.util.concurrent.TimeUnit
 
 /**
- * WorkManager worker for syncing Bank of Israel USD/ILS representative rate daily.
+ * WorkManager worker for syncing the Bank of Israel USD/ILS representative rate.
+ * Each run schedules the next one-time run at [computeInitialDelay].
  */
-class BoiSyncWorker(
+class BoiSyncWorker @JvmOverloads constructor(
     appContext: Context,
-    workerParams: WorkerParameters
+    workerParams: WorkerParameters,
+    private val clock: Clock = Clock.system(BoiStalenessPolicy.ISRAEL_ZONE)
 ) : CoroutineWorker(appContext, workerParams) {
 
     companion object {
-        private const val WORK_NAME = "BoiSyncPeriodicWork"
+        const val WORK_NAME = "BoiSyncWork"
+        private const val LEGACY_PERIODIC_NAME = "BoiSyncPeriodicWork"
 
-        fun computeInitialDelay(clock: java.time.Clock = java.time.Clock.system(BoiStalenessPolicy.ISRAEL_ZONE)): Long {
+        fun computeInitialDelay(clock: Clock = Clock.system(BoiStalenessPolicy.ISRAEL_ZONE)): Long {
             val now = java.time.ZonedDateTime.now(clock)
             val target = nextSyncAt(now)
             return java.time.Duration.between(now, target).toMillis()
@@ -43,23 +58,24 @@ class BoiSyncWorker(
             else -> null
         }
 
-        fun enqueuePeriodicWork(context: Context) {
-            val constraints = androidx.work.Constraints.Builder()
-                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+        fun enqueue(context: Context, clock: Clock = Clock.system(BoiStalenessPolicy.ISRAEL_ZONE)) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
-
-            val initialDelay = computeInitialDelay()
-            val request = androidx.work.PeriodicWorkRequestBuilder<BoiSyncWorker>(1, java.util.concurrent.TimeUnit.DAYS)
+            val request: OneTimeWorkRequest = OneTimeWorkRequestBuilder<BoiSyncWorker>()
                 .setConstraints(constraints)
-                .setInitialDelay(initialDelay, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .setInitialDelay(computeInitialDelay(clock), TimeUnit.MILLISECONDS)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    WorkRequest.MIN_BACKOFF_MILLIS,
+                    TimeUnit.MILLISECONDS
+                )
                 .build()
 
             try {
-                androidx.work.WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                    WORK_NAME,
-                    androidx.work.ExistingPeriodicWorkPolicy.UPDATE,
-                    request
-                )
+                val workManager = WorkManager.getInstance(context)
+                workManager.cancelUniqueWork(LEGACY_PERIODIC_NAME)
+                workManager.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
             } catch (e: Exception) {
                 android.util.Log.e("BoiSyncWorker", "Failed to enqueue work", e)
             }
@@ -67,23 +83,33 @@ class BoiSyncWorker(
     }
 
     override suspend fun doWork(): Result {
-        val today = java.time.ZonedDateTime.now(BoiStalenessPolicy.ISRAEL_ZONE).toLocalDate()
+        val today = java.time.ZonedDateTime.now(clock).toLocalDate()
         if (!BoiStalenessPolicy.isBusinessDay(today)) {
+            enqueue(applicationContext, clock)
             return Result.success()
         }
 
         val client = BoiExchangeRateClient()
         val store = BoiRateStore(applicationContext.boiDataStore)
+        val fetched = client.fetchLatestRate()
+        val retry = fetched.exceptionOrNull()?.let { isNetworkFailure(it) && runAttemptCount < 3 } == true
+        if (!retry) {
+            fetched.getOrNull()?.let { store.saveAutoRate(it) }
+            enqueue(applicationContext, clock)
+        }
+        return when {
+            fetched.isSuccess -> Result.success()
+            retry -> Result.retry()
+            else -> Result.failure()
+        }
+    }
 
-        val result = client.fetchLatestRate()
-        return result.fold(
-            onSuccess = { rate ->
-                store.saveAutoRate(rate)
-                Result.success()
-            },
-            onFailure = {
-                if (runAttemptCount < 3) Result.retry() else Result.failure()
-            }
-        )
+    private fun isNetworkFailure(error: Throwable): Boolean {
+        var current: Throwable? = error
+        while (current != null) {
+            if (current is IOException && current !is FileNotFoundException) return true
+            current = current.cause
+        }
+        return false
     }
 }

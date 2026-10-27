@@ -9,6 +9,7 @@
 - rate display with 4 decimals and bidi isolation;
 - real recorded API samples (BOI latest, BOI window, Hebcal);
 - document in docs/RULES.md: the worker schedule and policy, the 10-day window with no fallback, Hebcal d=on.
+- the KSP "ApplicationManager.getApplication() is null" annotation appears on every CI build but is non-fatal (https://github.com/google/ksp/issues/2763); investigate later.
 
 ## Holidays and holiday eves (out of scope)
 
