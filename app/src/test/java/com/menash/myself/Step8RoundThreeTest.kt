@@ -81,32 +81,19 @@ class Step8RoundThreeTest {
     @Test
     fun testStalenessScenarios() {
         val israelZone = ZoneId.of("Asia/Jerusalem")
-        
-        // Rate fetched Thursday 15:00
-        val rateDate = LocalDate.of(2026, 10, 22)
-        val fetchedAt = ZonedDateTime.of(2026, 10, 22, 15, 0, 0, 0, israelZone).toInstant()
+        val friday = LocalDate.of(2026, 10, 23)
+        val fetchedFriday1240 = ZonedDateTime.of(2026, 10, 23, 12, 40, 0, 0, israelZone).toInstant()
 
-        // Friday 12:00 -> not stale
-        val fridayNow = ZonedDateTime.of(2026, 10, 23, 12, 0, 0, 0, israelZone).toInstant()
-        assertFalse(BoiStalenessPolicy.isStale(rateDate, fetchedAt, fridayNow))
+        val saturday = ZonedDateTime.of(2026, 10, 24, 20, 0, 0, 0, israelZone).toInstant()
+        assertFalse(BoiStalenessPolicy.isStale(friday, fetchedFriday1240, saturday))
 
-        // Saturday 20:00 -> not stale
-        val saturdayNow = ZonedDateTime.of(2026, 10, 24, 20, 0, 0, 0, israelZone).toInstant()
-        assertFalse(BoiStalenessPolicy.isStale(rateDate, fetchedAt, saturdayNow))
+        val sunday = ZonedDateTime.of(2026, 10, 25, 9, 0, 0, 0, israelZone).toInstant()
+        assertFalse(BoiStalenessPolicy.isStale(friday, fetchedFriday1240, sunday))
 
-        // Sunday 15:59 -> not stale
-        val sundayBefore16 = ZonedDateTime.of(2026, 10, 25, 15, 59, 0, 0, israelZone).toInstant()
-        assertFalse(BoiStalenessPolicy.isStale(rateDate, fetchedAt, sundayBefore16))
-
-        // Sunday 16:01 -> stale (needs refresh for Sunday's rate)
-        val sundayAfter16 = ZonedDateTime.of(2026, 10, 25, 16, 1, 0, 0, israelZone).toInstant()
-        assertTrue(BoiStalenessPolicy.isStale(rateDate, fetchedAt, sundayAfter16))
-
-        // Monday 16:01 with a rate fetched on Sunday 16:30 -> stale (needs refresh for Monday's rate)
-        val sundayRateDate = LocalDate.of(2026, 10, 25)
-        val sundayFetchedAt = ZonedDateTime.of(2026, 10, 25, 16, 30, 0, 0, israelZone).toInstant()
-        val mondayAfter16 = ZonedDateTime.of(2026, 10, 26, 16, 1, 0, 0, israelZone).toInstant()
-        assertTrue(BoiStalenessPolicy.isStale(sundayRateDate, sundayFetchedAt, mondayAfter16))
+        val thursday = LocalDate.of(2026, 10, 22)
+        val fetchedThursday = ZonedDateTime.of(2026, 10, 22, 15, 40, 0, 0, israelZone).toInstant()
+        val friday1300 = ZonedDateTime.of(2026, 10, 23, 13, 0, 0, 0, israelZone).toInstant()
+        assertTrue(BoiStalenessPolicy.isStale(thursday, fetchedThursday, friday1300))
     }
 
     @Test
@@ -127,17 +114,25 @@ class Step8RoundThreeTest {
     @Test
     fun testWorkerDelay() {
         val israelZone = ZoneId.of("Asia/Jerusalem")
-        
-        // Sunday 09:00 -> to 16:30 same day (7.5h = 450 min)
-        val sunday09 = java.time.Clock.fixed(ZonedDateTime.of(2026, 10, 25, 9, 0, 0, 0, israelZone).toInstant(), israelZone)
-        assertEquals(java.time.Duration.ofMinutes(450).toMillis(), BoiSyncWorker.computeInitialDelay(sunday09))
+        assertDelay(
+            israelZone,
+            from = ZonedDateTime.of(2026, 10, 22, 17, 0, 0, 0, israelZone),
+            to = ZonedDateTime.of(2026, 10, 23, 12, 45, 0, 0, israelZone)
+        )
+        assertDelay(
+            israelZone,
+            from = ZonedDateTime.of(2026, 10, 23, 13, 0, 0, 0, israelZone),
+            to = ZonedDateTime.of(2026, 10, 26, 15, 45, 0, 0, israelZone)
+        )
+        assertDelay(
+            israelZone,
+            from = ZonedDateTime.of(2026, 10, 25, 9, 0, 0, 0, israelZone),
+            to = ZonedDateTime.of(2026, 10, 26, 15, 45, 0, 0, israelZone)
+        )
+    }
 
-        // Thursday 17:00 -> to Friday 16:30 (approx 23.5h = 1410 min)
-        val thursday17 = java.time.Clock.fixed(ZonedDateTime.of(2026, 10, 22, 17, 0, 0, 0, israelZone).toInstant(), israelZone)
-        assertEquals(java.time.Duration.ofMinutes(1410).toMillis(), BoiSyncWorker.computeInitialDelay(thursday17))
-
-        // Exactly 16:30 -> next day 16:30
-        val exactly1630 = java.time.Clock.fixed(ZonedDateTime.of(2026, 10, 25, 16, 30, 0, 0, israelZone).toInstant(), israelZone)
-        assertEquals(java.time.Duration.ofHours(24).toMillis(), BoiSyncWorker.computeInitialDelay(exactly1630))
+    private fun assertDelay(zone: ZoneId, from: ZonedDateTime, to: ZonedDateTime) {
+        val clock = java.time.Clock.fixed(from.toInstant(), zone)
+        assertEquals(java.time.Duration.between(from, to).toMillis(), BoiSyncWorker.computeInitialDelay(clock))
     }
 }

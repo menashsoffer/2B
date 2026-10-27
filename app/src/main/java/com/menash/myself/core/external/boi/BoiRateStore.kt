@@ -40,7 +40,6 @@ class BoiRateStore(private val dataStore: DataStore<Preferences>) {
         val fetchedAt = fetchedEpoch?.let { Instant.ofEpochMilli(it) }
 
         val hasOfficial = cachedRate != null && cachedRate > 0.0 && rateDate != null && fetchedAt != null
-        val isStale = if (hasOfficial) BoiStalenessPolicy.isStale(rateDate!!, fetchedAt!!, Instant.now()) else false
 
         if (hasOfficial || (manualRate != null && manualRate > 0.0)) {
             BoiRate(

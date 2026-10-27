@@ -17,11 +17,30 @@ class BoiSyncWorker(
 
         fun computeInitialDelay(clock: java.time.Clock = java.time.Clock.system(BoiStalenessPolicy.ISRAEL_ZONE)): Long {
             val now = java.time.ZonedDateTime.now(clock)
-            var target = now.withHour(16).withMinute(30).withSecond(0).withNano(0)
-            if (now.isAfter(target) || now == target) {
-                target = target.plusDays(1)
-            }
+            val target = nextSyncAt(now)
             return java.time.Duration.between(now, target).toMillis()
+        }
+
+        private fun nextSyncAt(now: java.time.ZonedDateTime): java.time.ZonedDateTime {
+            val zone = BoiStalenessPolicy.ISRAEL_ZONE
+            for (offset in 0..7) {
+                val date = now.toLocalDate().plusDays(offset.toLong())
+                val time = syncTime(date) ?: continue
+                val target = java.time.ZonedDateTime.of(date, time, zone)
+                if (now.isBefore(target)) {
+                    return target
+                }
+            }
+            error("No BOI sync slot within a week of $now")
+        }
+
+        private fun syncTime(date: java.time.LocalDate): java.time.LocalTime? = when (date.dayOfWeek) {
+            java.time.DayOfWeek.MONDAY,
+            java.time.DayOfWeek.TUESDAY,
+            java.time.DayOfWeek.WEDNESDAY,
+            java.time.DayOfWeek.THURSDAY -> java.time.LocalTime.of(15, 45)
+            java.time.DayOfWeek.FRIDAY -> java.time.LocalTime.of(12, 45)
+            else -> null
         }
 
         fun enqueuePeriodicWork(context: Context) {
@@ -48,9 +67,8 @@ class BoiSyncWorker(
     }
 
     override suspend fun doWork(): Result {
-        val now = java.time.ZonedDateTime.now(BoiStalenessPolicy.ISRAEL_ZONE)
-        val dow = now.dayOfWeek
-        if (dow == java.time.DayOfWeek.FRIDAY || dow == java.time.DayOfWeek.SATURDAY) {
+        val today = java.time.ZonedDateTime.now(BoiStalenessPolicy.ISRAEL_ZONE).toLocalDate()
+        if (!BoiStalenessPolicy.isBusinessDay(today)) {
             return Result.success()
         }
 

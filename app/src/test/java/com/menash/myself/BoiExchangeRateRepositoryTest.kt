@@ -24,6 +24,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BoiExchangeRateRepositoryTest {
@@ -91,12 +92,13 @@ class BoiExchangeRateRepositoryTest {
 
     @Test
     fun officialRateStale_whileOverrideActive_fetches() = runTest {
-        val h = harness()
-        h.store.saveAutoRate(
-            BoiRate(3.1, LocalDate.of(2026, 10, 20), Instant.parse("2026-10-20T10:00:00Z"), null, false)
-        )
+        val israel = ZoneId.of("Asia/Jerusalem")
+        val friday1300 = ZonedDateTime.of(2026, 10, 23, 13, 0, 0, 0, israel)
+        val h = harness(Clock.fixed(friday1300.toInstant(), israel))
+        val fetchedThursday = ZonedDateTime.of(2026, 10, 22, 15, 40, 0, 0, israel).toInstant()
+        h.store.saveAutoRate(BoiRate(3.1, LocalDate.of(2026, 10, 22), fetchedThursday, null, false))
         h.store.setManualOverride(3.5)
-        assertEquals(LocalDate.of(2026, 10, 20), h.repo.currentRateFlow.value?.officialRateDate)
+        assertEquals(LocalDate.of(2026, 10, 22), h.repo.currentRateFlow.value?.officialRateDate)
         h.repo.refreshRateIfNeeded()
         assertEquals(1, h.source.latestCalls)
         assertEquals(0, h.source.windowCalls)
@@ -104,16 +106,20 @@ class BoiExchangeRateRepositoryTest {
 
     @Test
     fun officialRateFresh_doesNotFetch() = runTest {
-        val h = harness()
-        // 16:30 Asia/Jerusalem on the clock's day, after BoiStalenessPolicy's 16:00 cutoff.
-        h.store.saveAutoRate(
-            BoiRate(3.1, LocalDate.of(2026, 10, 25), Instant.parse("2026-10-25T14:30:00Z"), null, false)
-        )
-        h.store.setManualOverride(3.5)
-        assertEquals(LocalDate.of(2026, 10, 25), h.repo.currentRateFlow.value?.officialRateDate)
-        h.repo.refreshRateIfNeeded()
-        assertEquals(0, h.source.latestCalls)
-        assertEquals(0, h.source.windowCalls)
+        val israel = ZoneId.of("Asia/Jerusalem")
+        val fetchedFriday1240 = ZonedDateTime.of(2026, 10, 23, 12, 40, 0, 0, israel).toInstant()
+        val fridayRate = BoiRate(3.1, LocalDate.of(2026, 10, 23), fetchedFriday1240, null, false)
+        val saturday = ZonedDateTime.of(2026, 10, 24, 20, 0, 0, 0, israel)
+        val sunday = ZonedDateTime.of(2026, 10, 25, 9, 0, 0, 0, israel)
+        for (now in listOf(saturday, sunday)) {
+            val h = harness(Clock.fixed(now.toInstant(), israel))
+            h.store.saveAutoRate(fridayRate)
+            h.store.setManualOverride(3.5)
+            assertEquals(LocalDate.of(2026, 10, 23), h.repo.currentRateFlow.value?.officialRateDate)
+            h.repo.refreshRateIfNeeded()
+            assertEquals(0, h.source.latestCalls)
+            assertEquals(0, h.source.windowCalls)
+        }
     }
 
     @Test

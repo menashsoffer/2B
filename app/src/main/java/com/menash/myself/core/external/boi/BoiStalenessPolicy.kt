@@ -8,19 +8,28 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 
 /**
- * Staleness checking policy for Bank of Israel representative USD/ILS rate.
+ * Staleness for the Bank of Israel USD/ILS representative rate.
+ * Publication days are Monday–Friday. Saturday, Sunday, holidays, and holiday
+ * eves are not modeled; see docs/BACKLOG_STEP8.md.
  */
 object BoiStalenessPolicy {
 
     val ISRAEL_ZONE: ZoneId = ZoneId.of("Asia/Jerusalem")
-    val PUBLISH_TIME: LocalTime = LocalTime.of(16, 0)
 
-    fun isBusinessDay(date: LocalDate): Boolean {
-        val dow = date.dayOfWeek
-        // In Israel, business days for BOI representative rate are Sunday through Thursday
-        return dow == DayOfWeek.SUNDAY || dow == DayOfWeek.MONDAY || dow == DayOfWeek.TUESDAY ||
-                dow == DayOfWeek.WEDNESDAY || dow == DayOfWeek.THURSDAY
+    /** 15 minutes after the official "shortly after 15:15" window. */
+    val MONDAY_TO_THURSDAY_CUTOFF: LocalTime = LocalTime.of(15, 30)
+
+    /** 15 minutes after the official Friday "shortly after 12:15" window. */
+    val FRIDAY_CUTOFF: LocalTime = LocalTime.of(12, 30)
+
+    fun publicationCutoff(date: LocalDate): LocalTime? = when (date.dayOfWeek) {
+        DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY ->
+            MONDAY_TO_THURSDAY_CUTOFF
+        DayOfWeek.FRIDAY -> FRIDAY_CUTOFF
+        else -> null
     }
+
+    fun isBusinessDay(date: LocalDate): Boolean = publicationCutoff(date) != null
 
     fun isStale(
         rateDate: LocalDate?,
@@ -32,16 +41,15 @@ object BoiStalenessPolicy {
         val nowZoned = nowInstant.atZone(ISRAEL_ZONE)
         val fetchedZoned = fetchedAt.atZone(ISRAEL_ZONE)
         val today = nowZoned.toLocalDate()
+        val cutoffTime = publicationCutoff(today)
 
-        // If fetched date is from a previous day and today is past 16:00 on a business day, it is stale
-        if (isBusinessDay(today) && nowZoned.toLocalTime().isAfter(PUBLISH_TIME)) {
-            val cutoff = ZonedDateTime.of(today, PUBLISH_TIME, ISRAEL_ZONE)
+        if (cutoffTime != null && nowZoned.toLocalTime().isAfter(cutoffTime)) {
+            val cutoff = ZonedDateTime.of(today, cutoffTime, ISRAEL_ZONE)
             if (fetchedZoned.isBefore(cutoff)) {
                 return true
             }
         }
 
-        // If rate date is more than 4 days old (e.g. over weekend/holidays) or behind current day
         return rateDate.isBefore(today.minusDays(4))
     }
 }
