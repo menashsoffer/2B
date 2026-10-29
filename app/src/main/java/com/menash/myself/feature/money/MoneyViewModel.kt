@@ -9,6 +9,9 @@ import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.data.MoneyRepository
+import com.menash.myself.feature.money.data.TransactionRepository
+import com.menash.myself.feature.money.importer.ImportMemory
+import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.data.categoriesToSeed
 import com.menash.myself.feature.money.domain.defaultCategories
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -51,16 +55,18 @@ class MoneyViewModel(
     private val today: () -> LocalDate,
     errorReporter: ErrorReporter,
     private val newId: () -> String = { UUID.randomUUID().toString() },
+    transactions: Flow<List<StoredTransaction>> = flowOf(emptyList()),
+    memory: Flow<ImportMemory> = flowOf(ImportMemory()),
 ) : BaseViewModel(errorReporter) {
 
     private var seeded = false
     private var latest = MoneyData()
     private var lastCardId: String? = null
 
-    val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates) { data, rate ->
+    val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates, transactions, memory) { data, rate, lines, learnt ->
         latest = data
         val day = today()
-        MoneyScreenState(money = buildMoneyMonth(data, YearMonth.from(day), day, rate), data = data)
+        MoneyScreenState(money = buildMoneyMonth(data, YearMonth.from(day), day, rate, lines, learnt), data = data)
     }
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
@@ -153,10 +159,14 @@ class MoneyViewModel(
             usdRates: Flow<BigDecimal?>,
             today: () -> LocalDate,
             errorReporter: ErrorReporter,
+            transactions: TransactionRepository,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return MoneyViewModel(repository, usdRates, today, errorReporter) as T
+                return MoneyViewModel(
+                    repository, usdRates, today, errorReporter,
+                    transactions = transactions.observeTransactions(), memory = transactions.observeMemory(),
+                ) as T
             }
         }
     }
