@@ -21,6 +21,7 @@ Branch `claude/import-screen-1b`, built on `main` after PR #8 (1a). Claude built
 - A failed save goes back to the review with the error reported, so nothing is lost.
 - An actual is shown on an item only when no other item shares its category. Otherwise it shows on the row only.
 - A card category suggests only a single matching current-spending category. "חשמל ומחשבים" is a shop, so it never suggests the electricity bill.
+- Why a file was refused is shown as plain text, so it wraps at font 1.3 instead of being cut off in a chip.
 - A month with no imported lines looks exactly as before, so the existing goldens did not change.
 
 ## Tests

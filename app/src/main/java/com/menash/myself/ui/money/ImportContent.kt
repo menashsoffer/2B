@@ -172,7 +172,8 @@ private fun FileRow(file: FileSummary) {
         Text(text = file.name, style = AppType.body, color = MaterialTheme.appColors.textPrimary, maxLines = 1)
         val problem = file.problem
         when {
-            problem != null -> Chip(text = problemText(problem), variant = ChipVariant.Warning, leadingIcon = Icons.Outlined.Warning)
+            // Plain text, not a chip: the reason says what to do and must not be cut off at large fonts.
+            problem != null -> Text(text = problemText(problem), style = AppType.body, color = MaterialTheme.appColors.warning)
             source != null && file.firstDate != null && file.lastDate != null -> Text(
                 text = stringResource(
                     R.string.import_file_detail, sourceLabel(source), file.rows,
