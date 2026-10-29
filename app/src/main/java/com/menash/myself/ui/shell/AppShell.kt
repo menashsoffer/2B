@@ -79,6 +79,12 @@ fun AppShell(
         }
     }
 
+    // A shared bank or card file opens the money tab, which runs the import.
+    val sharedFiles by appContainer.importInbox.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(sharedFiles.isNotEmpty()) {
+        if (sharedFiles.isNotEmpty()) openRoute(ShellRoute.Money)
+    }
+
     AppShellContent(
         state = AppShellState(
             selectedRoute = selectedRoute,
