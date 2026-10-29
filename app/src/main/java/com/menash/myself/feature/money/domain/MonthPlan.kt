@@ -36,9 +36,12 @@ sealed class MonthPlan {
         val month: YearMonth, val income: Money, val fixed: Money,
         val subscriptions: Money, val variable: Money, val installments: Money,
         val expectedSurplus: Money, val cardCharges: List<CardCharge>,
+        val periodic: Money = Money.ZERO, val debtPayments: Money = Money.ZERO, val savingDeposits: Money = Money.ZERO,
+        /** Monthly equivalents per Paamonim class; installments, debts and savings are outside the classes. */
+        val byClass: Map<ExpenseClass, Money> = emptyMap(),
     ) : MonthPlan() {
-        /** fixed + subscriptions + variable + installments, as monthly equivalents. */
-        val plannedExpenses: Money get() = sumMoney(listOf(fixed, subscriptions, variable, installments))
+        /** fixed + subscriptions + variable + installments + periodic + debt payments; saving deposits are not expenses. */
+        val plannedExpenses: Money get() = sumMoney(listOf(fixed, subscriptions, variable, installments, periodic, debtPayments))
     }
 }
 
@@ -66,8 +69,7 @@ internal fun sumMoney(amounts: Iterable<Money>): Money =
 /** usdToIls may be null only when no USD subscription is active in [month]. */
 fun monthPlan(month: YearMonth, items: MoneyItems, usdToIls: BigDecimal?): MonthPlan {
     require(usdToIls == null || usdToIls > BigDecimal.ZERO) { "USD rate must be positive" }
-    if (items.incomes.isEmpty() && items.fixedExpenses.isEmpty() && items.subscriptions.isEmpty() &&
-        items.variableBudgets.isEmpty() && items.installments.isEmpty()) return MonthPlan.Empty
+    if (items.isEmpty()) return MonthPlan.Empty
     val cards = linkedMapOf<String, Pair<Card, Money>>()
     fun charge(card: Card?, amount: Money) {
         if (card != null) cards[card.id] = card to sumMoney(listOf(cards[card.id]?.second ?: Money.ZERO, amount))
@@ -76,25 +78,43 @@ fun monthPlan(month: YearMonth, items: MoneyItems, usdToIls: BigDecimal?): Month
         Currency.ILS -> BigDecimal.ONE
         Currency.USD -> requireNotNull(usdToIls) { "USD subscription '${item.id}' is active in $month but no USD rate was given" }
     }
+    val classes = linkedMapOf<ExpenseClass, Money>()
+    fun classify(klass: ExpenseClass, amount: Money) {
+        classes[klass] = sumMoney(listOf(classes[klass] ?: Money.ZERO, amount))
+    }
     val income = sumMoney(items.incomes.mapNotNull { amountFor(it, month) })
     val fixed = sumMoney(items.fixedExpenses.mapNotNull { item -> amountFor(item, month)?.let {
         charge(item.card, billedAmount(it, item.frequency, BigDecimal.ONE, item.billingMonth, month))
-        monthlyAmount(it, item.frequency, BigDecimal.ONE)
+        monthlyAmount(it, item.frequency, BigDecimal.ONE).also { m -> classify(item.klass, m) }
     } })
     val subscriptions = sumMoney(items.subscriptions.mapNotNull { item -> amountFor(item, month)?.let {
         val rate = rateFor(item)
         charge(item.card, billedAmount(it, item.frequency, rate, item.renewalDate.month, month))
-        monthlyAmount(it, item.frequency, rate)
+        monthlyAmount(it, item.frequency, rate).also { m -> classify(item.klass, m) }
     } })
-    val variable = sumMoney(items.variableBudgets.mapNotNull { item -> amountFor(item, month)?.also { charge(item.card, it) } })
+    val variable = sumMoney(items.variableBudgets.mapNotNull { item ->
+        amountFor(item, month)?.also { charge(item.card, it); classify(item.klass, it) }
+    })
+    val periodic = sumMoney(items.periodicBudgets.map { monthlyReserve(it).also { m -> classify(ExpenseClass.PERIODIC, m) } })
+    val debtPayments = sumMoney(items.debts.filter { debtActive(it, month) }.map { it.monthlyPayment })
+    val savingDeposits = sumMoney(items.savings.filter { it.maturity == null || month <= it.maturity }.map { it.monthlyDeposit })
     val installments = sumMoney(items.installments.mapNotNull { item ->
         val index = ChronoUnit.MONTHS.between(item.firstMonth, month)
         if (index < 0 || index >= item.numberOfPayments) null else {
             installmentAmount(item, index).also { charge(item.card, it) }
         }
     })
-    val expenses = sumMoney(listOf(fixed, subscriptions, variable, installments))
+    val outgoing = sumMoney(listOf(fixed, subscriptions, variable, installments, periodic, debtPayments, savingDeposits))
     return MonthPlan.Planned(month, income, fixed, subscriptions, variable, installments,
-        Money(Math.subtractExact(income.agorot, expenses.agorot)),
-        cards.values.map { (card, amount) -> CardCharge(card, chargeDate(card, month), amount) })
+        Money(Math.subtractExact(income.agorot, outgoing.agorot)),
+        cards.values.map { (card, amount) -> CardCharge(card, chargeDate(card, month), amount) },
+        periodic, debtPayments, savingDeposits, classes)
+}
+
+/** annualAmount / 12, HALF_UP. */
+fun monthlyReserve(budget: PeriodicBudget): Money = budget.annualAmount / 12
+
+private fun debtActive(debt: Debt, month: YearMonth): Boolean {
+    val index = ChronoUnit.MONTHS.between(YearMonth.from(debt.asOf), month)
+    return index in 1..debt.remainingPayments.toLong()
 }

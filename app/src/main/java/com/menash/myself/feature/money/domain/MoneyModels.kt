@@ -45,6 +45,7 @@ data class FixedExpense(
     override val id: String, val name: String, override val amounts: AmountHistory,
     val frequency: Frequency = Frequency.MONTHLY, val card: Card? = null,
     val billingMonth: Month? = null,
+    val klass: ExpenseClass = ExpenseClass.FIXED, val categoryId: String? = null,
 ) : RecurringItem {
     init {
         requireId(id)
@@ -56,11 +57,13 @@ data class Subscription(
     override val id: String, val name: String, override val amounts: AmountHistory,
     val currency: Currency = Currency.ILS, val frequency: Frequency = Frequency.MONTHLY,
     val renewalDate: LocalDate, val card: Card? = null,
+    val klass: ExpenseClass = ExpenseClass.FIXED, val categoryId: String? = null,
 ) : RecurringItem {
     init { requireId(id) }
 }
 data class VariableBudget(
     override val id: String, val name: String, override val amounts: AmountHistory, val card: Card? = null,
+    val klass: ExpenseClass = ExpenseClass.CURRENT, val categoryId: String? = null,
 ) : RecurringItem {
     init { requireId(id) }
 }
@@ -91,4 +94,10 @@ data class MoneyItems(
     val subscriptions: List<Subscription> = emptyList(),
     val variableBudgets: List<VariableBudget> = emptyList(),
     val installments: List<InstallmentPurchase> = emptyList(),
-)
+    val periodicBudgets: List<PeriodicBudget> = emptyList(),
+    val debts: List<Debt> = emptyList(),
+    val savings: List<Saving> = emptyList(),
+) {
+    internal fun isEmpty() = incomes.isEmpty() && fixedExpenses.isEmpty() && subscriptions.isEmpty() &&
+        variableBudgets.isEmpty() && installments.isEmpty() && periodicBudgets.isEmpty() && debts.isEmpty() && savings.isEmpty()
+}
