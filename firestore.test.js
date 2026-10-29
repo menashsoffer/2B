@@ -329,6 +329,7 @@ test("Private items: stored under users/{uid}/private and readable only by owner
 const MONEY_COLLECTIONS = [
   "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
   "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
+  "transactions", "merchantMemory",
 ];
 
 for (const collection of MONEY_COLLECTIONS) {
@@ -366,4 +367,24 @@ test("Money: unknown collection, bad id and empty name are denied", async () => 
   await assertFails(house.collection("incomes").doc("bad id!").set({ name: "משכורת" }));
   await assertFails(house.collection("incomes").doc("inc_1").set({ name: "" }));
   await assertFails(house.collection("debts").doc("debt_1").set({ creditor: "" }));
+});
+
+test("Import: a full transaction and a merchant memory document are accepted, oversized ones denied", async () => {
+  await setupHousehold();
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
+  const house = aliceDb.collection("households").doc("house_1");
+  const tx = {
+    source: "MAX", sourceId: "max-1234", date: "2026-10-12", chargeDate: "2026-11-02",
+    description: "מחסני חשמל", details: "תשלום 2 מתוך 3", charge: 40000, originalAmount: 120000,
+    originalCurrency: "ILS", status: "COUNTED", installmentNumber: 2, installmentOf: 3,
+    hint: "חשמל ומחשבים", operation: "תשלומים", categoryId: "current-3",
+  };
+  await assertSucceeds(house.collection("transactions").doc("tx-max-06318c8ac6ae5d5a81f53ca2").set(tx));
+  await assertSucceeds(house.collection("transactions").doc("tx-max-06318c8ac6ae5d5a81f53ca2").set(tx));
+  await assertSucceeds(house.collection("merchantMemory").doc("m-3f2a9c0d1e4b5a6c7d8e9f01")
+    .set({ key: "שופרסל דיל", categoryId: "current-1", ownTransfer: false }));
+  const oversized = { ...tx };
+  for (let i = 0; i < 10; i++) oversized[`extra${i}`] = i;
+  await assertFails(house.collection("transactions").doc("tx-max-oversized").set(oversized));
+  await assertFails(house.collection("transactions").doc("tx max!").set(tx));
 });

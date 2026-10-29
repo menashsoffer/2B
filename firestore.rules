@@ -72,7 +72,8 @@ service cloud.firestore {
     // Money pillar: fully shared inside the household. Document id = engine id.
     function isMoneyCollection(name) {
       return name in ['cards', 'incomes', 'fixedExpenses', 'subscriptions', 'variableBudgets',
-                      'installments', 'periodicBudgets', 'debts', 'savings', 'assets', 'categories'];
+                      'installments', 'periodicBudgets', 'debts', 'savings', 'assets', 'categories',
+                      'transactions', 'merchantMemory'];
     }
 
     function isValidMoneyDoc(data) {
@@ -162,7 +163,8 @@ service cloud.firestore {
         allow delete: if isHouseholdMember(householdId) && isValidId(dreamId);
       }
 
-      // Subcollections: money (cards, items, budgets, debts, savings, assets, categories)
+      // Subcollections: money (cards, items, budgets, debts, savings, assets, categories,
+      // imported transactions and the merchant memory)
       match /{moneyCollection}/{docId} {
         allow get, list: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId);
         allow create, update: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) &&

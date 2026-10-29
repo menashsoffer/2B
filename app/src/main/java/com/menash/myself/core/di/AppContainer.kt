@@ -48,7 +48,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.math.BigDecimal
 import com.menash.myself.core.data.repository.impl.FirestoreMoneyRepository
+import com.menash.myself.core.data.repository.impl.FirestoreTransactionRepository
 import com.menash.myself.feature.money.data.MoneyRepository
+import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.usdRateOf
 
 /**
@@ -113,6 +115,10 @@ class AppContainer(private val context: Context) {
     private val firestoreMoneyRepository by lazy { FirestoreMoneyRepository({ firestore }, householdSession) }
     val moneyRepository: MoneyRepository get() = firestoreMoneyRepository
 
+    // Imported bank and card lines (households/{hid}/transactions) and the merchant memory
+    private val firestoreTransactionRepository by lazy { FirestoreTransactionRepository({ firestore }, householdSession) }
+    val transactionRepository: TransactionRepository get() = firestoreTransactionRepository
+
     /** The stored Bank of Israel USD rate for the money engine; null when none is stored. */
     val usdRateFlow: Flow<BigDecimal?> by lazy { exchangeRateRepository.currentRateFlow.map { usdRateOf(it) } }
 
@@ -123,8 +129,9 @@ class AppContainer(private val context: Context) {
             rawLifeHubRepository.errorFlow,
             rawHouseholdRepository.errorFlow,
             firestoreMoneyRepository.errorFlow,
-        ) { vmErr, lifeErr, hhErr, moneyErr ->
-            vmErr ?: lifeErr ?: hhErr ?: moneyErr
+            firestoreTransactionRepository.errorFlow,
+        ) { vmErr, lifeErr, hhErr, moneyErr, importErr ->
+            vmErr ?: lifeErr ?: hhErr ?: moneyErr ?: importErr
         }
     }
 
@@ -133,5 +140,6 @@ class AppContainer(private val context: Context) {
         rawLifeHubRepository.clearError()
         rawHouseholdRepository.clearError()
         firestoreMoneyRepository.clearError()
+        firestoreTransactionRepository.clearError()
     }
 }
