@@ -59,7 +59,7 @@ class FirestoreTransactionRepository(
         }
 
     override fun observeTransactions(): Flow<List<StoredTransaction>> =
-        observe(ImportDocuments.TRANSACTIONS, emptyList()) { docs ->
+        observe<List<StoredTransaction>>(ImportDocuments.TRANSACTIONS, emptyList()) { docs ->
             docs.mapNotNull { (id, data) ->
                 try {
                     ImportDocuments.decode(id, data)
@@ -74,18 +74,19 @@ class FirestoreTransactionRepository(
         }
 
     override fun observeMemory(): Flow<ImportMemory> =
-        observe(ImportDocuments.MERCHANT_MEMORY, ImportMemory()) { docs -> ImportDocuments.decodeMemory(docs.map { it.second }) }
+        observe<ImportMemory>(ImportDocuments.MERCHANT_MEMORY, ImportMemory()) { docs -> ImportDocuments.decodeMemory(docs.map { it.second }) }
 
     override suspend fun apply(plan: ImportPlan) {
         try {
             val target = collection(householdSession.requireHouseholdId(), ImportDocuments.TRANSACTIONS)
-            val writes: List<(com.google.firebase.firestore.WriteBatch) -> Unit> =
-                plan.toWrite.map { stored -> { batch -> batch.set(target.document(stored.id), ImportDocuments.encode(stored)) } } +
-                    plan.toDelete.map { id -> { batch -> batch.delete(target.document(id)) } }
+            val ops: List<Pair<String, StoredTransaction?>> = plan.toWrite.map { it.id to it } + plan.toDelete.map { it to null }
             // Firestore allows 500 writes per batch.
-            writes.chunked(450).forEach { chunk ->
+            ops.chunked(450).forEach { chunk ->
                 val batch = db().batch()
-                chunk.forEach { it(batch) }
+                chunk.forEach { (id, stored) ->
+                    if (stored != null) batch.set(target.document(id), ImportDocuments.encode(stored))
+                    else batch.delete(target.document(id))
+                }
                 batch.commit().await()
             }
         } catch (e: Exception) {
