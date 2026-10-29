@@ -14,6 +14,8 @@ import com.menash.myself.feature.money.domain.cushionMonths
 import com.menash.myself.feature.money.domain.isStale
 import com.menash.myself.feature.money.domain.monthPlan
 import com.menash.myself.feature.money.domain.netWorth
+import com.menash.myself.feature.money.importer.ImportMemory
+import com.menash.myself.feature.money.importer.StoredTransaction
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -44,6 +46,8 @@ sealed interface MonthView {
         val cardCharges: List<CardCharge>,
         val bar: List<BarSegment>,
         val usdRateMissing: Boolean,
+        /** Imported spending this month with no known category (uncategorised lines, cash, card bills without details). */
+        val unassigned: Money? = null,
     ) : MonthView
 }
 
@@ -61,8 +65,18 @@ data class BigPicture(
 
 data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture)
 
-/** [usdToIls] is the stored Bank of Israel rate, or null when none is stored. */
-fun buildMoneyMonth(data: MoneyData, month: YearMonth, today: LocalDate, usdToIls: BigDecimal?): MoneyMonth {
+/**
+ * [usdToIls] is the stored Bank of Israel rate, or null when none is stored. [transactions] are the imported
+ * lines; with none the month shows the plan only.
+ */
+fun buildMoneyMonth(
+    data: MoneyData,
+    month: YearMonth,
+    today: LocalDate,
+    usdToIls: BigDecimal?,
+    transactions: List<StoredTransaction> = emptyList(),
+    memory: ImportMemory = ImportMemory(),
+): MoneyMonth {
     val rate = usdToIls?.takeIf { it > BigDecimal.ZERO }
     val missingUsd = if (rate == null) {
         data.items.subscriptions.filter { it.currency == Currency.USD && amountFor(it, month) != null }
@@ -81,7 +95,7 @@ fun buildMoneyMonth(data: MoneyData, month: YearMonth, today: LocalDate, usdToIl
             cardCharges = plan.cardCharges,
             bar = bar(plan),
             usdRateMissing = missingUsd.isNotEmpty(),
-        )
+        ).let { withActuals(it, data.copy(items = items), month, rate, transactions, memory) }
     }
     val planned = (view as? MonthView.Planned)?.plan
     return MoneyMonth(
