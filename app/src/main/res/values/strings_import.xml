@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Import bank and card files -->
+    <string name="import_entry">ייבוא קובץ מהבנק או מהאשראי</string>
+    <string name="import_title">ייבוא תנועות</string>
+    <string name="import_reading">קוראים את הקבצים…</string>
+    <string name="import_saving">שומרים…</string>
+    <string name="import_files">קבצים</string>
+    <string name="import_source_hapoalim">בנק הפועלים</string>
+    <string name="import_source_onezero">וואן זירו</string>
+    <string name="import_source_max">מקס</string>
+    <string name="import_source_cal">כאל</string>
+    <string name="import_file_detail">%1$s · %2$d שורות · %3$s עד %4$s</string>
+    <string name="import_file_empty">%1$s · אין תנועות בקובץ</string>
+    <string name="import_total_ok">הסכום תואם לשורת הסיכום</string>
+    <string name="import_total_gap">פער של %1$s מול שורת הסיכום</string>
+    <string name="import_balance_break">היתרה לא מסתדרת בשורה %1$d. אולי חסרה שורה בקובץ</string>
+    <string name="import_skipped_rows">שורות שלא נקראו: %1$s</string>
+    <string name="import_problem_unknown">הקובץ לא מזוהה. אפשר לייבא רק ייצוא Excel מהפועלים, וואן זירו, מקס או כאל</string>
+    <string name="import_problem_corrupt">אי אפשר לקרוא את הקובץ. כדאי להוריד אותו שוב</string>
+    <string name="import_problem_encrypted">הקובץ מוגן בסיסמה. צריך לייצא אותו בלי סיסמה</string>
+    <string name="import_problem_too_large">הקובץ גדול מדי</string>
+    <string name="import_counts">מה ייכנס</string>
+    <string name="import_new">חדשות</string>
+    <string name="import_updated">מתעדכנות</string>
+    <string name="import_already">כבר נקלטו</string>
+    <string name="import_duplicates">כפולות בין הקבצים</string>
+    <string name="import_waiting">ממתינות לחיוב או לשער</string>
+    <string name="import_replaced">ממתינות שהוחלפו בגרסה הסופית</string>
+    <string name="import_nothing_new">אין כאן שום דבר חדש. כל התנועות כבר נקלטו</string>
+    <string name="import_merchants">בתי עסק חדשים</string>
+    <string name="import_merchants_hint">בוחרים קטגוריה פעם אחת, ומהפעם הבאה זה קורה לבד</string>
+    <string name="import_merchant_detail">%1$s · %2$d תנועות</string>
+    <string name="import_choose">לבחור קטגוריה</string>
+    <string name="import_later">אחר כך</string>
+    <string name="import_own_transfer">העברה בין החשבונות שלנו</string>
+    <string name="import_hint">אצל חברת האשראי: %1$s</string>
+    <string name="import_confirm">לשמור</string>
+    <string name="import_cancel">ביטול</string>
+    <string name="import_done_title">נשמר</string>
+    <string name="import_done_detail">%1$d תנועות נשמרו. אפשר לראות את \"בפועל\" במסך החודש</string>
+    <string name="import_close">סגירה</string>
+    <string name="import_pick_title">קטגוריה ל%1$s</string>
+    <string name="import_unassigned">בפועל, עוד בלי קטגוריה</string>
+</resources>
