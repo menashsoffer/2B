@@ -41,7 +41,8 @@ class PlaceholderTabStructureTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val building = context.getString(R.string.placeholder_building)
         assertEquals("העמוד הזה בבנייה", building)
-        val routes = listOf(ShellRoute.Money, ShellRoute.Dreams, ShellRoute.Shopping, ShellRoute.Tracking)
+        // Money is a real screen since R3; the other tabs are still placeholders.
+        val routes = listOf(ShellRoute.Dreams, ShellRoute.Shopping, ShellRoute.Tracking)
         composeRule.setContent {
             MyApplicationTheme {
                 Column {

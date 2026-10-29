@@ -2,6 +2,7 @@ package com.menash.myself.core.designsystem.component
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -17,6 +18,8 @@ fun TextInput(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    error: String? = null,
 ) {
     val colors = MaterialTheme.appColors
     OutlinedTextField(
@@ -26,6 +29,9 @@ fun TextInput(
         label = { Text(text = label, style = AppType.caption) },
         textStyle = AppType.body,
         singleLine = true,
+        keyboardOptions = keyboardOptions,
+        isError = error != null,
+        supportingText = error?.let { message -> { Text(text = message, style = AppType.caption, color = colors.danger) } },
         shape = AppShapes.field,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = colors.accent,

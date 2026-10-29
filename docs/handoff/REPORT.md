@@ -1,142 +1,47 @@
-# R2.1 — desugaring, numberCompact, danger dialogs, AppShell goldens
+# R3 v2 — money pillar, first screens (Paamonim)
 
-commit: see git log
-
-Base is `832b188` (R2 `b493c92` plus the money engine from PR #2). The three patches applied with `git am --3way` in order (devops `0fa00be`, android `e759791`, qa `8f8a244`) and were squashed into this commit. No new product or test code was written here. No test was disabled, skipped, re-recorded, or loosened. No secret is in this report.
-
-Money files are untouched. `git show --stat` for this commit has no path under `feature/money/domain`, `docs/money`, or `MoneyEngineTest.kt`. The other paths are the three patches plus this report:
-
-```
-.github/workflows/distribute.yml
-app/build.gradle.kts
-app/lint.xml
-auth/SignOutConfirmDialog.kt
-core/designsystem/component/MetricCard.kt
-core/designsystem/theme/Type.kt
-ui/home/HomeContent.kt
-ui/settings/SettingsDialog.kt
-core/designsystem/AppTypeNumberCompactTest.kt
-ui/shell/AppShellScreenshotTest.kt
-AppShellScreenshotTest.appShell_home_dark_font10.png
-AppShellScreenshotTest.appShell_home_light_font10.png
-HomeContentScreenshotTest.homeDreams128_dark_font13.png
-HomeContentScreenshotTest.homeDreams128_light_font13.png
-HomeContentScreenshotTest.homeDreams4_dark_font10.png
-HomeContentScreenshotTest.homeDreams4_dark_font13.png
-HomeContentScreenshotTest.homeDreams4_light_font10.png
-HomeContentScreenshotTest.homeDreams4_light_font13.png
-gradle/libs.versions.toml
-docs/handoff/REPORT.md
-```
-
-`firestore.rules`, `firestore.indexes.json`, `firestore.test.js`, `firebase.json`, and `.github/workflows/firestore-rules.yml` were not changed.
-
-## Raw Gradle lines
-
-JDK 21. Placeholder `app/google-services.json` was already on disk and gitignored. `assembleRelease` used a throwaway PKCS12 keystore whose key password equals its store password. Roborazzi stayed in verify mode (`roborazzi.test.verify=true`).
-
-`./gradlew clean testDebugUnitTest assembleRelease lintDebug --no-daemon` exit 0:
-
-```
-BUILD SUCCESSFUL in 3m 58s
-99 actionable tasks: 92 executed, 7 from cache
-```
-
-`finalizeTestRoborazziDebug` ran. No golden mismatched.
-
-JUnit XML (`app/build/test-results/testDebugUnitTest`, 51 files): tests=218, failures=0, errors=0, skipped=0.
-
-Of those, `MoneyEngineTest` contributed tests=24, failures=0, errors=0, skipped=0. The other 194 are the R2.1 total (including `HomeContentScreenshotTest` 10, `AppShellScreenshotTest` 2, `HomeHalfWidthValueLayoutTest` 3, `AppTypeNumberCompactTest`).
+Branch `claude/money-screens-r3`, PR #7, one commit on top of `main` `361b227`. Built by Claude at Menash's request (same exception as CODEX-2/3). The engine under `feature/money/domain` and `docs/money/ENGINE.md` are untouched: screens read and call it only.
 
 ## Task table
 
-| item | status | files | test |
-| --- | --- | --- | --- |
-| 1. coreLibraryDesugaring + desugar_jdk_libs 2.1.5; lint.xml (all=warning, NewApi=fatal); `lintDebug` in distribute.yml after assembleRelease | done | `app/build.gradle.kts`, `app/lint.xml`, `gradle/libs.versions.toml`, `.github/workflows/distribute.yml` | `lintDebug` exit 0; NewApi count 0 |
-| 2. AppType.numberCompact 28sp (tnum, line height 33.6sp) on half-width Dreams and Shopping | done | `Type.kt`, `MetricCard.kt`, `HomeContent.kt` | `AppTypeNumberCompactTest`; `HomeHalfWidthValueLayoutTest` unedited, lineCount=1 at font 1.3, dreams=128 |
-| 3. Sign-out confirm uses appColors.danger and colorScheme.onError; backup timestamp uses AppType.caption and appColors.textSecondary | done | `SignOutConfirmDialog.kt`, `SettingsDialog.kt` | compiles in the unit-test and release build; no new golden |
-| 4. Re-record the six HomeContent count goldens; add two AppShell goldens | done, with the deviation below | `AppShellScreenshotTest.kt` and the eight PNGs | both screenshot classes passed in verify mode |
+| Item | Status | Main files |
+| --- | --- | --- |
+| 1 Persistence | done | `feature/money/data/MoneyData.kt`, `MoneyDocuments.kt`, `MoneyRepository.kt`, `core/data/repository/impl/FirestoreMoneyRepository.kt`, `firestore.rules`, `firestore.test.js` |
+| 2 Money tab "החודש" | done | `ui/money/MoneyContent.kt`, `MoneyParts.kt`, `feature/money/MoneyMonth.kt` |
+| 3 Add and edit | done | `feature/money/MoneyDraft.kt`, `MoneyEditor.kt`, `MoneyViewModel.kt`, `ui/money/MoneyEditorSheet.kt`, `MoneyEditorForm.kt`, `MoneyPickers.kt` |
+| 4 "התמונה הגדולה" | done | `ui/money/BigPictureContent.kt` |
+| 5 Home hero | done | `feature/home/HomeViewModel.kt`, `ui/home/HomeContent.kt`, `HomeUiState.kt`, `HomeScreen.kt` |
+| 6 Shell seam + tests | done | `ui/shell/AppShell.kt` (`AppShellContent`, `AppShellState`), tests below |
 
-## Lint before / after
+## Firestore paths
 
-Before, from devops.md at `b493c92` (`./gradlew lintDebug`): 130 errors (122 NewApi + 8 StringFormatMatches), 84 warnings. `BUILD FAILED`.
+`households/{hid}/{collection}/{id}`, document id = engine id (UUID for new items, `fixed-N` / `sub-N` / `periodic-N` / `current-N` for the Paamonim defaults). Collections: `cards`, `incomes`, `fixedExpenses`, `subscriptions`, `variableBudgets`, `installments`, `periodicBudgets`, `debts`, `savings`, `assets`, `categories`. Amounts are agorot (Long), months `YYYY-MM`, dates `YYYY-MM-DD`, `AmountHistory` as `changes` [{from, amount}] + `overrides` {month: amount}. Items reference a card by `cardId`. Categories are seeded once from `defaultCategories()` when the household has none.
 
-After, this run on `832b188` plus R2.1: 0 errors, 110 warnings. NewApi is 0, including inside the money files. Text report ends with `0 errors, 110 warnings`.
+Rules: one `match /{moneyCollection}/{docId}` under the household, members read and write, everyone else denied; ids must pass `isValidId`, at most 20 fields, non-empty `name`/`creditor` when present.
 
-| severity | id | count |
-| --- | --- | ---: |
-| Warning | UnusedResources | 37 |
-| Warning | GradleDependency | 24 |
-| Warning | NewerVersionAvailable | 9 |
-| Warning | StringFormatMatches | 8 |
-| Warning | DuplicateStrings | 5 |
-| Warning | IconLauncherShape | 5 |
-| Warning | LogConditional | 5 |
-| Warning | TypographyQuotes | 4 |
-| Warning | AndroidGradlePluginVersion | 2 |
-| Warning | CredentialManagerMisuse | 2 |
-| Warning | InvalidPackage | 2 |
-| Warning | ConvertToWebp, RedundantLabel, SimpleDateFormat, StaticFieldLeak, SyntheticAccessor, TypographyEllipsis, UseKtx | 1 each |
+Rules tests (`firebase emulators:exec --only firestore "node --test firestore.test.js"`, run locally in the Claude sandbox): `tests 22, pass 22, fail 0` (10 existing + 11 per-collection allow/deny + 1 bad id/empty name/unknown collection).
 
-The original 84 warnings are still warnings. The 8 StringFormatMatches moved from Error to Warning. Eighteen more warnings come from checks that `id="all"` turns on (DuplicateStrings, LogConditional, TypographyQuotes, InvalidPackage, ConvertToWebp, SyntheticAccessor).
+## How the numbers are made
 
-## Goldens
+No money arithmetic in UI or ViewModels. `buildMoneyMonth` calls `monthPlan`, `netWorth`, `cushionMonths`, `isStale`; an item's own monthly amount is `monthPlan` of a `MoneyItems` holding only that item. Rows: הכנסות, the three Paamonim classes from `Planned.byClass`, תשלומים, החזרי חובות, הפקדות לחיסכון. Each row and item has an `actual` field, null until import (for the import thread). USD: the stored Bank of Israel rate (`ExchangeRateRepository.currentRateFlow`); with no rate, active USD subscriptions are left out and the chip "חסר שער דולר" shows.
 
-Changed (6), under `app/src/test/snapshots/designsystem/`. Cause: the Dreams count moved from 20sp Medium to 28sp numberCompact.
+## Tests
 
-- `HomeContentScreenshotTest.homeDreams4_light_font10.png`
-- `HomeContentScreenshotTest.homeDreams4_light_font13.png`
-- `HomeContentScreenshotTest.homeDreams4_dark_font10.png`
-- `HomeContentScreenshotTest.homeDreams4_dark_font13.png`
-- `HomeContentScreenshotTest.homeDreams128_light_font13.png`
-- `HomeContentScreenshotTest.homeDreams128_dark_font13.png`
+CI for this branch is `.github/workflows/branch-tests.yml` (new): `./gradlew testDebugUnitTest` with a fake `google-services.json`, no secrets, nothing signed or uploaded. A manual run with `record=true` commits only goldens that did not exist and fails if an existing golden changed. The Claude sandbox has no Android SDK (dl.google.com is blocked), so Gradle ran only there.
 
-Added (2):
+Last red run before the goldens (run 40951335245, head `d6892f9`): `XML: tests=316 failures=16`, all 16 = the new `MoneyScreenshotTest` goldens not yet recorded. Main has 258 tests; this PR adds 58:
 
-- `AppShellScreenshotTest.appShell_home_light_font10.png`
-- `AppShellScreenshotTest.appShell_home_dark_font10.png`
+- `MoneyDocumentsTest` 17 (round trip of every type, agorot Longs, doubles from Firestore, unknown card, malformed docs, seed rule)
+- `MoneyViewModelTest` 16 (Empty, Planned equals the engine, per-item amounts, missing USD rate, from-now vs this-month, no question when the amount is unchanged, defaults, last card, category sets class, periodic gets its own category, field errors, delete, categories seeded once, no seed without household)
+- `MoneyEditorTest` 7, `HomeMoneyHeroTest` 2
+- `MoneyScreenshotTest` 16 goldens (added, none changed): month empty, month filled, big picture, add-item sheet; light/dark; font 1.0/1.3.
 
-The four `homeEmpty_*` goldens were not re-recorded.
-
-## Allow-lists (NightBlueGuardTest)
-
-Read from the test source after this commit. Unchanged from R2.
-
-| list | size |
-| --- | ---: |
-| colour (`Color(0x` outside theme) | 16 |
-| raw `.sp` | 31 |
-| legacyChrome | 28 |
-
-`SettingsDialog.kt` stays on the `.sp` list and the legacyChrome list. It is not on the colour list.
-
-## Who did what
-
-| Item | Specialist | Patch | Summary |
-| --- | --- | --- | --- |
-| 1 desugaring + lint NewApi gate + CI step | devops-expert | devops.patch 0fa00be | coreLibraryDesugaring + desugar_jdk_libs 2.1.5; app/lint.xml (all=warning, NewApi=fatal) via lintConfig, abortOnError=true; distribute.yml `./gradlew lintDebug --no-daemon` after assembleRelease, before upload. Gate proven with probes (NotificationChannel -> Fatal exit 1; WrongConstant -> warning exit 0). |
-| 2 AppType.numberCompact 28sp | android-kotlin-expert | android.patch e759791 | numberCompact 28sp tnum, lh 33.6sp; MetricValueStyle.Compact on half-width Dreams+Shopping cards; AppTypeNumberCompactTest; HomeHalfWidthValueLayoutTest unedited, passes (1.3, dreams=128, lineCount=1). |
-| 3 dialogs | android-kotlin-expert | android.patch e759791 | SignOutConfirmDialog appColors.danger + contentColor colorScheme.onError (AA 7.28 light / 9.58 dark); SettingsDialog backup line AppType.caption + appColors.textSecondary. |
-| 2 goldens + 4 AppShell goldens | qa-expert | qa.patch 8f8a244 | Re-recorded only 6 HomeContentScreenshotTest goldens: homeDreams4_{light,dark}_font{10,13}, homeDreams128_{light,dark}_font13. New AppShellScreenshotTest (2 goldens light/dark, RTL via LocalLayoutDirection). |
-| Reviews | security-expert, code-reviewer, ux-ui-designer | security.md, review.md, design.md | All APPROVED. |
-| Planning, decisions, integration routing | chief-architect | — | No code. Continued on `832b188` because the patches do not touch the money engine. |
-| Integration, one commit, CI run, push | integrator (this cloud agent) | — | Applied the three patches on `832b188`, squashed, ran the clean CI command, amended this report. |
-
-## Decisions
-
-- Strict "NewApi only" via lint.xml rather than abortOnError + per-id downgrades.
-- Item 4 deviation: the AppShell golden does not compose `AppShell()`. It composes `HomeContentAtFixedClock` plus `r2NavBar`, placed the way AppShell places the bar, with RTL pinned through `LocalLayoutDirection`. `AppShell()` builds `MainViewModel` and `AppContainer`, which reach Firestore. The golden can drift from the real shell without a failing test. Proposed follow-up: a stateless `AppShellContent(state, onNav...)` seam that `AppShell` calls, then point the golden at that seam.
-- 28sp barely grows at fontScale 1.3 (39 to 40 px ink): Android 14+ nonlinear font scaling. The ux-ui-designer accepts that. No workaround was added.
-- Continue on `832b188` instead of `b493c92`. The money engine from PR #2 stays as merged. This commit does not edit it.
+Changed tests: `AppShellScreenshotTest` now renders `AppShellContent` (its 2 goldens unchanged and passing). `PlaceholderTabStructureTest` no longer lists Money, which is a real screen now. No test disabled, skipped or loosened. Guard allow-lists unchanged (no `Color(0x`, raw `.sp` or `TopAppBar`). No new text/background colour pair: texts use textPrimary, textSecondary and danger on card, already covered.
 
 ## Noticed, not changed
 
-- Other destructive buttons (DreamDialogs, TaskDialogs, household sign-out) still use colorScheme.error.
-- 8 StringFormatMatches lint findings are real bugs to fix later.
-- lintDebug runs after assembleRelease; a PR-time workflow would need google-services.json secret on PRs.
-- docs/RULES.md stale: claims app builds without google-services.json; does not mention lint step.
-- Pre-existing: firebase-tools version unpinned in upload step; actions/checkout@v5 and setup-java@v5 tag-pinned, not SHA.
-- Never upload lint reports as artifacts while google-services.json/keystore are on disk.
-- Shell goldens use dreamsActive=null; nav-bar modifiers copied into the test.
-- Mockup .num.m is 22px; brief value 28sp is binding.
-- Optional later: golden at fontScale 2.0.
+- "כרטיס חדש" inside an item sheet replaces that sheet with the card sheet; the item draft is lost.
+- The saving sheet has no maturity field yet (shown when stored).
+- A debt edit resets `asOf` to the end of last month, so "payments left" always counts from this month.
+- Home and the money tab each open their own Firestore listeners.
+- Merging to main deploys `firestore.rules` through the Firestore rules workflow.

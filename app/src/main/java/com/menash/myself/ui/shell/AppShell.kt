@@ -79,43 +79,21 @@ fun AppShell(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            val errorMessage = activeError ?: vmError
-            if (errorMessage != null) {
-                ShellErrorBanner(
-                    message = errorMessage,
-                    onDismiss = { mainViewModel.clearErrors() },
-                )
-            }
-            AppNavHost(
-                navController = navController,
-                displayName = currentUser?.displayName,
-                onOpenRoute = ::openRoute,
-                onOpenAccount = { showAccount = true },
-                onSignedOut = onSignedOut,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        FloatingNavBar(
-            items = shellTabs.map { tab ->
-                FloatingNavItem(
-                    route = tab.route,
-                    label = stringResource(tab.labelRes),
-                    icon = tab.icon,
-                    testTag = tab.testTag,
-                )
-            },
+    AppShellContent(
+        state = AppShellState(
             selectedRoute = selectedRoute,
-            onSelect = ::openRoute,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(
-                    start = FloatingNavBarDefaults.outerMargin,
-                    end = FloatingNavBarDefaults.outerMargin,
-                    bottom = FloatingNavBarDefaults.outerMargin,
-                ),
+            errorMessage = activeError ?: vmError,
+        ),
+        onDismissError = { mainViewModel.clearErrors() },
+        onSelectTab = ::openRoute,
+    ) { contentModifier ->
+        AppNavHost(
+            navController = navController,
+            displayName = currentUser?.displayName,
+            onOpenRoute = ::openRoute,
+            onOpenAccount = { showAccount = true },
+            onSignedOut = onSignedOut,
+            modifier = contentModifier,
         )
     }
 
@@ -165,6 +143,55 @@ fun AppShell(
         if (currentUser != null) {
             mainViewModel.initializeHouseholdForUser()
         }
+    }
+}
+
+/** What the shell chrome shows: the selected tab and an optional error line. */
+data class AppShellState(
+    val selectedRoute: String,
+    val errorMessage: String? = null,
+)
+
+/**
+ * Stateless shell: error banner, the tab content and the floating nav bar.
+ * [AppShell] passes the nav host as [content]; screenshot tests pass a fixed screen.
+ */
+@Composable
+fun AppShellContent(
+    state: AppShellState,
+    onDismissError: () -> Unit,
+    onSelectTab: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (Modifier) -> Unit,
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            val errorMessage = state.errorMessage
+            if (errorMessage != null) {
+                ShellErrorBanner(message = errorMessage, onDismiss = onDismissError)
+            }
+            content(Modifier.weight(1f))
+        }
+        FloatingNavBar(
+            items = shellTabs.map { tab ->
+                FloatingNavItem(
+                    route = tab.route,
+                    label = stringResource(tab.labelRes),
+                    icon = tab.icon,
+                    testTag = tab.testTag,
+                )
+            },
+            selectedRoute = state.selectedRoute,
+            onSelect = onSelectTab,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(
+                    start = FloatingNavBarDefaults.outerMargin,
+                    end = FloatingNavBarDefaults.outerMargin,
+                    bottom = FloatingNavBarDefaults.outerMargin,
+                ),
+        )
     }
 }
 

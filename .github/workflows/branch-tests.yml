@@ -1,0 +1,124 @@
+# Unit tests on Claude task branches, before a PR is merged.
+# No secrets: a fake google-services.json is written for compilation only
+# (docs/RULES.md: never install such a build), and nothing is signed or uploaded.
+# record=true (manual run) writes goldens that do not exist yet and commits only
+# those new files to the branch for review. A changed existing golden fails the run.
+name: Branch tests
+
+on:
+  push:
+    branches: ["claude/**"]
+  workflow_dispatch:
+    inputs:
+      record:
+        description: "Record goldens (true/false)"
+        required: false
+        default: "false"
+
+# contents: write is used only by a manual record run, to commit goldens that did not exist.
+permissions:
+  contents: write
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /home/runner/android-sdk
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Android SDK
+        run: |
+          set -euo pipefail
+          mkdir -p "${ANDROID_HOME}/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip
+          unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools
+          mv /tmp/cmdtools/cmdline-tools "${ANDROID_HOME}/cmdline-tools/latest"
+          mkdir -p "${ANDROID_HOME}/licenses"
+          printf '%s\n' \
+            "8933bad161af4178b1185d1a37fbf41ea5269c55" \
+            "d56f5187479451eabf01fb78af6dfcb131a6481e" \
+            "24333f8a63b6825ea9c5514f83c2829b004d1fee" \
+            > "${ANDROID_HOME}/licenses/android-sdk-license"
+          set +o pipefail
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" \
+            "platforms;android-36.1" "build-tools;36.0.0" > /dev/null
+          set -o pipefail
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+
+      - name: Write a fake google-services.json (unit tests only, never installed)
+        run: |
+          set -euo pipefail
+          cat > app/google-services.json <<'JSON'
+          {
+            "project_info": {"project_number": "000000000000", "project_id": "demo-no-project", "storage_bucket": "demo-no-project.appspot.com"},
+            "client": [{
+              "client_info": {"mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": {"package_name": "com.aistudio.mycalculators.qvxmzt"}},
+              "oauth_client": [{"client_id": "000000000000-fake.apps.googleusercontent.com", "client_type": 3}],
+              "api_key": [{"current_key": "AIzaFakeKeyForUnitTestsOnly000000000000"}],
+              "services": {"appinvite_service": {"other_platform_oauth_client": [{"client_id": "000000000000-fake.apps.googleusercontent.com", "client_type": 3}]}}
+            }],
+            "configuration_version": "1"
+          }
+          JSON
+          # A missing debug.keystore only matters for packaging, which unit tests skip.
+
+      - name: Unit tests
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event.inputs.record }}" = "true" ]; then
+            # Writes only goldens that do not exist yet; a changed existing golden still fails below.
+            status=0
+            ./gradlew testDebugUnitTest --no-daemon --continue -Proborazzi.test.record=true || status=$?
+            if git diff --quiet -- app/src/test/snapshots; then
+              new_files="$(git ls-files --others --exclude-standard -- app/src/test/snapshots)"
+              if [ -n "${new_files}" ]; then
+                echo "${new_files}"
+                git config user.name "github-actions[bot]"
+                git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                git add -- ${new_files}
+                git commit -m "test: record new goldens"
+                git push origin "HEAD:${GITHUB_REF_NAME}"
+              fi
+            else
+              echo "Existing goldens differ; they are not re-recorded:"
+              git diff --stat -- app/src/test/snapshots
+              exit 1
+            fi
+            exit "${status}"
+          else
+            ./gradlew testDebugUnitTest --no-daemon --continue
+          fi
+
+      - name: Test counts
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import glob, xml.etree.ElementTree as ET
+          t = f = e = s = 0
+          for p in glob.glob("app/build/test-results/testDebugUnitTest/*.xml"):
+              r = ET.parse(p).getroot()
+              t += int(r.get("tests", 0)); f += int(r.get("failures", 0))
+              e += int(r.get("errors", 0)); s += int(r.get("skipped", 0))
+              for c in r.iter("testcase"):
+                  if c.find("failure") is not None or c.find("error") is not None:
+                      print("FAILED", c.get("classname"), c.get("name"))
+          print(f"XML: tests={t} failures={f} errors={e} skipped={s}")
+          PY
+
+      - name: Upload goldens and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-output
+          path: |
+            app/src/test/snapshots/designsystem
+            app/build/outputs/roborazzi
+            app/build/test-results/testDebugUnitTest
+          retention-days: 7

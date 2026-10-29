@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Money tab -->
+    <string name="money_tab_month">החודש</string>
+    <string name="money_tab_big_picture">התמונה הגדולה</string>
+    <string name="money_empty_title">עוד לא הגדרתם את החודש</string>
+    <string name="money_empty_description">מתחילים מהכנסה אחת. כל השאר אפשר להוסיף אחר כך.</string>
+    <string name="money_empty_action">להתחיל</string>
+    <string name="money_no_household">כדי לנהל כסף צריך להיות בבית משותף</string>
+    <string name="money_surplus_label">פנוי צפוי ב%1$s</string>
+    <string name="money_usd_missing">חסר שער דולר</string>
+    <string name="money_add">להוסיף</string>
+    <string name="money_card_charges">חיובי אשראי צפויים</string>
+    <string name="money_card_charge_date">יורד ב־%1$s</string>
+    <string name="money_actual">בפועל %1$s</string>
+    <string name="money_no_amount">בלי סכום</string>
+    <string name="money_bar_description">חלוקת החודש</string>
+
+    <string name="money_row_income">הכנסות</string>
+    <string name="money_row_fixed">חודשיות קבועות</string>
+    <string name="money_row_current">שוטפות</string>
+    <string name="money_row_periodic">תקופתיות</string>
+    <string name="money_row_installments">תשלומים</string>
+    <string name="money_row_debts">החזרי חובות</string>
+    <string name="money_row_savings">הפקדות לחיסכון</string>
+    <string name="money_row_free">פנוי</string>
+
+    <!-- Big picture -->
+    <string name="money_net_worth">שווי נקי</string>
+    <string name="money_net_worth_empty">עוד לא הוספתם נכסים</string>
+    <string name="money_assets">נכסים והתחייבויות</string>
+    <string name="money_asset_updated">עודכן %1$s</string>
+    <string name="money_stale">לא עודכן 3 חודשים</string>
+    <string name="money_liability">התחייבות</string>
+    <string name="money_cushion">כרית ביטחון</string>
+    <string name="money_cushion_value">%1$s חודשים</string>
+    <string name="money_cushion_basis">לפי ההוצאות המתוכננות</string>
+    <string name="money_cushion_empty">תופיע אחרי שתגדירו את החודש ותוסיפו נכס נזיל</string>
+    <string name="money_debts">חובות</string>
+    <string name="money_debt_detail">יתרה %1$s · %2$s לחודש · עוד %3$d תשלומים</string>
+    <string name="money_savings">חסכונות</string>
+    <string name="money_saving_detail">%1$s לחודש · נצבר %2$s</string>
+    <string name="money_saving_maturity">עד %1$s</string>
+    <string name="money_saving_rate">חיסכון חודשי ממוצע</string>
+    <string name="money_saving_rate_empty">יופיע אחרי סגירת החודש הראשונה</string>
+    <string name="money_none_yet">עוד אין</string>
+
+    <!-- Add / edit -->
+    <string name="money_kind_income">הכנסה</string>
+    <string name="money_kind_fixed">הוצאה קבועה</string>
+    <string name="money_kind_subscription">מנוי</string>
+    <string name="money_kind_variable">תקציב שוטף</string>
+    <string name="money_kind_periodic">תקציב תקופתי</string>
+    <string name="money_kind_installment">רכישה בתשלומים</string>
+    <string name="money_kind_debt">חוב</string>
+    <string name="money_kind_saving">חיסכון</string>
+    <string name="money_kind_asset">נכס</string>
+    <string name="money_kind_card">כרטיס</string>
+    <string name="money_add_title">מה להוסיף?</string>
+    <string name="money_edit_title">עריכה</string>
+    <string name="money_field_name">שם</string>
+    <string name="money_field_creditor">למי</string>
+    <string name="money_field_amount">סכום בחודש</string>
+    <string name="money_field_annual">סכום לשנה</string>
+    <string name="money_field_total">סכום העסקה</string>
+    <string name="money_field_payment">תשלום חודשי</string>
+    <string name="money_field_deposit">הפקדה חודשית</string>
+    <string name="money_field_balance">יתרה</string>
+    <string name="money_field_debt_balance">יתרת החוב (לא חובה)</string>
+    <string name="money_field_accumulated">כמה נצבר (לא חובה)</string>
+    <string name="money_field_payments">מספר תשלומים</string>
+    <string name="money_field_remaining">כמה תשלומים נשארו</string>
+    <string name="money_field_billing_day">יום חיוב בחודש</string>
+    <string name="money_monthly">כל חודש</string>
+    <string name="money_yearly">פעם בשנה</string>
+    <string name="money_billing_month">חודש החיוב: %1$s</string>
+    <string name="money_ils">שקלים</string>
+    <string name="money_usd">דולרים</string>
+    <string name="money_card">כרטיס: %1$s</string>
+    <string name="money_no_card">בלי כרטיס</string>
+    <string name="money_new_card">כרטיס חדש</string>
+    <string name="money_category">סעיף: %1$s</string>
+    <string name="money_no_category">בלי סעיף</string>
+    <string name="money_pick_category">בחירת סעיף</string>
+    <string name="money_class_fixed">חודשיות קבועות</string>
+    <string name="money_class_current">שוטפות</string>
+    <string name="money_class_periodic">תקופתיות</string>
+    <string name="money_periodic_reserve">שמים בצד כל חודש: %1$s</string>
+    <string name="money_installment_split">התשלום הראשון %1$s, ואחריו %2$s בחודש</string>
+    <string name="money_installment_single">תשלום אחד של %1$s</string>
+    <string name="money_first_payment">תשלום ראשון: %1$s</string>
+    <string name="money_liquid">נזיל (אפשר למשוך מהר)</string>
+    <string name="money_is_liability">זו התחייבות</string>
+    <string name="money_save">לשמור</string>
+    <string name="money_delete">למחוק</string>
+    <string name="money_delete_confirm">למחוק את %1$s?</string>
+    <string name="money_cancel">ביטול</string>
+    <string name="money_scope_title">לשנות את הסכום</string>
+    <string name="money_scope_from_now">מעכשיו והלאה</string>
+    <string name="money_scope_this_month">רק החודש</string>
+    <string name="money_error_name">צריך שם</string>
+    <string name="money_error_amount">צריך סכום</string>
+    <string name="money_error_payments">צריך מספר תשלומים</string>
+    <string name="money_error_billing_day">יום בין 1 ל־31</string>
+
+    <!-- Home -->
+    <string name="home_money_planned">פנוי החודש, צפי</string>
+</resources>
