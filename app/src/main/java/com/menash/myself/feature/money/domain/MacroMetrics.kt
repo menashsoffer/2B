@@ -15,6 +15,9 @@ fun cushionMonths(assets: List<Asset>, averageMonthlyExpenses: Money?): Double? 
     return liquid.agorot.toDouble() / averageMonthlyExpenses.agorot
 }
 
+/** Cushion against this month's planned expenses (fixed + subscriptions + variable + installments). */
+fun cushionMonths(assets: List<Asset>, plan: MonthPlan.Planned): Double? = cushionMonths(assets, plan.plannedExpenses)
+
 /** Monthly monetary saving, not a percentage; latest three distinct month closes. */
 fun savingRate(snapshots: List<MonthSnapshot>): Money? {
     require(snapshots.map { it.month }.distinct().size == snapshots.size) { "One snapshot per month is required" }

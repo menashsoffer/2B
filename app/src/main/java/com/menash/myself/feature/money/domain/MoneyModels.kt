@@ -2,6 +2,7 @@ package com.menash.myself.feature.money.domain
 
 import com.menash.myself.core.domain.model.Money
 import java.time.LocalDate
+import java.time.Month
 import java.time.YearMonth
 
 /** Amounts use minor units; subscription amounts are in their declared currency. */
@@ -19,41 +20,64 @@ data class AmountHistory(
     }
 }
 
-interface RecurringItem { val amounts: AmountHistory }
+interface RecurringItem { val id: String; val amounts: AmountHistory }
 enum class Frequency { MONTHLY, YEARLY }
 enum class Currency { ILS, USD }
 enum class AssetKind { ASSET, LIABILITY }
 
-data class Card(val name: String, val billingDay: Int) {
-    init { require(billingDay in 1..31) }
+/** Share of actual net income owed to charity. */
+enum class TitheRate(val percent: Int) { NONE(0), MAASER(10), CHOMESH(20) }
+
+internal fun requireId(id: String) = require(id.isNotBlank()) { "id must not be blank" }
+
+/** Cards are grouped by id; two cards with the same name and billing day stay separate. */
+data class Card(val id: String, val name: String, val billingDay: Int) {
+    init { requireId(id); require(billingDay in 1..31) }
 }
-data class Income(val name: String, override val amounts: AmountHistory) : RecurringItem
+data class Income(
+    override val id: String, val name: String, override val amounts: AmountHistory,
+    val titheRate: TitheRate = TitheRate.NONE,
+) : RecurringItem {
+    init { requireId(id) }
+}
+/** A YEARLY fixed expense is billed in full in billingMonth. */
 data class FixedExpense(
-    val name: String, override val amounts: AmountHistory,
+    override val id: String, val name: String, override val amounts: AmountHistory,
     val frequency: Frequency = Frequency.MONTHLY, val card: Card? = null,
-) : RecurringItem
+    val billingMonth: Month? = null,
+) : RecurringItem {
+    init {
+        requireId(id)
+        require(frequency != Frequency.YEARLY || billingMonth != null) { "A yearly fixed expense needs a billingMonth" }
+    }
+}
+/** A YEARLY subscription is billed in full in the month of renewalDate. */
 data class Subscription(
-    val name: String, override val amounts: AmountHistory,
+    override val id: String, val name: String, override val amounts: AmountHistory,
     val currency: Currency = Currency.ILS, val frequency: Frequency = Frequency.MONTHLY,
     val renewalDate: LocalDate, val card: Card? = null,
-) : RecurringItem
+) : RecurringItem {
+    init { requireId(id) }
+}
 data class VariableBudget(
-    val name: String, override val amounts: AmountHistory, val card: Card? = null,
-) : RecurringItem
+    override val id: String, val name: String, override val amounts: AmountHistory, val card: Card? = null,
+) : RecurringItem {
+    init { requireId(id) }
+}
 
 /** Pass currentMonth explicitly so the default first month is deterministic. */
 data class InstallmentPurchase(
-    val name: String, val total: Money, val currentMonth: YearMonth,
+    val id: String, val name: String, val total: Money, val currentMonth: YearMonth,
     val numberOfPayments: Int = 1, val firstMonth: YearMonth = currentMonth.plusMonths(1),
     val card: Card? = null,
 ) {
-    init { require(total >= Money.ZERO); require(numberOfPayments > 0) }
+    init { requireId(id); require(total >= Money.ZERO); require(numberOfPayments > 0) }
 }
 data class Asset(
-    val name: String, val type: String, val balance: Money,
+    val id: String, val name: String, val type: String, val balance: Money,
     val kind: AssetKind, val liquid: Boolean, val lastUpdated: LocalDate,
 ) {
-    init { require(balance >= Money.ZERO) }
+    init { requireId(id); require(balance >= Money.ZERO) }
 }
 data class MonthSnapshot(
     val month: YearMonth, val actualIncomes: Money, val actualExpenses: Money,
