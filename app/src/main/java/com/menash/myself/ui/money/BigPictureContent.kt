@@ -1,0 +1,160 @@
+package com.menash.myself.ui.money
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import com.menash.myself.R
+import com.menash.myself.core.designsystem.component.Chip
+import com.menash.myself.core.designsystem.component.ChipVariant
+import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Spacing
+import com.menash.myself.core.designsystem.theme.appColors
+import com.menash.myself.feature.money.BigPicture
+import com.menash.myself.feature.money.EditKind
+import com.menash.myself.feature.money.data.MoneyEntry
+import com.menash.myself.feature.money.domain.AssetKind
+import java.text.DecimalFormat
+import java.time.format.DateTimeFormatter
+
+@Composable
+fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
+    val colors = MaterialTheme.appColors
+    val dateFormat = DateTimeFormatter.ofPattern("d.M.yyyy")
+    MoneySurface(testTag = "money_net_worth") {
+        Column(
+            modifier = Modifier.padding(horizontal = Spacing.s16, vertical = Spacing.s8),
+            verticalArrangement = Arrangement.spacedBy(Spacing.s8),
+        ) {
+            Text(text = stringResource(R.string.money_net_worth), style = AppType.caption, color = colors.textSecondary)
+            val netWorth = picture.netWorth
+            if (netWorth == null) {
+                Text(text = stringResource(R.string.money_net_worth_empty), style = AppType.body, color = colors.textPrimary)
+            } else {
+                Text(
+                    text = formatMoney(netWorth),
+                    style = AppType.number,
+                    color = if (netWorth.isNegative()) colors.danger else colors.textPrimary,
+                )
+            }
+        }
+    }
+
+    SectionHeader(stringResource(R.string.money_assets)) { actions.onAddKind(EditKind.ASSET) }
+    MoneySurface(testTag = "money_assets") {
+        if (picture.assets.isEmpty()) {
+            AmountRow(title = stringResource(R.string.money_none_yet), amount = null)
+        }
+        picture.assets.forEach { row ->
+            val asset = row.asset
+            val liability = asset.kind == AssetKind.LIABILITY
+            AmountRow(
+                title = asset.name,
+                detail = listOfNotNull(
+                    stringResource(R.string.money_liability).takeIf { liability },
+                    stringResource(R.string.money_asset_updated, asset.lastUpdated.format(dateFormat)),
+                ).joinToString(" · "),
+                amount = formatMoney(asset.balance),
+                amountColor = if (liability) colors.danger else null,
+                onClick = { actions.onEdit(MoneyEntry.AssetEntry(asset)) },
+                testTag = "money_asset_${asset.id}",
+            )
+            if (row.stale) {
+                Chip(
+                    text = stringResource(R.string.money_stale),
+                    variant = ChipVariant.Warning,
+                    leadingIcon = Icons.Outlined.Schedule,
+                    modifier = Modifier
+                        .padding(horizontal = Spacing.s16)
+                        .testTag("money_stale_${asset.id}"),
+                )
+            }
+        }
+    }
+
+    MoneySurface(testTag = "money_cushion") {
+        val cushion = picture.cushionMonths
+        AmountRow(
+            title = stringResource(R.string.money_cushion),
+            detail = if (cushion == null) {
+                stringResource(R.string.money_cushion_empty)
+            } else {
+                stringResource(R.string.money_cushion_basis)
+            },
+            amount = cushion?.let { stringResource(R.string.money_cushion_value, DecimalFormat("0.#").format(it)) },
+        )
+        AmountRow(
+            title = stringResource(R.string.money_saving_rate),
+            detail = stringResource(R.string.money_saving_rate_empty),
+            amount = null,
+            testTag = "money_saving_rate",
+        )
+    }
+
+    SectionHeader(stringResource(R.string.money_debts)) { actions.onAddKind(EditKind.DEBT) }
+    MoneySurface(testTag = "money_debts") {
+        if (picture.debts.isEmpty()) {
+            AmountRow(title = stringResource(R.string.money_none_yet), amount = null)
+        }
+        picture.debts.forEach { entry ->
+            val debt = entry.value
+            AmountRow(
+                title = debt.creditor,
+                detail = stringResource(
+                    R.string.money_debt_detail,
+                    formatMoney(debt.balance),
+                    formatMoney(debt.monthlyPayment),
+                    debt.remainingPayments,
+                ),
+                amount = null,
+                onClick = { actions.onEdit(entry) },
+                testTag = "money_debt_${debt.id}",
+            )
+        }
+    }
+
+    SectionHeader(stringResource(R.string.money_savings)) { actions.onAddKind(EditKind.SAVING) }
+    MoneySurface(testTag = "money_savings") {
+        if (picture.savings.isEmpty()) {
+            AmountRow(title = stringResource(R.string.money_none_yet), amount = null)
+        }
+        picture.savings.forEach { entry ->
+            val saving = entry.value
+            val maturity = saving.maturity?.let { stringResource(R.string.money_saving_maturity, hebrewMonthYear(it)) }
+            AmountRow(
+                title = saving.name,
+                detail = listOfNotNull(
+                    stringResource(R.string.money_saving_detail, formatMoney(saving.monthlyDeposit), formatMoney(saving.accumulated)),
+                    maturity,
+                ).joinToString(" · "),
+                amount = null,
+                onClick = { actions.onEdit(entry) },
+                testTag = "money_saving_${saving.id}",
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, onAdd: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SectionTitle(title, modifier = Modifier.weight(1f))
+        TextButton(onClick = onAdd) {
+            Text(text = stringResource(R.string.money_add), style = AppType.caption)
+        }
+    }
+}

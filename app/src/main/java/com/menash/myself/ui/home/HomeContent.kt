@@ -28,6 +28,7 @@ import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.HeroCard
 import com.menash.myself.core.designsystem.component.MetricCard
+import com.menash.myself.core.designsystem.component.MoneyFormatter
 import com.menash.myself.core.designsystem.component.MetricValueStyle
 import com.menash.myself.core.designsystem.component.ProfileAvatar
 import com.menash.myself.core.designsystem.component.ScreenHeader
@@ -83,10 +84,11 @@ fun HomeContent(
                 onClick = onOpenAccount,
             )
         }
+        val surplus = state.moneySurplus
         HeroCard(
             label = stringResource(R.string.nav_money),
-            message = stringResource(R.string.home_money_message),
-            value = null,
+            message = stringResource(if (surplus != null) R.string.home_money_planned else R.string.home_money_message),
+            value = surplus?.let { MoneyFormatter.format(it) },
             onClick = { onOpenRoute(ShellRoute.Money) },
         )
         Row(

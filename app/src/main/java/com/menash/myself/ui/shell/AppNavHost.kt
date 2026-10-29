@@ -23,6 +23,7 @@ import com.menash.myself.ui.home.HomeScreen
 import com.menash.myself.ui.home.LifeHomeScreen
 import com.menash.myself.ui.household.HouseholdScreen
 import com.menash.myself.ui.inbox.InboxTriageScreen
+import com.menash.myself.ui.money.MoneyScreen
 import com.menash.myself.ui.more.MoreScreen
 import com.menash.myself.ui.tasks.TasksScreen
 
@@ -49,8 +50,13 @@ fun AppNavHost(
                 )
             }
         }
+        navigation(startDestination = "${ShellRoute.Money}/main", route = ShellRoute.Money) {
+            composable("${ShellRoute.Money}/main") {
+                MoneyScreen()
+            }
+        }
         val graph = this
-        shellTabs.filter { tab -> tab.route != ShellRoute.Home }.forEach { tab ->
+        shellTabs.filter { tab -> tab.route != ShellRoute.Home && tab.route != ShellRoute.Money }.forEach { tab ->
             graph.navigation(startDestination = "${tab.route}/main", route = tab.route) {
                 composable("${tab.route}/main") {
                     PlaceholderTab(

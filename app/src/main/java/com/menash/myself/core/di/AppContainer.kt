@@ -45,6 +45,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import java.math.BigDecimal
+import com.menash.myself.core.data.repository.impl.FirestoreMoneyRepository
+import com.menash.myself.feature.money.data.MoneyRepository
+import com.menash.myself.feature.money.usdRateOf
 
 /**
  * CompositionLocal reading the singleton AppContainer from MyselfApp Application instance.
@@ -104,14 +109,22 @@ class AppContainer(private val context: Context) {
     val fitnessRepository: FitnessRepository by lazy { FirestoreFitnessRepository(rawLifeHubRepository) }
     val householdRepository: HouseholdRepositoryInterface by lazy { FirestoreHouseholdRepository(rawHouseholdRepository, householdSession) }
 
+    // Money pillar: household-shared Firestore documents read by the money engine
+    private val firestoreMoneyRepository by lazy { FirestoreMoneyRepository({ firestore }, householdSession) }
+    val moneyRepository: MoneyRepository get() = firestoreMoneyRepository
+
+    /** The stored Bank of Israel USD rate for the money engine; null when none is stored. */
+    val usdRateFlow: Flow<BigDecimal?> by lazy { exchangeRateRepository.currentRateFlow.map { usdRateOf(it) } }
+
     // Combined error flow for global banner
     val errorFlow: Flow<String?> by lazy {
         combine(
             errorReporter.errorState,
             rawLifeHubRepository.errorFlow,
-            rawHouseholdRepository.errorFlow
-        ) { vmErr, lifeErr, hhErr ->
-            vmErr ?: lifeErr ?: hhErr
+            rawHouseholdRepository.errorFlow,
+            firestoreMoneyRepository.errorFlow,
+        ) { vmErr, lifeErr, hhErr, moneyErr ->
+            vmErr ?: lifeErr ?: hhErr ?: moneyErr
         }
     }
 
@@ -119,5 +132,6 @@ class AppContainer(private val context: Context) {
         errorReporter.clearError()
         rawLifeHubRepository.clearError()
         rawHouseholdRepository.clearError()
+        firestoreMoneyRepository.clearError()
     }
 }

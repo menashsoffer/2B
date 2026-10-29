@@ -1,0 +1,89 @@
+package com.menash.myself.feature.money.data
+
+import com.menash.myself.feature.money.domain.Asset
+import com.menash.myself.feature.money.domain.Card
+import com.menash.myself.feature.money.domain.Category
+import com.menash.myself.feature.money.domain.Debt
+import com.menash.myself.feature.money.domain.FixedExpense
+import com.menash.myself.feature.money.domain.Income
+import com.menash.myself.feature.money.domain.InstallmentPurchase
+import com.menash.myself.feature.money.domain.MoneyItems
+import com.menash.myself.feature.money.domain.PeriodicBudget
+import com.menash.myself.feature.money.domain.Saving
+import com.menash.myself.feature.money.domain.Subscription
+import com.menash.myself.feature.money.domain.VariableBudget
+
+/** Firestore subcollections under households/{hid}. The document id is the engine id. */
+enum class MoneyCollection(val path: String) {
+    CARDS("cards"),
+    INCOMES("incomes"),
+    FIXED_EXPENSES("fixedExpenses"),
+    SUBSCRIPTIONS("subscriptions"),
+    VARIABLE_BUDGETS("variableBudgets"),
+    INSTALLMENTS("installments"),
+    PERIODIC_BUDGETS("periodicBudgets"),
+    DEBTS("debts"),
+    SAVINGS("savings"),
+    ASSETS("assets"),
+    CATEGORIES("categories"),
+}
+
+/** Everything the money pillar stores for one household. [householdReady] is false while no household is active. */
+data class MoneyData(
+    val householdReady: Boolean = false,
+    val cards: List<Card> = emptyList(),
+    val items: MoneyItems = MoneyItems(),
+    val assets: List<Asset> = emptyList(),
+    val categories: List<Category> = emptyList(),
+)
+
+/** One stored document: an engine value and the collection it lives in. */
+sealed interface MoneyEntry {
+    val id: String
+    val collection: MoneyCollection
+
+    data class CardEntry(val value: Card) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.CARDS
+    }
+    data class IncomeEntry(val value: Income) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.INCOMES
+    }
+    data class FixedExpenseEntry(val value: FixedExpense) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.FIXED_EXPENSES
+    }
+    data class SubscriptionEntry(val value: Subscription) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.SUBSCRIPTIONS
+    }
+    data class VariableBudgetEntry(val value: VariableBudget) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.VARIABLE_BUDGETS
+    }
+    data class InstallmentEntry(val value: InstallmentPurchase) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.INSTALLMENTS
+    }
+    data class PeriodicBudgetEntry(val value: PeriodicBudget) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.PERIODIC_BUDGETS
+    }
+    data class DebtEntry(val value: Debt) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.DEBTS
+    }
+    data class SavingEntry(val value: Saving) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.SAVINGS
+    }
+    data class AssetEntry(val value: Asset) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.ASSETS
+    }
+    data class CategoryEntry(val value: Category) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.CATEGORIES
+    }
+}

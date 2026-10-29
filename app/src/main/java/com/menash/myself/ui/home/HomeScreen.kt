@@ -29,6 +29,9 @@ fun HomeScreen(
         factory = HomeViewModel.factory(
             dreamRepository = appContainer.dreamRepository,
             errorReporter = appContainer.errorReporter,
+            moneyRepository = appContainer.moneyRepository,
+            usdRates = appContainer.usdRateFlow,
+            today = { java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jerusalem")) },
         )
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()

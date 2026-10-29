@@ -324,3 +324,46 @@ test("Private items: stored under users/{uid}/private and readable only by owner
     bobDb.collection("users").doc(ALICE_UID).collection("private").doc("tasks").collection("items").get()
   );
 });
+
+// Money pillar: every collection is shared by household members and closed to everyone else.
+const MONEY_COLLECTIONS = [
+  "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
+  "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
+];
+
+for (const collection of MONEY_COLLECTIONS) {
+  test(`Money ${collection}: members read and write, partner edits, stranger denied`, async () => {
+    await setupHousehold();
+    const doc = (db) => db.collection("households").doc("house_1").collection(collection).doc("0b7c5f3e-money-1");
+
+    const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
+    await assertSucceeds(doc(aliceDb).set({ name: "פריט", amount: 125000 }));
+    await assertSucceeds(doc(aliceDb).get());
+
+    const bobDb = testEnv.authenticatedContext(BOB_UID, { email: BOB_EMAIL }).firestore();
+    await assertSucceeds(doc(bobDb).get());
+    await assertSucceeds(doc(bobDb).set({ name: "פריט מעודכן", amount: 130000 }));
+    await assertSucceeds(bobDb.collection("households").doc("house_1").collection(collection).get());
+
+    const charlieDb = testEnv.authenticatedContext(CHARLIE_UID, { email: CHARLIE_EMAIL }).firestore();
+    await assertFails(doc(charlieDb).get());
+    await assertFails(doc(charlieDb).set({ name: "זר" }));
+    await assertFails(doc(charlieDb).delete());
+    await assertFails(charlieDb.collection("households").doc("house_1").collection(collection).get());
+
+    const anonDb = testEnv.unauthenticatedContext().firestore();
+    await assertFails(doc(anonDb).get());
+
+    await assertSucceeds(doc(bobDb).delete());
+  });
+}
+
+test("Money: unknown collection, bad id and empty name are denied", async () => {
+  await setupHousehold();
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
+  const house = aliceDb.collection("households").doc("house_1");
+  await assertFails(house.collection("secrets").doc("x1").set({ name: "לא" }));
+  await assertFails(house.collection("incomes").doc("bad id!").set({ name: "משכורת" }));
+  await assertFails(house.collection("incomes").doc("inc_1").set({ name: "" }));
+  await assertFails(house.collection("debts").doc("debt_1").set({ creditor: "" }));
+});

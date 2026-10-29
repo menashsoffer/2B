@@ -69,6 +69,18 @@ service cloud.firestore {
              data.userId is string && data.userId == request.auth.uid;
     }
 
+    // Money pillar: fully shared inside the household. Document id = engine id.
+    function isMoneyCollection(name) {
+      return name in ['cards', 'incomes', 'fixedExpenses', 'subscriptions', 'variableBudgets',
+                      'installments', 'periodicBudgets', 'debts', 'savings', 'assets', 'categories'];
+    }
+
+    function isValidMoneyDoc(data) {
+      return data.keys().size() <= 20 &&
+             (!('name' in data) || (data.name is string && data.name.size() > 0 && data.name.size() <= 200)) &&
+             (!('creditor' in data) || (data.creditor is string && data.creditor.size() > 0 && data.creditor.size() <= 200));
+    }
+
     // --- Invites Collection (Join Flow) ---
 
     match /invites/{emailLower} {
@@ -148,6 +160,14 @@ service cloud.firestore {
         allow create: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == request.auth.uid;
         allow update: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(dreamId);
+      }
+
+      // Subcollections: money (cards, items, budgets, debts, savings, assets, categories)
+      match /{moneyCollection}/{docId} {
+        allow get, list: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId);
+        allow create, update: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) &&
+                                 isValidId(docId) && isValidMoneyDoc(incoming());
+        allow delete: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) && isValidId(docId);
       }
 
       // Subcollection: Inbox scoped to household
