@@ -2,6 +2,7 @@ package com.menash.myself.feature.money.importer
 
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.domain.Category
+import com.menash.myself.feature.money.domain.ExpenseClass
 import com.menash.myself.feature.money.domain.ImportCheck
 import com.menash.myself.feature.money.domain.suggestCategory
 import java.time.LocalDate
@@ -111,13 +112,18 @@ internal fun newMerchants(
     }
     .sortedByDescending { it.total.agorot }
 
-/** A category sharing a word (3+ letters) with the card company's category name, e.g. "מזון וצריכה" → "מזון". */
+/**
+ * A current-spending category sharing a word (3+ letters) with the card company's category name, e.g.
+ * "מזון וצריכה" → "מזון". Fixed bills are never suggested ("חשמל ומחשבים" is a shop, not the electricity
+ * bill), and a hint matching more than one category suggests nothing.
+ */
 internal fun categoryForHint(hint: String, categories: List<Category>): String? {
     val words = headerKey(hint).split(' ', ',', '/').filter { it.length >= 3 }
-    return categories.firstOrNull { category ->
+    return categories.filter { category ->
         val name = headerKey(category.name)
-        words.any { word -> name.contains(word) || name.split(' ').any { it.length >= 3 && word.contains(it) } }
-    }?.id
+        category.klass == ExpenseClass.CURRENT &&
+            words.any { word -> name.contains(word) || name.split(' ').any { it.length >= 3 && word.contains(it) } }
+    }.singleOrNull()?.id
 }
 
 /** The plan with the user's categories on the new lines, and what the merchant memory should learn. */

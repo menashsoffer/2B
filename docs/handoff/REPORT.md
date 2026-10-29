@@ -20,6 +20,7 @@ Branch `claude/import-screen-1b`, built on `main` after PR #8 (1a). Claude built
 - A suggested category counts as chosen when saving. "אחר כך" leaves the line without a category, and it shows in "לא משויך".
 - A failed save goes back to the review with the error reported, so nothing is lost.
 - An actual is shown on an item only when no other item shares its category. Otherwise it shows on the row only.
+- A card category suggests only a single matching current-spending category. "חשמל ומחשבים" is a shop, so it never suggests the electricity bill.
 - A month with no imported lines looks exactly as before, so the existing goldens did not change.
 
 ## Tests
