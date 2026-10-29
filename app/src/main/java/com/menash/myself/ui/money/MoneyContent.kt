@@ -139,6 +139,14 @@ private fun MonthContent(
                 view.rows.forEach { row ->
                     PlanRow(row, row.kind in expanded, actions)
                 }
+                view.unassigned?.let { unassigned ->
+                    AmountRow(
+                        title = stringResource(R.string.import_unassigned),
+                        amount = formatMoney(unassigned),
+                        amountColor = colors.textSecondary,
+                        testTag = "money_unassigned",
+                    )
+                }
             }
             if (view.cardCharges.isNotEmpty()) {
                 SectionTitle(stringResource(R.string.money_card_charges))

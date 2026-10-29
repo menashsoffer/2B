@@ -51,6 +51,7 @@ import com.menash.myself.core.data.repository.impl.FirestoreMoneyRepository
 import com.menash.myself.core.data.repository.impl.FirestoreTransactionRepository
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
+import com.menash.myself.feature.money.ImportInbox
 import com.menash.myself.feature.money.usdRateOf
 
 /**
@@ -118,6 +119,9 @@ class AppContainer(private val context: Context) {
     // Imported bank and card lines (households/{hid}/transactions) and the merchant memory
     private val firestoreTransactionRepository by lazy { FirestoreTransactionRepository({ firestore }, householdSession) }
     val transactionRepository: TransactionRepository get() = firestoreTransactionRepository
+
+    /** Files shared into the app, waiting for the money tab's import. */
+    val importInbox = ImportInbox()
 
     /** The stored Bank of Israel USD rate for the money engine; null when none is stored. */
     val usdRateFlow: Flow<BigDecimal?> by lazy { exchangeRateRepository.currentRateFlow.map { usdRateOf(it) } }

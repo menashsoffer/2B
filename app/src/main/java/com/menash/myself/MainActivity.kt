@@ -1,5 +1,6 @@
 package com.menash.myself
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -32,12 +33,14 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.data.firestore.MigrationManager
 import com.menash.myself.ui.MainViewModel
+import com.menash.myself.ui.money.sharedFileUris
 import com.menash.myself.ui.shell.AppShell
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (savedInstanceState == null) offerSharedFiles(intent)
         setContent {
             val appContainer = LocalAppContainer.current
             MyApplicationTheme {
@@ -54,6 +57,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        offerSharedFiles(intent)
+    }
+
+    /** A bank or card file shared into the app waits in the inbox until the money tab reads it. */
+    private fun offerSharedFiles(intent: Intent?) {
+        val uris = sharedFileUris(intent)
+        if (uris.isNotEmpty()) (application as MyselfApp).appContainer.importInbox.offer(uris.map { it.toString() })
     }
 }
 

@@ -1,6 +1,18 @@
 package com.menash.myself.ui.money
 
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import com.menash.myself.feature.money.ImportUi
+import com.menash.myself.feature.money.ImportViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,9 +42,52 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             usdRates = appContainer.usdRateFlow,
             today = { LocalDate.now(Israel) },
             errorReporter = appContainer.errorReporter,
+            transactions = appContainer.transactionRepository,
         )
     )
+    val importViewModel: ImportViewModel = viewModel(
+        factory = ImportViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter)
+    )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val importUi by importViewModel.ui.collectAsStateWithLifecycle()
+    val resolver = LocalContext.current.contentResolver
+    val scope = rememberCoroutineScope()
+    fun importUris(uris: List<Uri>) {
+        if (uris.isEmpty()) return
+        scope.launch {
+            val files = withContext(Dispatchers.IO) { uris.mapNotNull { readImportFile(resolver, it) } }
+            importViewModel.load(files)
+        }
+    }
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { importUris(it) }
+    val shared by appContainer.importInbox.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(shared) {
+        if (shared.isNotEmpty()) importUris(appContainer.importInbox.take().map(Uri::parse))
+    }
+
+    if (importUi != ImportUi.Idle) {
+        BackHandler { importViewModel.close() }
+        ImportContent(
+            ui = importUi,
+            actions = ImportActions(
+                onPick = importViewModel::openPicker,
+                onConfirm = importViewModel::confirm,
+                onClose = importViewModel::close,
+            ),
+            modifier = modifier,
+        )
+        (importUi as? ImportUi.Review)?.let { review ->
+            review.review.merchants.firstOrNull { it.key == review.picking }?.let { merchant ->
+                ImportCategorySheet(
+                    merchant = merchant,
+                    categories = review.categories,
+                    onDecide = { importViewModel.decide(merchant.key, it) },
+                    onDismiss = importViewModel::closePicker,
+                )
+            }
+        }
+        return
+    }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
     var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
@@ -60,6 +115,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 viewModel.startAdding(kind)
             },
             onDismiss = { picking = false },
+            onImport = {
+                picking = false
+                picker.launch(importMimeTypes)
+            },
         )
     }
 

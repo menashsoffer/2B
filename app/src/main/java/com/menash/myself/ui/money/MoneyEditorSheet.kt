@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.UploadFile
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -55,19 +57,19 @@ fun kindLabel(kind: EditKind): String = stringResource(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun KindPickerSheet(onPick: (EditKind) -> Unit, onDismiss: () -> Unit) {
+fun KindPickerSheet(onPick: (EditKind) -> Unit, onDismiss: () -> Unit, onImport: (() -> Unit)? = null) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.appColors.card,
     ) {
-        KindPickerContent(onPick)
+        KindPickerContent(onPick, onImport = onImport)
     }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun KindPickerContent(onPick: (EditKind) -> Unit, modifier: Modifier = Modifier) {
+fun KindPickerContent(onPick: (EditKind) -> Unit, modifier: Modifier = Modifier, onImport: (() -> Unit)? = null) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -89,6 +91,14 @@ fun KindPickerContent(onPick: (EditKind) -> Unit, modifier: Modifier = Modifier)
             addableKinds.forEach { kind ->
                 Chip(text = kindLabel(kind), onClick = { onPick(kind) }, modifier = Modifier.testTag("money_kind_${kind.name.lowercase()}"))
             }
+        }
+        if (onImport != null) {
+            Chip(
+                text = stringResource(R.string.import_entry),
+                leadingIcon = Icons.Outlined.UploadFile,
+                onClick = onImport,
+                modifier = Modifier.testTag("money_import"),
+            )
         }
     }
 }
