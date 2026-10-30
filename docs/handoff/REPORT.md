@@ -1,40 +1,38 @@
-# Step 2a: the month's transactions screen, plus the R3 leftovers
+# Step 3a: "האם אפשר?" (can we afford a goal)
 
-Branch `claude/money-transactions-2a`, built on `main` after PR #9. Claude built it at Menash's request ("אפשר להמשיך לצעד הבא"). After the first real import, Menash noted there was no way to see the imported data. Closing a month (2b) requires no unassigned line, so this screen comes first. Every step was pushed as a `wip(money)` commit.
+Branch `claude/money-can-we-3`, built on `main` after PR #10. Claude built it at Menash's request ("האם אתה יכולה במקביל אליו להמשיך למשימה הבאה?"), in parallel with Codex's month-close engine (2b). Every step was pushed as its own commit.
 
 ## Task table
 
 | Item | Status | Main files |
 | --- | --- | --- |
-| The month's lines: counted, income, pending, waiting for the rate, unassigned | done | `importer/MonthLines.kt` |
-| Transactions screen: month back/forward, spent and income, counts, filters (all / unassigned / pending) | done | `ui/money/TransactionsContent.kt`, `TransactionsScreen.kt`, `res/values/strings_transactions.xml` |
-| Category for a line (kept on re-import) that also teaches the merchant memory; own-transfer for transfers | done | `feature/money/TransactionsViewModel.kt`, reuses `ImportCategorySheet` |
-| Remove a cancelled pending card line, after a question | done | `TransactionRepository.delete`, `FirestoreTransactionRepository` |
-| Entry: "תנועות החודש" row and a tappable "לא משויך" row in the month | done | `MoneyContent.kt`, `MonthActuals.kt` (`importedLines`), `MoneyScreen.kt` |
-| R3: "כרטיס חדש" inside an item sheet no longer loses the item | done | `MoneyViewModel.kt` (`startNewCard`, `returnTo`) |
-| R3: maturity date for a saving | done | `MoneyPickers.kt` (`MaturityChips`), `MoneyEditorForm.kt` |
-| R3: editing a debt no longer restarts its payments count | done | `MoneyDraft.kt` (`paymentsLeft`), `MoneyEditor.kt` |
+| Goals stored in Firestore (`goals` collection), with rules and a rules test | done | `data/MoneyDocuments.kt`, `data/MoneyDoc.kt` (reader moved out), `data/MoneyData.kt`, `FirestoreMoneyRepository.kt`, `firestore.rules`, `firestore.test.js` |
+| Each goal answered by the existing engine (`isItPossible`), the other goals taking their share first | done | `feature/money/CanWe.kt` |
+| Goal sheet: name, amount, target month, already saved, monthly cost after, live answer while typing, delete after a question | done | `GoalDraft.kt`, `GoalsViewModel.kt`, `ui/money/GoalEditorForm.kt`, `GoalsScreen.kt` |
+| "האם אפשר?" screen: what the answers are based on, each goal with its answer and levers | done | `ui/money/GoalsContent.kt`, `GoalAnswerText.kt`, `res/values/strings_goals.xml` |
+| Entry row in "התמונה הגדולה" | done | `BigPictureContent.kt`, `MoneyMonth.kt` (`goalCount`), `MoneyContent.kt`, `MoneyScreen.kt` |
 
 ## Behaviour
 
-- The list and the month screen agree by construction. Both come from `toTransactions` and `actualIncome`, and a test checks that the month's "לא משויך" equals the sum of the list's unassigned lines.
-- Card bills and cash withdrawals get a category for that line only and are never taught to the merchant memory.
-- Only pending lines can be removed. If the same pending line comes back in a later file, it is imported again.
-- A month with no imported lines looks exactly as before, so no existing golden changed.
-- A debt keeps its stored `asOf` and count when only its name or payment changes. A new balance or count is taken as "from this month on".
+- No month is closed yet, so the monthly saving is this month's planned surplus. The screen says so. Once 2b lands, the closed-months average goes into `canWe(closedSaving = …)` and the note changes.
+- The safety cushion (three months of planned expenses) is filled first, as the engine already does. The screen says this under the list.
+- Liquid assets are the liquid ASSET balances. Liabilities are not subtracted.
+- A goal whose month has passed gets no answer ("התאריך עבר"), so the engine is never called with a past month.
+
+## Golden changes
+
+The 4 `MoneyScreenshotTest.moneyBigPicture_*` goldens were redrawn, because the big picture now has the "האם אפשר?" row. Nothing else on that screen changed. New goldens: `GoalsScreenshotTest` (list, empty, sheet).
 
 ## Tests
 
-New: 27 tests. `MonthLinesTest` 9, `TransactionsViewModelTest` 4, `MonthActualsTest` +1, `MoneyEditorTest` +3 (debt) and the debt added to the round trip, `MoneyViewModelTest` +2 (new card), and `TransactionsScreenshotTest` 8 goldens. The goldens show the list and an empty month, light/dark, at font 1.0 and 1.3, recorded with the `record=true` dispatch.
+New: `CanWeTest` 9, `GoalDraftTest` 4, `GoalsViewModelTest` 4, `MoneyDocumentsTest` +1 (goals round trip), `GoalsScreenshotTest` 9 goldens.
 
-- Claude sandbox, pure-JVM run of the engine, importer, editor and month sources: `tests 158, failures 0, errors 0`.
+- Claude sandbox, pure-JVM run of the engine, importer, editor, month and can-we sources: `tests 171, failures 0, errors 0`.
 - Full `testDebugUnitTest` runs in the branch CI. See the PR for the run.
 
-No test was disabled, skipped or loosened, no existing golden changed, and no guard allow-list changed. Every file is under 300 lines.
+No test was disabled, skipped or loosened, and no guard allow-list changed. Every file is under 300 lines.
 
 ## Noticed, not changed
 
-- A pending line with no charge date is listed in the month of its purchase date, since its billing month is not known yet.
-- A line matched to an installment purchase is not "לא משויך" on the month screen, but it is listed as unassigned here. This only matters once real "תשלום N מתוך M" rows arrive.
-- A category cannot be cleared back to automatic; it can only be changed.
-- Codex is building the month-close engine (2b) in parallel on `codex/month-close-engine` (prompt: `reviews/prompt-codex-task-4-month-close.md`). It does not touch these files.
+- "Already saved" for a goal is a number typed by hand; it is not linked to a saving or an asset.
+- Levers are listed, not applied. Choosing "לדחות" does not change the goal's month by itself.
