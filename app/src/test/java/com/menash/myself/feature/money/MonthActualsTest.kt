@@ -5,6 +5,8 @@ import com.menash.myself.feature.money.importer.ImportFixtures
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.importer.actualIncome
+import com.menash.myself.feature.money.importer.monthLines
+import com.menash.myself.feature.money.domain.sumMoney
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -52,5 +54,15 @@ class MonthActualsTest {
     fun otherMonthsLinesDoNotCount() {
         val view = planned(october, lines("max_nov.xlsx"))
         view.rows.forEach { assertNull(it.actual) }
+    }
+
+    @Test
+    fun transactionsListAgreesWithTheMonth() {
+        val stored = lines("max_nov.xlsx", "cal_nov.xlsm").map { if (it.row.description == "שופרסל דיל 123") it.copy(categoryId = "current-1") else it }
+        val view = planned(november, stored)
+        val list = monthLines(stored, november, ImportMemory(), MoneySamples.filled.categories)
+        assertEquals(list.lines.size, view.importedLines)
+        assertEquals(sumMoney(list.lines.filter { it.unassigned }.mapNotNull { it.row.charge }), view.unassigned)
+        assertEquals(0, planned(october, emptyList()).importedLines)
     }
 }
