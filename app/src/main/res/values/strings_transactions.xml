@@ -8,8 +8,10 @@
     <string name="tx_spent">הוצאות בפועל</string>
     <string name="tx_income">הכנסות בפועל</string>
     <string name="tx_filter_all">הכל</string>
-    <string name="tx_filter_unassigned">לא משויך (%1$d)</string>
-    <string name="tx_filter_pending">ממתינות (%1$d)</string>
+    <string name="tx_filter_unassigned">לא משויך</string>
+    <string name="tx_filter_pending">ממתינות</string>
+    <string name="tx_unassigned_count">תנועות בלי קטגוריה</string>
+    <string name="tx_pending_count">ממתינות לחיוב</string>
     <string name="tx_empty_title">אין תנועות בחודש הזה</string>
     <string name="tx_empty_detail">מייבאים קובץ מהבנק או מחברת האשראי דרך \"להוסיף\" ואז \"ייבוא קובץ\".</string>
     <string name="tx_empty_filter">אין כאן תנועות בסינון הזה</string>

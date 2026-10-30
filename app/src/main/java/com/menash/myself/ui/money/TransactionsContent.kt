@@ -83,12 +83,29 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
             MoneySurface(testTag = "tx_summary") {
                 AmountRow(title = stringResource(R.string.tx_spent), amount = formatMoney(lines.spent))
                 if (!lines.income.isZero()) AmountRow(title = stringResource(R.string.tx_income), amount = formatMoney(lines.income))
+                if (lines.unassignedCount > 0) {
+                    AmountRow(
+                        title = stringResource(R.string.tx_unassigned_count),
+                        amount = lines.unassignedCount.toString(),
+                        amountColor = MaterialTheme.appColors.warning,
+                        onClick = { actions.onFilter(LineFilter.UNASSIGNED) },
+                        testTag = "tx_unassigned_count",
+                    )
+                }
+                if (lines.pendingCount > 0) {
+                    AmountRow(
+                        title = stringResource(R.string.tx_pending_count),
+                        amount = lines.pendingCount.toString(),
+                        onClick = { actions.onFilter(LineFilter.PENDING) },
+                        testTag = "tx_pending_count",
+                    )
+                }
             }
             PillTabs(
                 options = listOf(
                     stringResource(R.string.tx_filter_all),
-                    stringResource(R.string.tx_filter_unassigned, lines.unassignedCount),
-                    stringResource(R.string.tx_filter_pending, lines.pendingCount),
+                    stringResource(R.string.tx_filter_unassigned),
+                    stringResource(R.string.tx_filter_pending),
                 ),
                 selectedIndex = filters.indexOf(ui.query.filter),
                 onSelect = { actions.onFilter(filters[it]) },
