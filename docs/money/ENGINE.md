@@ -53,6 +53,22 @@ Pure Kotlin under `feature.money.domain`; all inputs are supplied by the caller.
 - `upsert(closed, new)` supports re-closing: the new close replaces its month, the last existing entry wins other duplicate months, and the result is sorted ascending. `averageMonthlyExpenses` uses the latest three closed months (or fewer), rounds HALF_UP to agorot, and returns null for no closes. Calendar gaps add no zero months; duplicate months are rejected, including older entries outside the latest three. `monthlySaving` delegates directly to `savingRate` on the snapshots.
 - `ClosedMonthDocuments.encode` / `decode(id, map)` are pure mappings for canonical `yyyy-MM` document ids. Exactly seven fields are encoded: `actualIncomes`, `actualExpenses`, `byCategory`, `periodic`, `balances`, `liabilities`, `closedOn`. Money is stored as `Long` agorot, close dates as ISO strings. Periodic values contain accrued, spent and remaining amounts; `advance` is derived. Null category is `_none`; that literal category id is reserved and rejected on encode. Income, expense and close date are required; absent optional maps become empty, while malformed present values fail.
 
+## Pension snapshot (CODEX-6)
+
+Current values only, no projection (Menash's decision).
+- `PensionFund(kind PENSION | HISHTALMUT | GEMEL, value, totalDeposits, monthlyDeposit, feeOnBalance %, feeOnDeposits %, openedOn?, lastUpdated)`.
+- `fundSnapshot`: `profit = value - totalDeposits` (may be negative; it is cumulative profit, not a return). `yearlyFee = value * feeOnBalance% + monthlyDeposit * 12 * feeOnDeposits%`. `liquidOn = openedOn + 6 years` for HISHTALMUT only.
+- `pensionSnapshot(funds, today)`: totals, `priciest` = highest yearly fee in shekels (ties by id, null when every fee is zero), `liquidNow`, `stale` = last updated more than 4 months ago.
+- Example: 200,000 at 0.5% from balance and 0% from deposits costs 1,000 a year. 100,000 at 0.2% plus 2,000 a month at 2% costs 200 + 480 = 680. Then the first is the priciest, although its deposit fee is lower.
+
+## Car cost (CODEX-6)
+
+- `CarProfile` with `Energy.Fuel | Electric | Known`. km/liter and kWh/100km must be above zero: the legacy fallbacks (empty = 1.0, zero = free fuel) are gone. `yearlyRunning` / `monthlyRunning` round once.
+- `compareOptions(car, options, horizonMonths = 60)` compares `Cash` (with compound lost return), `BankLoan` (Shpitzer), `DealerFinancing` (0% priced against the cash discount, balloon), and `Leasing` (included items leave the running cost, extra km charged). Each option can take an optional trade-in. A loan longer than the horizon is settled at the horizon (remaining principal plus `earlyRepaymentFee`). A lease shorter than the horizon is `NotComparable(LEASE_SHORTER_THAN_HORIZON)`; no extension is invented. `netMonthly` is never clamped, so negative means a gain.
+- Example: 100,000 at 6% over 60 months pays 1,933.28 a month and 15,996.81 interest in total (Excel PMT reference in `CarFinancingTest`).
+- `carActualYearly(rows, carCategoryIds, endMonth)`: counted transactions in the car categories over the 12 billing months ending at `endMonth`, refunds reducing it. Null when there is none. It feeds `Energy.Known` and the other yearly costs of the current car.
+- Noticed, not changed: `BankLoan` does not charge a lost return on its down payment while `Cash` does. Compare cash and loan with a down payment of zero, or add the field later.
+
 ## Rounding
 
 Uses existing `core.domain.model.Money` in integer minor units. Annual equivalents divide by 12. USD conversion multiplies by the caller's decimal rate; annual division and currency conversion round together once to agorot, HALF_UP. Installments use integer division and put the entire remainder on the first payment, so their sum exactly equals the total, even when the total is smaller than the payment count. Snapshot averages use Money's HALF_UP division. Summation and surplus/net-worth subtraction detect Long overflow instead of wrapping. Cushion ratios use Double and are not rounded to currency.
