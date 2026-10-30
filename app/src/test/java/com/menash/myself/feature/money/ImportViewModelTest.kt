@@ -38,7 +38,13 @@ class FakeTransactionRepository : TransactionRepository {
         lines.value = ((lines.value.associateBy { it.id } + plan.toWrite.associateBy { it.id }) - plan.toDelete.toSet()).values.toList()
     }
 
-    override suspend fun setCategory(transactionId: String, categoryId: String?) = Unit
+    override suspend fun setCategory(transactionId: String, categoryId: String?) {
+        lines.value = lines.value.map { if (it.id == transactionId) it.copy(categoryId = categoryId) else it }
+    }
+
+    override suspend fun delete(transactionId: String) {
+        lines.value = lines.value.filterNot { it.id == transactionId }
+    }
 
     override suspend fun remember(merchantKey: String, categoryId: String?, ownTransfer: Boolean) {
         val m = memory.value

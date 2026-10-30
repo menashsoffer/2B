@@ -105,6 +105,15 @@ class FirestoreTransactionRepository(
         }
     }
 
+    override suspend fun delete(transactionId: String) {
+        try {
+            collection(householdSession.requireHouseholdId(), ImportDocuments.TRANSACTIONS).document(transactionId).delete().await()
+        } catch (e: Exception) {
+            reportError("deleteTransaction", e)
+            throw e
+        }
+    }
+
     override suspend fun remember(merchantKey: String, categoryId: String?, ownTransfer: Boolean) {
         try {
             collection(householdSession.requireHouseholdId(), ImportDocuments.MERCHANT_MEMORY)
