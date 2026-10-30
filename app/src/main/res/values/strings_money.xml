@@ -35,6 +35,7 @@
     <string name="money_cushion">כרית ביטחון</string>
     <string name="money_cushion_value">%1$s חודשים</string>
     <string name="money_cushion_basis">לפי ההוצאות המתוכננות</string>
+    <string name="money_cushion_basis_closed">לפי ההוצאות בפועל בחודשים הסגורים</string>
     <string name="money_cushion_empty">תופיע אחרי שתגדירו את החודש ותוסיפו נכס נזיל</string>
     <string name="money_debts">חובות</string>
     <string name="money_debt_detail">יתרה %1$s · %2$s לחודש · עוד %3$d תשלומים</string>
@@ -48,6 +49,7 @@
     <string name="money_maturity_none">בלי תאריך</string>
     <string name="money_saving_rate">חיסכון חודשי ממוצע</string>
     <string name="money_saving_rate_empty">יופיע אחרי סגירת החודש הראשונה</string>
+    <string name="money_saving_rate_basis">ממוצע של עד 3 החודשים הסגורים האחרונים</string>
     <string name="money_none_yet">עוד אין</string>
 
     <!-- Add / edit -->
