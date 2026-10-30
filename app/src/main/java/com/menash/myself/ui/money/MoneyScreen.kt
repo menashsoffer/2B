@@ -139,6 +139,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 cards = state.data.cards,
                 categories = state.data.categories,
                 preview = draftPreview(current.draft, state.money?.month ?: YearMonth.now(Israel)),
+                month = state.money?.month ?: YearMonth.now(Israel),
             ),
             actions = EditorActions(
                 onChange = viewModel::updateDraft,

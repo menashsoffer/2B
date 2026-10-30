@@ -182,6 +182,7 @@ fun MoneyEditorForm(
                 label = stringResource(R.string.money_field_accumulated),
                 keyboardOptions = number,
             )
+            choices.month?.let { month -> MaturityChips(draft.maturity, month) { value -> change { it.copy(maturity = value) } } }
         }
         if (kind == EditKind.ASSET) {
             SwitchRow(stringResource(R.string.money_liquid), draft.liquid) { checked -> change { it.copy(liquid = checked) } }
