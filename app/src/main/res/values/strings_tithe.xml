@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="money_tithe_label">מעשרות מההכנסה הזו</string>
+    <string name="money_tithe_none">בלי</string>
+    <string name="money_tithe_maaser">מעשר 10%</string>
+    <string name="money_tithe_chomesh">חומש 20%</string>
+</resources>

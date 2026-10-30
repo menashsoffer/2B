@@ -119,6 +119,8 @@ object MoneyDocuments {
             mapOf("name" to it.name, "amount" to it.amount.agorot, "targetMonth" to it.targetMonth.toString(), "allocated" to it.allocated.agorot) +
                 listOfNotNull(it.newMonthlyCost?.let { cost -> "newMonthlyCost" to cost.agorot })
         }
+        is MoneyEntry.DonationEntry -> TitheDocuments.encode(entry.value)
+        is MoneyEntry.TitheEntry -> TitheDocuments.encode(entry.value)
         is MoneyEntry.CategoryEntry -> entry.value.let {
             buildMap {
                 put("name", it.name)
@@ -239,6 +241,8 @@ object MoneyDocuments {
                     Money(doc.longOrNull("allocated") ?: 0), doc.longOrNull("newMonthlyCost")?.let(::Money),
                 )
             )
+            MoneyCollection.DONATIONS -> MoneyEntry.DonationEntry(TitheDocuments.donation(id, doc))
+            MoneyCollection.TITHE -> MoneyEntry.TitheEntry(TitheDocuments.settings(id, doc))
             MoneyCollection.CATEGORIES -> MoneyEntry.CategoryEntry(
                 Category(
                     id = id,

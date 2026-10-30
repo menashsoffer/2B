@@ -62,7 +62,8 @@ fun buildEntries(
             val amounts = history(existing) ?: return EditResult.NeedsScope
             listOf(
                 MoneyEntry.IncomeEntry(
-                    existing?.copy(name = name, amounts = amounts) ?: Income(id, name, amounts)
+                    existing?.copy(name = name, amounts = amounts, titheRate = draft.titheRate)
+                        ?: Income(id, name, amounts, draft.titheRate)
                 )
             )
         }

@@ -34,6 +34,7 @@ import com.menash.myself.feature.money.EditorState
 import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Frequency
+import com.menash.myself.feature.money.domain.TitheRate
 
 /** The sheet body, stateless so goldens render it without a window. */
 @Composable
@@ -84,6 +85,20 @@ fun MoneyEditorForm(
             modifier = Modifier.testTag("money_field_amount"),
         )
 
+        if (kind == EditKind.INCOME) {
+            val rates = TitheRate.entries
+            Text(text = stringResource(R.string.money_tithe_label), style = AppType.caption, color = colors.textSecondary)
+            PillTabs(
+                options = listOf(
+                    stringResource(R.string.money_tithe_none),
+                    stringResource(R.string.money_tithe_maaser),
+                    stringResource(R.string.money_tithe_chomesh),
+                ),
+                selectedIndex = rates.indexOf(draft.titheRate),
+                onSelect = { index -> change { it.copy(titheRate = rates[index]) } },
+                modifier = Modifier.testTag("money_tithe_rate"),
+            )
+        }
         if (kind == EditKind.FIXED || kind == EditKind.SUBSCRIPTION) {
             PillTabs(
                 options = listOf(stringResource(R.string.money_monthly), stringResource(R.string.money_yearly)),

@@ -9,6 +9,7 @@ import com.menash.myself.feature.money.domain.monthlyReserve
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import com.menash.myself.feature.money.domain.TitheRate
 import java.time.YearMonth
 
 class MoneyEditorTest {
@@ -118,5 +119,21 @@ class MoneyEditorTest {
         assertEquals(java.time.LocalDate.of(2026, 11, 30), saved.asOf)
         assertEquals(20, saved.remainingPayments)
         assertEquals(20, paymentsLeft(saved, december))
+    }
+
+    @Test
+    fun income_titheRateIsChosenInTheSheet() {
+        val draft = draftOf(MoneyEntry.IncomeEntry(MoneySamples.salary), month, MoneySamples.today)
+        assertEquals(TitheRate.MAASER, draft.titheRate)
+        val result = buildEntries(
+            draft.copy(titheRate = TitheRate.CHOMESH), MoneySamples.filled, month, MoneySamples.today, null,
+        ) { error("no new id for an edit") } as EditResult.Ok
+        assertEquals(TitheRate.CHOMESH, (result.entries.single() as MoneyEntry.IncomeEntry).value.titheRate)
+
+        val fresh = buildEntries(
+            ItemDraft(EditKind.INCOME, name = "קצבה", amount = "1000", titheRate = TitheRate.MAASER),
+            MoneySamples.filled, month, MoneySamples.today, null,
+        ) { "inc-new" } as EditResult.Ok
+        assertEquals(TitheRate.MAASER, (fresh.entries.single() as MoneyEntry.IncomeEntry).value.titheRate)
     }
 }

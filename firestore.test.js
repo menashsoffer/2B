@@ -329,7 +329,7 @@ test("Private items: stored under users/{uid}/private and readable only by owner
 const MONEY_COLLECTIONS = [
   "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
   "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
-  "transactions", "merchantMemory", "goals",
+  "transactions", "merchantMemory", "goals", "donations", "tithe",
 ];
 
 for (const collection of MONEY_COLLECTIONS) {

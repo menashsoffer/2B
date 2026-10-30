@@ -14,6 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.menash.myself.feature.money.domain.TitheSettings
 import java.time.YearMonth
 
 /** Every stored type survives encode then decode unchanged, cards resolved by id. */
@@ -98,6 +99,18 @@ class MoneyDocumentsTest {
     fun goals_withAndWithoutAMonthlyCost() {
         assertRoundTrip(MoneyEntry.GoalEntry(MoneySamples.trip))
         assertRoundTrip(MoneyEntry.GoalEntry(MoneySamples.car))
+    }
+
+    @Test
+    fun donationsAndMaaserSettings() {
+        MoneySamples.donations.forEach { assertRoundTrip(MoneyEntry.DonationEntry(it)) }
+        assertRoundTrip(MoneyEntry.TitheEntry(MoneySamples.tithe))
+        assertRoundTrip(MoneyEntry.TitheEntry(TitheSettings(java.time.YearMonth.of(2026, 1))))
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun maaserSettings_onlyUnderItsOwnId() {
+        MoneyDocuments.decode(MoneyCollection.TITHE, "other", MoneyDocuments.encode(MoneyEntry.TitheEntry(MoneySamples.tithe)))
     }
 
     @Test
