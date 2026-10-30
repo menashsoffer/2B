@@ -2,7 +2,6 @@ package com.menash.myself.feature.money.importer
 
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.domain.ActualIncome
-import com.menash.myself.feature.money.domain.normalizeMerchant
 import java.time.YearMonth
 
 /** Money in that is not the household's own: the same lines [actualIncome] sums. */
@@ -17,7 +16,7 @@ fun isIncomeLine(stored: StoredTransaction, memory: ImportMemory): Boolean {
  * the same payer. Null when neither names one of [incomeIds].
  */
 fun incomeSourceOf(stored: StoredTransaction, memory: ImportMemory, incomeIds: Set<String>): String? =
-    (stored.categoryId ?: memory.merchants.categories[normalizeMerchant(stored.row.description)])?.takeIf { it in incomeIds }
+    (stored.categoryId ?: memory.merchants.categories[ImportIds.merchantKey(stored.row.description)])?.takeIf { it in incomeIds }
 
 /** What the imports say about income: per source and month, and how many income lines are not linked yet. */
 data class ImportedIncome(val actual: List<ActualIncome>, val unlinked: Map<YearMonth, Int>)

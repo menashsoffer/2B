@@ -20,6 +20,8 @@ data class MonthLine(
     val categoryId: String?,
     /** In "לא משויך": counted spending without a known category. */
     val unassigned: Boolean,
+    /** Income lines only: the income source it is linked to, for maaser. */
+    val incomeId: String? = null,
 ) {
     val id: String get() = stored.id
     val row: StatementRow get() = stored.row
@@ -48,7 +50,13 @@ data class MonthLines(val month: YearMonth, val lines: List<MonthLine>) {
 }
 
 /** Every stored line billed in [month], newest first. */
-fun monthLines(stored: List<StoredTransaction>, month: YearMonth, memory: ImportMemory, categories: List<Category>): MonthLines {
+fun monthLines(
+    stored: List<StoredTransaction>,
+    month: YearMonth,
+    memory: ImportMemory,
+    categories: List<Category>,
+    incomeIds: Set<String> = emptySet(),
+): MonthLines {
     val known = categories.map { it.id }.toSet()
     val counted = toTransactions(stored, memory).associateBy { it.id }
     val lines = stored.filter { it.row.billingMonth == month }.map { s ->
@@ -58,7 +66,8 @@ fun monthLines(stored: List<StoredTransaction>, month: YearMonth, memory: Import
         val income = tx == null && s.row.status == RowStatus.COUNTED && charge != null && charge.agorot < 0 &&
             kind in setOf(RowKind.INCOME, RowKind.TRANSFER)
         val category = tx?.categoryId ?: s.categoryId
-        MonthLine(s, kind, tx != null, income, category, tx != null && (category == null || category !in known))
+        val source = if (income) incomeSourceOf(s, memory, incomeIds) else null
+        MonthLine(s, kind, tx != null, income, category, tx != null && (category == null || category !in known), source)
     }
     return MonthLines(month, lines.sortedWith(compareByDescending<MonthLine> { it.row.date }.thenBy { it.row.description }))
 }

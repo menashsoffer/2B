@@ -140,7 +140,7 @@ private fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsAc
     val state = when {
         line.pending -> stringResource(R.string.tx_pending)
         row.status == RowStatus.WAITING_FX -> stringResource(R.string.tx_waiting_fx)
-        line.income -> stringResource(R.string.tx_income_line)
+        line.income -> ui.incomes.firstOrNull { it.id == line.incomeId }?.name ?: stringResource(R.string.tx_income_line)
         line.unassigned -> stringResource(R.string.tx_unassigned)
         line.counted -> ui.categories.firstOrNull { it.id == line.categoryId }?.name ?: stringResource(R.string.tx_unassigned)
         else -> stringResource(R.string.tx_not_counted)
@@ -163,7 +163,7 @@ private fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsAc
             else -> colors.textSecondary
         },
         onClick = when {
-            line.canCategorise || line.removable -> ({ actions.onLine(line) })
+            line.canCategorise || line.removable || line.income -> ({ actions.onLine(line) })
             else -> null
         },
         testTag = "tx_line_${line.id}",

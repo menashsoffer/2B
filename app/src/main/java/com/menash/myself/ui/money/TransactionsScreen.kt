@@ -31,7 +31,15 @@ fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, mod
         modifier = modifier,
     )
     val lines = ui.lines?.lines.orEmpty()
-    lines.firstOrNull { it.id == ui.query.picking }?.let { line ->
+    lines.firstOrNull { it.id == ui.query.picking && it.income }?.let { line ->
+        IncomeSourceSheet(
+            line = line,
+            incomes = ui.incomes,
+            onPick = { viewModel.linkIncome(line.id, it) },
+            onDismiss = { viewModel.pick(null) },
+        )
+    }
+    lines.firstOrNull { it.id == ui.query.picking && !it.income }?.let { line ->
         ImportCategorySheet(
             merchant = choiceFor(line, ui.categories),
             categories = ui.categories,
