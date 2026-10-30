@@ -171,6 +171,7 @@ fun draftOf(entry: MoneyEntry, month: YearMonth, today: LocalDate): ItemDraft {
         is MoneyEntry.CategoryEntry -> error("Categories are picked, not edited in this sheet")
         is MoneyEntry.GoalEntry -> error("Goals have their own sheet")
         is MoneyEntry.DonationEntry, is MoneyEntry.TitheEntry -> error("Maaser has its own screen")
+        is MoneyEntry.ClosedMonthEntry -> error("A closed month is written by the month close only")
     }
 }
 

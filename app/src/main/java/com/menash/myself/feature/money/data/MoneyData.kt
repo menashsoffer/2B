@@ -3,6 +3,7 @@ package com.menash.myself.feature.money.data
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
+import com.menash.myself.feature.money.domain.ClosedMonth
 import com.menash.myself.feature.money.domain.Debt
 import com.menash.myself.feature.money.domain.Donation
 import com.menash.myself.feature.money.domain.FixedExpense
@@ -32,6 +33,8 @@ enum class MoneyCollection(val path: String) {
     GOALS("goals"),
     DONATIONS("donations"),
     TITHE("tithe"),
+    /** One document per closed month, id "yyyy-MM". */
+    CLOSED_MONTHS("closedMonths"),
 }
 
 /** Everything the money pillar stores for one household. [householdReady] is false while no household is active. */
@@ -46,6 +49,8 @@ data class MoneyData(
     val donations: List<Donation> = emptyList(),
     /** Null until the household sets where its maaser count starts. */
     val tithe: TitheSettings? = null,
+    /** Frozen months, oldest first. */
+    val closedMonths: List<ClosedMonth> = emptyList(),
 )
 
 /** One stored document: an engine value and the collection it lives in. */
@@ -104,6 +109,10 @@ sealed interface MoneyEntry {
     data class TitheEntry(val value: TitheSettings) : MoneyEntry {
         override val id get() = TitheSettings.ID
         override val collection get() = MoneyCollection.TITHE
+    }
+    data class ClosedMonthEntry(val value: ClosedMonth) : MoneyEntry {
+        override val id get() = value.month.toString()
+        override val collection get() = MoneyCollection.CLOSED_MONTHS
     }
     data class CategoryEntry(val value: Category) : MoneyEntry {
         override val id get() = value.id
