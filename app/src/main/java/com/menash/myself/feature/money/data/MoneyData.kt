@@ -5,6 +5,7 @@ import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
 import com.menash.myself.feature.money.domain.Debt
 import com.menash.myself.feature.money.domain.FixedExpense
+import com.menash.myself.feature.money.domain.Goal
 import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.domain.InstallmentPurchase
 import com.menash.myself.feature.money.domain.MoneyItems
@@ -26,6 +27,7 @@ enum class MoneyCollection(val path: String) {
     SAVINGS("savings"),
     ASSETS("assets"),
     CATEGORIES("categories"),
+    GOALS("goals"),
 }
 
 /** Everything the money pillar stores for one household. [householdReady] is false while no household is active. */
@@ -35,6 +37,8 @@ data class MoneyData(
     val items: MoneyItems = MoneyItems(),
     val assets: List<Asset> = emptyList(),
     val categories: List<Category> = emptyList(),
+    /** "האם אפשר?" goals: a trip, a car, a flat. */
+    val goals: List<Goal> = emptyList(),
 )
 
 /** One stored document: an engine value and the collection it lives in. */
@@ -81,6 +85,10 @@ sealed interface MoneyEntry {
     data class AssetEntry(val value: Asset) : MoneyEntry {
         override val id get() = value.id
         override val collection get() = MoneyCollection.ASSETS
+    }
+    data class GoalEntry(val value: Goal) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.GOALS
     }
     data class CategoryEntry(val value: Category) : MoneyEntry {
         override val id get() = value.id
