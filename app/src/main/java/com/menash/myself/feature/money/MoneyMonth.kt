@@ -13,7 +13,10 @@ import com.menash.myself.feature.money.domain.amountFor
 import com.menash.myself.feature.money.domain.cushionMonths
 import com.menash.myself.feature.money.domain.isStale
 import com.menash.myself.feature.money.domain.monthPlan
+import com.menash.myself.feature.money.domain.PensionSnapshot
 import com.menash.myself.feature.money.domain.netWorth
+import com.menash.myself.feature.money.domain.pensionSnapshot
+import com.menash.myself.feature.money.domain.totalWorth
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
 import java.math.BigDecimal
@@ -22,7 +25,7 @@ import java.time.YearMonth
 
 /**
  * Screen-ready view of one month. Every amount here comes from an engine call
- * (monthPlan, netWorth, cushionMonths, isStale); nothing is added or divided in this file.
+ * (monthPlan, netWorth, cushionMonths, isStale, pensionSnapshot, totalWorth); nothing is added or divided in this file.
  * A single item's monthly amount is monthPlan of a [MoneyItems] that holds only that item.
  */
 enum class MonthRowKind { INCOME, FIXED, CURRENT, PERIODIC, INSTALLMENTS, DEBTS, SAVINGS }
@@ -71,6 +74,10 @@ data class BigPicture(
     val monthlySaving: Money? = null,
     /** True when [cushionMonths] divides by the closed months' average spending rather than the plan. */
     val cushionFromClosed: Boolean = false,
+    /** Today's pension, hishtalmut and gemel picture; null while no fund is stored. Not liquid, so not in the cushion. */
+    val pension: PensionSnapshot? = null,
+    /** [netWorth] plus the funds' value; null while neither exists. */
+    val totalWorth: Money? = netWorth,
 )
 
 data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture)
@@ -110,11 +117,13 @@ fun buildMoneyMonth(
     val planned = (view as? MonthView.Planned)?.plan
     val closed = closedFigures(data.closedMonths)
     val closedCushion = closed.averageExpenses?.let { cushionMonths(data.assets, it) }
+    val liquidWorth = data.assets.takeIf { it.isNotEmpty() }?.let { netWorth(it) }
+    val pension = data.pensionFunds.takeIf { it.isNotEmpty() }?.let { pensionSnapshot(it, today) }
     return MoneyMonth(
         month = month,
         view = view,
         bigPicture = BigPicture(
-            netWorth = data.assets.takeIf { it.isNotEmpty() }?.let { netWorth(it) },
+            netWorth = liquidWorth,
             assets = data.assets.map { AssetRow(it, isStale(it, today)) },
             cushionMonths = closedCushion ?: planned?.let { cushionMonths(data.assets, it) },
             debts = data.items.debts.map { MoneyEntry.DebtEntry(it) },
@@ -123,6 +132,8 @@ fun buildMoneyMonth(
             titheBalance = titheFromImports(data, month, transactions, memory)?.balance,
             monthlySaving = closed.monthlySaving,
             cushionFromClosed = closedCushion != null,
+            pension = pension,
+            totalWorth = totalWorth(liquidWorth, pension),
         ),
     )
 }

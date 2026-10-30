@@ -1,6 +1,7 @@
 package com.menash.myself.feature.money
 
 import com.menash.myself.core.domain.model.Money
+import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.domain.FundKind
 import com.menash.myself.feature.money.domain.PensionFund
 import org.junit.Assert.assertEquals
@@ -64,5 +65,22 @@ class PensionViewTest {
         assertEquals(Money.ZERO, ok.fund.totalDeposits)
         assertEquals(BigDecimal("0.5"), ok.fund.feeOnBalance)
         assertEquals("x", ok.fund.id)
+    }
+
+    @Test
+    fun bigPicture_countsFundsInTotalWorthButNotInLiquidNetWorth() {
+        val month = java.time.YearMonth.of(2026, 10)
+        val none = buildMoneyMonth(MoneyData(householdReady = true), month, today, null).bigPicture
+        assertNull(none.totalWorth)
+        assertNull(none.pension)
+
+        val onlyFunds = buildMoneyMonth(MoneyData(householdReady = true, pensionFunds = listOf(pension, hishtalmut)), month, today, null).bigPicture
+        assertNull(onlyFunds.netWorth)
+        assertEquals(Money(32_000_000), onlyFunds.totalWorth)
+        assertEquals(Money(182_000), onlyFunds.pension?.yearlyFee)
+
+        val withAssets = buildMoneyMonth(MoneySamples.filled.copy(pensionFunds = listOf(pension)), month, today, null).bigPicture
+        val liquid = withAssets.netWorth!!
+        assertEquals(liquid + Money(20_000_000), withAssets.totalWorth)
     }
 }

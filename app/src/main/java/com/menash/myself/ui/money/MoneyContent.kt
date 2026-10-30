@@ -55,6 +55,7 @@ data class MoneyActions(
     val onGoals: () -> Unit = {},
     val onTithe: () -> Unit = {},
     val onCloseMonth: () -> Unit = {},
+    val onPension: () -> Unit = {},
 )
 
 @Composable
