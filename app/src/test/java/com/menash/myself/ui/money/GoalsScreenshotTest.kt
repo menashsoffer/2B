@@ -31,8 +31,8 @@ import org.robolectric.annotation.GraphicsMode
 import java.time.YearMonth
 
 /**
- * "האם אפשר?" goldens, light/dark at font 1.0 and 1.3: three goals on the planned surplus (one fits, one fits
- * with levers, one does not), no goals yet, and the goal sheet with its live answer.
+ * "האם אפשר?" goldens, light/dark at font 1.0 and 1.3: four goals on the planned surplus, where a big renovation
+ * fits only with levers and leaves the rest short; no goals yet; and the goal sheet with its live answer.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -44,7 +44,10 @@ class GoalsScreenshotTest {
 
     private val october = YearMonth.of(2026, 10)
     private val laptop = Goal("goal-laptop", "מחשב נייד", shekels(4_000), YearMonth.of(2027, 4))
+    private val renovation = Goal("goal-renovation", "שיפוץ מטבח", shekels(40_000), YearMonth.of(2027, 4))
     private val data = MoneySamples.filled.copy(goals = listOf(laptop, MoneySamples.trip, MoneySamples.car))
+    // The renovation takes 6,667 a month, so it needs levers and leaves the others short.
+    private val crowded = data.copy(goals = data.goals + renovation)
 
     @Test fun goalsList_light_font10() = list(dark = false, font = 1.0f)
     @Test fun goalsList_light_font13() = list(dark = false, font = 1.3f)
@@ -62,7 +65,7 @@ class GoalsScreenshotTest {
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun goalsSheet_dark_font10() = sheet(dark = true, font = 1.0f)
 
-    private fun list(dark: Boolean, font: Float) = screen(GoalsUi(true, canWe(data, october, MoneySamples.rate), october), dark, font)
+    private fun list(dark: Boolean, font: Float) = screen(GoalsUi(true, canWe(crowded, october, MoneySamples.rate), october), dark, font)
 
     private fun empty(dark: Boolean, font: Float) =
         screen(GoalsUi(true, canWe(MoneySamples.filled, october, MoneySamples.rate), october), dark, font)
