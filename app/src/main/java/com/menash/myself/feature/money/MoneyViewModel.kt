@@ -8,6 +8,7 @@ import com.menash.myself.core.external.boi.BoiRate
 import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.data.MoneyEntry
+import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.importer.ImportMemory
@@ -47,6 +48,8 @@ data class EditorState(
     val askScope: Boolean = false,
     val error: DraftField? = null,
     val confirmDelete: Boolean = false,
+    /** The item sheet a "כרטיס חדש" sheet was opened from; it comes back, draft intact, when the card sheet closes. */
+    val returnTo: EditorState? = null,
 )
 
 class MoneyViewModel(
@@ -62,6 +65,8 @@ class MoneyViewModel(
     private var seeded = false
     private var latest = MoneyData()
     private var lastCardId: String? = null
+    /** Cards saved here that the repository may not have sent back yet, so an item saved right after finds its card. */
+    private val createdCards = mutableListOf<Card>()
 
     val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates, transactions, memory) { data, rate, lines, learnt ->
         latest = data
@@ -91,6 +96,12 @@ class MoneyViewModel(
         _editor.value = EditorState(newDraft(kind, month, today(), cardId), isNew = true)
     }
 
+    /** "כרטיס חדש" from inside an item sheet: the item's draft waits and gets the new card when it is saved. */
+    fun startNewCard() {
+        val from = _editor.value?.copy(error = null, askScope = false, confirmDelete = false)
+        _editor.value = EditorState(newDraft(EditKind.CARD, month, today(), null), isNew = true, returnTo = from)
+    }
+
     fun startEditing(entry: MoneyEntry) {
         _editor.value = EditorState(draftOf(entry, month, today()), isNew = false)
     }
@@ -100,7 +111,7 @@ class MoneyViewModel(
     }
 
     fun dismissEditor() {
-        _editor.value = null
+        _editor.value = _editor.value?.returnTo
     }
 
     fun dismissScope() {
@@ -110,13 +121,19 @@ class MoneyViewModel(
     /** [scope] is passed only after the user answered the one question. */
     fun save(scope: AmountScope? = null) {
         val current = _editor.value ?: return
-        when (val result = buildEntries(current.draft, latest, month, today(), scope, newId)) {
+        val data = latest.copy(cards = latest.cards + createdCards.filter { card -> latest.cards.none { it.id == card.id } })
+        when (val result = buildEntries(current.draft, data, month, today(), scope, newId)) {
             EditResult.NeedsScope -> _editor.value = current.copy(askScope = true)
             is EditResult.Invalid -> _editor.value = current.copy(error = result.field, askScope = false)
             is EditResult.Ok -> {
                 current.draft.cardId?.let { lastCardId = it }
-                result.entries.filterIsInstance<MoneyEntry.CardEntry>().firstOrNull()?.let { lastCardId = it.id }
-                _editor.value = null
+                val card = result.entries.filterIsInstance<MoneyEntry.CardEntry>().firstOrNull()?.value
+                if (card != null) {
+                    lastCardId = card.id
+                    createdCards.removeAll { it.id == card.id }
+                    createdCards += card
+                }
+                _editor.value = current.returnTo?.let { back -> card?.let { back.copy(draft = back.draft.copy(cardId = it.id)) } ?: back }
                 safeLaunch("saveMoney") { result.entries.forEach { repository.save(it) } }
             }
         }

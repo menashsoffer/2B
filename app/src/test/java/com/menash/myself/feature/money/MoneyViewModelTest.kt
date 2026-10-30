@@ -194,6 +194,39 @@ class MoneyViewModelTest {
     }
 
     @Test
+    fun newCardFromAnItemSheet_keepsTheDraftAndPicksTheCard() {
+        val repository = FakeMoneyRepository(MoneySamples.filled)
+        val vm = viewModel(repository)
+        vm.startAdding(EditKind.FIXED)
+        vm.updateDraft { it.copy(name = "חוג", amount = "250") }
+        vm.startNewCard()
+        assertEquals(EditKind.CARD, vm.editor.value!!.draft.kind)
+        vm.updateDraft { it.copy(name = "אמקס", amount = "15") }
+        vm.save()
+        val back = vm.editor.value!!
+        assertEquals(EditKind.FIXED, back.draft.kind)
+        assertEquals("חוג", back.draft.name)
+        assertEquals("new-1", back.draft.cardId)
+        vm.save()
+        val item = repository.saved.filterIsInstance<MoneyEntry.FixedExpenseEntry>().single().value
+        assertEquals("new-1", item.card?.id)
+        assertEquals(null, vm.editor.value)
+    }
+
+    @Test
+    fun closingTheNewCardSheet_returnsToTheItemUnchanged() {
+        val vm = viewModel(FakeMoneyRepository(MoneySamples.filled))
+        vm.startAdding(EditKind.VARIABLE)
+        vm.updateDraft { it.copy(name = "פארם") }
+        val before = vm.editor.value!!.draft
+        vm.startNewCard()
+        vm.dismissEditor()
+        assertEquals(before, vm.editor.value!!.draft)
+        vm.dismissEditor()
+        assertEquals(null, vm.editor.value)
+    }
+
+    @Test
     fun categorySetsTheClass() {
         val repository = FakeMoneyRepository(MoneySamples.filled)
         val vm = viewModel(repository)
