@@ -3,7 +3,6 @@ package com.menash.myself.feature.money.importer
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.domain.ActualIncome
 import com.menash.myself.feature.money.domain.MerchantMemory
-import com.menash.myself.feature.money.domain.normalizeMerchant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,7 +32,7 @@ class IncomeLinksTest {
 
     @Test
     fun theRememberedPayer_linksLaterLines_butOnlyToAKnownSource() {
-        val memory = ImportMemory(MerchantMemory(mapOf(normalizeMerchant(allowance.row.description) to "inc-allowance")))
+        val memory = ImportMemory(MerchantMemory(mapOf(ImportIds.merchantKey(allowance.row.description) to "inc-allowance")))
 
         assertEquals("inc-allowance", incomeSourceOf(allowance, memory, setOf("inc-allowance")))
         assertEquals(null, incomeSourceOf(allowance, memory, setOf("inc-other")))

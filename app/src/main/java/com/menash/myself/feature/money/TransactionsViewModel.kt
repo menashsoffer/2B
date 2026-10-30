@@ -8,6 +8,7 @@ import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Category
+import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.importer.ImportIds
 import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.feature.money.importer.MerchantDecision
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import java.time.YearMonth
@@ -37,6 +37,8 @@ data class TransactionsUi(
     val query: TransactionsQuery = TransactionsQuery(),
     val lines: MonthLines? = null,
     val categories: List<Category> = emptyList(),
+    /** Income sources an income line can be linked to, for maaser. */
+    val incomes: List<Income> = emptyList(),
 ) {
     val open: Boolean get() = query.month != null
 }
@@ -54,9 +56,11 @@ class TransactionsViewModel(
         query,
         transactions.observeTransactions(),
         transactions.observeMemory(),
-        money.observe().map { it.categories },
-    ) { q, stored, memory, categories ->
-        TransactionsUi(q, q.month?.let { monthLines(stored, it, memory, categories) }, categories)
+        money.observe(),
+    ) { q, stored, memory, data ->
+        val incomes = data.items.incomes
+        val lines = q.month?.let { monthLines(stored, it, memory, data.categories, incomes.map { income -> income.id }.toSet()) }
+        TransactionsUi(q, lines, data.categories, incomes)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TransactionsUi())
 
     fun open(month: YearMonth, filter: LineFilter = LineFilter.ALL) {
@@ -98,6 +102,17 @@ class TransactionsViewModel(
             }
             MerchantDecision.OwnTransfer -> safeLaunch("markOwnTransfer") { transactions.remember(key, null, true) }
             MerchantDecision.Later -> Unit
+        }
+    }
+
+    /** Links an income line to its source for maaser; the payer is remembered so next month's line follows. */
+    fun linkIncome(lineId: String, incomeId: String) {
+        val line = ui.value.lines?.lines?.firstOrNull { it.id == lineId } ?: return
+        query.update { it.copy(picking = null) }
+        if (!line.income) return
+        safeLaunch("linkIncome") {
+            transactions.setCategory(line.id, incomeId)
+            transactions.remember(ImportIds.merchantKey(line.row.description), incomeId, false)
         }
     }
 

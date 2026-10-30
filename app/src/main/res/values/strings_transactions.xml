@@ -26,4 +26,7 @@
     <string name="tx_remove">להסיר</string>
     <string name="tx_keep">להשאיר</string>
     <string name="tx_back">חזרה</string>
+    <string name="tx_income_pick_title">של איזו הכנסה: %1$s</string>
+    <string name="tx_income_pick_detail">בשביל חשבון המעשרות. בחודשים הבאים שורה מאותו משלם תשויך לבד.</string>
+    <string name="tx_income_none">עוד אין הכנסות קבועות. מוסיפים אותן בחודש, עם "להוסיף".</string>
 </resources>
