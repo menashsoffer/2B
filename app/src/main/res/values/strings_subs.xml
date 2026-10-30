@@ -15,6 +15,6 @@
     <string name="subs_charged_more">ירד %1$s, %2$s יותר מהמתוכנן</string>
     <string name="subs_unlisted">חיובים שעוד לא רשומים</string>
     <string name="subs_unlisted_detail">שורות מקבצי האשראי שסומנו כמנוי בשנה האחרונה. לחיצה מוסיפה אותן כמנוי.</string>
-    <string name="subs_unlisted_line">אחרון ב%1$s · %2$d חודשים</string>
+    <string name="subs_unlisted_line">אחרון ב%1$s · חודשים עם חיוב: %2$d</string>
     <string name="subs_add_from">להוסיף כמנוי</string>
 </resources>
