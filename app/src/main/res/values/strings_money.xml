@@ -41,6 +41,11 @@
     <string name="money_savings">חסכונות</string>
     <string name="money_saving_detail">%1$s לחודש · נצבר %2$s</string>
     <string name="money_saving_maturity">עד %1$s</string>
+    <string name="money_maturity_add">להוסיף תאריך פירעון</string>
+    <string name="money_maturity_month">+ חודש</string>
+    <string name="money_maturity_month_back">− חודש</string>
+    <string name="money_maturity_year">+ שנה</string>
+    <string name="money_maturity_none">בלי תאריך</string>
     <string name="money_saving_rate">חיסכון חודשי ממוצע</string>
     <string name="money_saving_rate_empty">יופיע אחרי סגירת החודש הראשונה</string>
     <string name="money_none_yet">עוד אין</string>

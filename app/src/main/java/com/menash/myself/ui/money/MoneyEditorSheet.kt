@@ -108,6 +108,8 @@ data class EditorChoices(
     val cards: List<Card>,
     val categories: List<Category>,
     val preview: DraftPreview,
+    /** The month being planned; maturity chips start from it. */
+    val month: java.time.YearMonth? = null,
 )
 
 data class EditorActions(

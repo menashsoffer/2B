@@ -152,17 +152,20 @@ fun buildEntries(
             val remaining = draft.remainingPayments.trim().toIntOrNull()?.takeIf { it > 0 }
                 ?: return EditResult.Invalid(DraftField.REMAINING_PAYMENTS)
             val existing = data.items.debts.firstOrNull { it.id == id }
+            val balance = parseAmount(draft.balance) ?: existing?.balance ?: Money.ZERO
+            // Untouched balance and payments left keep the stored count and its date, so editing only the
+            // name or the payment does not restart the count. Otherwise the sheet's numbers are from this month
+            // on: payments start the month after asOf, so asOf is the end of last month.
+            val untouched = existing != null && existing.balance == balance && paymentsLeft(existing, month) == remaining
             listOf(
                 MoneyEntry.DebtEntry(
                     Debt(
                         id = id,
                         creditor = name,
-                        balance = parseAmount(draft.balance) ?: existing?.balance ?: Money.ZERO,
-                        // The sheet asks for payments left from this month on. Payments start the month
-                        // after asOf, so asOf is the end of last month.
-                        asOf = month.minusMonths(1).atEndOfMonth(),
+                        balance = balance,
+                        asOf = if (untouched) existing!!.asOf else month.minusMonths(1).atEndOfMonth(),
                         annualInterestPercent = existing?.annualInterestPercent ?: BigDecimal.ZERO,
-                        remainingPayments = remaining,
+                        remainingPayments = if (untouched) existing!!.remainingPayments else remaining,
                         monthlyPayment = amount,
                     )
                 )

@@ -6,6 +6,7 @@ import com.menash.myself.feature.money.domain.AmountChange
 import com.menash.myself.feature.money.domain.AmountHistory
 import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.Currency
+import com.menash.myself.feature.money.domain.Debt
 import com.menash.myself.feature.money.domain.Frequency
 import com.menash.myself.feature.money.domain.InstallmentPurchase
 import com.menash.myself.feature.money.domain.PeriodicBudget
@@ -90,6 +91,12 @@ fun newDraft(kind: EditKind, month: YearMonth, today: LocalDate, lastCardId: Str
     firstMonth = month.plusMonths(1),
 )
 
+/** Payments still due from [month] on: a debt's payments start the month after its asOf. */
+fun paymentsLeft(debt: Debt, month: YearMonth): Int {
+    val paid = java.time.temporal.ChronoUnit.MONTHS.between(YearMonth.from(debt.asOf), month).toInt() - 1
+    return (debt.remainingPayments - paid.coerceAtLeast(0)).coerceAtLeast(0)
+}
+
 /** The draft the sheet opens with for an existing entry. */
 fun draftOf(entry: MoneyEntry, month: YearMonth, today: LocalDate): ItemDraft {
     fun recurring(kind: EditKind, item: RecurringItem, name: String) =
@@ -137,7 +144,7 @@ fun draftOf(entry: MoneyEntry, month: YearMonth, today: LocalDate): ItemDraft {
             name = entry.value.creditor,
             amount = amountText(entry.value.monthlyPayment),
             balance = amountText(entry.value.balance),
-            remainingPayments = entry.value.remainingPayments.toString(),
+            remainingPayments = paymentsLeft(entry.value, month).toString(),
         )
         is MoneyEntry.SavingEntry -> newDraft(EditKind.SAVING, month, today, null).copy(
             id = entry.value.id,
