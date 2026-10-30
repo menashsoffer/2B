@@ -1,39 +1,40 @@
-# IMPORT-1 part 1b: the import screen and sharing files to the app
+# Step 2a: the month's transactions screen, plus the R3 leftovers
 
-Branch `claude/import-screen-1b`, built on `main` after PR #8 (1a). Claude built it at Menash's request ("כן, אבל אל תעבוד מקומית"), so every step was pushed as a `wip(import)` commit. This PR covers section 4 of `reviews/prompt-import-1.md` and the rest of its section 5 tests: the review screen, the category question for new merchants, "בפועל" on the month, and files shared from WhatsApp, mail or Files. The engine from 1a is called as it is.
+Branch `claude/money-transactions-2a`, built on `main` after PR #9. Claude built it at Menash's request ("אפשר להמשיך לצעד הבא"). After the first real import, Menash noted there was no way to see the imported data. Closing a month (2b) requires no unassigned line, so this screen comes first. Every step was pushed as a `wip(money)` commit.
 
 ## Task table
 
 | Item | Status | Main files |
 | --- | --- | --- |
-| Review before saving (per-file summary, total check, balance break, refused files) | done | `importer/ImportSession.kt` (`reviewImport`), `ui/money/ImportContent.kt` |
-| Only new merchants are asked, grouped, with Max's category as a suggestion | done | `ImportSession.kt` (`newMerchants`, `categoryForHint`), `ui/money/ImportCategorySheet.kt` |
-| Confirm writes once and teaches the merchant memory | done | `ImportSession.kt` (`applyDecisions`), `feature/money/ImportViewModel.kt` |
-| "בפועל" on the month rows plus a "לא משויך" line | done | `feature/money/MonthActuals.kt`, `MoneyMonth.kt`, `MoneyViewModel.kt`, `MoneyContent.kt` |
-| Entry from the money tab ("להוסיף" → "ייבוא קובץ") and a file picker | done | `MoneyEditorSheet.kt`, `MoneyScreen.kt`, `ui/money/ImportFiles.kt` |
-| Share / open with (SEND, SEND_MULTIPLE, VIEW for xls/xlsx/xlsm) | done | `AndroidManifest.xml`, `MainActivity.kt`, `feature/money/ImportInbox.kt`, `AppShell.kt` |
+| The month's lines: counted, income, pending, waiting for the rate, unassigned | done | `importer/MonthLines.kt` |
+| Transactions screen: month back/forward, spent and income, counts, filters (all / unassigned / pending) | done | `ui/money/TransactionsContent.kt`, `TransactionsScreen.kt`, `res/values/strings_transactions.xml` |
+| Category for a line (kept on re-import) that also teaches the merchant memory; own-transfer for transfers | done | `feature/money/TransactionsViewModel.kt`, reuses `ImportCategorySheet` |
+| Remove a cancelled pending card line, after a question | done | `TransactionRepository.delete`, `FirestoreTransactionRepository` |
+| Entry: "תנועות החודש" row and a tappable "לא משויך" row in the month | done | `MoneyContent.kt`, `MonthActuals.kt` (`importedLines`), `MoneyScreen.kt` |
+| R3: "כרטיס חדש" inside an item sheet no longer loses the item | done | `MoneyViewModel.kt` (`startNewCard`, `returnTo`) |
+| R3: maturity date for a saving | done | `MoneyPickers.kt` (`MaturityChips`), `MoneyEditorForm.kt` |
+| R3: editing a debt no longer restarts its payments count | done | `MoneyDraft.kt` (`paymentsLeft`), `MoneyEditor.kt` |
 
 ## Behaviour
 
-- Nothing is written until "שמירה". Cancel or back leaves Firestore untouched.
-- A file that is the same as one already saved shows "אין מה לשמור" and asks nothing.
-- A suggested category counts as chosen when saving. "אחר כך" leaves the line without a category, and it shows in "לא משויך".
-- A failed save goes back to the review with the error reported, so nothing is lost.
-- An actual is shown on an item only when no other item shares its category. Otherwise it shows on the row only.
-- A card category suggests only a single matching current-spending category. "חשמל ומחשבים" is a shop, so it never suggests the electricity bill.
-- Why a file was refused is shown as plain text, so it wraps at font 1.3 instead of being cut off in a chip.
-- A month with no imported lines looks exactly as before, so the existing goldens did not change.
+- The list and the month screen agree by construction. Both come from `toTransactions` and `actualIncome`, and a test checks that the month's "לא משויך" equals the sum of the list's unassigned lines.
+- Card bills and cash withdrawals get a category for that line only and are never taught to the merchant memory.
+- Only pending lines can be removed. If the same pending line comes back in a later file, it is imported again.
+- A month with no imported lines looks exactly as before, so no existing golden changed.
+- A debt keeps its stored `asOf` and count when only its name or payment changes. A new balance or count is taken as "from this month on".
 
 ## Tests
 
-New: 28 tests. `ImportSessionTest` 6, `MonthActualsTest` 4, `ImportViewModelTest` 5, `ImportShareTest` 5 (Robolectric), `ImportScreenshotTest` 8 goldens (review and category list, light/dark, font 1.0/1.3, synthetic fixtures only). The goldens were recorded with the branch workflow's `record=true` dispatch, which only adds new files. Full `testDebugUnitTest` results are in the PR.
+New: 36 tests. `MonthLinesTest` 9, `TransactionsViewModelTest` 4, `MonthActualsTest` +1, `MoneyEditorTest` +3 (debt) and the debt added to the round trip, `MoneyViewModelTest` +2 (new card), and `TransactionsScreenshotTest` 8 goldens. The goldens show the list and an empty month, light/dark, at font 1.0 and 1.3, recorded with the `record=true` dispatch.
+
+- Claude sandbox, pure-JVM run of the engine, importer, editor and month sources: `tests 158, failures 0, errors 0`.
+- Full `testDebugUnitTest` runs in the branch CI. See the PR for the run.
 
 No test was disabled, skipped or loosened, no existing golden changed, and no guard allow-list changed. Every file is under 300 lines.
 
 ## Noticed, not changed
 
-- `MainActivity` is now `launchMode="singleTask"`, so a second share reaches the open app through `onNewIntent` instead of a second copy.
-- A cancelled pending card line still stays stored and uncounted. It is not yet offered for removal.
-- There is no UI yet to change or clear a category after saving (the repository has `setCategory`).
-- The import entry sits inside the "להוסיף" picker rather than as its own button, to keep the money screen goldens unchanged. It can move once Menash sees it.
-- The header strings still come from `import-formats.md`. Menash's first real file is the real test. There is still no "תשלום N מתוך M" sample.
+- A pending line with no charge date is listed in the month of its purchase date, since its billing month is not known yet.
+- A line matched to an installment purchase is not "לא משויך" on the month screen, but it is listed as unassigned here. This only matters once real "תשלום N מתוך M" rows arrive.
+- A category cannot be cleared back to automatic; it can only be changed.
+- Codex is building the month-close engine (2b) in parallel on `codex/month-close-engine` (prompt: `reviews/prompt-codex-task-4-month-close.md`). It does not touch these files.
