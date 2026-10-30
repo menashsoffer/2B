@@ -28,8 +28,8 @@ class CarCostTest {
         assertEquals(Money.ZERO, yearlyRunning(car(Energy.Fuel(0, BigDecimal.ONE, Money(700)))))
     }
     @Test fun monthlyRoundsOnceAndHalfUp() {
-        val c = car(Energy.Fuel(164, BigDecimal(10), Money(1))) // 16.4/12 -> 1, not 2
-        assertEquals(Money(16), yearlyRunning(c))
+        val c = car(Energy.Fuel(176, BigDecimal(10), Money(1))) // 17.6/12 -> 1, not 2
+        assertEquals(Money(18), yearlyRunning(c))
         assertEquals(Money(1), monthlyRunning(c))
         assertEquals(Money(2), monthlyRunning(car(Energy.Known(Money(18)))))
     }
