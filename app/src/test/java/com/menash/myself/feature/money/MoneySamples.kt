@@ -15,6 +15,7 @@ import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Debt
 import com.menash.myself.feature.money.domain.ExpenseClass
 import com.menash.myself.feature.money.domain.FixedExpense
+import com.menash.myself.feature.money.domain.Goal
 import com.menash.myself.feature.money.domain.Frequency
 import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.domain.InstallmentPurchase
@@ -60,6 +61,8 @@ object MoneySamples {
     val studyLoan = Debt(
         "debt-study", "קרן הלוואות", shekels(24_000), LocalDate.of(2026, 9, 30), BigDecimal.ZERO, 24, shekels(1_000),
     )
+    val trip = Goal("goal-trip", "טיול משפחתי", shekels(15_000), YearMonth.of(2027, 7), allocated = shekels(2_000))
+    val car = Goal("goal-car", "רכב חדש", shekels(60_000), YearMonth.of(2028, 6), newMonthlyCost = shekels(400))
     val pension = Saving("save-kids", "חיסכון לילדים", shekels(500), shekels(12_000), YearMonth.of(2030, 12))
     val checking = Asset("asset-checking", "עו\"ש", "bank", shekels(35_000), AssetKind.ASSET, true, LocalDate.of(2026, 10, 20))
     val oldFund = Asset("asset-fund", "קרן השתלמות", "fund", shekels(80_000), AssetKind.ASSET, false, LocalDate.of(2026, 5, 1))

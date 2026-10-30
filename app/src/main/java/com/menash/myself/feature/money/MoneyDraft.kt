@@ -166,6 +166,7 @@ fun draftOf(entry: MoneyEntry, month: YearMonth, today: LocalDate): ItemDraft {
             amount = entry.value.billingDay.toString(),
         )
         is MoneyEntry.CategoryEntry -> error("Categories are picked, not edited in this sheet")
+        is MoneyEntry.GoalEntry -> error("Goals have their own sheet")
     }
 }
 

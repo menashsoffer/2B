@@ -142,6 +142,7 @@ class FirestoreMoneyRepository(
             ),
             assets = entries.filterIsInstance<MoneyEntry.AssetEntry>().map<MoneyEntry.AssetEntry, Asset> { it.value },
             categories = entries.filterIsInstance<MoneyEntry.CategoryEntry>().map { it.value },
+            goals = entries.filterIsInstance<MoneyEntry.GoalEntry>().map { it.value },
         )
     }
 }

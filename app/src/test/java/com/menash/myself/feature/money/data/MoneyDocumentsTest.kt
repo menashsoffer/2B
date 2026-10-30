@@ -95,6 +95,12 @@ class MoneyDocumentsTest {
     }
 
     @Test
+    fun goals_withAndWithoutAMonthlyCost() {
+        assertRoundTrip(MoneyEntry.GoalEntry(MoneySamples.trip))
+        assertRoundTrip(MoneyEntry.GoalEntry(MoneySamples.car))
+    }
+
+    @Test
     fun amountsAreStoredAsAgorotLongs() {
         val encoded = MoneyDocuments.encode(MoneyEntry.InstallmentEntry(MoneySamples.fridge))
         assertEquals(600_000L, encoded["total"])
