@@ -67,6 +67,10 @@ data class BigPicture(
     val goalCount: Int = 0,
     /** Signed maaser balance (positive is still owed); null until the count has a start month. */
     val titheBalance: Money? = null,
+    /** The closed-months average saving; null until a month is closed. */
+    val monthlySaving: Money? = null,
+    /** True when [cushionMonths] divides by the closed months' average spending rather than the plan. */
+    val cushionFromClosed: Boolean = false,
 )
 
 data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture)
@@ -104,17 +108,21 @@ fun buildMoneyMonth(
         ).let { withActuals(it, data.copy(items = items), month, rate, transactions, memory) }
     }
     val planned = (view as? MonthView.Planned)?.plan
+    val closed = closedFigures(data.closedMonths)
+    val closedCushion = closed.averageExpenses?.let { cushionMonths(data.assets, it) }
     return MoneyMonth(
         month = month,
         view = view,
         bigPicture = BigPicture(
             netWorth = data.assets.takeIf { it.isNotEmpty() }?.let { netWorth(it) },
             assets = data.assets.map { AssetRow(it, isStale(it, today)) },
-            cushionMonths = planned?.let { cushionMonths(data.assets, it) },
+            cushionMonths = closedCushion ?: planned?.let { cushionMonths(data.assets, it) },
             debts = data.items.debts.map { MoneyEntry.DebtEntry(it) },
             savings = data.items.savings.map { MoneyEntry.SavingEntry(it) },
             goalCount = data.goals.size,
             titheBalance = titheFromImports(data, month, transactions, memory)?.balance,
+            monthlySaving = closed.monthlySaving,
+            cushionFromClosed = closedCushion != null,
         ),
     )
 }

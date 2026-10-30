@@ -54,6 +54,7 @@ data class MoneyActions(
     val onTransactions: (LineFilter) -> Unit = {},
     val onGoals: () -> Unit = {},
     val onTithe: () -> Unit = {},
+    val onCloseMonth: () -> Unit = {},
 )
 
 @Composable
@@ -161,6 +162,13 @@ private fun MonthContent(
                         testTag = "money_transactions",
                     )
                 }
+                AmountRow(
+                    title = stringResource(R.string.close_entry),
+                    amount = null,
+                    detail = stringResource(R.string.close_entry_detail),
+                    onClick = actions.onCloseMonth,
+                    testTag = "money_close_month",
+                )
             }
             if (view.cardCharges.isNotEmpty()) {
                 SectionTitle(stringResource(R.string.money_card_charges))

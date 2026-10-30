@@ -88,17 +88,19 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
         val cushion = picture.cushionMonths
         AmountRow(
             title = stringResource(R.string.money_cushion),
-            detail = if (cushion == null) {
-                stringResource(R.string.money_cushion_empty)
-            } else {
-                stringResource(R.string.money_cushion_basis)
+            detail = when {
+                cushion == null -> stringResource(R.string.money_cushion_empty)
+                picture.cushionFromClosed -> stringResource(R.string.money_cushion_basis_closed)
+                else -> stringResource(R.string.money_cushion_basis)
             },
             amount = cushion?.let { stringResource(R.string.money_cushion_value, DecimalFormat("0.#").format(it)) },
         )
+        val saving = picture.monthlySaving
         AmountRow(
             title = stringResource(R.string.money_saving_rate),
-            detail = stringResource(R.string.money_saving_rate_empty),
-            amount = null,
+            detail = stringResource(if (saving == null) R.string.money_saving_rate_empty else R.string.money_saving_rate_basis),
+            amount = saving?.let { formatMoney(it) },
+            amountColor = if (saving != null && saving.isNegative()) colors.danger else null,
             testTag = "money_saving_rate",
         )
     }
