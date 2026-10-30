@@ -13,6 +13,8 @@ import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
 import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Debt
+import com.menash.myself.feature.money.domain.Donation
+import com.menash.myself.feature.money.domain.TitheSettings
 import com.menash.myself.feature.money.domain.ExpenseClass
 import com.menash.myself.feature.money.domain.FixedExpense
 import com.menash.myself.feature.money.domain.Goal
@@ -67,6 +69,14 @@ object MoneySamples {
     val checking = Asset("asset-checking", "עו\"ש", "bank", shekels(35_000), AssetKind.ASSET, true, LocalDate.of(2026, 10, 20))
     val oldFund = Asset("asset-fund", "קרן השתלמות", "fund", shekels(80_000), AssetKind.ASSET, false, LocalDate.of(2026, 5, 1))
     val overdraft = Asset("asset-od", "מינוס", "bank", shekels(2_000), AssetKind.LIABILITY, true, LocalDate.of(2026, 10, 20))
+
+    val donations = listOf(
+        Donation("don-1", LocalDate.of(2026, 9, 14), shekels(1_800), "קופת העיר", submittedForTaxRefund = true),
+        Donation("don-2", LocalDate.of(2026, 10, 2), shekels(500), "יד שרה"),
+        Donation("don-old", LocalDate.of(2026, 6, 20), shekels(300), "בית כנסת"),
+    )
+    /** Counting from September, with the One Zero portfolio as the "fund" asset and 70,000 deposited before. */
+    val tithe = TitheSettings(YearMonth.of(2026, 9), opening = shekels(250), portfolioAssetId = "asset-fund", depositsBefore = shekels(70_000))
 
     val filled = MoneyData(
         householdReady = true,

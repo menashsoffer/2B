@@ -5,6 +5,7 @@ import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.domain.AmountChange
 import com.menash.myself.feature.money.domain.AmountHistory
 import com.menash.myself.feature.money.domain.AssetKind
+import com.menash.myself.feature.money.domain.TitheRate
 import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Debt
 import com.menash.myself.feature.money.domain.Frequency
@@ -49,6 +50,8 @@ data class ItemDraft(
     val maturity: YearMonth? = null,
     val liquid: Boolean = true,
     val assetKind: AssetKind = AssetKind.ASSET,
+    /** Income only: the share owed to charity. */
+    val titheRate: TitheRate = TitheRate.NONE,
 )
 
 sealed interface EditResult {
@@ -106,7 +109,7 @@ fun draftOf(entry: MoneyEntry, month: YearMonth, today: LocalDate): ItemDraft {
             amount = amountFor(item, month)?.let(::amountText).orEmpty(),
         )
     return when (entry) {
-        is MoneyEntry.IncomeEntry -> recurring(EditKind.INCOME, entry.value, entry.value.name)
+        is MoneyEntry.IncomeEntry -> recurring(EditKind.INCOME, entry.value, entry.value.name).copy(titheRate = entry.value.titheRate)
         is MoneyEntry.FixedExpenseEntry -> recurring(EditKind.FIXED, entry.value, entry.value.name).copy(
             frequency = entry.value.frequency,
             billingMonth = entry.value.billingMonth ?: month.month,
@@ -167,6 +170,7 @@ fun draftOf(entry: MoneyEntry, month: YearMonth, today: LocalDate): ItemDraft {
         )
         is MoneyEntry.CategoryEntry -> error("Categories are picked, not edited in this sheet")
         is MoneyEntry.GoalEntry -> error("Goals have their own sheet")
+        is MoneyEntry.DonationEntry, is MoneyEntry.TitheEntry -> error("Maaser has its own screen")
     }
 }
 
