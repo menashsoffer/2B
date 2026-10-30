@@ -11,9 +11,9 @@
     <string name="close_ready">הכל מוכן לסגירה</string>
     <string name="close_not_over">החודש עוד לא נגמר</string>
     <string name="close_not_over_detail">אפשר לסגור מ-1 ב%1$s</string>
-    <string name="close_unassigned">%1$d שורות לא משויכות</string>
+    <string name="close_unassigned">שורות לא משויכות: %1$d</string>
     <string name="close_unassigned_detail">צריך לשייך כל הוצאה לסעיף</string>
-    <string name="close_pending">%1$d חיובים ממתינים</string>
+    <string name="close_pending">חיובים ממתינים: %1$d</string>
     <string name="close_pending_detail">לא ייספרו בחודש הזה</string>
     <string name="close_missing">%1$s %2$s</string>
     <string name="close_missing_detail">אין עדיין קובץ של החודש. לייבא עכשיו</string>
