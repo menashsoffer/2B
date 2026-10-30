@@ -25,7 +25,7 @@ Branch `claude/money-transactions-2a`, built on `main` after PR #9. Claude built
 
 ## Tests
 
-New: 36 tests. `MonthLinesTest` 9, `TransactionsViewModelTest` 4, `MonthActualsTest` +1, `MoneyEditorTest` +3 (debt) and the debt added to the round trip, `MoneyViewModelTest` +2 (new card), and `TransactionsScreenshotTest` 8 goldens. The goldens show the list and an empty month, light/dark, at font 1.0 and 1.3, recorded with the `record=true` dispatch.
+New: 27 tests. `MonthLinesTest` 9, `TransactionsViewModelTest` 4, `MonthActualsTest` +1, `MoneyEditorTest` +3 (debt) and the debt added to the round trip, `MoneyViewModelTest` +2 (new card), and `TransactionsScreenshotTest` 8 goldens. The goldens show the list and an empty month, light/dark, at font 1.0 and 1.3, recorded with the `record=true` dispatch.
 
 - Claude sandbox, pure-JVM run of the engine, importer, editor and month sources: `tests 158, failures 0, errors 0`.
 - Full `testDebugUnitTest` runs in the branch CI. See the PR for the run.
