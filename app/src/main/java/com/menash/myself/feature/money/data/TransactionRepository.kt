@@ -18,6 +18,9 @@ interface TransactionRepository {
     /** The user's category for one line; kept by later re-imports. */
     suspend fun setCategory(transactionId: String, categoryId: String?)
 
+    /** Removes one stored line (a cancelled pending card line). */
+    suspend fun delete(transactionId: String)
+
     /** Remembers a merchant's category and / or marks it as one of the household's own accounts. */
     suspend fun remember(merchantKey: String, categoryId: String?, ownTransfer: Boolean)
 }
