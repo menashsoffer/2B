@@ -22,7 +22,7 @@ class ClosedMonthDocumentsTest {
     @Test fun roundTripPreservesFrozenValuesAndDerivesAdvance() {
         val encoded = ClosedMonthDocuments.encode(closed)
         assertEquals(closed, decode(encoded))
-        val periodic = (encoded.getValue("periodic") as Map<*, *>).getValue("car") as Map<*, *>
+        val periodic = (encoded.getValue("periodic") as Map<*, *>)["car"] as Map<*, *>
         assertEquals(setOf("accruedToDate", "spentToDate", "remainingThisYear"), periodic.keys)
         assertEquals(Money(1000), decode(encoded).periodic.getValue("car").advance)
         assertEquals(-100L, (encoded.getValue("byCategory") as Map<*, *>)["_none"])
@@ -104,7 +104,8 @@ class ClosedMonthDocumentsTest {
     }
 
     @Test fun literalReservedCategoryCannotCollideWithNull() {
-        for (categories in listOf(mapOf("_none" to Money(1)), mapOf(null to Money(2), "_none" to Money(1)))) {
+        val cases: List<Map<String?, Money>> = listOf(mapOf("_none" to Money(1)), mapOf(null to Money(2), "_none" to Money(1)))
+        for (categories in cases) {
             assertThrows(IllegalArgumentException::class.java) { ClosedMonthDocuments.encode(closed.copy(byCategory = categories)) }
         }
     }
