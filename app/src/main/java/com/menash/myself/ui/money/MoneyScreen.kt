@@ -145,7 +145,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onChange = viewModel::updateDraft,
                 onSave = { viewModel.save() },
                 onDelete = viewModel::requestDelete,
-                onNewCard = { viewModel.startAdding(EditKind.CARD) },
+                onNewCard = viewModel::startNewCard,
             ),
             onScope = { scope -> viewModel.save(scope) },
             onDismissScope = viewModel::dismissScope,
