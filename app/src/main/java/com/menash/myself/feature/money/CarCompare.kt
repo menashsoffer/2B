@@ -29,6 +29,9 @@ data class CarCompareView(
 ) {
     val cheapest: OptionCost? get() = rows.firstOrNull() as? OptionCost
     val isEmpty: Boolean get() = rows.isEmpty() && incomplete.isEmpty() && invalid.isEmpty()
+
+    /** How much more a month [row] costs than the cheapest; null for the cheapest itself. */
+    fun aboveCheapest(row: OptionCost): Money? = cheapest?.takeIf { it !== row }?.let { row.netMonthly - it.netMonthly }
 }
 
 private fun money(text: String): Money? = if (text.isBlank()) null else parseAmount(text)

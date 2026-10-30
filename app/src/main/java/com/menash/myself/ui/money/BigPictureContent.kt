@@ -130,6 +130,13 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             onClick = actions.onTithe,
             testTag = "money_tithe_entry",
         )
+        AmountRow(
+            title = stringResource(R.string.car_entry),
+            detail = stringResource(R.string.car_entry_detail),
+            amount = null,
+            onClick = actions.onCar,
+            testTag = "money_car_entry",
+        )
     }
 
     SectionHeader(stringResource(R.string.money_debts)) { actions.onAddKind(EditKind.DEBT) }

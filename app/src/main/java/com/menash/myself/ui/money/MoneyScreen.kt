@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.feature.money.CarViewModel
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.MonthCloseViewModel
@@ -75,6 +76,12 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     )
     val closeUi by closeViewModel.ui.collectAsStateWithLifecycle()
+    val carViewModel: CarViewModel = viewModel(
+        factory = CarViewModel.factory(
+            appContainer.moneyRepository, appContainer.transactionRepository, { LocalDate.now(Israel) }, appContainer.errorReporter,
+        )
+    )
+    val carUi by carViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -127,6 +134,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     }
     if (titheUi.open) {
         TitheScreen(titheUi, titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
+        return
+    }
+    if (carUi.open) {
+        CarScreen(carUi, carViewModel, modifier)
         return
     }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
@@ -188,6 +199,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onGoals = goalsViewModel::open,
             onTithe = titheViewModel::open,
             onCloseMonth = closeViewModel::open,
+            onCar = carViewModel::open,
         ),
         modifier = modifier,
     )
