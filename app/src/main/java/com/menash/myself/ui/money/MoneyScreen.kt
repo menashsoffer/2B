@@ -26,6 +26,7 @@ import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.MonthCloseViewModel
+import com.menash.myself.feature.money.SubscriptionsViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MoneyViewModel
@@ -75,6 +76,13 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     )
     val closeUi by closeViewModel.ui.collectAsStateWithLifecycle()
+    val subsViewModel: SubscriptionsViewModel = viewModel(
+        factory = SubscriptionsViewModel.factory(
+            appContainer.moneyRepository, appContainer.transactionRepository, appContainer.usdRateFlow,
+            { LocalDate.now(Israel) }, appContainer.errorReporter,
+        )
+    )
+    val subsUi by subsViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -169,6 +177,20 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         EditorSheet()
         return
     }
+    if (subsUi.open) {
+        BackHandler { subsViewModel.close() }
+        SubscriptionsContent(
+            ui = subsUi,
+            actions = SubscriptionsActions(
+                onEdit = { viewModel.startEditing(MoneyEntry.SubscriptionEntry(it)) },
+                onAdd = { viewModel.startAdding(EditKind.SUBSCRIPTION) },
+                onAddFrom = viewModel::startSubscriptionFrom,
+            ),
+            modifier = modifier,
+        )
+        EditorSheet()
+        return
+    }
     var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
     var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
     var picking by remember { mutableStateOf(false) }
@@ -188,6 +210,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onGoals = goalsViewModel::open,
             onTithe = titheViewModel::open,
             onCloseMonth = closeViewModel::open,
+            onSubscriptions = subsViewModel::open,
         ),
         modifier = modifier,
     )

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="subs_entry">מנויים</string>
+    <string name="subs_entry_detail">כמה עולים המנויים, ומה ירד בפועל מהכרטיס</string>
+    <string name="subs_title">מנויים</string>
+    <string name="subs_subtitle">מה רשום, ומה ירד בפועל מהכרטיס</string>
+    <string name="subs_total">כל המנויים בחודש</string>
+    <string name="subs_total_year">%1$s בשנה</string>
+    <string name="subs_rate_missing">חסר שער דולר, אז הסכום בדולרים עוד לא נספר</string>
+    <string name="subs_listed">רשומים</string>
+    <string name="subs_usd">בדולרים</string>
+    <string name="subs_monthly">כל חודש</string>
+    <string name="subs_renews">מתחדש ב-%1$s</string>
+    <string name="subs_charged">ירד %1$s ב%2$s</string>
+    <string name="subs_charged_more">ירד %1$s, %2$s יותר מהמתוכנן</string>
+    <string name="subs_unlisted">חיובים שעוד לא רשומים</string>
+    <string name="subs_unlisted_detail">שורות מקבצי האשראי שסומנו כמנוי בשנה האחרונה. לחיצה מוסיפה אותן כמנוי.</string>
+    <string name="subs_unlisted_line">אחרון ב%1$s · %2$d חודשים</string>
+    <string name="subs_add_from">להוסיף כמנוי</string>
+</resources>

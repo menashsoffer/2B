@@ -96,6 +96,17 @@ class MoneyViewModel(
         _editor.value = EditorState(newDraft(kind, month, today(), cardId), isNew = true)
     }
 
+    /** "להוסיף כמנוי" on a charge seen in the card files: the sheet opens filled from what was charged. */
+    fun startSubscriptionFrom(charge: UnlistedCharge) {
+        startAdding(EditKind.SUBSCRIPTION)
+        _editor.update {
+            it?.copy(draft = it.draft.copy(
+                name = charge.name, amount = amountText(charge.last.amount), categoryId = charge.categoryId,
+                renewalDate = charge.last.month.atDay(minOf(today().dayOfMonth, charge.last.month.lengthOfMonth())),
+            ))
+        }
+    }
+
     /** "כרטיס חדש" from inside an item sheet: the item's draft waits and gets the new card when it is saved. */
     fun startNewCard() {
         val from = _editor.value?.copy(error = null, askScope = false, confirmDelete = false)
