@@ -108,6 +108,19 @@ class MoneyDocumentsTest {
         assertRoundTrip(MoneyEntry.TitheEntry(TitheSettings(java.time.YearMonth.of(2026, 1))))
     }
 
+    @Test
+    fun closedMonth_storedUnderItsMonth() {
+        val month = java.time.YearMonth.of(2026, 9)
+        val closed = com.menash.myself.feature.money.domain.ClosedMonth(
+            month, com.menash.myself.feature.money.domain.MonthSnapshot(month, Money(1_500_000), Money(1_200_000)),
+            mapOf("food" to Money(300_000)), emptyMap(), mapOf("asset-bank" to Money(2_000_000)), emptyMap(),
+            java.time.LocalDate.of(2026, 10, 2),
+        )
+        val entry = MoneyEntry.ClosedMonthEntry(closed)
+        assertEquals("2026-09", entry.id)
+        assertRoundTrip(entry)
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun maaserSettings_onlyUnderItsOwnId() {
         MoneyDocuments.decode(MoneyCollection.TITHE, "other", MoneyDocuments.encode(MoneyEntry.TitheEntry(MoneySamples.tithe)))

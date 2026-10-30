@@ -145,6 +145,7 @@ class FirestoreMoneyRepository(
             goals = entries.filterIsInstance<MoneyEntry.GoalEntry>().map { it.value },
             donations = entries.filterIsInstance<MoneyEntry.DonationEntry>().map { it.value },
             tithe = entries.filterIsInstance<MoneyEntry.TitheEntry>().firstOrNull()?.value,
+            closedMonths = entries.filterIsInstance<MoneyEntry.ClosedMonthEntry>().map { it.value }.sortedBy { it.month },
         )
     }
 }
