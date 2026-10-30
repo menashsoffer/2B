@@ -25,7 +25,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.GoalsViewModel
+import com.menash.myself.feature.money.MonthCloseViewModel
 import com.menash.myself.feature.money.MonthRowKind
+import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MoneyViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
@@ -66,6 +68,13 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     )
     val titheUi by titheViewModel.ui.collectAsStateWithLifecycle()
+    val closeViewModel: MonthCloseViewModel = viewModel(
+        factory = MonthCloseViewModel.factory(
+            appContainer.moneyRepository, appContainer.transactionRepository, appContainer.usdRateFlow,
+            { LocalDate.now(Israel) }, appContainer.errorReporter,
+        )
+    )
+    val closeUi by closeViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -121,43 +130,9 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         return
     }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
-    var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
-    var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
-    var picking by remember { mutableStateOf(false) }
-
-    MoneyContent(
-        state = state,
-        selectedTab = selectedTab,
-        expanded = expanded,
-        actions = MoneyActions(
-            onSelectTab = { selectedTab = it },
-            onToggleRow = { kind -> expanded = if (kind in expanded) expanded - kind else expanded + kind },
-            onAdd = { picking = true },
-            onStart = { viewModel.startAdding(EditKind.INCOME) },
-            onEdit = viewModel::startEditing,
-            onAddKind = viewModel::startAdding,
-            onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
-            onGoals = goalsViewModel::open,
-            onTithe = titheViewModel::open,
-        ),
-        modifier = modifier,
-    )
-
-    if (picking) {
-        KindPickerSheet(
-            onPick = { kind ->
-                picking = false
-                viewModel.startAdding(kind)
-            },
-            onDismiss = { picking = false },
-            onImport = {
-                picking = false
-                picker.launch(importMimeTypes)
-            },
-        )
-    }
-
-    editor?.let { current ->
+    @Composable
+    fun EditorSheet() {
+        val current = editor ?: return
         MoneyEditorSheet(
             editor = current,
             choices = EditorChoices(
@@ -179,4 +154,57 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onDismiss = viewModel::dismissEditor,
         )
     }
+    // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
+    if (closeUi.open) {
+        MonthCloseScreen(
+            ui = closeUi,
+            viewModel = closeViewModel,
+            actions = MonthCloseActions(
+                onImport = { picker.launch(importMimeTypes) },
+                onLines = { month, filter -> transactionsViewModel.open(month, filter) },
+                onAsset = { viewModel.startEditing(MoneyEntry.AssetEntry(it)) },
+            ),
+            modifier = modifier,
+        )
+        EditorSheet()
+        return
+    }
+    var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
+    var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
+    var picking by remember { mutableStateOf(false) }
+
+    MoneyContent(
+        state = state,
+        selectedTab = selectedTab,
+        expanded = expanded,
+        actions = MoneyActions(
+            onSelectTab = { selectedTab = it },
+            onToggleRow = { kind -> expanded = if (kind in expanded) expanded - kind else expanded + kind },
+            onAdd = { picking = true },
+            onStart = { viewModel.startAdding(EditKind.INCOME) },
+            onEdit = viewModel::startEditing,
+            onAddKind = viewModel::startAdding,
+            onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
+            onGoals = goalsViewModel::open,
+            onTithe = titheViewModel::open,
+            onCloseMonth = closeViewModel::open,
+        ),
+        modifier = modifier,
+    )
+
+    if (picking) {
+        KindPickerSheet(
+            onPick = { kind ->
+                picking = false
+                viewModel.startAdding(kind)
+            },
+            onDismiss = { picking = false },
+            onImport = {
+                picking = false
+                picker.launch(importMimeTypes)
+            },
+        )
+    }
+
+    EditorSheet()
 }
