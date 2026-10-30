@@ -10,7 +10,9 @@ import com.menash.myself.feature.money.domain.AmountChange
 import com.menash.myself.feature.money.domain.AmountHistory
 import com.menash.myself.feature.money.domain.TitheRate
 import com.menash.myself.feature.money.domain.UnsubmittedDonations
+import com.menash.myself.feature.money.domain.ActualIncome
 import com.menash.myself.feature.money.importer.ImportFixtures
+import com.menash.myself.feature.money.importer.ImportedIncome
 import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.importer.portfolioDeposits
 import org.junit.Assert.assertEquals
@@ -84,6 +86,27 @@ class TitheTest {
 
         assertEquals(Money.ZERO, view.fromIncome)
         assertEquals(0, view.countedIncomes)
+    }
+
+    @Test
+    fun aLinkedImportedSalary_replacesThePlanForItsMonth() {
+        val imported = ImportedIncome(listOf(ActualIncome(salary.id, october, shekels(17_200))), mapOf(october to 1))
+        val view = titheView(data, october, imported)!!
+
+        val (oct, sep) = view.months
+        assertEquals(listOf(TitheSource(salary, shekels(17_200), actual = true)), oct.sources)
+        assertEquals(shekels(1_720), oct.owed)
+        assertEquals(1, oct.unlinkedLines)
+        assertEquals(listOf(TitheSource(salary, shekels(18_000), actual = false)), sep.sources)
+        assertEquals(shekels(1_800 + 1_720), view.fromIncome)
+    }
+
+    @Test
+    fun eachMonth_showsWhatWasDonatedInIt() {
+        val (oct, sep) = titheView(data, october)!!.months
+
+        assertEquals(shekels(500), oct.donated)
+        assertEquals(shekels(1_800), sep.donated)
     }
 
     @Test
