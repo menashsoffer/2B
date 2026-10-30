@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tx_title">תנועות</string>
+    <string name="tx_entry">תנועות החודש</string>
+    <string name="tx_entry_detail">%1$d תנועות מיובאות</string>
+    <string name="tx_previous_month">לחודש הקודם</string>
+    <string name="tx_next_month">לחודש הבא</string>
+    <string name="tx_spent">הוצאות בפועל</string>
+    <string name="tx_income">הכנסות בפועל</string>
+    <string name="tx_filter_all">הכל</string>
+    <string name="tx_filter_unassigned">לא משויך (%1$d)</string>
+    <string name="tx_filter_pending">ממתינות (%1$d)</string>
+    <string name="tx_empty_title">אין תנועות בחודש הזה</string>
+    <string name="tx_empty_detail">מייבאים קובץ מהבנק או מחברת האשראי דרך \"להוסיף\" ואז \"ייבוא קובץ\".</string>
+    <string name="tx_empty_filter">אין כאן תנועות בסינון הזה</string>
+    <string name="tx_unassigned">לא משויך</string>
+    <string name="tx_pending">ממתינה לחיוב</string>
+    <string name="tx_waiting_fx">מחכה לשער</string>
+    <string name="tx_income_line">הכנסה</string>
+    <string name="tx_not_counted">לא נספר בתקציב</string>
+    <string name="tx_line_detail">%1$s • %2$s • %3$s</string>
+    <string name="tx_remove_title">להסיר את \"%1$s\"?</string>
+    <string name="tx_remove_detail">עסקה ממתינה שבוטלה. אם היא תופיע שוב בקובץ הבא, היא תיכנס מחדש.</string>
+    <string name="tx_remove">להסיר</string>
+    <string name="tx_keep">להשאיר</string>
+    <string name="tx_back">חזרה</string>
+</resources>

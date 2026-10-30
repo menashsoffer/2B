@@ -48,6 +48,8 @@ sealed interface MonthView {
         val usdRateMissing: Boolean,
         /** Imported spending this month with no known category (uncategorised lines, cash, card bills without details). */
         val unassigned: Money? = null,
+        /** Imported lines billed this month, shown or not; 0 hides the transactions entry. */
+        val importedLines: Int = 0,
     ) : MonthView
 }
 

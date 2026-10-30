@@ -26,6 +26,7 @@ import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.MoneyViewModel
+import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
 import java.time.LocalDate
 import java.time.YearMonth
@@ -48,7 +49,11 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     val importViewModel: ImportViewModel = viewModel(
         factory = ImportViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter)
     )
+    val transactionsViewModel: TransactionsViewModel = viewModel(
+        factory = TransactionsViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter)
+    )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
     val resolver = LocalContext.current.contentResolver
     val scope = rememberCoroutineScope()
@@ -88,6 +93,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         }
         return
     }
+    if (transactionsUi.open) {
+        TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
+        return
+    }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
     var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
@@ -104,6 +113,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onStart = { viewModel.startAdding(EditKind.INCOME) },
             onEdit = viewModel::startEditing,
             onAddKind = viewModel::startAdding,
+            onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
         ),
         modifier = modifier,
     )

@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
+import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.core.designsystem.component.Chip
 import com.menash.myself.core.designsystem.component.ChipVariant
 import com.menash.myself.core.designsystem.component.EmptyState
@@ -50,6 +51,7 @@ data class MoneyActions(
     val onStart: () -> Unit = {},
     val onEdit: (MoneyEntry) -> Unit = {},
     val onAddKind: (com.menash.myself.feature.money.EditKind) -> Unit = {},
+    val onTransactions: (LineFilter) -> Unit = {},
 )
 
 @Composable
@@ -144,7 +146,17 @@ private fun MonthContent(
                         title = stringResource(R.string.import_unassigned),
                         amount = formatMoney(unassigned),
                         amountColor = colors.textSecondary,
+                        onClick = { actions.onTransactions(LineFilter.UNASSIGNED) },
                         testTag = "money_unassigned",
+                    )
+                }
+                if (view.importedLines > 0) {
+                    AmountRow(
+                        title = stringResource(R.string.tx_entry),
+                        amount = null,
+                        detail = stringResource(R.string.tx_entry_detail, view.importedLines),
+                        onClick = { actions.onTransactions(LineFilter.ALL) },
+                        testTag = "money_transactions",
                     )
                 }
             }

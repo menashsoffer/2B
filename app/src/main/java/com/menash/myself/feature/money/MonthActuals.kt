@@ -41,9 +41,10 @@ internal fun withActuals(
     stored: List<StoredTransaction>,
     memory: ImportMemory,
 ): MonthView.Planned {
+    val lines = stored.count { it.row.billingMonth == month }
     val transactions = toTransactions(stored, memory).filter { it.billingMonth == month }
     val income = actualIncome(stored, month, memory)
-    if (transactions.isEmpty() && income.isZero()) return view
+    if (transactions.isEmpty() && income.isZero()) return view.copy(importedLines = lines)
     val result = planVsActual(month, data.items, transactions, rate)
     val classOf = data.categories.associate { it.id to it.klass }
     val byCategory = result.categories.associate { it.categoryId to it.actual }
@@ -70,5 +71,5 @@ internal fun withActuals(
         }
     }
     val unassigned = sumMoney(result.categories.filter { it.categoryId == null || it.categoryId !in classOf }.map { it.actual })
-    return view.copy(rows = rows, unassigned = unassigned.takeUnless { it.isZero() })
+    return view.copy(rows = rows, unassigned = unassigned.takeUnless { it.isZero() }, importedLines = lines)
 }
