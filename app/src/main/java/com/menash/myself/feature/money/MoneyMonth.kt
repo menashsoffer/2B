@@ -63,6 +63,8 @@ data class BigPicture(
     val cushionMonths: Double?,
     val debts: List<MoneyEntry.DebtEntry>,
     val savings: List<MoneyEntry.SavingEntry>,
+    /** Stored "האם אפשר?" goals; the entry row says how many. */
+    val goalCount: Int = 0,
 )
 
 data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture)
@@ -109,6 +111,7 @@ fun buildMoneyMonth(
             cushionMonths = planned?.let { cushionMonths(data.assets, it) },
             debts = data.items.debts.map { MoneyEntry.DebtEntry(it) },
             savings = data.items.savings.map { MoneyEntry.SavingEntry(it) },
+            goalCount = data.goals.size,
         ),
     )
 }

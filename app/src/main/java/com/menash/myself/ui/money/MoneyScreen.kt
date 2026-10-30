@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.money.EditKind
+import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.MoneyViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
@@ -52,6 +53,12 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     val transactionsViewModel: TransactionsViewModel = viewModel(
         factory = TransactionsViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter)
     )
+    val goalsViewModel: GoalsViewModel = viewModel(
+        factory = GoalsViewModel.factory(
+            appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter,
+        )
+    )
+    val goalsUi by goalsViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -93,6 +100,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         }
         return
     }
+    if (goalsUi.open) {
+        GoalsScreen(goalsUi, goalsViewModel, modifier)
+        return
+    }
     if (transactionsUi.open) {
         TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
         return
@@ -114,6 +125,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onEdit = viewModel::startEditing,
             onAddKind = viewModel::startAdding,
             onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
+            onGoals = goalsViewModel::open,
         ),
         modifier = modifier,
     )

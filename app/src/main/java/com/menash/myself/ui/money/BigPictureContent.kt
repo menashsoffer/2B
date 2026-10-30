@@ -102,6 +102,20 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
         )
     }
 
+    MoneySurface(testTag = "money_goals") {
+        AmountRow(
+            title = stringResource(R.string.goals_entry),
+            detail = if (picture.goalCount == 0) {
+                stringResource(R.string.goals_entry_detail)
+            } else {
+                stringResource(R.string.goals_entry_count, picture.goalCount)
+            },
+            amount = null,
+            onClick = actions.onGoals,
+            testTag = "money_goals_entry",
+        )
+    }
+
     SectionHeader(stringResource(R.string.money_debts)) { actions.onAddKind(EditKind.DEBT) }
     MoneySurface(testTag = "money_debts") {
         if (picture.debts.isEmpty()) {
