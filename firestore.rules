@@ -73,7 +73,7 @@ service cloud.firestore {
     function isMoneyCollection(name) {
       return name in ['cards', 'incomes', 'fixedExpenses', 'subscriptions', 'variableBudgets',
                       'installments', 'periodicBudgets', 'debts', 'savings', 'assets', 'categories',
-                      'transactions', 'merchantMemory', 'goals', 'donations', 'tithe', 'closedMonths'];
+                      'transactions', 'merchantMemory', 'goals', 'donations', 'tithe', 'closedMonths', 'pensionFunds'];
     }
 
     function isValidMoneyDoc(data) {
