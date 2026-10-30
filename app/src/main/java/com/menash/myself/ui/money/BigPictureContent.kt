@@ -21,6 +21,7 @@ import com.menash.myself.core.designsystem.component.ChipVariant
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
+import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.BigPicture
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.data.MoneyEntry
@@ -113,6 +114,19 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             amount = null,
             onClick = actions.onGoals,
             testTag = "money_goals_entry",
+        )
+        val tithe = picture.titheBalance
+        AmountRow(
+            title = stringResource(R.string.tithe_entry),
+            detail = when {
+                tithe == null -> stringResource(R.string.tithe_entry_start)
+                tithe > Money.ZERO -> stringResource(R.string.tithe_entry_owed, formatMoney(tithe))
+                tithe < Money.ZERO -> stringResource(R.string.tithe_entry_ahead, formatMoney(Money(-tithe.agorot)))
+                else -> stringResource(R.string.tithe_entry_settled)
+            },
+            amount = null,
+            onClick = actions.onTithe,
+            testTag = "money_tithe_entry",
         )
     }
 

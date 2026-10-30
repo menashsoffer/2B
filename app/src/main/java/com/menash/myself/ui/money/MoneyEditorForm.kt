@@ -232,7 +232,7 @@ private fun amountLabel(kind: EditKind): Int = when (kind) {
 }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+internal fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     val colors = MaterialTheme.appColors
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(text = label, style = AppType.body, color = colors.textPrimary, modifier = Modifier.weight(1f))

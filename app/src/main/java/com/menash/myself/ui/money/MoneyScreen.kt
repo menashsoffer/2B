@@ -27,6 +27,7 @@ import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.MoneyViewModel
+import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
 import java.time.LocalDate
@@ -59,6 +60,12 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     )
     val goalsUi by goalsViewModel.ui.collectAsStateWithLifecycle()
+    val titheViewModel: TitheViewModel = viewModel(
+        factory = TitheViewModel.factory(
+            appContainer.moneyRepository, appContainer.transactionRepository, { LocalDate.now(Israel) }, appContainer.errorReporter,
+        )
+    )
+    val titheUi by titheViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -100,12 +107,17 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         }
         return
     }
+    // The transactions screen comes first: the maaser screen opens it to link a month's income.
+    if (transactionsUi.open) {
+        TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
+        return
+    }
     if (goalsUi.open) {
         GoalsScreen(goalsUi, goalsViewModel, modifier)
         return
     }
-    if (transactionsUi.open) {
-        TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
+    if (titheUi.open) {
+        TitheScreen(titheUi, titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
         return
     }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
@@ -126,6 +138,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onAddKind = viewModel::startAdding,
             onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
             onGoals = goalsViewModel::open,
+            onTithe = titheViewModel::open,
         ),
         modifier = modifier,
     )
