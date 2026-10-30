@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="close_entry">סגירת החודש</string>
+    <string name="close_entry_detail">בודקים שהכל נכנס ומקפיאים את מה שהיה</string>
+    <string name="close_title">סגירת %1$s</string>
+    <string name="close_subtitle">בודקים שהכל נכנס, ואז מקפיאים את החודש</string>
+    <string name="close_previous">‹ %1$s</string>
+    <string name="close_next">%1$s ›</string>
+    <string name="close_done_on">נסגר ב-%1$s</string>
+    <string name="close_checks_title">לפני שסוגרים</string>
+    <string name="close_ready">הכל מוכן לסגירה</string>
+    <string name="close_not_over">החודש עוד לא נגמר</string>
+    <string name="close_not_over_detail">אפשר לסגור מ-1 ב%1$s</string>
+    <string name="close_unassigned">%1$d שורות לא משויכות</string>
+    <string name="close_unassigned_detail">צריך לשייך כל הוצאה לסעיף</string>
+    <string name="close_pending">%1$d חיובים ממתינים</string>
+    <string name="close_pending_detail">לא ייספרו בחודש הזה</string>
+    <string name="close_missing">%1$s %2$s</string>
+    <string name="close_missing_detail">אין עדיין קובץ של החודש. לייבא עכשיו</string>
+    <string name="close_no_lines">אין חיובים החודש</string>
+    <string name="close_stale">לעדכן את היתרה: %1$s</string>
+    <string name="close_stale_detail">עודכן לאחרונה ב-%1$s</string>
+    <string name="close_summary_title">מה ייסגר</string>
+    <string name="close_income">הכנסות בפועל</string>
+    <string name="close_expenses">הוצאות בפועל</string>
+    <string name="close_saving">נשאר</string>
+    <string name="close_button">לסגור את %1$s</string>
+    <string name="close_again">לסגור מחדש את %1$s</string>
+    <string name="close_again_title">לסגור את %1$s מחדש?</string>
+    <string name="close_again_detail">הסגירה הקודמת תוחלף במספרים של עכשיו</string>
+    <string name="close_again_confirm">לסגור מחדש</string>
+    <string name="close_keep">להשאיר</string>
+</resources>
