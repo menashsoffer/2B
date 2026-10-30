@@ -53,6 +53,7 @@ data class MoneyActions(
     val onAddKind: (com.menash.myself.feature.money.EditKind) -> Unit = {},
     val onTransactions: (LineFilter) -> Unit = {},
     val onGoals: () -> Unit = {},
+    val onTithe: () -> Unit = {},
 )
 
 @Composable

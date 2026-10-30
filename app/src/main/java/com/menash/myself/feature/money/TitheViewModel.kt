@@ -12,8 +12,6 @@ import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.Donation
-import com.menash.myself.feature.money.importer.importedIncome
-import com.menash.myself.feature.money.importer.portfolioDeposits
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -56,12 +54,7 @@ class TitheViewModel(
     val ui: StateFlow<TitheUi> = combine(
         open, money.observe(), transactions.observeTransactions(), transactions.observeMemory(), sheets,
     ) { isOpen, data, stored, memory, open ->
-        val start = data.tithe?.startMonth
-        val view = start?.let {
-            val incomeIds = data.items.incomes.map { income -> income.id }.toSet()
-            titheView(data, month, importedIncome(stored, memory, incomeIds), portfolioDeposits(stored, it, memory))
-        }
-        TitheUi(isOpen, view, month, today(), data.assets.filter { it.kind == AssetKind.ASSET }, open)
+        TitheUi(isOpen, titheFromImports(data, month, stored, memory), month, today(), data.assets.filter { it.kind == AssetKind.ASSET }, open)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TitheUi())
 
     fun open() {

@@ -65,6 +65,8 @@ data class BigPicture(
     val savings: List<MoneyEntry.SavingEntry>,
     /** Stored "האם אפשר?" goals; the entry row says how many. */
     val goalCount: Int = 0,
+    /** Signed maaser balance (positive is still owed); null until the count has a start month. */
+    val titheBalance: Money? = null,
 )
 
 data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture)
@@ -112,6 +114,7 @@ fun buildMoneyMonth(
             debts = data.items.debts.map { MoneyEntry.DebtEntry(it) },
             savings = data.items.savings.map { MoneyEntry.SavingEntry(it) },
             goalCount = data.goals.size,
+            titheBalance = titheFromImports(data, month, transactions, memory)?.balance,
         ),
     )
 }

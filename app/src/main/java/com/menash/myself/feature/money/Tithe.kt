@@ -14,7 +14,11 @@ import com.menash.myself.feature.money.domain.amountFor
 import com.menash.myself.feature.money.domain.charityBalance
 import com.menash.myself.feature.money.domain.sumMoney
 import com.menash.myself.feature.money.domain.unsubmittedThisYear
+import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.ImportedIncome
+import com.menash.myself.feature.money.importer.StoredTransaction
+import com.menash.myself.feature.money.importer.importedIncome
+import com.menash.myself.feature.money.importer.portfolioDeposits
 import java.time.YearMonth
 
 /** The portfolio's part: 20% of value minus deposits. Negative while the portfolio is at a loss. */
@@ -102,4 +106,11 @@ fun titheView(
         donations = counted,
         unsubmitted = unsubmittedThisYear(data.donations, month.year),
     )
+}
+
+/** The balance straight from the imported lines, as the maaser screen and the big picture both show it. */
+fun titheFromImports(data: MoneyData, month: YearMonth, stored: List<StoredTransaction>, memory: ImportMemory): TitheView? {
+    val start = data.tithe?.startMonth ?: return null
+    val incomeIds = data.items.incomes.map { it.id }.toSet()
+    return titheView(data, month, importedIncome(stored, memory, incomeIds), portfolioDeposits(stored, start, memory))
 }

@@ -77,6 +77,18 @@ class MonthLinesTest {
     }
 
     @Test
+    fun anIncomeLine_showsTheSourceItIsLinkedTo() {
+        val rows = stored("hapoalim_oct.xlsx")
+        val allowance = rows.single { it.row.description.contains("קצבת ילדים") }
+        val linked = rows.map { if (it.id == allowance.id) it.copy(categoryId = "inc-allowance") else it }
+        val lines = monthLines(linked, october, ImportMemory(), categories, setOf("inc-allowance"))
+
+        assertEquals("inc-allowance", lines.lines.single { it.id == allowance.id }.incomeId)
+        assertTrue(lines.lines.filter { it.id != allowance.id }.all { it.incomeId == null })
+        assertEquals(lines.lines.filter { it.counted }, monthLines(rows, october, ImportMemory(), categories).lines.filter { it.counted })
+    }
+
+    @Test
     fun spentMatchesTheCountedTransactions() {
         val rows = stored("hapoalim_oct.xlsx", "max_nov.xlsx", "cal_nov.xlsm")
         for (month in listOf(october, november)) {

@@ -92,6 +92,21 @@ class TransactionsViewModelTest {
     }
 
     @Test
+    fun anIncomeLine_isLinkedToItsSource_andThePayerRemembered() {
+        val repo = repo("hapoalim_oct.xlsx")
+        val vm = viewModel(repo)
+        vm.open(october)
+        assertEquals(MoneySamples.filled.items.incomes, vm.ui.value.incomes)
+        val allowance = vm.ui.value.lines!!.lines.single { it.income && it.row.description.contains("קצבת ילדים") }
+        vm.pick(allowance.id)
+        vm.linkIncome(allowance.id, MoneySamples.salary.id)
+        assertNull(vm.ui.value.query.picking)
+        assertEquals(MoneySamples.salary.id, repo.lines.value.single { it.id == allowance.id }.categoryId)
+        assertEquals(MoneySamples.salary.id, repo.memory.value.merchants.categories[ImportIds.merchantKey(allowance.row.description)])
+        assertEquals(MoneySamples.salary.id, vm.ui.value.lines!!.lines.single { it.id == allowance.id }.incomeId)
+    }
+
+    @Test
     fun onlyAPendingLineIsRemoved_afterTheQuestion() {
         val repo = repo("cal_nov.xlsm")
         val vm = viewModel(repo)
