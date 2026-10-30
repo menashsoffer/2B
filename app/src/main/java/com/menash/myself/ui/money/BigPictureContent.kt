@@ -130,6 +130,13 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             onClick = actions.onTithe,
             testTag = "money_tithe_entry",
         )
+        AmountRow(
+            title = stringResource(R.string.subs_entry),
+            detail = stringResource(R.string.subs_entry_detail),
+            amount = null,
+            onClick = actions.onSubscriptions,
+            testTag = "money_subs_entry",
+        )
     }
 
     SectionHeader(stringResource(R.string.money_debts)) { actions.onAddKind(EditKind.DEBT) }
@@ -177,7 +184,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
 }
 
 @Composable
-private fun SectionHeader(title: String, onAdd: () -> Unit) {
+internal fun SectionHeader(title: String, onAdd: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
