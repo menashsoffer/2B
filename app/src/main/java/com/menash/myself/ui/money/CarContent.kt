@@ -68,7 +68,7 @@ fun CarContent(ui: CarUi, actions: CarActions, modifier: Modifier = Modifier) {
             .testTag("car_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.car_title), subtitle = stringResource(R.string.car_subtitle))
+        MoneySubScreen(title = stringResource(R.string.car_title), subtitle = stringResource(R.string.car_subtitle), onBack = actions.onClose)
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             SectionTitle(stringResource(R.string.car_now), modifier = Modifier.weight(1f))
             TextButton(onClick = actions.onCategories, modifier = Modifier.testTag("car_categories")) {
@@ -88,9 +88,6 @@ fun CarContent(ui: CarUi, actions: CarActions, modifier: Modifier = Modifier) {
             onClick = actions.onCompare,
             modifier = Modifier.fillMaxWidth().testTag("car_compare"),
         )
-        TextButton(onClick = actions.onClose, modifier = Modifier.testTag("car_back")) {
-            Text(stringResource(R.string.car_back), style = AppType.body)
-        }
     }
 }
 

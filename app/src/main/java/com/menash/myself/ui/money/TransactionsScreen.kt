@@ -1,6 +1,5 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,7 +18,6 @@ import com.menash.myself.feature.money.importer.choiceFor
 /** The transactions screen with its category sheet and the "remove a cancelled pending line" question. */
 @Composable
 fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, modifier: Modifier = Modifier) {
-    BackHandler { viewModel.close() }
     TransactionsContent(
         ui = ui,
         actions = TransactionsActions(
@@ -30,6 +28,11 @@ fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, mod
         ),
         modifier = modifier,
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun TransactionsOverlays(ui: TransactionsUi, viewModel: TransactionsViewModel) {
     val lines = ui.lines?.lines.orEmpty()
     lines.firstOrNull { it.id == ui.query.picking && it.income }?.let { line ->
         IncomeSourceSheet(

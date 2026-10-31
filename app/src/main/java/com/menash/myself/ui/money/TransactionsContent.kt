@@ -63,7 +63,7 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
             .testTag("tx_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.tx_title), subtitle = hebrewMonthYear(month))
+        MoneySubScreen(title = stringResource(R.string.tx_title), subtitle = hebrewMonthYear(month), onBack = actions.onClose)
         Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             TextButton(onClick = { actions.onMonth(month.minusMonths(1)) }, modifier = Modifier.testTag("tx_previous")) {
                 Text(stringResource(R.string.tx_previous_month), style = AppType.body)
@@ -124,9 +124,6 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                     shown.forEach { line -> LineRow(line, ui, actions) }
                 }
             }
-        }
-        TextButton(onClick = actions.onClose, modifier = Modifier.testTag("tx_back")) {
-            Text(stringResource(R.string.tx_back), style = AppType.body)
         }
     }
 }

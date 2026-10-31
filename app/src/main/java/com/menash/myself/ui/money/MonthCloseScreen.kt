@@ -1,6 +1,5 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,7 +17,6 @@ import com.menash.myself.feature.money.MonthCloseViewModel
 /** "סגירת החודש" with its one question before a closed month is replaced. The other actions open other screens. */
 @Composable
 fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: MonthCloseActions, modifier: Modifier = Modifier) {
-    BackHandler { viewModel.close() }
     MonthCloseContent(
         ui = ui,
         actions = actions.copy(
@@ -26,9 +24,15 @@ fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: 
             onNext = viewModel::nextMonth,
             onNoLines = viewModel::markNoLines,
             onClose = viewModel::closeMonth,
+            onBack = viewModel::close,
         ),
         modifier = modifier,
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun MonthCloseOverlays(ui: MonthCloseUi, viewModel: MonthCloseViewModel) {
     val month = ui.view?.month ?: return
     if (ui.confirmReclose) {
         AlertDialog(

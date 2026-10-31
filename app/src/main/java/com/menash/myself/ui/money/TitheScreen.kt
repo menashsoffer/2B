@@ -1,6 +1,5 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +22,6 @@ import java.time.YearMonth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TitheScreen(ui: TitheUi, viewModel: TitheViewModel, onLink: (YearMonth) -> Unit, modifier: Modifier = Modifier) {
-    BackHandler { viewModel.close() }
     TitheContent(
         ui = ui,
         actions = TitheActions(
@@ -36,6 +34,11 @@ fun TitheScreen(ui: TitheUi, viewModel: TitheViewModel, onLink: (YearMonth) -> U
         ),
         modifier = modifier,
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun TitheOverlays(ui: TitheUi, viewModel: TitheViewModel) {
     val month = ui.month ?: return
     val today = ui.today ?: return
     val sheetColor = MaterialTheme.appColors.card

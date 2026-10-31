@@ -1,6 +1,5 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -42,12 +41,16 @@ import com.menash.myself.feature.money.domain.Included
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarScreen(ui: CarUi, viewModel: CarViewModel, modifier: Modifier = Modifier) {
-    BackHandler { viewModel.close() }
     CarContent(
         ui = ui,
         actions = CarActions(onCategories = viewModel::editCategories, onCompare = viewModel::editCompare, onClose = viewModel::close),
         modifier = modifier,
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun CarOverlays(ui: CarUi, viewModel: CarViewModel) {
     val sheet = ui.sheet ?: return
     ModalBottomSheet(
         onDismissRequest = viewModel::dismiss,

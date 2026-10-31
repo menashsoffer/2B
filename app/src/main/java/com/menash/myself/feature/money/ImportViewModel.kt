@@ -103,7 +103,10 @@ class ImportViewModel(
             transactions.apply(plan)
             updates.forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
             _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size)
-            events?.send(UiEvent.ImportDone(plan.toWrite.size))
+            val month = plan.toWrite.map { it.row.billingMonth }.distinct().sortedDescending().firstOrNull { month ->
+                com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, memory.value, categories.value).unassignedCount > 0
+            }
+            events?.send(UiEvent.ImportDone(plan.toWrite.size, month))
         }
     }
 

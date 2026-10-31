@@ -60,7 +60,7 @@ fun TitheContent(ui: TitheUi, actions: TitheActions, modifier: Modifier = Modifi
             .testTag("tithe_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.tithe_title), subtitle = stringResource(R.string.tithe_subtitle))
+        MoneySubScreen(title = stringResource(R.string.tithe_title), subtitle = stringResource(R.string.tithe_subtitle), onBack = actions.onClose)
         val view = ui.view
         if (view == null) {
             MoneySurface(testTag = "tithe_start") {
@@ -86,9 +86,6 @@ fun TitheContent(ui: TitheUi, actions: TitheActions, modifier: Modifier = Modifi
             TextButton(onClick = actions.onSettings, modifier = Modifier.testTag("tithe_settings")) {
                 Text(stringResource(R.string.tithe_settings), style = AppType.body)
             }
-        }
-        TextButton(onClick = actions.onClose, modifier = Modifier.testTag("tithe_back")) {
-            Text(stringResource(R.string.tithe_back), style = AppType.body)
         }
     }
 }

@@ -71,7 +71,7 @@ fun PensionContent(ui: PensionUi, actions: PensionActions, modifier: Modifier = 
             .testTag("pension_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.pension_title), subtitle = stringResource(R.string.pension_subtitle))
+        MoneySubScreen(title = stringResource(R.string.pension_title), subtitle = stringResource(R.string.pension_subtitle), onBack = actions.onClose)
         val total = ui.view.total
         if (total == null) {
             MoneySurface(testTag = "pension_empty") {
@@ -99,9 +99,6 @@ fun PensionContent(ui: PensionUi, actions: PensionActions, modifier: Modifier = 
             MoneySurface(testTag = "pension_funds") {
                 ui.view.rows.forEach { FundItem(it, actions) }
             }
-        }
-        TextButton(onClick = actions.onClose, modifier = Modifier.testTag("pension_back")) {
-            Text(stringResource(R.string.pension_back), style = AppType.body)
         }
     }
 }

@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="money_back">חזרה</string>
     <string name="feedback_saved">נשמר</string>
     <string name="feedback_donation_saved">התרומה נשמרה</string>
     <string name="feedback_deleted">נמחק</string>
+    <string name="feedback_assign">לשייך</string>
     <string name="feedback_import_done">יובאו %1$d תנועות</string>
     <string name="feedback_category_assigned">שויך ל%1$s</string>
     <string name="feedback_month_closed">%1$s נסגר</string>
