@@ -78,3 +78,14 @@ Uses existing `core.domain.model.Money` in integer minor units. Annual equivalen
 No persistence, UI, Android dependencies, imports, bank connections, actual purchase tracking or household permissions. Existing Android minimum-version/java.time compatibility and build configuration are outside this package's scope; callers must provide compatible runtime support. No Gradle or credential configuration is added.
 
 Month close leaves legacy snapshot balances empty and stores historical balances in separate asset/liability maps. Existing Firestore rules do not include a `closedMonths` collection; this change adds only pure document mapping, not a repository or rules deployment.
+
+## Year summary
+
+Only closed months of the requested calendar year count. Missing months between the first and last close are reported, not treated as zero; months outside that span are not reported missing. Duplicate closes for a selected year are rejected. Money uses checked agorot arithmetic and published averages round HALF_UP once; percentages round to one decimal.
+
+- `yearSummary(closed, 2026)` returns totals, saving, saving percentage, average expenses and best/worst months, or `null` without closes. For example, January and March closes report February as missing.
+- `categoryYear(closed, 2026, plans)` sums plans only for closed months. A plan of 100 and actual of 120 gives a difference of 20; a category without a plan has a null difference. The null category is retained.
+- `classYear(rows, categories)` sums actuals by each category's own class; an unknown or null category maps to the null class. For example, a CURRENT child contributes to CURRENT even if its parent is FIXED.
+- `periodicAtYearEnd(closed, 2026)` returns the last close's periodic map unchanged, or an empty map if there is no close.
+- `netWorthChange(closed, 2026)` compares the last known balance in 2026 with the last known balance in 2025, or the first known balance in 2026. A month with both balance maps empty is unknown and skipped. For example, net worth of 100 followed by 80 gives a change of -20.
+- `compareYears(closed, 2026, plans)` compares monthly averages, not totals, and returns the number of closes in each year. For example, 600 over six months compared with 900 over three gives a monthly difference of -200. A category absent in one year has an average of zero there.
