@@ -216,7 +216,6 @@ fun HomeFeaturedDreamAndQuickNavSection(
     }
     Text(stringResource(R.string.ui_str_375), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 12.dp, bottom = 6.dp))
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        QuickNavButton(Icons.Default.Calculate, stringResource(R.string.app_name), "8", Modifier.weight(1f)) { onNavigate("calculators") }
         QuickNavButton(Icons.Default.FolderOpen, stringResource(R.string.ui_str_361), "CSV", Modifier.weight(1f)) { onNavigate("catalog") }
         QuickNavButton(Icons.AutoMirrored.Filled.ListAlt, stringResource(R.string.ui_str_233), "$dreamsCount", Modifier.weight(1f)) { onNavigate("dreams") }
     }

@@ -156,11 +156,6 @@ class NightBlueGuardTest {
     )
 
     private val colorAllowList = setOf(
-        "java/com/menash/myself/ui/calculators/CalculatorsHubCards.kt",
-        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/car/CarCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionSummaryComponents.kt",
         "java/com/menash/myself/ui/calendar/CalendarScreen.kt",
         "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
         "java/com/menash/myself/ui/dreams/DreamCardComponents.kt",
@@ -176,15 +171,6 @@ class NightBlueGuardTest {
 
     private val legacyChromeAllowList = setOf(
         "java/com/menash/myself/auth/SignInScreen.kt",
-        "java/com/menash/myself/ui/calculators/CalculatorsHubCards.kt",
-        "java/com/menash/myself/ui/calculators/CalculatorsHubScreen.kt",
-        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionsScreen.kt",
-        "java/com/menash/myself/ui/calculators/car/CarCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/car/CarComparisonScreen.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionSavingsScreen.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionSummaryComponents.kt",
         "java/com/menash/myself/ui/calendar/CalendarScreen.kt",
         "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
         "java/com/menash/myself/ui/common/CsvMappingDialog.kt",
@@ -207,16 +193,6 @@ class NightBlueGuardTest {
 
     private val fontSizeAllowList = setOf(
         "java/com/menash/myself/auth/SignInScreen.kt",
-        "java/com/menash/myself/ui/calculators/CalculatorsHubCards.kt",
-        "java/com/menash/myself/ui/calculators/CalculatorsHubScreen.kt",
-        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/ai/AiSubscriptionsScreen.kt",
-        "java/com/menash/myself/ui/calculators/car/CarCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/car/CarComparisonScreen.kt",
-        "java/com/menash/myself/ui/calculators/car/CarDialogs.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionCardComponents.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionSavingsScreen.kt",
-        "java/com/menash/myself/ui/calculators/pension/PensionSummaryComponents.kt",
         "java/com/menash/myself/ui/calendar/CalendarScreen.kt",
         "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
         "java/com/menash/myself/ui/common/CsvMappingDialog.kt",

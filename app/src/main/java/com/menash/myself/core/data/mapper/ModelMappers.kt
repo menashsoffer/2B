@@ -1,18 +1,12 @@
 package com.menash.myself.core.data.mapper
 
 import com.google.firebase.Timestamp
-import com.menash.myself.core.domain.model.AiSubscription
-import com.menash.myself.core.domain.model.Car
 import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.FitnessEntry
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Household
 import com.menash.myself.core.domain.model.InboxItem
-import com.menash.myself.core.domain.model.PensionFund
 import com.menash.myself.core.domain.model.Task
-import com.menash.myself.data.entities.AiSubscriptionEntity
-import com.menash.myself.data.entities.CarEntity
-import com.menash.myself.data.entities.PensionFundEntity
 import com.menash.myself.data.models.DreamItem
 import com.menash.myself.data.models.FitnessLog
 import com.menash.myself.data.models.TaskItem
@@ -23,7 +17,7 @@ import java.util.Date
 
 /**
  * Shared legacy space/date conversion utilities and facade delegating to per-collection mappers:
- * [TaskMappers], [DreamMappers], [InboxMappers], [FitnessMappers], [HouseholdMappers], [CalculatorMappers].
+ * [TaskMappers], [DreamMappers], [InboxMappers], [FitnessMappers], [HouseholdMappers].
  */
 object ModelMappers {
 
@@ -83,17 +77,6 @@ object ModelMappers {
     fun instantToTimestamp(instant: Instant?): Timestamp? = instant?.let { Timestamp(Date.from(it)) }
 
     // Delegations to per-collection mappers
-    fun carToDomain(entity: CarEntity): Car = CalculatorMappers.carToDomain(entity)
-    fun carToEntity(domain: Car): CarEntity = CalculatorMappers.carToEntity(domain)
-    fun aiSubscriptionToDomain(entity: AiSubscriptionEntity): AiSubscription =
-        CalculatorMappers.aiSubscriptionToDomain(entity)
-    fun aiSubscriptionToEntity(domain: AiSubscription): AiSubscriptionEntity =
-        CalculatorMappers.aiSubscriptionToEntity(domain)
-    fun pensionFundToDomain(entity: PensionFundEntity): PensionFund =
-        CalculatorMappers.pensionFundToDomain(entity)
-    fun pensionFundToEntity(domain: PensionFund): PensionFundEntity =
-        CalculatorMappers.pensionFundToEntity(domain)
-
     fun taskToDomain(data: TaskItem): Task = TaskMappers.taskToDomain(data)
     fun taskToData(domain: Task, householdId: String): TaskItem = TaskMappers.taskToData(domain, householdId)
 

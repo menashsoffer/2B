@@ -63,14 +63,6 @@ private fun getCatalogItems(): List<FileTypeItem> {
             targetFields = listOf("כותרת משימה", "צעד הבא", "תאריך", "מרחב")
         ),
         FileTypeItem(
-            title = stringResource(R.string.ui_str_197),
-            description = stringResource(R.string.ui_str_235),
-            feedsModule = stringResource(R.string.ui_str_218),
-            targetType = "calculators",
-            sampleTemplateCsv = "Name,PurchasePrice,Resale5Yr,YearlyEnergy,Insurance\nטויוטה,148000,88000,7200,4800",
-            targetFields = listOf("דגם רכב", "מחיר קנייה", "מכירה בעוד 5 שנים")
-        ),
-        FileTypeItem(
             title = stringResource(R.string.ui_str_209),
             description = stringResource(R.string.ui_str_236),
             feedsModule = stringResource(R.string.ui_phase_2_226),

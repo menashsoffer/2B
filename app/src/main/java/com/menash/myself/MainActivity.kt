@@ -31,7 +31,6 @@ import com.menash.myself.auth.SignInScreen
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
-import com.menash.myself.data.firestore.MigrationManager
 import com.menash.myself.ui.MainViewModel
 import com.menash.myself.ui.money.sharedFileUris
 import com.menash.myself.ui.shell.AppShell
@@ -99,11 +98,6 @@ private fun MyselfRoot() {
         )
     }
 
-    LaunchedEffect(currentUser) {
-        if (currentUser != null) {
-            MigrationManager.checkAndMigrate(context)
-        }
-    }
 
     val mainViewModel: MainViewModel = viewModel(factory = MainViewModel.factory(appContainer))
     if (showSignIn) {
