@@ -117,7 +117,7 @@ class MonthCloseViewModel(
             money.save(MoneyEntry.ClosedMonthEntry(view.preview))
             closing = false
             query.update { it.copy(saving = false) }
-            events?.send(UiEvent.MONTH_CLOSED)
+            events?.send(UiEvent.MonthClosed(view.month))
         }
     }
 

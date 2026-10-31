@@ -61,6 +61,7 @@ val LocalAppContainer = compositionLocalWithComputedDefaultOf<AppContainer> {
  * Features and ViewModels depend only on repository interfaces from core/data/repository.
  */
 class AppContainer(private val context: Context) {
+    val uiEvents = com.menash.myself.core.ui.UiEvents()
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

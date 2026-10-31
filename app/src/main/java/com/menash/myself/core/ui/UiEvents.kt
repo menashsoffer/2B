@@ -4,7 +4,14 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 /** One-off feedback; events are not replayed when a screen is recreated. */
-enum class UiEvent { MONEY_SAVED, DONATION_SAVED, MONTH_CLOSED }
+sealed interface UiEvent {
+    data object MONEY_SAVED : UiEvent
+    data object DONATION_SAVED : UiEvent
+    data object DELETED : UiEvent
+    data class ImportDone(val written: Int) : UiEvent
+    data class CategoryAssigned(val name: String) : UiEvent
+    data class MonthClosed(val month: java.time.YearMonth) : UiEvent
+}
 
 class UiEvents {
     private val mutableEvents = MutableSharedFlow<UiEvent>(extraBufferCapacity = 16)

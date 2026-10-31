@@ -51,13 +51,14 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             today = { LocalDate.now(Israel) },
             errorReporter = appContainer.errorReporter,
             transactions = appContainer.transactionRepository,
+            events = appContainer.uiEvents,
         )
     )
     val importViewModel: ImportViewModel = viewModel(
-        factory = ImportViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter)
+        factory = ImportViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter, appContainer.uiEvents)
     )
     val transactionsViewModel: TransactionsViewModel = viewModel(
-        factory = TransactionsViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter)
+        factory = TransactionsViewModel.factory(appContainer.transactionRepository, appContainer.moneyRepository, appContainer.errorReporter, appContainer.uiEvents)
     )
     val goalsViewModel: GoalsViewModel = viewModel(
         factory = GoalsViewModel.factory(
@@ -68,6 +69,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     val titheViewModel: TitheViewModel = viewModel(
         factory = TitheViewModel.factory(
             appContainer.moneyRepository, appContainer.transactionRepository, { LocalDate.now(Israel) }, appContainer.errorReporter,
+            events = appContainer.uiEvents,
         )
     )
     val titheUi by titheViewModel.ui.collectAsStateWithLifecycle()
@@ -75,6 +77,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         factory = MonthCloseViewModel.factory(
             appContainer.moneyRepository, appContainer.transactionRepository, appContainer.usdRateFlow,
             { LocalDate.now(Israel) }, appContainer.errorReporter,
+            events = appContainer.uiEvents,
         )
     )
     val closeUi by closeViewModel.ui.collectAsStateWithLifecycle()
@@ -85,7 +88,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     )
     val carUi by carViewModel.ui.collectAsStateWithLifecycle()
     val pensionViewModel: PensionViewModel = viewModel(
-        factory = PensionViewModel.factory(appContainer.moneyRepository, { LocalDate.now(Israel) }, appContainer.errorReporter)
+        factory = PensionViewModel.factory(appContainer.moneyRepository, { LocalDate.now(Israel) }, appContainer.errorReporter, appContainer.uiEvents)
     )
     val pensionUi by pensionViewModel.ui.collectAsStateWithLifecycle()
     val subsViewModel: SubscriptionsViewModel = viewModel(

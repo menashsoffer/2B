@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,6 +24,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -38,6 +44,8 @@ import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.ui.MainViewModel
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.ui.money.hebrewMonthYear
 import com.menash.myself.ui.settings.SettingsDialog
 import kotlinx.coroutines.launch
 
@@ -59,6 +67,26 @@ fun AppShell(
     var showSettings by remember { mutableStateOf(false) }
     val appContainer = LocalAppContainer.current
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val snackbarHost = remember { SnackbarHostState() }
+    LaunchedEffect(appContainer, snackbarHost) {
+        var previous: kotlinx.coroutines.Job? = null
+        appContainer.uiEvents.events.collect { event ->
+            val text = when (event) {
+                UiEvent.MONEY_SAVED -> context.getString(R.string.feedback_saved)
+                UiEvent.DONATION_SAVED -> context.getString(R.string.feedback_donation_saved)
+                UiEvent.DELETED -> context.getString(R.string.feedback_deleted)
+                is UiEvent.ImportDone -> context.getString(R.string.feedback_import_done, event.written)
+                is UiEvent.CategoryAssigned -> context.getString(R.string.feedback_category_assigned, event.name)
+                is UiEvent.MonthClosed -> context.getString(R.string.feedback_month_closed, hebrewMonthYear(event.month))
+            }
+            if (event == UiEvent.DELETED || event is UiEvent.MonthClosed) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            previous?.cancel()
+            snackbarHost.currentSnackbarData?.dismiss()
+            previous = scope.launch { snackbarHost.showSnackbar(text, duration = SnackbarDuration.Short) }
+        }
+    }
 
     fun openRoute(route: String) {
         val destination = navController.currentDestination
@@ -90,6 +118,7 @@ fun AppShell(
         ),
         onDismissError = { mainViewModel.clearErrors() },
         onSelectTab = ::openRoute,
+        snackbarHostState = snackbarHost,
     ) { contentModifier ->
         AppNavHost(
             navController = navController,
@@ -165,6 +194,7 @@ fun AppShellContent(
     onDismissError: () -> Unit,
     onSelectTab: (String) -> Unit,
     modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -195,6 +225,9 @@ fun AppShellContent(
                     bottom = FloatingNavBarDefaults.outerMargin,
                 ),
         )
+        if (snackbarHostState != null) {
+            SnackbarHost(snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter).padding(FloatingNavBarDefaults.contentPadding()))
+        }
     }
 }
 

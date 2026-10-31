@@ -107,7 +107,7 @@ class TitheViewModel(
         if (sheets.value.donation?.saving == true) return
         val id = sheets.value.donation?.draft?.id ?: return
         sheets.value = TitheSheets()
-        safeLaunch("deleteDonation") { money.delete(MoneyCollection.DONATIONS, id) }
+        safeLaunch("deleteDonation") { money.delete(MoneyCollection.DONATIONS, id); events?.send(UiEvent.DELETED) }
     }
 
     fun startSettings() {

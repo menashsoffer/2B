@@ -175,7 +175,7 @@ class MoneyViewModel(
     fun delete(entry: MoneyEntry) {
         if (_editor.value?.saving == true) return
         _editor.value = null
-        safeLaunch("deleteMoney") { repository.delete(entry.collection, entry.id) }
+        safeLaunch("deleteMoney") { repository.delete(entry.collection, entry.id); events?.send(UiEvent.DELETED) }
     }
 
     /** The stored entry the open draft edits, for delete. */
