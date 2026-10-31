@@ -17,6 +17,7 @@ import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.data.categoriesToSeed
 import com.menash.myself.feature.money.domain.defaultCategories
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -149,7 +150,7 @@ class MoneyViewModel(
                 val card = result.entries.filterIsInstance<MoneyEntry.CardEntry>().firstOrNull()?.value
                 _editor.value = current.copy(saving = true, saveError = null, askScope = false, retryEntries = result.entries)
                 safeLaunch("saveMoney", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); _editor.update { it?.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (_editor.value?.retryEntries === result.entries) save() }) }) {
-                    repository.saveAll(result.entries)
+                    val acknowledged = withTimeoutOrNull(3_000) { repository.saveAll(result.entries); true } == true
                     current.draft.cardId?.let { lastCardId = it }
                     if (card != null) {
                         lastCardId = card.id
@@ -157,7 +158,7 @@ class MoneyViewModel(
                         createdCards += card
                     }
                     _editor.value = current.returnTo?.let { back -> card?.let { back.copy(draft = back.draft.copy(cardId = it.id)) } ?: back }
-                    events?.send(UiEvent.MONEY_SAVED)
+                    events?.send(if (acknowledged) UiEvent.MONEY_SAVED else UiEvent.SavedOffline)
                 }
             }
         }

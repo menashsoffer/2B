@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /** One-off feedback; events are not replayed when a screen is recreated. */
 sealed interface UiEvent {
+    data object SavedOffline : UiEvent
     data object MONEY_SAVED : UiEvent
     data object DONATION_SAVED : UiEvent
     data object DELETED : UiEvent

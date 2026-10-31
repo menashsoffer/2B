@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="money_back">חזרה</string>
+    <string name="feedback_saved_offline">נשמר במכשיר, יסונכרן כשיהיה חיבור</string>
     <string name="feedback_saved">נשמר</string>
     <string name="feedback_donation_saved">התרומה נשמרה</string>
     <string name="feedback_deleted">נמחק</string>

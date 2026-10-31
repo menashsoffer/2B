@@ -13,6 +13,7 @@ import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -114,10 +115,10 @@ class MonthCloseViewModel(
         closing = true
         query.update { it.copy(month = view.month, confirming = false, saving = true, saveError = null) }
         safeLaunch("closeMonth", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); closing = false; query.update { it.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (ui.value.open && ui.value.view?.month == view.month) closeMonth() }) }) {
-            money.save(MoneyEntry.ClosedMonthEntry(view.preview))
+            val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.ClosedMonthEntry(view.preview)); true } == true
             closing = false
             query.update { it.copy(saving = false) }
-            events?.send(UiEvent.MonthClosed(view.month))
+            events?.send(if (acknowledged) UiEvent.MonthClosed(view.month) else UiEvent.SavedOffline)
         }
     }
 

@@ -12,6 +12,7 @@ import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
 import com.menash.myself.feature.money.domain.MoneyItems
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -63,6 +64,8 @@ class FirestoreMoneyRepository(
                 .document(entry.id)
                 .set(MoneyDocuments.encode(entry))
                 .await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             reportError("saveMoney:${entry.collection.path}", e)
             throw e
@@ -78,6 +81,8 @@ class FirestoreMoneyRepository(
                 batch.set(collection(hid, entry.collection).document(entry.id), MoneyDocuments.encode(entry))
             }
             batch.commit().await()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             reportError("saveMoneyBatch", e)
             throw e

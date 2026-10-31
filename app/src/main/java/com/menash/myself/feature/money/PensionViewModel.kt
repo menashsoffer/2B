@@ -11,6 +11,7 @@ import com.menash.myself.feature.money.data.MoneyCollection
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.domain.PensionFund
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -74,9 +75,9 @@ class PensionViewModel(
             is FundResult.Ok -> {
                 editor.value = current.copy(draft = current.draft.copy(id = result.fund.id), saving = true, saveError = null)
                 safeLaunch("savePensionFund", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); editor.update { it?.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (editor.value?.draft?.id == result.fund.id) save() }) }) {
-                    money.save(MoneyEntry.PensionFundEntry(result.fund))
+                    val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.PensionFundEntry(result.fund)); true } == true
                     editor.value = null
-                    events?.send(UiEvent.MONEY_SAVED)
+                    events?.send(if (acknowledged) UiEvent.MONEY_SAVED else UiEvent.SavedOffline)
                 }
             }
         }
