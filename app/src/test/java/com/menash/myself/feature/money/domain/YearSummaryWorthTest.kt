@@ -25,4 +25,11 @@ class YearSummaryWorthTest {
         assertNull(netWorthChange(listOf(close(2026, 1, null)), 2026))
         assertEquals(emptyMap<String, PeriodicStatus>(), periodicAtYearEnd(listOf(first), 2026))
     }
+    @Test fun periodicReturnsLastCloseUnchangedEvenWithoutBalances() {
+        val status = PeriodicStatus(Money(50), Money(60), Money(40))
+        val first = close(2026, 1, 100).copy(periodic = mapOf("old" to status))
+        val last = close(2026, 12, null).copy(periodic = mapOf("budget" to status))
+        assertEquals(mapOf("budget" to status), periodicAtYearEnd(listOf(last, first), 2026))
+    }
+
 }

@@ -39,4 +39,13 @@ class YearSummaryTest {
         assertEquals(result.bestMonth, result.worstMonth)
         assertThrows(IllegalArgumentException::class.java) { yearSummary(listOf(close(2026, 1), close(2026, 1)), 2026) }
     }
+    @Test fun bestWorstAndNegativePercentage() {
+        val rows = listOf(close(2026, 1, 100, 200), close(2026, 2, 100, 50), close(2026, 3, 100, 50))
+        val result = yearSummary(rows, 2026)!!
+        assertEquals(YearMonth.of(2026, 2), result.bestMonth)
+        assertEquals(YearMonth.of(2026, 1), result.worstMonth)
+        assertEquals(BigDecimal("-100.0"), yearSummary(rows.take(1), 2026)!!.savingPercent)
+        assertThrows(ArithmeticException::class.java) { yearSummary(listOf(close(2026, 1, Long.MAX_VALUE), close(2026, 2, 1)), 2026) }
+    }
+
 }
