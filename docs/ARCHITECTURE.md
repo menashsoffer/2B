@@ -26,7 +26,6 @@ com.menash.myself
 │   └── ui/                      BaseViewModel (safeLaunch), ErrorMapper
 ├── data/                        שכבת Firestore של העמודים הישנים, ו-Room להגדרות
 │   ├── firestore/               DataSources לכל אוסף + LifeHubRepository + HouseholdRepository
-│   ├── io/                      גיבוי ושחזור JSON של ההגדרות
 │   └── models/, entities/, dao/ מסמכי Firestore ו-Room כפי שהם נשמרים
 ├── feature/
 │   ├── money/                   עמוד הכסף (ראו למטה)
