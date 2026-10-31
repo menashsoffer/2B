@@ -30,6 +30,7 @@ import com.menash.myself.feature.money.SubscriptionsViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MoneyViewModel
+import com.menash.myself.feature.money.PensionViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
@@ -76,6 +77,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     )
     val closeUi by closeViewModel.ui.collectAsStateWithLifecycle()
+    val pensionViewModel: PensionViewModel = viewModel(
+        factory = PensionViewModel.factory(appContainer.moneyRepository, { LocalDate.now(Israel) }, appContainer.errorReporter)
+    )
+    val pensionUi by pensionViewModel.ui.collectAsStateWithLifecycle()
     val subsViewModel: SubscriptionsViewModel = viewModel(
         factory = SubscriptionsViewModel.factory(
             appContainer.moneyRepository, appContainer.transactionRepository, appContainer.usdRateFlow,
@@ -135,6 +140,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     }
     if (titheUi.open) {
         TitheScreen(titheUi, titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
+        return
+    }
+    if (pensionUi.open) {
+        PensionScreen(pensionUi, pensionViewModel, LocalDate.now(Israel), modifier)
         return
     }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
@@ -210,6 +219,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onGoals = goalsViewModel::open,
             onTithe = titheViewModel::open,
             onCloseMonth = closeViewModel::open,
+            onPension = pensionViewModel::open,
             onSubscriptions = subsViewModel::open,
         ),
         modifier = modifier,
