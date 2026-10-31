@@ -2,6 +2,17 @@
 
 בסיס הבדיקה: `origin/main` בקומיט `253b7ce`; ניתוח סטטי ותמונות בדיקה קיימות. מסמך זה מתעד גם מגבלות ואינו אישור להתנהגות בזמן ריצה.
 
+## תקציר מנהלים
+
+**חמש הבעיות הגדולות:**
+1. קובץ שלא נקרא עלול להיעלם מסקירת הייבוא ללא הסבר (UX-01).
+2. טופסי כסף, תרומה ופנסיה נסגרים לפני שתוצאת השמירה ידועה, והטיוטה אינה נשמרת בטופס במקרה כשל (UX-02–04).
+3. חשבון ללא תוכנית יכול להגיע לייבוא אך קיצורי התנועות והסגירה אינם מוצגים במצב הריק (UX-05).
+4. פעולות חוזרות כמו מעשרות, יעדים ופנסיה נמצאות עמוק בתמונה הגדולה; שורות פעולה אינן נראות תמיד לחיצות (UX-08, UX-10).
+5. מצבי טעינה וחזרה אינם אחידים, ומודל תתי־המסכים דורש אימות בפועל של שחזור וחזרה (UX-06, UX-09, UX-11, UX-34).
+
+**חמישה שיפורים מהירים:** להוסיף חזרה גלויה לסגירה ולמנויים; לציין שנה בניווט סגירה; להעלות הוספת יעד; להעלות הוספת תרומה ליד היתרה; לסמן לקוראי מסך אם קבוצת תוכנית פתוחה (UX-09, UX-15, UX-17, UX-18, UX-31).
+
 ## מפת האפליקציה כפי שהיא בפועל
 
 - בית: כרטיס כסף → כסף; כרטיסי חלומות, קניות ומעקב → שלוש לשוניות בהכנה; אווטאר → גיליון חשבון → הגדרות / משק בית. `HomeContent.kt:82–126`, `AppShell.kt:106–145`.
@@ -31,43 +42,139 @@
 
 ## ממצאים לפי מסך
 
-נתיבי Kotlin מקוצרים רק לאחר קידומת `app/src/main/java/com/menash/myself/` בטקסט ההסבר; בטבלה ניתנים הנתיבים המלאים. החומרה היא הערכת UX סטטית, לא תוצאת בדיקת משתמש.
+החומרה היא הערכת UX סטטית; ראו גם מגבלות הבדיקה. המספרים תואמים לקובץ CSV.
+
+### ייבוא ושיתוף
 
 | ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | UX-01 | High | Empty/Error | קובץ שלא ניתן לקרוא נעלם מהרשימה ללא הסבר | app/src/main/java/com/menash/myself/ui/money/ImportFiles.kt:29; app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:103 | בייבוא מרובה נדמה שכל הקבצים נבדקו ואחד עלול להישמט | להציג לכל URI שנבחר תוצאת קריאה ושם קובץ ושגיאה עם ניסיון חוזר; לא לאשר הצלחה כוללת מוסתרת | M |
-| UX-02 | High | Feedback | טופס פריט נסגר לפני השלמת השמירה | app/src/main/java/com/menash/myself/feature/money/MoneyViewModel.kt:147 | כישלון כתיבה משאיר את המשתמש בלי הטיוטה שהקליד | להשאיר טיוטה פתוחה עם מצב שמירה; לסגור רק בהצלחה ולאפשר ניסיון חוזר במקרה שגיאה | M |
-| UX-03 | High | Feedback | טופס תרומה נסגר לפני שמירתה | app/src/main/java/com/menash/myself/feature/money/TitheViewModel.kt:81 | שגיאה עלולה לחייב הזנה מחדש של סכום ופרטים | לשמור את הטיוטה עד לאישור הכתיבה ולהציג שגיאה ליד הטופס עם ניסיון חוזר | M |
-| UX-04 | High | Feedback | טופס קרן נסגר לפני שמירה | app/src/main/java/com/menash/myself/feature/money/PensionViewModel.kt:65 | בעיית רשת משאירה נתוני פנסיה שהוזנו מחוץ לטופס | לשמר טיוטה ולהציג שמירה בתהליך ושגיאה עם ניסיון חוזר | M |
-| UX-05 | High | Flow | תנועות וסגירת חודש זמינים רק בענף של תוכנית קיימת | app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:121; app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:169 | אפשר לייבא גם כשהתוכנית ריקה אבל לא מוצג קיצור לתיקון התנועות או לסגירה | להציג תנועות וסגירת חודש גם במצב ריק כשיש נתונים מתאימים; להשאיר קריאה להתחלת תוכנית | M |
-| UX-06 | High | Empty/Error | תנועות שטרם נטענו מוצגות כרשימה ריקה | app/src/main/java/com/menash/myself/ui/money/TransactionsContent.kt:75 | טעינה איטית יכולה להתפרש בטעות כאובדן עסקאות | להפריד loading מ-empty ולהציג חיווי טעינה עד סיום הקריאה | M |
-| UX-07 | High | Flow | בחירת מקור הכנסה ריק מסבירה שאין מקור אך לא מאפשרת להוסיפו | app/src/main/java/com/menash/myself/ui/money/IncomeSourceSheet.kt:59 | אי אפשר להשלים שיוך הכנסה בלי לצאת ולחפש את עורך ההכנסות | להוסיף פעולה ליצירת מקור הכנסה ולהחזיר לבחירה עם השיוך המקורי | M |
-| UX-08 | High | IA | כניסות מעשרות ויעדים ופנסיה ורכב ומנויים נמצאות אחרי נכסים וכרית ברשימה ארוכה | app/src/main/java/com/menash/myself/ui/money/BigPictureContent.kt:64; app/src/main/java/com/menash/myself/ui/money/BigPictureContent.kt:117 | משימות חוזרות קשות לגילוי ודורשות גלילה משתנה | להוסיף בתחילת התמונה הגדולה שורת קיצורים שקטה לאותן פעולות קיימות | M |
-| UX-09 | High | A11y | לסגירת חודש ולמנויים אין כפתור חזרה בתוך המסך | app/src/main/java/com/menash/myself/ui/money/MonthCloseScreen.kt:20; app/src/main/java/com/menash/myself/ui/money/SubscriptionsContent.kt:44 | משתמש שאינו מכיר חזרה מערכתית עלול להיתקע | להוסיף חזרה בכותרת לכל תת־מסך ולהחזיר למסך הקודם | S |
-| UX-10 | High | Feedback | שורות שאפשר לפתוח נראות כמו שורות מידע סטטיות | app/src/main/java/com/menash/myself/ui/money/MoneyParts.kt:101; app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:138 | לא ברור שאפשר לתקן חסמים או לפתוח פריטים עד שמנסים | להוסיף רמז פעולה או שברון מותאם RTL לשורות לחיצות ולשמר ripple קיים | M |
-| UX-11 | High | Empty/Error | סגירת חודש ומנויים מחזירים עמודה ריקה כאשר הנתונים טרם הגיעו | app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:70; app/src/main/java/com/menash/myself/ui/money/SubscriptionsContent.kt:56 | מסך ריק נראה כתקלה ואין כותרת או חיווי התקדמות | להציג כותרת ו־LoadingState וכן הודעת כשל ופעולת ניסיון חוזר כאשר נכשלה קריאה | M |
-| UX-12 | High | Feedback | סגירת חודש שומרת ברקע ללא מצב שמירה מפורש | app/src/main/java/com/menash/myself/feature/money/MonthCloseViewModel.kt:95 | הקשה חוזרת או עיכוב עלולים ליצור חוסר ודאות לגבי הקפאת הנתונים | להשבית זמנית את הכפתור בזמן שמירה ולהציג הצלחה רק לאחר הכתיבה או שגיאה עם ניסיון חוזר | M |
 | UX-13 | High | Flow | טעינה ושמירה של ייבוא ניתנות לסגירה באמצעות BackHandler | app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:116; app/src/main/java/com/menash/myself/feature/money/ImportViewModel.kt:69 | ייתכן שהמשתמש יעזוב לפני קבלת תוצאה והפעולה תושלם ברקע; התנהגות מעשית לא אומתה | להגדיר ביטול בטוח לקריאה ולמנוע יציאה בלתי מוסברת בזמן כתיבה ולהראות מצב ותוצאה | M |
-| UX-14 | Medium | Flow | בחירת חודשי עבר מחייבת הקשה אחת לכל חודש | app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:111; app/src/main/java/com/menash/myself/feature/money/MonthCloseViewModel.kt:78 | סגירה בדיעבד הופכת לארוכה ככל שהחודש ישן | להוסיף בוחר חודש ושנה לצד כפתורי החודש הקיימים | M |
-| UX-15 | Medium | Copy | כפתורי חודש בסגירה כוללים שם חודש בלי שנה | app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:113; app/src/main/res/values/strings_close.xml:7 | במעבר דצמבר–ינואר קשה לאמת את השנה של היעד | להציג גם שנה בתווית היעד כאשר חוצים שנה או בבוחר חודש | S |
-| UX-16 | Medium | Taps | בחירת חודש יעד משתמשת בקפיצות של חודש ושנה בלבד | app/src/main/java/com/menash/myself/ui/money/GoalEditorForm.kt:78 | בחירת קיץ בשנה מסוימת מחייבת רצף לחיצות ובדיקה מתמדת | להוסיף בוחר חודש ושנה ישיר לצד קיצורי החודש והשנה | M |
-| UX-17 | Medium | Hierarchy | הוספת יעד נמצאת אחרי כל היעדים | app/src/main/java/com/menash/myself/ui/money/GoalsContent.kt:67; app/src/main/java/com/menash/myself/ui/money/GoalsContent.kt:78 | ככל שיש יותר יעדים פעולה שכיחה יורדת לתחתית | להעביר הוספת יעד לכותרת או מעל הרשימה תוך שמירה על פעולה ראשית אחת | S |
-| UX-18 | Medium | Hierarchy | הוספת תרומה באה אחרי כל כרטיסי החודשים | app/src/main/java/com/menash/myself/ui/money/TitheContent.kt:81; app/src/main/java/com/menash/myself/ui/money/TitheContent.kt:161 | לאחר היסטוריה ארוכה צריך לגלול כדי לתעד תרומה | להציב הוספת תרומה ליד היתרה ולהשאיר פירוט תרומות בהמשך | S |
-| UX-19 | Medium | Taps | בחירת תאריך תרומה מבוססת על צעד יום ושבוע וחודש לאחור | app/src/main/java/com/menash/myself/ui/money/TitheForms.kt:88 | תאריך ישן דורש לחיצות רבות וקשה להגיע ליום מדויק | להוסיף בחירת תאריך ישירה ולשמור קיצורים לתאריכים קרובים | M |
-| UX-20 | Medium | Taps | תאריך פתיחת קרן ניתן להזזה רק לאחור בצעדי שנה וחודש | app/src/main/java/com/menash/myself/ui/money/PensionScreen.kt:152 | שגיאת בחירה ישנה מחייבת איפוס או הקשות חוזרות | להוסיף בוחר חודש ושנה וכפתור תיקון קדימה | M |
-| UX-21 | Medium | Hierarchy | טופס רכב מציג יחד את כל חלופות המימון גם כשמשווים רק שתיים | app/src/main/java/com/menash/myself/ui/money/CarScreen.kt:122 | קשה לראות מהם הנתונים הדרושים להשוואה המבוקשת | לאפשר בחירת חלופות ולהציג רק שדותיהן עם השדות המשותפים | M |
-| UX-22 | Medium | Empty/Error | שדות טופס רכב אינם מעבירים שגיאה מקומית לרכיב TextInput | app/src/main/java/com/menash/myself/ui/money/CarScreen.kt:105; app/src/main/java/com/menash/myself/ui/money/CarContent.kt:126 | קשה למצוא שדה חסר או לא תקין בטופס ארוך | לקשר כל תוצאת ולידציה לשדה המתאים ולהציג תיאור ושם חלופה | M |
-| UX-23 | Medium | Hierarchy | סך המנויים מוצג כשורת סכום רגילה | app/src/main/java/com/menash/myself/ui/money/SubscriptionsContent.kt:58 | הנתון הראשי אינו בולט יחסית לשורות הבאות | להציג סך חודשי בטיפוגרפיית מספר של מערכת העיצוב ולידו סכום שנתי משני | S |
 | UX-24 | Medium | Feedback | ייבוא שהסתיים מציג רק מספר שורות שנכתבו | app/src/main/java/com/menash/myself/ui/money/ImportContent.kt:70; app/src/main/java/com/menash/myself/feature/money/ImportViewModel.kt:102 | אין בסיום סיכום ברור לשורות שהוסרו או עדיין דורשות שיוך | להציג סיכום נכתבו והוחלפו וממתינים ופעולה לפתיחת הלא משויכות לפי התוצאה האמיתית | M |
 | UX-25 | Medium | Taps | כל החלטה לבית עסק דורשת פתיחת גיליון קטגוריות | app/src/main/java/com/menash/myself/ui/money/ImportContent.kt:209; app/src/main/java/com/menash/myself/ui/money/ImportCategorySheet.kt:79 | כשיש עסקים רבים נדרש מעבר חוזר בין הרשימה לגיליון | לאפשר אישור הצעה זמינה בשורה ופתיחת הגיליון רק לשינוי; לשמור הבחנות העברה והחלטה מאוחרת | M |
 | UX-26 | Medium | Hierarchy | סקירת הייבוא שמה רשימות קבצים וספירות לפני רשימת העסקים והאישור | app/src/main/java/com/menash/myself/ui/money/ImportContent.kt:83 | במסכים קטנים הפעולה הדרושה נמצאת אחרי גלילה ממושכת | להציג סיכום תמציתי וקיצור לעסקים ולכפתור האישור בלי להסתיר אזהרות קבצים | M |
 | UX-27 | Medium | Copy | שם קובץ נחתך לשורה אחת ללא אפשרות מפורשת לראות את השם המלא | app/src/main/java/com/menash/myself/ui/money/ImportContent.kt:166 | קשה להבחין בין דוחות עם שמות ארוכים דומים | לאפשר עד שתי שורות ושם מלא בפרטים או בנגישות | S |
-| UX-28 | Medium | IA | שלוש לשוניות מובילות למסכי בהכנה ללא פעולה נוספת | app/src/main/java/com/menash/myself/ui/shell/AppNavHost.kt:55; app/src/main/java/com/menash/myself/ui/shell/PlaceholderTab.kt:34 | המשתמש יכול להרגיש שנכנס למבוי סתום | להוסיף דרך חזרה ברורה לכסף או לבית בתוך מצב ההכנה; לא להעמיד פנים שהתוכן קיים | S |
-| UX-29 | Medium | Hierarchy | בבית מוצג עודף מתוכנן בלי פער ביצוע או מצב ייבוא | app/src/main/java/com/menash/myself/ui/home/HomeContent.kt:87 | אי אפשר להסיק מהמבט בלבד אם הקבצים הגיעו והוצאות בפועל תואמות לתכנון | לצד העודף המתוכנן להציג תווית מצב קצרה על סמך נתונים קיימים בלבד | M |
-| UX-30 | Medium | Consistency | חזרה מתתי מסכים מסוימים מופיעה רק בתחתית רשימה גוללת | app/src/main/java/com/menash/myself/ui/money/GoalsContent.kt:85; app/src/main/java/com/menash/myself/ui/money/TransactionsContent.kt:128; app/src/main/java/com/menash/myself/ui/money/PensionContent.kt:103 | מיקום החזרה משתנה ודורש גלילה | לאחד כותרת תת־מסך עם כפתור חזרה קבוע בתחילת התוכן | M |
+
+### תוכנית חודשית ועורך
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-02 | High | Feedback | טופס פריט נסגר לפני השלמת השמירה | app/src/main/java/com/menash/myself/feature/money/MoneyViewModel.kt:147 | כישלון כתיבה משאיר את המשתמש בלי הטיוטה שהקליד | להשאיר טיוטה פתוחה עם מצב שמירה; לסגור רק בהצלחה ולאפשר ניסיון חוזר במקרה שגיאה | M |
+| UX-05 | High | Flow | תנועות וסגירת חודש זמינים רק בענף של תוכנית קיימת | app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:121; app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:169 | אפשר לייבא גם כשהתוכנית ריקה אבל לא מוצג קיצור לתיקון התנועות או לסגירה | להציג תנועות וסגירת חודש גם במצב ריק כשיש נתונים מתאימים; להשאיר קריאה להתחלת תוכנית | M |
 | UX-31 | Medium | A11y | שורות קבוצות נפתחות אינן מספקות מצב פתוח או סגור מפורש | app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:212; app/src/main/java/com/menash/myself/ui/money/MoneyParts.kt:101 | קורא מסך עשוי להכריז כפתור בלי להעביר אם התוכן מורחב | להוסיף semantics של expanded או stateDescription ולהציג סמן פתיחה ברור | S |
-| UX-32 | Medium | RTL | כפתורי חודשים משתמשים בתווי חץ מילוליים בתוך טקסט עברי | app/src/main/res/values/strings_close.xml:7; app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:111 | כיוון החץ וסידורו תלויים בטקסט דו־כיווני ויכולים לבלבל | להשתמש באייקוני AutoMirrored עם תוויות חודש מפורשות ולבדוק בשני כיווני פריסה | S |
-| UX-33 | Medium | Feedback | מחיקות פריטים ותרומות נסגרות ללא מסלול ביטול מוצג | app/src/main/java/com/menash/myself/feature/money/MoneyViewModel.kt:161; app/src/main/java/com/menash/myself/feature/money/TitheViewModel.kt:96 | אישור מונע חלק מהטעויות אך אינו מאפשר לתקן טעות אחרי המחיקה | להוסיף ביטול אמין ומגובה לאחר מחיקה הפיכה או שחזור מפורש; לשמר אישור למחיקה הרסנית | L |
-| UX-34 | Medium | Flow | מצבי ניווט של כסף נשמרים כדגלים נפרדים ובסדר עדיפות קבוע | app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:116; app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:139; app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:185 | שיתוף או מעבר לשונית בזמן מסך פתוח עלולים להשאיר הקשר לא צפוי; לא אומת בריצה | לייצג היסטוריית מסכים מפורשת ולבדוק חזרה ממעשרות ומסגירה ומעבר לשונית ושיתוף ושחזור תהליך | L |
 | UX-35 | Medium | Empty/Error | שגיאת זרם הכסף מטופלת בדיווח אך המסך עצמו נשאר תלוי במצב האחרון | app/src/main/java/com/menash/myself/feature/money/MoneyViewModel.kt:71; app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:90 | כרזה כללית אינה מסבירה אם הנתונים ישנים או כיצד לחדש את הטעינה | להציג מצב שגיאה עם ניסיון חוזר וסימון נתונים אחרונים כאשר קיימים | M |
 | UX-36 | Low | Consistency | המוקאפים מדגימים אשף התחלה בשלבים בעוד המסך מתחיל בטופס הכנסה יחיד | docs/design/mockups-v1/mockups-v1.html:226; app/src/main/java/com/menash/myself/ui/money/MoneyContent.kt:124 | אין תמונת התקדמות בהקמה ראשונה; לא הוכח שאשף בהכרח עדיף | לבחון מסלול קצר עם התקדמות אופציונלית והזנה מהירה מול משתמש לפני החלפת הטופס | M |
+
+### תנועות ומקור הכנסה
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-06 | High | Empty/Error | תנועות שטרם נטענו מוצגות כרשימה ריקה | app/src/main/java/com/menash/myself/ui/money/TransactionsContent.kt:75 | טעינה איטית יכולה להתפרש בטעות כאובדן עסקאות | להפריד loading מ-empty ולהציג חיווי טעינה עד סיום הקריאה | M |
+| UX-07 | High | Flow | בחירת מקור הכנסה ריק מסבירה שאין מקור אך לא מאפשרת להוסיפו | app/src/main/java/com/menash/myself/ui/money/IncomeSourceSheet.kt:59 | אי אפשר להשלים שיוך הכנסה בלי לצאת ולחפש את עורך ההכנסות | להוסיף פעולה ליצירת מקור הכנסה ולהחזיר לבחירה עם השיוך המקורי | M |
+
+### סגירת חודש
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-09 | High | A11y | לסגירת חודש ולמנויים אין כפתור חזרה בתוך המסך | app/src/main/java/com/menash/myself/ui/money/MonthCloseScreen.kt:20; app/src/main/java/com/menash/myself/ui/money/SubscriptionsContent.kt:44 | משתמש שאינו מכיר חזרה מערכתית עלול להיתקע | להוסיף חזרה בכותרת לכל תת־מסך ולהחזיר למסך הקודם | S |
+| UX-11 | High | Empty/Error | סגירת חודש ומנויים מחזירים עמודה ריקה כאשר הנתונים טרם הגיעו | app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:70; app/src/main/java/com/menash/myself/ui/money/SubscriptionsContent.kt:56 | מסך ריק נראה כתקלה ואין כותרת או חיווי התקדמות | להציג כותרת ו־LoadingState וכן הודעת כשל ופעולת ניסיון חוזר כאשר נכשלה קריאה | M |
+| UX-12 | High | Feedback | סגירת חודש שומרת ברקע ללא מצב שמירה מפורש | app/src/main/java/com/menash/myself/feature/money/MonthCloseViewModel.kt:95 | הקשה חוזרת או עיכוב עלולים ליצור חוסר ודאות לגבי הקפאת הנתונים | להשבית זמנית את הכפתור בזמן שמירה ולהציג הצלחה רק לאחר הכתיבה או שגיאה עם ניסיון חוזר | M |
+| UX-14 | Medium | Flow | בחירת חודשי עבר מחייבת הקשה אחת לכל חודש | app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:111; app/src/main/java/com/menash/myself/feature/money/MonthCloseViewModel.kt:78 | סגירה בדיעבד הופכת לארוכה ככל שהחודש ישן | להוסיף בוחר חודש ושנה לצד כפתורי החודש הקיימים | M |
+| UX-15 | Medium | Copy | כפתורי חודש בסגירה כוללים שם חודש בלי שנה | app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:113; app/src/main/res/values/strings_close.xml:7 | במעבר דצמבר–ינואר קשה לאמת את השנה של היעד | להציג גם שנה בתווית היעד כאשר חוצים שנה או בבוחר חודש | S |
+| UX-32 | Medium | RTL | כפתורי חודשים משתמשים בתווי חץ מילוליים בתוך טקסט עברי | app/src/main/res/values/strings_close.xml:7; app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:111 | כיוון החץ וסידורו תלויים בטקסט דו־כיווני ויכולים לבלבל | להשתמש באייקוני AutoMirrored עם תוויות חודש מפורשות ולבדוק בשני כיווני פריסה | S |
+
+### התמונה הגדולה ומערכת הניווט
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-08 | High | IA | כניסות מעשרות ויעדים ופנסיה ורכב ומנויים נמצאות אחרי נכסים וכרית ברשימה ארוכה | app/src/main/java/com/menash/myself/ui/money/BigPictureContent.kt:64; app/src/main/java/com/menash/myself/ui/money/BigPictureContent.kt:117 | משימות חוזרות קשות לגילוי ודורשות גלילה משתנה | להוסיף בתחילת התמונה הגדולה שורת קיצורים שקטה לאותן פעולות קיימות | M |
+| UX-10 | High | Feedback | שורות שאפשר לפתוח נראות כמו שורות מידע סטטיות | app/src/main/java/com/menash/myself/ui/money/MoneyParts.kt:101; app/src/main/java/com/menash/myself/ui/money/MonthCloseContent.kt:138 | לא ברור שאפשר לתקן חסמים או לפתוח פריטים עד שמנסים | להוסיף רמז פעולה או שברון מותאם RTL לשורות לחיצות ולשמר ripple קיים | M |
+| UX-30 | Medium | Consistency | חזרה מתתי מסכים מסוימים מופיעה רק בתחתית רשימה גוללת | app/src/main/java/com/menash/myself/ui/money/GoalsContent.kt:85; app/src/main/java/com/menash/myself/ui/money/TransactionsContent.kt:128; app/src/main/java/com/menash/myself/ui/money/PensionContent.kt:103 | מיקום החזרה משתנה ודורש גלילה | לאחד כותרת תת־מסך עם כפתור חזרה קבוע בתחילת התוכן | M |
+| UX-34 | Medium | Flow | מצבי ניווט של כסף נשמרים כדגלים נפרדים ובסדר עדיפות קבוע | app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:116; app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:139; app/src/main/java/com/menash/myself/ui/money/MoneyScreen.kt:185 | שיתוף או מעבר לשונית בזמן מסך פתוח עלולים להשאיר הקשר לא צפוי; לא אומת בריצה | לייצג היסטוריית מסכים מפורשת ולבדוק חזרה ממעשרות ומסגירה ומעבר לשונית ושיתוף ושחזור תהליך | L |
+
+### יעדים
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-16 | Medium | Taps | בחירת חודש יעד משתמשת בקפיצות של חודש ושנה בלבד | app/src/main/java/com/menash/myself/ui/money/GoalEditorForm.kt:78 | בחירת קיץ בשנה מסוימת מחייבת רצף לחיצות ובדיקה מתמדת | להוסיף בוחר חודש ושנה ישיר לצד קיצורי החודש והשנה | M |
+| UX-17 | Medium | Hierarchy | הוספת יעד נמצאת אחרי כל היעדים | app/src/main/java/com/menash/myself/ui/money/GoalsContent.kt:67; app/src/main/java/com/menash/myself/ui/money/GoalsContent.kt:78 | ככל שיש יותר יעדים פעולה שכיחה יורדת לתחתית | להעביר הוספת יעד לכותרת או מעל הרשימה תוך שמירה על פעולה ראשית אחת | S |
+
+### מעשרות ותרומות
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-03 | High | Feedback | טופס תרומה נסגר לפני שמירתה | app/src/main/java/com/menash/myself/feature/money/TitheViewModel.kt:81 | שגיאה עלולה לחייב הזנה מחדש של סכום ופרטים | לשמור את הטיוטה עד לאישור הכתיבה ולהציג שגיאה ליד הטופס עם ניסיון חוזר | M |
+| UX-18 | Medium | Hierarchy | הוספת תרומה באה אחרי כל כרטיסי החודשים | app/src/main/java/com/menash/myself/ui/money/TitheContent.kt:81; app/src/main/java/com/menash/myself/ui/money/TitheContent.kt:161 | לאחר היסטוריה ארוכה צריך לגלול כדי לתעד תרומה | להציב הוספת תרומה ליד היתרה ולהשאיר פירוט תרומות בהמשך | S |
+| UX-19 | Medium | Taps | בחירת תאריך תרומה מבוססת על צעד יום ושבוע וחודש לאחור | app/src/main/java/com/menash/myself/ui/money/TitheForms.kt:88 | תאריך ישן דורש לחיצות רבות וקשה להגיע ליום מדויק | להוסיף בחירת תאריך ישירה ולשמור קיצורים לתאריכים קרובים | M |
+
+### פנסיה
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-04 | High | Feedback | טופס קרן נסגר לפני שמירה | app/src/main/java/com/menash/myself/feature/money/PensionViewModel.kt:65 | בעיית רשת משאירה נתוני פנסיה שהוזנו מחוץ לטופס | לשמר טיוטה ולהציג שמירה בתהליך ושגיאה עם ניסיון חוזר | M |
+| UX-20 | Medium | Taps | תאריך פתיחת קרן ניתן להזזה רק לאחור בצעדי שנה וחודש | app/src/main/java/com/menash/myself/ui/money/PensionScreen.kt:152 | שגיאת בחירה ישנה מחייבת איפוס או הקשות חוזרות | להוסיף בוחר חודש ושנה וכפתור תיקון קדימה | M |
+
+### רכב
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-21 | Medium | Hierarchy | טופס רכב מציג יחד את כל חלופות המימון גם כשמשווים רק שתיים | app/src/main/java/com/menash/myself/ui/money/CarScreen.kt:122 | קשה לראות מהם הנתונים הדרושים להשוואה המבוקשת | לאפשר בחירת חלופות ולהציג רק שדותיהן עם השדות המשותפים | M |
+| UX-22 | Medium | Empty/Error | שדות טופס רכב אינם מעבירים שגיאה מקומית לרכיב TextInput | app/src/main/java/com/menash/myself/ui/money/CarScreen.kt:105; app/src/main/java/com/menash/myself/ui/money/CarContent.kt:126 | קשה למצוא שדה חסר או לא תקין בטופס ארוך | לקשר כל תוצאת ולידציה לשדה המתאים ולהציג תיאור ושם חלופה | M |
+
+### מנויים
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-23 | Medium | Hierarchy | סך המנויים מוצג כשורת סכום רגילה | app/src/main/java/com/menash/myself/ui/money/SubscriptionsContent.kt:58 | הנתון הראשי אינו בולט יחסית לשורות הבאות | להציג סך חודשי בטיפוגרפיית מספר של מערכת העיצוב ולידו סכום שנתי משני | S |
+
+### בית ולשוניות בהכנה
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-28 | Medium | IA | שלוש לשוניות מובילות למסכי בהכנה ללא פעולה נוספת | app/src/main/java/com/menash/myself/ui/shell/AppNavHost.kt:55; app/src/main/java/com/menash/myself/ui/shell/PlaceholderTab.kt:34 | המשתמש יכול להרגיש שנכנס למבוי סתום | להוסיף דרך חזרה ברורה לכסף או לבית בתוך מצב ההכנה; לא להעמיד פנים שהתוכן קיים | S |
+| UX-29 | Medium | Hierarchy | בבית מוצג עודף מתוכנן בלי פער ביצוע או מצב ייבוא | app/src/main/java/com/menash/myself/ui/home/HomeContent.kt:87 | אי אפשר להסיק מהמבט בלבד אם הקבצים הגיעו והוצאות בפועל תואמות לתכנון | לצד העודף המתוכנן להציג תווית מצב קצרה על סמך נתונים קיימים בלבד | M |
+
+### מחיקה וביטול
+
+| ID | חומרה | קטגוריה | מה הבעיה | איפה (file:line) | למה זה מפריע למשתמש | הצעת תיקון קונקרטית | מאמץ (S/M/L) |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| UX-33 | Medium | Feedback | מחיקות פריטים ותרומות נסגרות ללא מסלול ביטול מוצג | app/src/main/java/com/menash/myself/feature/money/MoneyViewModel.kt:161; app/src/main/java/com/menash/myself/feature/money/TitheViewModel.kt:96 | אישור מונע חלק מהטעויות אך אינו מאפשר לתקן טעות אחרי המחיקה | להוסיף ביטול אמין ומגובה לאחר מחיקה הפיכה או שחזור מפורש; לשמר אישור למחיקה הרסנית | L |
+
+## בעיות רוחביות
+
+- **אישור ושחזור:** מסך הצלחת ייבוא כבר קיים (`ImportContent.kt:68–76`); לשמירות אחרות יש להוסיף מצב כתיבה, אישור הצלחה לאחר הכתיבה ושימור טיוטה בשגיאה. ביטול מחיקה דורש מנגנון שחזור אמין ולא רק Snackbar (UX-02–04, UX-12, UX-24, UX-33).
+- **חזרה וניווט:** להוסיף כותרת משותפת עם חזרה ולבנות היסטוריית כסף מפורשת. סדר `open` הנוכחי נועד להשיב מסגירה וממעשרות, אך נדרשת בדיקת תהליך, מעברי לשוניות ושיתוף (UX-09, UX-30, UX-34).
+- **מצבי נתונים:** להפריד טעינה, ריק ושגיאה עם ניסיון חוזר; לשמור את כרזת השגיאות הכללית הקיימת ולא להציג אותה כהיעדר טיפול מוחלט (UX-06, UX-11, UX-35; `AppShell.kt:56,175`).
+- **גילוי פעולות:** רכיב `AmountRow` כבר מספק ripple, תפקיד כפתור ומינימום 48dp (`MoneyParts.kt:101–117`); הבעיה היא סימון חזותי ומצב פתיחה, לא היעדר ripple כולל (UX-10, UX-31).
+- **עיצוב וכיווניות:** להמשיך להשתמש בטוקנים וברכיבים המשותפים; `MoneyFormatter` מבודד מספרים באמצעות bidi (`MoneyText.kt:16–50`). לא לקבוע כשל ניגודיות או מגע ללא מדידה. חצי טקסט דורשים בדיקה ותיקון ממוקד (UX-32).
+
+## השוואה למוקאפים ולתמונות בדיקה
+
+`docs/design/mockups-v1/screen2-light.png` מציג עודף בולט, פס קבוצות ולחצן סגירה ראשי. בפועל המסך כולל גם ייבוא בראש ותנועות וסגירה בתוך הרשימה (`MoneyContent.kt:112–205`); סגירה אינה הכפתור הראשי. תוספת הייבוא אינה פגם בפני עצמה. `MoneyScreenshotTest.moneyMonthEmpty_light_font13.png` מדגים ייבוא ישיר והתחלת הכנסה; לכן הטענה בבריף שייבוא קיים רק בגיליון ההוספה אינה נכונה בגרסה זו. `MoneyScreenshotTest.moneyBigPicture_light_font13.png` מדגים שהקיצורים באים אחרי נכסים וכרית. `ImportScreenshotTest.importReview_light_font13.png` מציג אזהרת קובץ מוצפן ופער בסיכום לצד בתי עסק, אך אינו מוכיח מה קורה כשה־URI עצמו אינו קריא. `MonthCloseScreenshotTest.closeTodo_dark_font10.png` מדגים רשימת חסמים וכפתור סגירה מושבת. `CarScreenshotTest.carCompareForm_light_font13.png` מדגים את אורך הטופס. `GoalsScreenshotTest.goalsList_dark_font13.png` מדגים רשימת תשובות ארוכה. `HomeContentScreenshotTest.homeEmpty_dark_font13.png` מציג מצב בית ריק עם שלוש לשוניות עתידיות. התמונות הן goldens של מצבים מבוימים ואינן תחליף להרצה.
+
+## הצעה למבנה כסף
+
+לשמור על שתי הלשוניות. בראש החודש: עודף מתוכנן, ייבוא וקיצור לתנועות/חסמים בהתאם למידע הקיים; התוכנית המתרחבת תישאר מתחת. בראש התמונה הגדולה: שווי נקי וקיצורים שקטים ליעדים, מעשרות, רכב, פנסיה ומנויים, לפני פירוט הנכסים. תתי מסכים יקבלו חזרה אחידה. לפי אומדן J7 ו־J8, קיצור ישיר יכול לחסוך הקשה אחת לעומת המעבר דרך התמונה הגדולה; ראה גם את תנאי הספירה בטבלת המסעות. הספירות אינן מדידות.
+
+### הצעות שמשנות החלטת מוצר
+
+הצגת מידע ביצועי נוסף בבית (UX-29) עשויה להעמיס על הבית הרגוע ולהגדיר מחדש את תפקידו. כדאי לבדוק עם בני הזוג אם מצב ייבוא או פער תכנון/ביצוע באמת עוזר; אין להציג ערך חסר כאפס. מסלול הקמה מודרך במקום טופס ההכנסה (UX-36) עלול להאט משתמש חוזר, ולכן רצוי להשאיר דרך מהירה ולבדוק שימוש לפני בחירה.
+
+## תוכנית עבודה מתועדפת
+
+כל אצווה כוללת עד שישה ממצאים. הסדר משקלל סיכון לתהליך הראשי ומאמץ משוער; זוהי המלצת UX ולא התחייבות הנדסית.
+
+1. **שמירה ואמון:** UX-01, UX-02, UX-03, UX-04, UX-12, UX-13 — משוב לקבצים ולכתיבה ושימור טיוטות.
+2. **להגיע ולחזור:** UX-05, UX-07, UX-09, UX-10, UX-30, UX-31 — נגישות הפעולות וחזרה ברורה.
+3. **טעינה וייבוא:** UX-06, UX-11, UX-24, UX-25, UX-26, UX-35 — להבחין במצבים ולצמצם חזרתיות.
+4. **פעולות ותאריכים:** UX-14, UX-15, UX-16, UX-17, UX-18, UX-19 — חודשי עבר, יעדים ותרומות.
+5. **טפסים וקריאות:** UX-20, UX-21, UX-22, UX-23, UX-27, UX-32 — פנסיה, רכב, מנויים, שמות וכיווניות.
+6. **מבנה והמשך מחקר:** UX-08, UX-28, UX-29, UX-33, UX-34, UX-36 — קיצורים, מסכים בהכנה, ביטול וניווט.
+
+## מה לא בדקתי ולמה
+
+- האפליקציה ובדיקות הצילום לא הורצו. סביבת העבודה מדווחת על Java 11 בעוד `docs/RULES.md` דורש לפחות 17; קובץ `app/google-services.json` אינו קיים. הרצת build הייתה גם יוצרת קבצים מחוץ ל־`docs/ux`, בניגוד להיקף המבוקש.
+- לא נבדקו בפועל מכשיר, TalkBack, יעדי מגע, ניגודיות, גודל גופן 2x, סיבוב, הריגת תהליך, הרשאות שיתוף, אופליין או כשל Firestore; אלו דורשים הרצה ובדיקות ממוקדות. גם כיווני החצים הם סיכון לבדיקה ולא תקלה שנצפתה.
+- לא נבדקו כל קובצי המקור, כל המחרוזות, כל מצבי כל ViewModel וכל תמונות ה־golden. המסמך הוא ביקורת חלקית מבוססת ראיות, ואינו ממלא את יעד 60–150 הממצאים או את דרישת הכיסוי המלא של הבריף. לא הוספתי ממצאים ספקולטיביים להשלמת מכסה.
+- לא התקיים מבחן שימוש עם בני הזוג; זמני משימה, גילוי בפועל וספירות לחיצות בפועל לא אומתו. ההערכות תלויות בנתונים, בחירת קובץ ובמספר פריטים.
+- נוסחאות עסקיות, אבטחה, נאמנות לנתונים והצלחת כתיבה בפועל אינן מאומתות בביקורת זו; סגירה מחדש והשלכותיה דורשות בדיקת אינטגרציה במידע בדיקה.
