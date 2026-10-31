@@ -18,6 +18,8 @@
     <string name="car_new_edit">לעדכן את ההצעות</string>
     <string name="car_running_basis">ההוצאות השוטפות (דלק, ביטוח, טיפולים) לפי הרכב של היום</string>
     <string name="car_horizon">לאורך %1$d שנים</string>
+    <string name="car_horizon_lease">לאורך %1$d חודשים, כמו הליסינג</string>
+    <string name="car_horizon_hint">כשיש הצעת ליסינג, כל ההצעות נבדקות לאורך תקופת הליסינג</string>
     <string name="car_opt_cash">מזומן מהחיסכון</string>
     <string name="car_opt_loan">הלוואה בנקאית</string>
     <string name="car_opt_dealer">מימון סוכנות</string>
