@@ -123,6 +123,7 @@ object MoneyDocuments {
         is MoneyEntry.TitheEntry -> TitheDocuments.encode(entry.value)
         is MoneyEntry.CarEntry -> CarDocuments.encode(entry.value)
         is MoneyEntry.ClosedMonthEntry -> ClosedMonthDocuments.encode(entry.value)
+        is MoneyEntry.PensionFundEntry -> PensionDocuments.encode(entry.value)
         is MoneyEntry.CategoryEntry -> entry.value.let {
             buildMap {
                 put("name", it.name)
@@ -247,6 +248,7 @@ object MoneyDocuments {
             MoneyCollection.TITHE -> MoneyEntry.TitheEntry(TitheDocuments.settings(id, doc))
             MoneyCollection.CLOSED_MONTHS -> MoneyEntry.ClosedMonthEntry(ClosedMonthDocuments.decode(id, data))
             MoneyCollection.CAR -> MoneyEntry.CarEntry(CarDocuments.plan(id, data))
+            MoneyCollection.PENSION_FUNDS -> MoneyEntry.PensionFundEntry(PensionDocuments.fund(id, doc))
             MoneyCollection.CATEGORIES -> MoneyEntry.CategoryEntry(
                 Category(
                     id = id,

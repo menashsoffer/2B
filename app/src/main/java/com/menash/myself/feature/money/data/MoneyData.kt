@@ -12,6 +12,7 @@ import com.menash.myself.feature.money.domain.Goal
 import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.domain.InstallmentPurchase
 import com.menash.myself.feature.money.domain.MoneyItems
+import com.menash.myself.feature.money.domain.PensionFund
 import com.menash.myself.feature.money.domain.PeriodicBudget
 import com.menash.myself.feature.money.domain.Saving
 import com.menash.myself.feature.money.domain.Subscription
@@ -38,6 +39,7 @@ enum class MoneyCollection(val path: String) {
     CLOSED_MONTHS("closedMonths"),
     /** One document, "settings": the car categories and the new-car comparison. */
     CAR("car"),
+    PENSION_FUNDS("pensionFunds"),
 }
 
 /** Everything the money pillar stores for one household. [householdReady] is false while no household is active. */
@@ -56,6 +58,8 @@ data class MoneyData(
     val closedMonths: List<ClosedMonth> = emptyList(),
     /** Null until the car screen saves its settings; the defaults apply until then. */
     val car: CarPlan? = null,
+    /** Pension, hishtalmut and gemel funds: a current snapshot, updated by hand from the quarterly report. */
+    val pensionFunds: List<PensionFund> = emptyList(),
 )
 
 /** One stored document: an engine value and the collection it lives in. */
@@ -122,6 +126,10 @@ sealed interface MoneyEntry {
     data class CarEntry(val value: CarPlan) : MoneyEntry {
         override val id get() = CarPlan.ID
         override val collection get() = MoneyCollection.CAR
+    }
+    data class PensionFundEntry(val value: PensionFund) : MoneyEntry {
+        override val id get() = value.id
+        override val collection get() = MoneyCollection.PENSION_FUNDS
     }
     data class CategoryEntry(val value: Category) : MoneyEntry {
         override val id get() = value.id

@@ -39,7 +39,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             verticalArrangement = Arrangement.spacedBy(Spacing.s8),
         ) {
             Text(text = stringResource(R.string.money_net_worth), style = AppType.caption, color = colors.textSecondary)
-            val netWorth = picture.netWorth
+            val netWorth = picture.totalWorth
             if (netWorth == null) {
                 Text(text = stringResource(R.string.money_net_worth_empty), style = AppType.body, color = colors.textPrimary)
             } else {
@@ -49,6 +49,15 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                     color = if (netWorth.isNegative()) colors.danger else colors.textPrimary,
                 )
             }
+        }
+        val pension = picture.pension
+        if (pension != null) {
+            AmountRow(title = stringResource(R.string.money_net_worth_liquid), amount = formatMoney(picture.netWorth ?: Money.ZERO))
+            AmountRow(
+                title = stringResource(R.string.money_net_worth_pension),
+                amount = formatMoney(pension.value),
+                testTag = "money_net_worth_pension",
+            )
         }
     }
 
@@ -137,6 +146,25 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             onClick = actions.onCar,
             testTag = "money_car_entry",
         )
+        val pension = picture.pension
+        AmountRow(
+            title = stringResource(R.string.pension_entry),
+            detail = if (pension == null) {
+                stringResource(R.string.pension_entry_start)
+            } else {
+                stringResource(R.string.pension_entry_detail, formatMoney(pension.value), formatMoney(pension.yearlyFee))
+            },
+            amount = null,
+            onClick = actions.onPension,
+            testTag = "money_pension_entry",
+        )
+        AmountRow(
+            title = stringResource(R.string.subs_entry),
+            detail = stringResource(R.string.subs_entry_detail),
+            amount = null,
+            onClick = actions.onSubscriptions,
+            testTag = "money_subs_entry",
+        )
     }
 
     SectionHeader(stringResource(R.string.money_debts)) { actions.onAddKind(EditKind.DEBT) }
@@ -184,7 +212,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
 }
 
 @Composable
-private fun SectionHeader(title: String, onAdd: () -> Unit) {
+internal fun SectionHeader(title: String, onAdd: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
