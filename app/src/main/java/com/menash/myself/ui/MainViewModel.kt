@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.di.AppContainer
-import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Household
 import com.menash.myself.core.ui.BaseViewModel
 import kotlinx.coroutines.flow.Flow
@@ -30,16 +29,6 @@ class MainViewModel(
         safeLaunch("refreshExternalDataOnStartup") {
             runCatching { appContainer.exchangeRateRepository.refreshRateIfNeeded() }
             runCatching { appContainer.hebcalRepository.refreshDataIfNeeded() }
-        }
-    }
-
-    fun addInboxItem(
-        text: String,
-        forWhom: ForWhom = ForWhom.BOTH,
-        isPrivate: Boolean = false
-    ) {
-        safeLaunch("addInboxItem") {
-            appContainer.inboxRepository.addInboxItem(text, forWhom, isPrivate)
         }
     }
 
