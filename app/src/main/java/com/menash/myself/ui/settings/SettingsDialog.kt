@@ -1,17 +1,12 @@
 package com.menash.myself.ui.settings
 
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.LocationCity
-import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material3.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.window.Dialog
@@ -20,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,23 +30,16 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.core.external.hebcal.IsraeliCity
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun SettingsDialog(
     currentRate: Double,
-    lastBackupTimestamp: Long,
     onDismiss: () -> Unit,
     onSaveRate: (Double) -> Unit,
-    onBackupNow: (() -> Unit)? = null,
-    onRestoreJson: ((String) -> Unit)? = null,
     onOpenLegacyScreen: (String) -> Unit = {}
 ) {
     var rateInput by remember { mutableStateOf(currentRate.toString()) }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val appContainer = LocalAppContainer.current
 
@@ -61,30 +48,6 @@ fun SettingsDialog(
     val boiRateState by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
     val selectedCityState by appContainer.hebcalRepository.selectedCityFlow.collectAsStateWithLifecycle()
     var useManualRate by remember(boiRateState?.isManualOverride) { mutableStateOf(boiRateState?.isManualOverride == true) }
-
-    val fileRestoreLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri?.let {
-            scope.launch {
-                try {
-                    val jsonStr = context.contentResolver.openInputStream(it)?.bufferedReader()?.use { r -> r.readText() }
-                    if (jsonStr != null) {
-                        if (onRestoreJson != null) {
-                            onRestoreJson(jsonStr)
-                        } else {
-                            val success = appContainer.settingsRepository.restoreFromJson(context, jsonStr)
-                            val msg = if (success) context.getString(R.string.ui_str_252) else context.getString(R.string.ui_str_253)
-                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                            if (success) onDismiss()
-                        }
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(context, context.getString(R.string.ui_emessage_246, e.message ?: ""), Toast.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -186,61 +149,6 @@ fun SettingsDialog(
                         modifier = Modifier.testTag("return_to_official_rate_button")
                     ) {
                         Text("חזור לשער הרשמי של בנק ישראל")
-                    }
-                }
-
-                HorizontalDivider()
-
-                Text(stringResource(R.string.ui_json_248), fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                if (lastBackupTimestamp > 0L) {
-                    val lastBackupText = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                        .format(Date(lastBackupTimestamp))
-                    Text(
-                        stringResource(R.string.ui_lastbackuptext_244, lastBackupText),
-                        style = AppType.caption,
-                        color = MaterialTheme.appColors.textSecondary,
-                    )
-                }
-                Text(
-                    stringResource(R.string.ui_str_243),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.error
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("backup_now_button"),
-                        onClick = {
-                            if (onBackupNow != null) {
-                                onBackupNow()
-                            } else {
-                                scope.launch { appContainer.settingsRepository.createAndShareBackup(context) }
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Backup, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.ui_str_245))
-                    }
-
-                    OutlinedButton(
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("restore_backup_button"),
-                        onClick = {
-                            fileRestoreLauncher.launch(arrayOf("application/json", "*/*"))
-                        },
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.Restore, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(stringResource(R.string.ui_str_250))
                     }
                 }
 

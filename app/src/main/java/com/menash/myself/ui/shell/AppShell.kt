@@ -59,8 +59,6 @@ fun AppShell(
     var showSettings by remember { mutableStateOf(false) }
     val appContainer = LocalAppContainer.current
     val scope = rememberCoroutineScope()
-    val backupSettings by appContainer.settingsRepository.getSettingsFlow()
-        .collectAsStateWithLifecycle(initialValue = null)
 
     fun openRoute(route: String) {
         val destination = navController.currentDestination
@@ -132,7 +130,6 @@ fun AppShell(
         val rate by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
         SettingsDialog(
             currentRate = rate?.rate ?: 0.0,
-            lastBackupTimestamp = backupSettings?.lastBackupTimestamp ?: 0L,
             onDismiss = { showSettings = false },
             onSaveRate = { newRate ->
                 scope.launch { appContainer.exchangeRateRepository.setManualRate(newRate) }
