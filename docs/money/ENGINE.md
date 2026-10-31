@@ -89,3 +89,12 @@ Only closed months of the requested calendar year count. Missing months between 
 - `periodicAtYearEnd(closed, 2026)` returns the last close's periodic map unchanged, or an empty map if there is no close.
 - `netWorthChange(closed, 2026)` compares the last known balance in 2026 with the last known balance in 2025, or the first known balance in 2026. A month with both balance maps empty is unknown and skipped. For example, net worth of 100 followed by 80 gives a change of -20.
 - `compareYears(closed, 2026, plans)` compares monthly averages, not totals, and returns the number of closes in each year. For example, 600 over six months compared with 900 over three gives a monthly difference of -200. A category absent in one year has an average of zero there.
+
+## Plan calibration
+
+The engine only suggests changes; the caller decides what to accept. Money is in agorot.
+
+- `categoryBaseline(closed, endMonth, 6)` summarizes the latest six closed months through the end month. Missing calendar months are unknown, not zero; an absent category in a closed month is zero. It returns average, median, range, latest and active months. Duplicate closes are rejected.
+- `suggestPlan(baseline, currentPlan, categories)` compares non-periodic categories with their plans. For example, a current category averaging ₪120 against a ₪100 plan is under-planned at the default 10% tolerance. Fixed categories use the latest month; other categories use the average. At least three closes are needed. Proposed amounts round up to ₪50 by default.
+- `suggestPeriodic(closed, budgets, endMonth)` proposes annual budgets only with all twelve calendar months closed. For example, ₪1,020 spent over a complete year rounds up to ₪1,100 with the default ₪100 step. Partial years return no spending or suggestion.
+- `planImpact(currentPlan, suggestions, accepted, periodic, acceptedPeriodic, budgets)` compares monthly totals after only accepted, available suggestions are applied. For example, accepting a ₪50 monthly increase gives a ₪50 difference; annual budgets use their monthly reserve.
