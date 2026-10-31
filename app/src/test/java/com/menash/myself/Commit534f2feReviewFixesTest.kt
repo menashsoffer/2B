@@ -1,6 +1,5 @@
 package com.menash.myself
 
-import com.menash.myself.core.data.mapper.CalculatorMappers
 import com.menash.myself.core.data.mapper.DreamMappers
 import com.menash.myself.core.data.mapper.FitnessMappers
 import com.menash.myself.core.data.mapper.HouseholdMappers
@@ -21,10 +20,6 @@ import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.data.models.TaskItem
-import com.menash.myself.feature.calculators.CalculatorsHubViewModel
-import com.menash.myself.feature.calculators.ai.AiCalculatorViewModel
-import com.menash.myself.feature.calculators.car.CarCalculatorViewModel
-import com.menash.myself.feature.calculators.pension.PensionCalculatorViewModel
 import com.menash.myself.feature.dreams.DreamsViewModel
 import com.menash.myself.feature.fitness.FitnessViewModel
 import com.menash.myself.feature.home.LifeHomeViewModel
@@ -210,9 +205,7 @@ class Commit534f2feReviewFixesTest {
         assertTrue("Per-screen FABs found in UI files: $fabViolations", fabViolations.isEmpty())
 
         val tasksScreenText = File(srcRoot, "ui/tasks/TasksScreen.kt").readText()
-        val aiScreenText = File(srcRoot, "ui/calculators/ai/AiSubscriptionsScreen.kt").readText()
         assertTrue("TasksScreen must have top-bar add action", tasksScreenText.contains("add_task_top_action"))
-        assertTrue("AiSubscriptionsScreen must have top-bar add action", aiScreenText.contains("add_ai_top_action"))
     }
 
     @Test
@@ -253,7 +246,7 @@ class Commit534f2feReviewFixesTest {
         assertFalse("CancellationException must be rethrown, not treated as error", cancellationSwallowed)
         assertNull(vm.errorState.value)
 
-        // Verify all 12 ViewModels inherit from BaseViewModel
+        // Verify the legacy ViewModels (the calculators moved into money on 31/10) inherit from BaseViewModel
         val allViewModels = listOf(
             MainViewModel::class.java,
             TasksViewModel::class.java,
@@ -263,10 +256,6 @@ class Commit534f2feReviewFixesTest {
             FitnessViewModel::class.java,
             HouseholdViewModel::class.java,
             FileCatalogViewModel::class.java,
-            CarCalculatorViewModel::class.java,
-            AiCalculatorViewModel::class.java,
-            PensionCalculatorViewModel::class.java,
-            CalculatorsHubViewModel::class.java
         )
         allViewModels.forEach { clazz ->
             assertTrue("${clazz.simpleName} must extend BaseViewModel", BaseViewModel::class.java.isAssignableFrom(clazz))
@@ -307,6 +296,5 @@ class Commit534f2feReviewFixesTest {
         assertNotNull(InboxMappers)
         assertNotNull(FitnessMappers)
         assertNotNull(HouseholdMappers)
-        assertNotNull(CalculatorMappers)
     }
 }

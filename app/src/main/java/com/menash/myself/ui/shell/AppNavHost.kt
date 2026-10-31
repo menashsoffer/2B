@@ -11,10 +11,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
-import com.menash.myself.ui.calculators.CalculatorsHubScreen
-import com.menash.myself.ui.calculators.ai.AiSubscriptionsScreen
-import com.menash.myself.ui.calculators.car.CarComparisonScreen
-import com.menash.myself.ui.calculators.pension.PensionSavingsScreen
 import com.menash.myself.ui.calendar.CalendarScreen
 import com.menash.myself.ui.catalog.FileCatalogScreen
 import com.menash.myself.ui.dreams.DreamsScreen
@@ -77,23 +73,6 @@ fun AppNavHost(
         }
         composable(ShellRoute.DreamsLegacy) {
             LegacyPage { DreamsScreen(onBack = { navController.popBackStack() }) }
-        }
-        composable(ShellRoute.Calculators) {
-            LegacyPage {
-                CalculatorsHubScreen(
-                    navController = navController,
-                    onBack = { navController.popBackStack() },
-                )
-            }
-        }
-        composable(ShellRoute.Car) {
-            LegacyPage { CarComparisonScreen(onBack = { navController.popBackStack() }) }
-        }
-        composable(ShellRoute.Ai) {
-            LegacyPage { AiSubscriptionsScreen(onBack = { navController.popBackStack() }) }
-        }
-        composable(ShellRoute.Pension) {
-            LegacyPage { PensionSavingsScreen(onBack = { navController.popBackStack() }) }
         }
         composable(ShellRoute.More) {
             LegacyPage { MoreScreen(onNavigate = onOpenRoute) }

@@ -1,19 +1,13 @@
 package com.menash.myself.core.data.mapper
 
 import com.google.firebase.Timestamp
-import com.menash.myself.core.domain.model.AiSubscription
-import com.menash.myself.core.domain.model.Car
 import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.FitnessEntry
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Household
 import com.menash.myself.core.domain.model.InboxItem
 import com.menash.myself.core.domain.model.Money
-import com.menash.myself.core.domain.model.PensionFund
 import com.menash.myself.core.domain.model.Task
-import com.menash.myself.data.entities.AiSubscriptionEntity
-import com.menash.myself.data.entities.CarEntity
-import com.menash.myself.data.entities.PensionFundEntity
 import com.menash.myself.data.models.DreamItem
 import com.menash.myself.data.models.FitnessLog
 import com.menash.myself.data.models.TaskItem
@@ -24,87 +18,6 @@ import java.time.LocalDate
 import java.util.Date
 
 class ModelMappersTest {
-
-    @Test
-    fun car_roundTrip_moneyAndFields() {
-        val entity = CarEntity(
-            id = 5L,
-            name = "סקודה אוקטביה",
-            purchasePrice = 160000.50,
-            resaleValueAfter5Years = 80000.0,
-            energyCostYearly = 7500.25,
-            insuranceYearly = 4800.0,
-            trackerYearly = 600.0,
-            maintenanceYearly = 1500.0,
-            annualTestYearly = 2100.0,
-            tires5YearsTotal = 2400.0,
-            isBaseline = true
-        )
-
-        val domain = ModelMappers.carToDomain(entity)
-        assertEquals(5L, domain.id)
-        assertEquals("סקודה אוקטביה", domain.name)
-        assertEquals(160000.50, domain.purchasePrice.shekels, 0.001)
-        assertEquals(16000050L, domain.purchasePrice.agorot)
-        assertEquals(7500.25, domain.energyCostYearly.shekels, 0.001)
-        assertTrue(domain.isBaseline)
-
-        val roundTripEntity = ModelMappers.carToEntity(domain)
-        assertEquals(entity.id, roundTripEntity.id)
-        assertEquals(entity.name, roundTripEntity.name)
-        assertEquals(entity.purchasePrice, roundTripEntity.purchasePrice, 0.001)
-        assertEquals(entity.resaleValueAfter5Years, roundTripEntity.resaleValueAfter5Years, 0.001)
-        assertEquals(entity.energyCostYearly, roundTripEntity.energyCostYearly, 0.001)
-        assertEquals(entity.isBaseline, roundTripEntity.isBaseline)
-    }
-
-    @Test
-    fun aiSubscription_roundTrip_moneyAndFields() {
-        val entity = AiSubscriptionEntity(
-            id = 12L,
-            name = "Copilot Pro",
-            category = "Coding",
-            isActive = true,
-            billingCycle = "MONTHLY",
-            currency = "USD",
-            price = 20.0,
-            notes = "Microsoft 365"
-        )
-
-        val domain = ModelMappers.aiSubscriptionToDomain(entity)
-        assertEquals(12L, domain.id)
-        assertEquals(20.0, domain.price.shekels, 0.001)
-        assertEquals(2000L, domain.price.agorot)
-
-        val roundTripEntity = ModelMappers.aiSubscriptionToEntity(domain)
-        assertEquals(entity.id, roundTripEntity.id)
-        assertEquals(entity.price, roundTripEntity.price, 0.001)
-        assertEquals(entity.billingCycle, roundTripEntity.billingCycle)
-    }
-
-    @Test
-    fun pensionFund_roundTrip_moneyAndFields() {
-        val entity = PensionFundEntity(
-            id = 8L,
-            fundType = "קרן השתלמות",
-            provider = "מיטב",
-            currentValue = 95000.75,
-            totalDeposits = 70000.0,
-            feeOnBalancePercent = 0.40,
-            feeOnDepositsPercent = 0.0,
-            notes = "מסלול עוקב S&P 500"
-        )
-
-        val domain = ModelMappers.pensionFundToDomain(entity)
-        assertEquals(95000.75, domain.currentValue.shekels, 0.001)
-        assertEquals(9500075L, domain.currentValue.agorot)
-        assertEquals(70000.0, domain.totalDeposits.shekels, 0.001)
-
-        val roundTripEntity = ModelMappers.pensionFundToEntity(domain)
-        assertEquals(entity.currentValue, roundTripEntity.currentValue, 0.001)
-        assertEquals(entity.totalDeposits, roundTripEntity.totalDeposits, 0.001)
-        assertEquals(entity.feeOnBalancePercent, roundTripEntity.feeOnBalancePercent, 0.0001)
-    }
 
     @Test
     fun legacySpace_mappings_roundTrips() {
