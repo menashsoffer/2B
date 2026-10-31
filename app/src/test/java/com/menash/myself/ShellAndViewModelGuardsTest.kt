@@ -51,7 +51,7 @@ import java.io.File
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class Commit534f2feReviewFixesTest {
+class ShellAndViewModelGuardsTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
 
