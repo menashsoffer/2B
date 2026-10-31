@@ -14,6 +14,7 @@ import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.Donation
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -92,9 +93,9 @@ class TitheViewModel(
         }
         sheets.update { it.copy(donation = editor.copy(draft = editor.draft.copy(id = donation.id), saving = true, saveError = null)) }
         safeLaunch("saveDonation", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); sheets.update { it.copy(donation = it.donation?.copy(saving = false, saveError = message)) }; events?.send(UiEvent.SaveError(message) { if (sheets.value.donation?.draft?.id == donation.id) saveDonation() }) }) {
-            money.save(MoneyEntry.DonationEntry(donation))
+            val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.DonationEntry(donation)); true } == true
             sheets.value = TitheSheets()
-            events?.send(UiEvent.DONATION_SAVED)
+            events?.send(if (acknowledged) UiEvent.DONATION_SAVED else UiEvent.SavedOffline)
         }
     }
 

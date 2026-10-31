@@ -92,6 +92,7 @@ fun AppShell(
         var previous: kotlinx.coroutines.Job? = null
         appContainer.uiEvents.events.collect { event ->
             val text = when (event) {
+                UiEvent.SavedOffline -> context.getString(R.string.feedback_saved_offline)
                 UiEvent.MONEY_SAVED -> context.getString(R.string.feedback_saved)
                 UiEvent.DONATION_SAVED -> context.getString(R.string.feedback_donation_saved)
                 UiEvent.DELETED -> context.getString(R.string.feedback_deleted)
