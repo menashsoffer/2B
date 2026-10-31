@@ -1,4 +1,6 @@
-# Feature inventory
+# Feature inventory (archived)
+
+> Historical snapshot of `4204866`, before the Night Blue shell, the money pillar and the removal of the legacy calculators. Kept for history; it does not describe the current code. Current structure: [../ARCHITECTURE.md](../ARCHITECTURE.md). Open issues: [../KNOWN_ISSUES.md](../KNOWN_ISSUES.md).
 
 Facts below are from the tree at `4204866` (`feat: add the Night Blue design system`). Paths are repo-relative. This pass read source and tests. It did not run Gradle, instrumented tests, `firestore.test.js`, or the app, and it did not call Firebase, the Bank of Israel API, or Hebcal. Where a path was not executed, the row says so.
 
