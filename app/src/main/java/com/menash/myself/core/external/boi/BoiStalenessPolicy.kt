@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 /**
  * Staleness for the Bank of Israel USD/ILS representative rate.
  * Publication days are Monday–Friday. Saturday, Sunday, holidays, and holiday
- * eves are not modeled; see docs/BACKLOG_STEP8.md.
+ * eves are not modeled; see docs/KNOWN_ISSUES.md (BOI holidays).
  */
 object BoiStalenessPolicy {
 

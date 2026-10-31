@@ -1,4 +1,4 @@
-# חוקי הפיתוח והארכיטקטורה (Development Rules) — "המחשבונים שלי" (Myself)
+# חוקי הפיתוח והארכיטקטורה (Development Rules) — Myself
 
 מסמך זה מהווה חוזה מחייב לפיתוח ולתחזוקת האפליקציה. יש לקרוא מסמך זה לפני כל שינוי עתידי בקוד.
 
@@ -7,34 +7,19 @@
 ## 1. כללי יסוד
 1. **כשלא בטוחים — שואלים:** לעולם אין לנחש כוונת משתמש, התנהגות עסקית או נוסחאות חישוב.
 2. **איסור מוחלט על מחיקת נתוני משתמש:** אף פעולה, מיגרציה או שחזור אינם מוחקים נתונים ללא גיבוי מקומי מקדים ואישור מפורש מהמשתמש.
-3. **מבנה אחיד:** כל פיצ'ר חדש נבנה באותו מבנה בדיוק (`ui/`, `viewmodel/`, `domain/`).
+3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`ui/<x>/` מחולקים ל-`*Content` ו-`*Screen`. המבנה המלא ב-[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
-## 2. ארכיטקטורת חבילות וקבצים (Feature-Based Architecture)
+## 2. ארכיטקטורת חבילות וקבצים
 - **חבילה ו-Namespace:** `com.menash.myself`.
 - **מזהה אפליקציה (Application ID):** נשאר קבוע (`com.aistudio.mycalculators.qvxmzt`) כדי להבטיח עדכונים שוטפים של ה-APK המותקן על המכשיר.
-- **חלוקת מודולים:**
-  - `core/`: תשתית משותפת (נתונים, מודלים, עיצוב, שירותים חיצוניים, הזרקת תלויות).
-  - `feature/`: מודולי תכונה עצמאיים:
-    - `feature/home`: מסך "מה מול העיניים".
-    - `feature/capture`: לכידה מהירה (Quick Capture) ואינבוקס.
-    - `feature/dreams`: חלומות, רשימות ורעיונות אפליקציה.
-    - `feature/tasks`: משימות, Top 3, Five Before 11.
-    - `feature/fitness`: מעקב תנועה וכושר יומי ושבועי.
-    - `feature/calendar`: יומן אירועים (קריאה בלבד מיומן המכשיר).
-    - `feature/importcatalog`: קטלוג קבצים להעלאה, תבניות CSV ואשף מיפוי.
-    - `feature/settings`: הגדרות שער, בחירת עיר ל-Hebcal, ופרטי חשבון.
-    - `feature/household`: ניהול משק הבית ושותפים.
-    - `feature/calculators/`: מחשבונים פיננסיים (`car`, `ai`, `pension`, `hub`).
-- **מבנה פנימי של כל פיצ'ר:**
-  - `ui/`: מסכים וקומפוננטות UI.
-  - `viewmodel/`: ניהול מצב עם `UiState` מבוסס `StateFlow`, ואירועים נכנסים (`Events`).
-  - `domain/`: לוגיקה עסקית וחישובים כפונקציות טהורות (Pure Kotlin בלבד — ללא שום ייבוא של ספריות Android).
+- **המבנה בפועל** (חבילות, זרימת נתונים, עמוד הכסף, בדיקות, CI): [ARCHITECTURE.md](ARCHITECTURE.md).
 - **גבולות תלויות (Dependency Boundaries):**
-  - פיצ'רים תלויים אך ורק בממשקי Repository המוגדרים ב-`core/data/repository`.
-  - **איסור מוחלט:** אף פיצ'ר אינו מייבא ישירות את `core/firebase` או ספריות Firestore ישירות.
-  - מכולת תלויות ידנית פשוטה (`AppContainer`) — ללא שימוש בפריימוורקים כבדים.
+  - `domain/` הוא Kotlin טהור: אין `import android.*`, `androidx.*` או Firebase.
+  - קוד ב-`feature/` וב-`ui/` לא מייבא `com.menash.myself.data.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
+  - ViewModels תלויים בממשקי Repository (`core/data/repository`, `feature/money/data`), לא במימושים.
+  - הזרקת תלויות ידנית ב-`AppContainer`, בלי פריימוורק.
 
 ---
 
@@ -44,20 +29,21 @@
    - מקסימום כ-80 שורות לפונקציית Composable.
    - מסכים מורכבים מפוצלים לקומפוננטות משנה ייעודיות.
 2. **לוגיקת חישוב בשכבת ה-Domain:**
-   - כל חישוב (עלות בעלות 5 שנים, המרות מנויי AI, תשואת פנסיה ודמי ניהול, התקדמות חיסכון לחלום) מתבצע כפונקציה טהורה ומכוסה בבדיקות יחידה מקיפות.
+   - כל חישוב (תכנון מול ביצוע, סגירת חודש, "האם אפשר", מעשרות, פנסיה, רכב, סיכום שנה) מתבצע כפונקציה טהורה ב-`feature/money/domain` ומכוסה בבדיקות יחידה. החוזה ב-`docs/money/ENGINE.md`.
 3. **ייצוג כספים ותאריכים:**
    - **כסף:** מיוצג תמיד כ-`Long` באגורות (או `BigDecimal`), לעולם לא כ-`Double`.
    - **תאריכים:** `java.time` עם אזור זמן `ZoneId.of("Asia/Jerusalem")`.
-   - ישויות Room שומרות על טיפוסיהן המקוריים עד שלב המיגרציה, וההמרה לאגורות מתבצעת בגבול ה-Repository.
+   - מסמכי Firestore של הכסף שומרים אגורות כמספר שלם (`Long`). המסמכים הישנים (חלומות) שומרים `Double`, וההמרה ל-`Money` נעשית ב-mapper.
 4. **עברית ושפות:**
    - כל טקסט משתמש מוגדר ב-`res/values/strings.xml` (עברית).
    - אין מחרוזות מוקלדות ישירות בקוד (Hardcoded Strings) ואין מספרי קסם (Magic Numbers).
 5. **סריאליזציה, גיבוי וייבוא:**
-   - שימוש בלעדי בספריית **Moshi** לגיבוי, שחזור וייבוא.
+   - גיבוי ושחזור ההגדרות ב-`org.json` (`data/io/BackupRestoreManager.kt`). אין Moshi בפרויקט.
+   - קבצי בנק ואשראי נקראים בקוראים שלנו (`feature/money/importer`), בלי ספרייה חיצונית.
    - **שחזור = החלפה (REPLACE):** מחליף את הנתונים רק לאחר אישור מפורש של המשתמש וביצוע גיבוי אוטומטי מקדים.
    - **ייבוא קפדני:** לעולם אין להמציא ערכי ברירת מחדל לשדות חסרים או לא תקינים. שורה שגויה נדחית ומוצגת בדו"ח שגיאות מפורט לפי שורה.
 6. **מבנה Firestore:**
-   - לכל מסמך יש שדה `schemaVersion`. שינויי מבנה נתונים עוברים מיגרציות מפורשות ללא Fallback הרסני.
+   - שינויי מבנה נתונים עוברים מיגרציות מפורשות ללא Fallback הרסני. שדה `schemaVersion` עוד לא קיים במסמכים (ראו `KNOWN_ISSUES.md`).
 
 ---
 
@@ -90,11 +76,12 @@
 ## 5. ממשק משתמש ומערכת עיצוב (Design System & Cognitive Load)
 1. **עיצוב מבוסס טוקנים (`core/designsystem`):**
    - מרווחים אחידים: רשת מודולרית של 4dp, 8dp, 16dp, 24dp, 32dp.
-   - רכיבים משותפים: `AppCard`, `ListRow`, `MoneyText` (עם פסיקי אלפים וסמל ₪ מיושר RTL), `StatusChip`, `SpaceBadge`, `EmptyState`, `CaptureSheet`.
+   - ערכת הצבעים Night Blue (`theme/Palette.kt`, `ActivePalette`). צבע (`Color(0x…)`) וגודל גופן (`.sp`) רק ב-`theme/`; `NightBlueGuardTest` נכשל על שימוש חדש מחוץ ל-allow-list, וגם על רשומה מיותרת בה.
+   - רכיבים משותפים (`component/`): `HeroCard`, `MetricCard`, `MoneyText` (עם פסיקי אלפים וסמל ₪ מיושר RTL), `Chip`, `PillTabs`, `ListRow`, `PrimaryButton`, `TextInput`, `SpaceBadge`, `SharedBadge`, `EmptyState`, `ErrorState`, `LoadingState`, `OfflineIndicator`, `FloatingNavBar`, `ProfileAvatar`, `ProgressBar`, `QuickAddButton`, `ScreenHeader`.
    - אף מסך אינו מגדיר סגנונות משל עצמו — הכל נגזר ממערכת העיצוב.
-2. **ניווט ב-5 לשוניות (Bottom Navigation Bar):**
-   - בית, חלומות, משימות, מחשבונים, עוד.
-   - כפתור לכידה מהירה (`+` FAB) זמין וצף תמיד בכל מסך.
+2. **ניווט ב-5 לשוניות (`FloatingNavBar`, `ui/shell/ShellTab.kt`):**
+   - בית, כסף, חלומות, קניות, מעקב. חלומות, קניות ומעקב הם עדיין מסכי placeholder.
+   - אין FAB לכל מסך (`ShellAndViewModelGuardsTest`).
 3. **ניהול עומס קוגניטיבי:**
    - פעולה עיקרית אחת לכל מסך.
    - חשיפה הדרגתית (Progressive Disclosure): פרטים מלאים נפתחים בלחיצה ולא מעמיסים על הרשימה הראשית.
@@ -118,7 +105,7 @@
 4. **ייחוס מקור וזמן עדכון:** כל ערך אוטומטי מציג את מקורו ואת זמן העדכון האחרון. במקרה של כשל תקשורת, מוצג הערך השמור האחרון עם סימון "לא עודכן לאחרונה" — לעולם אין ליפול בשקט לערך מומצא או מקודד מראש.
 5. **בנק ישראל (BOI SDMX CSV):**
    - כתובת מאומתת (נקראה ב-2026-10-27, HTTP 200, והחזירה נתונים): `https://edge.boi.org.il/FusionEdgeServer/sdmx/v2/data/dataflow/BOI.STATISTICS/EXR/1.0/RER_USD_ILS?c%5BDATA_TYPE%5D=OF00&lastNObservations=1&format=csv`. סדרה `RER_USD_ILS`, פילטר `DATA_TYPE=OF00`. השורה שנקראה: `TIME_PERIOD=2026-10-26`, `OBS_VALUE=3.078`. אותה קריאה אל `edge.boi.gov.il` החזירה את אותה שורה.
-   - לוח פרסום מאומת מול `https://www.boi.org.il/roles/markets/reprate/`: חישוב פעם ביום, בימי העבודה במטבע חוץ בלבד. אין שערים יציגים בימי שבת וראשון ובימי שבתון. פרסום זמן קצר אחרי 15:15 (בימי ו', חול המועד וערבי חג — אחרי 12:15). המועד אינו מובטח. יום ו' הוא יום פרסום. חלון `startPeriod=2026-09-01&endPeriod=2026-10-26` על אותה סדרה החזיר 38 תצפיות, כולן ימי שני–שישי, ואף לא אחת ביום ראשון. לוח האפליקציה: ימי עסקים שני–שישי. שער שאוחזר לפני 15:30 (שני–חמישי) או לפני 12:30 (שישי) נחשב לא עדכני אחרי השעה הזו. הסנכרון רץ ב-15:45 בימים שני–חמישי וב-12:45 ביום שישי, ומדלג על שבת ועל ראשון. חגים וערבי חג אינם מטופלים (ראו `docs/BACKLOG_STEP8.md`). אם המידע אינו עדכני בעת פתיחת האפליקציה, מתבצע רענון.
+   - לוח פרסום מאומת מול `https://www.boi.org.il/roles/markets/reprate/`: חישוב פעם ביום, בימי העבודה במטבע חוץ בלבד. אין שערים יציגים בימי שבת וראשון ובימי שבתון. פרסום זמן קצר אחרי 15:15 (בימי ו', חול המועד וערבי חג — אחרי 12:15). המועד אינו מובטח. יום ו' הוא יום פרסום. חלון `startPeriod=2026-09-01&endPeriod=2026-10-26` על אותה סדרה החזיר 38 תצפיות, כולן ימי שני–שישי, ואף לא אחת ביום ראשון. לוח האפליקציה: ימי עסקים שני–שישי. שער שאוחזר לפני 15:30 (שני–חמישי) או לפני 12:30 (שישי) נחשב לא עדכני אחרי השעה הזו. הסנכרון רץ ב-15:45 בימים שני–חמישי וב-12:45 ביום שישי, ומדלג על שבת ועל ראשון. חגים וערבי חג אינם מטופלים (ראו `docs/KNOWN_ISSUES.md`, סעיף בנק ישראל). אם המידע אינו עדכני בעת פתיחת האפליקציה, מתבצע רענון.
    - דריסה ידנית אפשרית אך ורק כבחירה מפורשת של המשתמש ומסומנת בבירור (אינה נדרסת אוטומטית בעת סנכרון).
    - תמיכה בשליפת שער היסטורי לפי תאריך מבוקש (לצורך הפקדות והשקעות בעתיד).
 6. **לוח עברי וזמני שבת (Hebcal REST API):**
@@ -205,3 +192,15 @@ Firebase console, for the existing Android app (the same one App Distribution us
 - If the Crashlytics page asks to enable Crashlytics, enable it. The first report from a release build finishes setup. No test-crash button is shipped in the app.
 - Do not add user ids or custom keys.
 - Google Analytics is not a dependency of this change. Breadcrumb logs stay off until Analytics is added on purpose.
+
+---
+
+## 10. איך בונים (Builders and branches)
+
+- כל עבודה של Claude על ענף `claude/<נושא>`, ו-Codex על `codex/<נושא>`. אף אחד לא דוחף ל-`main`. PR בלבד, ומנש עושה merge.
+- דוחפים לענף אחרי כל שלב גמור, לא שומרים עבודה רק מקומית.
+- לעולם לא מכבים קוד או בדיקה כדי לעבור. לא משנים golden קיים כדי שיתאים; golden שהשתנה הוא שינוי UI שצריך אישור.
+- `branch-tests.yml` רץ על כל push ל-`claude/**`. ענף `codex/**` לא מקבל ריצה אוטומטית: מפעילים ידנית (`workflow_dispatch`) על ה-ref שלו.
+- golden חדש: הפעלה ידנית עם `record=true`. הריצה תמיד מסומנת failure; מה שקובע הוא commit של הבוט "test: record new goldens" על הענף.
+- שינוי שם למחלקת בדיקת screenshot משנה את שמות קבצי ה-golden, ולכן דורש הקלטה מחדש.
+- אין Android SDK בסביבת Claude, ולכן ה-CI הוא שבונה ומריץ את הבדיקות.
