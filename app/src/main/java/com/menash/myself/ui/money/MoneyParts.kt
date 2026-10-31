@@ -96,6 +96,7 @@ fun AmountRow(
     onClick: (() -> Unit)? = null,
     onClickLabel: String? = null,
     testTag: String? = null,
+    trailing: @Composable (() -> Unit)? = null,
 ) {
     val colors = MaterialTheme.appColors
     val click = if (onClick != null) {
@@ -139,6 +140,7 @@ fun AmountRow(
                 color = amountColor ?: colors.textPrimary,
             )
         }
+        trailing?.invoke()
     }
 }
 
