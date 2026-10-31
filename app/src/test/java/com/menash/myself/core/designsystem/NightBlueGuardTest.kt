@@ -207,7 +207,6 @@ class NightBlueGuardTest {
         "java/com/menash/myself/ui/household/HouseholdCardComponents.kt",
         "java/com/menash/myself/ui/inbox/InboxTriageScreen.kt",
         "java/com/menash/myself/ui/more/MoreScreen.kt",
-        "java/com/menash/myself/ui/quickcapture/QuickCaptureDialog.kt",
         "java/com/menash/myself/ui/settings/CityPickerDialog.kt",
         "java/com/menash/myself/ui/settings/SettingsDialog.kt",
         "java/com/menash/myself/ui/tasks/TaskCardComponents.kt",
