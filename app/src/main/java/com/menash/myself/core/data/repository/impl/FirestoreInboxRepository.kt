@@ -2,7 +2,6 @@ package com.menash.myself.core.data.repository.impl
 
 import com.menash.myself.core.data.mapper.InboxMappers
 import com.menash.myself.core.data.mapper.ModelMappers
-import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.InboxRepository
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
@@ -21,15 +20,6 @@ class FirestoreInboxRepository(
     private val householdSession: HouseholdSession
 ) : InboxRepository {
 
-    private fun resolveLocation(action: String, isPrivate: Boolean): ItemLocation {
-        return try {
-            ItemLocation.resolve(isPrivate, householdSession) { lifeHub.currentUid() }
-        } catch (e: Exception) {
-            lifeHub.reportError(action, e)
-            throw e
-        }
-    }
-
     override fun observeInbox(): Flow<List<InboxItem>> {
         return householdSession.currentHouseholdId.flatMapLatest { hid ->
             if (hid.isNullOrBlank()) {
@@ -43,18 +33,18 @@ class FirestoreInboxRepository(
     }
 
     override suspend fun addInboxItem(text: String, forWhom: ForWhom, isPrivate: Boolean) {
-        val location = resolveLocation("addInboxItem", isPrivate)
+        val location = lifeHub.locationFor("addInboxItem", isPrivate, householdSession)
         val legacySpace = ModelMappers.forWhomToLegacySpace(forWhom, isPrivate)
         lifeHub.addInboxItem(text, legacySpace, location)
     }
 
     override suspend fun markInboxTriaged(itemId: String, triagedType: String, isPrivate: Boolean) {
-        val location = resolveLocation("markInboxTriaged", isPrivate)
+        val location = lifeHub.locationFor("markInboxTriaged", isPrivate, householdSession)
         lifeHub.markInboxTriaged(itemId, triagedType, location)
     }
 
     override suspend fun deleteInboxItem(itemId: String, isPrivate: Boolean) {
-        val location = resolveLocation("deleteInboxItem", isPrivate)
+        val location = lifeHub.locationFor("deleteInboxItem", isPrivate, householdSession)
         lifeHub.deleteInboxItem(itemId, location)
     }
 }

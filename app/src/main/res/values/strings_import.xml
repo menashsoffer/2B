@@ -31,7 +31,6 @@
     <string name="import_nothing_new">אין כאן שום דבר חדש. כל התנועות כבר נקלטו</string>
     <string name="import_merchants">בתי עסק חדשים</string>
     <string name="import_merchants_hint">בוחרים קטגוריה פעם אחת, ומהפעם הבאה זה קורה לבד</string>
-    <string name="import_merchant_detail">%1$s · %2$d תנועות</string>
     <string name="import_choose">לבחור קטגוריה</string>
     <string name="import_later">אחר כך</string>
     <string name="import_own_transfer">העברה בין החשבונות שלנו</string>
