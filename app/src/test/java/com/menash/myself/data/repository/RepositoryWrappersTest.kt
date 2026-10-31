@@ -1,7 +1,7 @@
 package com.menash.myself.data.repository
 
 import com.menash.myself.core.data.repository.impl.RoomSettingsRepository
-import com.menash.myself.core.domain.model.CalculatorSettings
+import com.menash.myself.core.domain.model.LocalSettings
 import com.menash.myself.data.dao.AppDao
 import com.menash.myself.data.entities.AppSettings
 import kotlinx.coroutines.flow.Flow
@@ -29,10 +29,10 @@ class RepositoryWrappersTest {
         val repo = RoomSettingsRepository(fakeDao)
         assertNull(repo.getSettings())
 
-        repo.saveSettings(CalculatorSettings(usdToIlsRate = 3.7, lastBackupTimestamp = 42L))
+        repo.saveSettings(LocalSettings(usdToIlsRate = 3.7, lastBackupTimestamp = 42L))
 
         assertEquals(1, fakeDao.row?.id)
-        assertEquals(CalculatorSettings(3.7, 42L), repo.getSettings())
-        assertEquals(CalculatorSettings(3.7, 42L), repo.getSettingsFlow().first())
+        assertEquals(LocalSettings(3.7, 42L), repo.getSettings())
+        assertEquals(LocalSettings(3.7, 42L), repo.getSettingsFlow().first())
     }
 }

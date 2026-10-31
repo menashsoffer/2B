@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
 @RunWith(RobolectricTestRunner::class)
 @org.robolectric.annotation.Config(sdk = [36])
 @OptIn(ExperimentalCoroutinesApi::class)
-class Step8ExternalDataAndFixesTest {
+class ExternalDataTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private class TestViewModel : BaseViewModel {

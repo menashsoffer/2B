@@ -2,7 +2,7 @@ package com.menash.myself.core.data.repository.impl
 
 import android.content.Context
 import com.menash.myself.core.data.repository.SettingsRepository
-import com.menash.myself.core.domain.model.CalculatorSettings
+import com.menash.myself.core.domain.model.LocalSettings
 import com.menash.myself.data.dao.AppDao
 import com.menash.myself.data.entities.AppSettings
 import com.menash.myself.data.io.BackupRestoreManager
@@ -13,25 +13,25 @@ class RoomSettingsRepository(
     private val dao: AppDao
 ) : SettingsRepository {
 
-    override fun getSettingsFlow(): Flow<CalculatorSettings?> =
+    override fun getSettingsFlow(): Flow<LocalSettings?> =
         dao.getSettingsFlow().map { entity ->
             entity?.let {
-                CalculatorSettings(
+                LocalSettings(
                     usdToIlsRate = it.usdToIlsRate,
                     lastBackupTimestamp = it.lastBackupTimestamp
                 )
             }
         }
 
-    override suspend fun getSettings(): CalculatorSettings? =
+    override suspend fun getSettings(): LocalSettings? =
         dao.getSettings()?.let {
-            CalculatorSettings(
+            LocalSettings(
                 usdToIlsRate = it.usdToIlsRate,
                 lastBackupTimestamp = it.lastBackupTimestamp
             )
         }
 
-    override suspend fun saveSettings(settings: CalculatorSettings) {
+    override suspend fun saveSettings(settings: LocalSettings) {
         dao.saveSettings(
             AppSettings(
                 id = 1,

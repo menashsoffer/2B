@@ -46,7 +46,7 @@ import java.time.LocalDate
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = MyselfApp::class)
-class Step6And7ReviewFixesTest {
+class LayerBoundariesTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
 

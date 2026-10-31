@@ -30,7 +30,7 @@ import java.time.ZonedDateTime
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 @OptIn(ExperimentalCoroutinesApi::class)
-class Step8RoundThreeTest {
+class ExternalDataRefreshTest {
 
     @org.junit.Before
     fun setup() {
