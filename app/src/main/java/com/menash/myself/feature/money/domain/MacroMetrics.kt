@@ -28,3 +28,7 @@ fun savingRate(snapshots: List<MonthSnapshot>): Money? {
 
 /** Exactly three calendar months is fresh; only dates after that boundary are stale. */
 fun isStale(asset: Asset, today: LocalDate): Boolean = today > asset.lastUpdated.plusMonths(3)
+
+/** Net worth with the pension funds counted; null while there is neither an asset nor a fund. */
+fun totalWorth(liquidWorth: Money?, pension: PensionSnapshot?): Money? =
+    if (liquidWorth == null && pension == null) null else sumMoney(listOfNotNull(liquidWorth, pension?.value))

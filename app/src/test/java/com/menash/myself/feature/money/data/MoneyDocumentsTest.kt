@@ -121,6 +121,18 @@ class MoneyDocumentsTest {
         assertRoundTrip(entry)
     }
 
+    @Test
+    fun pensionFunds_feesKeepTheirDecimals() {
+        val fund = com.menash.myself.feature.money.domain.PensionFund(
+            "fund-1", com.menash.myself.feature.money.domain.FundKind.HISHTALMUT, "מיטב", Money(12_000_000), Money(9_500_000),
+            Money(150_000), java.math.BigDecimal("0.53"), java.math.BigDecimal("0"), java.time.LocalDate.of(2020, 3, 1),
+            java.time.LocalDate.of(2026, 10, 1),
+        )
+        assertRoundTrip(MoneyEntry.PensionFundEntry(fund))
+        assertRoundTrip(MoneyEntry.PensionFundEntry(fund.copy(openedOn = null)))
+        assertEquals("0.53", MoneyDocuments.encode(MoneyEntry.PensionFundEntry(fund))["feeOnBalance"])
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun maaserSettings_onlyUnderItsOwnId() {
         MoneyDocuments.decode(MoneyCollection.TITHE, "other", MoneyDocuments.encode(MoneyEntry.TitheEntry(MoneySamples.tithe)))
