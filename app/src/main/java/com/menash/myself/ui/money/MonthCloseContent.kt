@@ -1,5 +1,6 @@
 package com.menash.myself.ui.money
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -68,6 +69,7 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
             .testTag("close_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
+        BackHandler(enabled = ui.view == null && LocalMoneyBackActive.current) { actions.onBack() }
         val view = ui.view ?: return@Column
         MoneySubScreen(
             title = stringResource(R.string.close_title, monthTitle(view.month)),

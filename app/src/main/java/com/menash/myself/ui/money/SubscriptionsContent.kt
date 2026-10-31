@@ -54,9 +54,9 @@ fun SubscriptionsContent(ui: SubscriptionsUi, actions: SubscriptionsActions, mod
             .testTag("subs_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
+        MoneySubScreen(title = stringResource(R.string.subs_title), subtitle = stringResource(R.string.subs_subtitle), onBack = actions.onBack)
         val view = ui.view ?: return@Column
         val colors = MaterialTheme.appColors
-        MoneySubScreen(title = stringResource(R.string.subs_title), subtitle = stringResource(R.string.subs_subtitle), onBack = actions.onBack)
         MoneySurface(testTag = "subs_total") {
             AmountRow(
                 title = stringResource(R.string.subs_total),
