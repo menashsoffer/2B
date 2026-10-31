@@ -77,7 +77,7 @@ class MoneyWriteSafetyTest {
         gate.completeExceptionally(IOException("write failed"))
         assertFalse(vm.editor.value!!.saving)
         assertEquals("משכורת", vm.editor.value!!.draft.name)
-        assertNotNull(reporter.errorState.value)
+        assertNull(reporter.errorState.value)
         fail = false
         vm.save()
         assertNull(vm.editor.value)
@@ -108,7 +108,7 @@ class MoneyWriteSafetyTest {
         gate.completeExceptionally(IOException("write failed"))
         assertFalse(vm.ui.value.sheets.donation!!.saving)
         assertEquals("180", vm.ui.value.sheets.donation!!.draft.amount)
-        assertNotNull(reporter.errorState.value)
+        assertNull(reporter.errorState.value)
         fail = false
         vm.saveDonation()
         assertNull(vm.ui.value.sheets.donation)

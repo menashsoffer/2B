@@ -114,7 +114,7 @@ class MonthCloseViewModel(
         // Pinned, so the screen stays on the month just closed instead of moving on to the next target.
         closing = true
         query.update { it.copy(month = view.month, confirming = false, saving = true, saveError = null) }
-        safeLaunch("closeMonth", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); closing = false; query.update { it.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (ui.value.open && ui.value.view?.month == view.month) closeMonth() }) }) {
+        safeLaunch("closeMonth", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); closing = false; query.update { it.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (ui.value.open && ui.value.view?.month == view.month) closeMonth() }) }, reportError = false) {
             val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.ClosedMonthEntry(view.preview)); true } == true
             closing = false
             query.update { it.copy(saving = false) }

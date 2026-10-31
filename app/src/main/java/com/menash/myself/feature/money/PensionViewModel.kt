@@ -74,7 +74,7 @@ class PensionViewModel(
             is FundResult.Invalid -> editor.value = current.copy(invalid = result.field)
             is FundResult.Ok -> {
                 editor.value = current.copy(draft = current.draft.copy(id = result.fund.id), saving = true, saveError = null)
-                safeLaunch("savePensionFund", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); editor.update { it?.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (editor.value?.draft?.id == result.fund.id) save() }) }) {
+                safeLaunch("savePensionFund", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); editor.update { it?.copy(saving = false, saveError = message) } }, reportError = false) {
                     val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.PensionFundEntry(result.fund)); true } == true
                     editor.value = null
                     events?.send(if (acknowledged) UiEvent.MONEY_SAVED else UiEvent.SavedOffline)

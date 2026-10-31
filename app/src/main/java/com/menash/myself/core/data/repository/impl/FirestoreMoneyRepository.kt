@@ -67,7 +67,6 @@ class FirestoreMoneyRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            reportError("saveMoney:${entry.collection.path}", e)
             throw e
         }
     }
@@ -84,7 +83,6 @@ class FirestoreMoneyRepository(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            reportError("saveMoneyBatch", e)
             throw e
         }
     }

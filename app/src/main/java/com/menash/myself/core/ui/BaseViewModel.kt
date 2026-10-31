@@ -48,6 +48,7 @@ abstract class BaseViewModel : ViewModel {
     protected fun safeLaunch(
         action: String,
         onError: (Exception) -> Unit = {},
+        reportError: Boolean = true,
         block: suspend () -> Unit
     ) {
         viewModelScope.launch {
@@ -56,7 +57,7 @@ abstract class BaseViewModel : ViewModel {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                handleException(action, e)
+                if (reportError) handleException(action, e)
                 onError(e)
             } catch (t: Throwable) {
                 throw t

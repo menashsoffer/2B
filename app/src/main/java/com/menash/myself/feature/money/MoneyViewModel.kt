@@ -149,7 +149,7 @@ class MoneyViewModel(
             is EditResult.Ok -> {
                 val card = result.entries.filterIsInstance<MoneyEntry.CardEntry>().firstOrNull()?.value
                 _editor.value = current.copy(saving = true, saveError = null, askScope = false, retryEntries = result.entries)
-                safeLaunch("saveMoney", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); _editor.update { it?.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (_editor.value?.retryEntries === result.entries) save() }) }) {
+                safeLaunch("saveMoney", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); _editor.update { it?.copy(saving = false, saveError = message) } }, reportError = false) {
                     val acknowledged = withTimeoutOrNull(3_000) { repository.saveAll(result.entries); true } == true
                     current.draft.cardId?.let { lastCardId = it }
                     if (card != null) {

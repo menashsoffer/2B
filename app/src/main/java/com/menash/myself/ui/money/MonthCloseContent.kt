@@ -109,7 +109,6 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
             isLoading = ui.saving,
             modifier = Modifier.fillMaxWidth().testTag("close_button"),
         )
-        SaveFailure(ui.saveError, actions.onClose)
     }
 }
 
