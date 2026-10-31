@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="money_saving">שומר…</string>
+    <string name="money_retry">לנסות שוב</string>
     <string name="money_expanded">פתוח</string>
     <string name="money_collapsed">סגור</string>
     <!-- Money tab -->

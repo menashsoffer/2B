@@ -11,6 +11,11 @@ interface MoneyRepository {
     /** Creates or replaces the document with the entry's id. */
     suspend fun save(entry: MoneyEntry)
 
+    /** Save related entries as one operation when the backing store supports it. */
+    suspend fun saveAll(entries: List<MoneyEntry>) {
+        entries.forEach { save(it) }
+    }
+
     suspend fun delete(collection: MoneyCollection, id: String)
 
     /** Writes [categories] in one batch. Ids are stable, so writing them twice does not duplicate. */

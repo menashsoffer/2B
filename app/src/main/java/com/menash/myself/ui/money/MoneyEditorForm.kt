@@ -209,10 +209,12 @@ fun MoneyEditorForm(
         PrimaryButton(
             text = stringResource(R.string.money_save),
             onClick = actions.onSave,
+            isLoading = editor.saving,
             modifier = Modifier
                 .fillMaxWidth()
                 .testTag("money_save"),
         )
+        SaveFailure(editor.saveError, actions.onSave)
         if (!editor.isNew) {
             TextButton(onClick = actions.onDelete, modifier = Modifier.fillMaxWidth().testTag("money_delete")) {
                 Text(stringResource(R.string.money_delete), style = AppType.body, color = colors.danger)

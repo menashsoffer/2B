@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.external.boi.BoiRate
 import com.menash.myself.core.ui.BaseViewModel
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.domain.Card
@@ -48,6 +50,10 @@ data class EditorState(
     val askScope: Boolean = false,
     val error: DraftField? = null,
     val confirmDelete: Boolean = false,
+    val saving: Boolean = false,
+    val saveError: String? = null,
+    /** Reuse generated IDs if a write fails and its result is uncertain. */
+    val retryEntries: List<MoneyEntry>? = null,
     /** The item sheet a "כרטיס חדש" sheet was opened from; it comes back, draft intact, when the card sheet closes. */
     val returnTo: EditorState? = null,
 )
@@ -60,6 +66,7 @@ class MoneyViewModel(
     private val newId: () -> String = { UUID.randomUUID().toString() },
     transactions: Flow<List<StoredTransaction>> = flowOf(emptyList()),
     memory: Flow<ImportMemory> = flowOf(ImportMemory()),
+    private val events: UiEvents? = null,
 ) : BaseViewModel(errorReporter) {
 
     private var seeded = false
@@ -109,6 +116,7 @@ class MoneyViewModel(
 
     /** "כרטיס חדש" from inside an item sheet: the item's draft waits and gets the new card when it is saved. */
     fun startNewCard() {
+        if (_editor.value?.saving == true) return
         val from = _editor.value?.copy(error = null, askScope = false, confirmDelete = false)
         _editor.value = EditorState(newDraft(EditKind.CARD, month, today(), null), isNew = true, returnTo = from)
     }
@@ -118,11 +126,11 @@ class MoneyViewModel(
     }
 
     fun updateDraft(transform: (ItemDraft) -> ItemDraft) {
-        _editor.update { it?.copy(draft = transform(it.draft), error = null) }
+        _editor.update { if (it == null || it.saving) it else it.copy(draft = transform(it.draft), error = null, retryEntries = null) }
     }
 
     fun dismissEditor() {
-        _editor.value = _editor.value?.returnTo
+        if (_editor.value?.saving != true) _editor.value = _editor.value?.returnTo
     }
 
     fun dismissScope() {
@@ -132,25 +140,31 @@ class MoneyViewModel(
     /** [scope] is passed only after the user answered the one question. */
     fun save(scope: AmountScope? = null) {
         val current = _editor.value ?: return
+        if (current.saving) return
         val data = latest.copy(cards = latest.cards + createdCards.filter { card -> latest.cards.none { it.id == card.id } })
-        when (val result = buildEntries(current.draft, data, month, today(), scope, newId)) {
+        when (val result = current.retryEntries?.let { EditResult.Ok(it) } ?: buildEntries(current.draft, data, month, today(), scope, newId)) {
             EditResult.NeedsScope -> _editor.value = current.copy(askScope = true)
             is EditResult.Invalid -> _editor.value = current.copy(error = result.field, askScope = false)
             is EditResult.Ok -> {
-                current.draft.cardId?.let { lastCardId = it }
                 val card = result.entries.filterIsInstance<MoneyEntry.CardEntry>().firstOrNull()?.value
-                if (card != null) {
-                    lastCardId = card.id
-                    createdCards.removeAll { it.id == card.id }
-                    createdCards += card
+                _editor.value = current.copy(saving = true, saveError = null, askScope = false, retryEntries = result.entries)
+                safeLaunch("saveMoney", onError = { error -> _editor.update { it?.copy(saving = false, saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error)) } }) {
+                    repository.saveAll(result.entries)
+                    current.draft.cardId?.let { lastCardId = it }
+                    if (card != null) {
+                        lastCardId = card.id
+                        createdCards.removeAll { it.id == card.id }
+                        createdCards += card
+                    }
+                    _editor.value = current.returnTo?.let { back -> card?.let { back.copy(draft = back.draft.copy(cardId = it.id)) } ?: back }
+                    events?.send(UiEvent.MONEY_SAVED)
                 }
-                _editor.value = current.returnTo?.let { back -> card?.let { back.copy(draft = back.draft.copy(cardId = it.id)) } ?: back }
-                safeLaunch("saveMoney") { result.entries.forEach { repository.save(it) } }
             }
         }
     }
 
     fun requestDelete() {
+        if (_editor.value?.saving == true) return
         _editor.update { it?.copy(confirmDelete = true) }
     }
 
@@ -159,6 +173,7 @@ class MoneyViewModel(
     }
 
     fun delete(entry: MoneyEntry) {
+        if (_editor.value?.saving == true) return
         _editor.value = null
         safeLaunch("deleteMoney") { repository.delete(entry.collection, entry.id) }
     }
@@ -188,12 +203,14 @@ class MoneyViewModel(
             today: () -> LocalDate,
             errorReporter: ErrorReporter,
             transactions: TransactionRepository,
+            events: UiEvents? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return MoneyViewModel(
                     repository, usdRates, today, errorReporter,
                     transactions = transactions.observeTransactions(), memory = transactions.observeMemory(),
+                    events = events,
                 ) as T
             }
         }
