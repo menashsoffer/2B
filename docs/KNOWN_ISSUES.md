@@ -46,3 +46,5 @@
 - `firestore.rules` עדיין מתיר את האוסף `calculator_sync` של המחשבונים הישנים. ייתכן שיש בו מסמכים בענן; לא נמחק בלי אישור.
 - בדיקות שקוראות קוד מקור (`ShellAndViewModelGuardsTest`, `LayerBoundariesTest`, `NightBlueGuardTest`) תלויות בנתיבי קבצים, ונשברות כשמזיזים קבצים.
 - `testTag("skip_to_calculators_button")` ב-`SignInScreen` נשאר מהשם הישן.
+
+- Money sub-screen headers currently scroll with their content; a pinned header is planned for a later UX batch.
