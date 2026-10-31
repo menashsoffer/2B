@@ -69,6 +69,21 @@ class FirestoreMoneyRepository(
         }
     }
 
+    override suspend fun saveAll(entries: List<MoneyEntry>) {
+        if (entries.isEmpty()) return
+        try {
+            val hid = householdSession.requireHouseholdId()
+            val batch = db().batch()
+            entries.forEach { entry ->
+                batch.set(collection(hid, entry.collection).document(entry.id), MoneyDocuments.encode(entry))
+            }
+            batch.commit().await()
+        } catch (e: Exception) {
+            reportError("saveMoneyBatch", e)
+            throw e
+        }
+    }
+
     override suspend fun delete(collection: MoneyCollection, id: String) {
         try {
             collection(householdSession.requireHouseholdId(), collection).document(id).delete().await()

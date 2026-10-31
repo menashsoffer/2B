@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.ui.BaseViewModel
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.data.MoneyRepository
@@ -28,6 +30,8 @@ private data class CloseQuery(
     val month: YearMonth? = null,
     val noLines: Set<String> = emptySet(),
     val confirming: Boolean = false,
+    val saving: Boolean = false,
+    val saveError: String? = null,
 )
 
 data class MonthCloseUi(
@@ -38,6 +42,8 @@ data class MonthCloseUi(
     val confirmReclose: Boolean = false,
     /** The latest month that can be shown: this month. */
     val currentMonth: YearMonth? = null,
+    val saving: Boolean = false,
+    val saveError: String? = null,
 )
 
 /** "לסגור את החודש": what is still missing, what closing would store, and the close itself. */
@@ -47,9 +53,11 @@ class MonthCloseViewModel(
     usdRates: Flow<BigDecimal?>,
     private val today: () -> LocalDate,
     errorReporter: ErrorReporter,
+    private val events: UiEvents? = null,
 ) : BaseViewModel(errorReporter) {
 
     private val query = MutableStateFlow(CloseQuery())
+    private var closing = false
 
     private val inputs = combine(money.observe(), transactions.observeTransactions(), transactions.observeMemory(), usdRates) {
             data, stored, memory, rate -> CloseInputs(data, stored, memory, rate)
@@ -64,11 +72,13 @@ class MonthCloseViewModel(
             view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines),
             confirmReclose = q.confirming,
             currentMonth = YearMonth.from(day),
+            saving = q.saving,
+            saveError = q.saveError,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MonthCloseUi())
 
     fun open() {
-        query.value = CloseQuery(open = true)
+        query.value = CloseQuery(open = true, saving = closing)
     }
 
     fun close() {
@@ -93,6 +103,7 @@ class MonthCloseViewModel(
 
     /** Saves the preview. A month already closed asks once before it is replaced. */
     fun closeMonth() {
+        if (closing) return
         val view = ui.value.view ?: return
         if (!view.canClose) return
         if (view.existing != null && !query.value.confirming) {
@@ -100,8 +111,14 @@ class MonthCloseViewModel(
             return
         }
         // Pinned, so the screen stays on the month just closed instead of moving on to the next target.
-        query.update { it.copy(month = view.month, confirming = false) }
-        safeLaunch("closeMonth") { money.save(MoneyEntry.ClosedMonthEntry(view.preview)) }
+        closing = true
+        query.update { it.copy(month = view.month, confirming = false, saving = true, saveError = null) }
+        safeLaunch("closeMonth", onError = { error -> closing = false; query.update { it.copy(saving = false, saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error)) } }) {
+            money.save(MoneyEntry.ClosedMonthEntry(view.preview))
+            closing = false
+            query.update { it.copy(saving = false) }
+            events?.send(UiEvent.MONTH_CLOSED)
+        }
     }
 
     fun cancelReclose() {
@@ -122,10 +139,11 @@ class MonthCloseViewModel(
             usdRates: Flow<BigDecimal?>,
             today: () -> LocalDate,
             errorReporter: ErrorReporter,
+            events: UiEvents? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                MonthCloseViewModel(money, transactions, usdRates, today, errorReporter) as T
+                MonthCloseViewModel(money, transactions, usdRates, today, errorReporter, events) as T
         }
     }
 }

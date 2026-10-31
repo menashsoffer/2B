@@ -130,7 +130,8 @@ fun FundForm(
         Field(FundField.FEE_BALANCE, draft.feeOnBalance, R.string.pension_field_fee_balance, R.string.pension_error_fee, { d, t -> d.copy(feeOnBalance = t) })
         Field(FundField.FEE_DEPOSITS, draft.feeOnDeposits, R.string.pension_field_fee_deposits, R.string.pension_error_fee, { d, t -> d.copy(feeOnDeposits = t) })
         OpenedOn(draft.openedOn, today, onChange)
-        PrimaryButton(text = stringResource(R.string.pension_save), onClick = onSave, modifier = Modifier.fillMaxWidth().testTag("pension_save"))
+        PrimaryButton(text = stringResource(R.string.pension_save), onClick = onSave, isLoading = editor.saving, modifier = Modifier.fillMaxWidth().testTag("pension_save"))
+        SaveFailure(editor.saveError, onSave)
         if (!editor.isNew) {
             TextButton(onClick = onDelete, modifier = Modifier.testTag("pension_delete")) {
                 Text(stringResource(R.string.pension_delete), style = AppType.body, color = colors.danger)

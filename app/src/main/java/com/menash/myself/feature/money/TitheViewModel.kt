@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.ui.BaseViewModel
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import com.menash.myself.feature.money.data.MoneyCollection
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.data.MoneyRepository
@@ -22,7 +24,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.util.UUID
 
-data class DonationEditor(val draft: DonationDraft, val isNew: Boolean, val invalid: Boolean = false, val confirmDelete: Boolean = false)
+data class DonationEditor(val draft: DonationDraft, val isNew: Boolean, val invalid: Boolean = false, val confirmDelete: Boolean = false, val saving: Boolean = false, val saveError: String? = null)
 
 /** Which sheet is open on the maaser screen. */
 data class TitheSheets(val donation: DonationEditor? = null, val settings: TitheSettingsDraft? = null)
@@ -44,6 +46,7 @@ class TitheViewModel(
     transactions: TransactionRepository,
     private val today: () -> LocalDate,
     errorReporter: ErrorReporter,
+    private val events: UiEvents? = null,
     private val newId: () -> String = { UUID.randomUUID().toString() },
 ) : BaseViewModel(errorReporter) {
 
@@ -62,6 +65,7 @@ class TitheViewModel(
     }
 
     fun close() {
+        if (sheets.value.donation?.saving == true) return
         open.value = false
         sheets.value = TitheSheets()
     }
@@ -75,25 +79,32 @@ class TitheViewModel(
     }
 
     fun updateDonation(transform: (DonationDraft) -> DonationDraft) {
-        sheets.update { it.copy(donation = it.donation?.let { editor -> editor.copy(draft = transform(editor.draft), invalid = false) }) }
+        sheets.update { it.copy(donation = it.donation?.let { editor -> if (editor.saving) editor else editor.copy(draft = transform(editor.draft), invalid = false) }) }
     }
 
     fun saveDonation() {
         val editor = sheets.value.donation ?: return
+        if (editor.saving) return
         val donation = buildDonation(editor.draft, newId)
         if (donation == null) {
             sheets.update { it.copy(donation = editor.copy(invalid = true)) }
             return
         }
-        sheets.value = TitheSheets()
-        safeLaunch("saveDonation") { money.save(MoneyEntry.DonationEntry(donation)) }
+        sheets.update { it.copy(donation = editor.copy(draft = editor.draft.copy(id = donation.id), saving = true, saveError = null)) }
+        safeLaunch("saveDonation", onError = { error -> sheets.update { it.copy(donation = it.donation?.copy(saving = false, saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error))) } }) {
+            money.save(MoneyEntry.DonationEntry(donation))
+            sheets.value = TitheSheets()
+            events?.send(UiEvent.DONATION_SAVED)
+        }
     }
 
     fun requestDeleteDonation(confirm: Boolean) {
+        if (sheets.value.donation?.saving == true) return
         sheets.update { it.copy(donation = it.donation?.copy(confirmDelete = confirm)) }
     }
 
     fun deleteDonation() {
+        if (sheets.value.donation?.saving == true) return
         val id = sheets.value.donation?.draft?.id ?: return
         sheets.value = TitheSheets()
         safeLaunch("deleteDonation") { money.delete(MoneyCollection.DONATIONS, id) }
@@ -114,7 +125,7 @@ class TitheViewModel(
     }
 
     fun dismissSheets() {
-        sheets.value = TitheSheets()
+        if (sheets.value.donation?.saving != true) sheets.value = TitheSheets()
     }
 
     companion object {
@@ -123,10 +134,11 @@ class TitheViewModel(
             transactions: TransactionRepository,
             today: () -> LocalDate,
             errorReporter: ErrorReporter,
+            events: UiEvents? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                TitheViewModel(money, transactions, today, errorReporter) as T
+                TitheViewModel(money, transactions, today, errorReporter, events = events) as T
         }
     }
 }

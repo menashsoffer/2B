@@ -91,7 +91,8 @@ fun DonationForm(
             if (draft.date != today) Chip(text = stringResource(R.string.tithe_today), onClick = { onChange { it.copy(date = today) } })
         }
         SwitchRow(stringResource(R.string.tithe_field_submitted), draft.submitted) { checked -> onChange { it.copy(submitted = checked) } }
-        PrimaryButton(text = stringResource(R.string.tithe_save), onClick = onSave, modifier = Modifier.fillMaxWidth().testTag("tithe_save"))
+        PrimaryButton(text = stringResource(R.string.tithe_save), onClick = onSave, isLoading = editor.saving, modifier = Modifier.fillMaxWidth().testTag("tithe_save"))
+        SaveFailure(editor.saveError, onSave)
         if (!editor.isNew) {
             TextButton(onClick = onDelete, modifier = Modifier.testTag("tithe_delete")) {
                 Text(stringResource(R.string.tithe_delete), style = AppType.body, color = colors.danger)
