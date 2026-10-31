@@ -42,7 +42,7 @@
 - `FirestoreMoneyRepository` ו-`FirestoreTransactionRepository` יושבים ב-`core/data/repository/impl` אבל שייכים לעמוד הכסף (`feature/money/data`).
 - כ-200 מחרוזות בעמודים הישנים נקראות `ui_str_NNN` בלי שם עם משמעות.
 - אין `schemaVersion` במסמכי Firestore, למרות ש-`RULES.md` מבקש מיגרציות מפורשות.
-- Room משמש רק לשורת הגדרות אחת (`app_settings`: `usdToIlsRate` שאף מסך לא קורא, ותאריך גיבוי) ולגיבוי JSON. הסרה דורשת החלטה על הגיבוי.
+- Room משמש רק לשורת הגדרות אחת (`app_settings`: `usdToIlsRate` שאף מסך לא קורא, ותאריך גיבוי היסטורי). אפשרות הגיבוי המקומית הוסרה כי לא כללה נתוני כסף.
 - `firestore.rules` עדיין מתיר את האוסף `calculator_sync` של המחשבונים הישנים. ייתכן שיש בו מסמכים בענן; לא נמחק בלי אישור.
 - בדיקות שקוראות קוד מקור (`ShellAndViewModelGuardsTest`, `LayerBoundariesTest`, `NightBlueGuardTest`) תלויות בנתיבי קבצים, ונשברות כשמזיזים קבצים.
 - `testTag("skip_to_calculators_button")` ב-`SignInScreen` נשאר מהשם הישן.
