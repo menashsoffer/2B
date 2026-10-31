@@ -13,7 +13,6 @@
     <string name="money_card_charges">חיובי אשראי צפויים</string>
     <string name="money_card_charge_date">יורד ב־%1$s</string>
     <string name="money_actual">בפועל %1$s</string>
-    <string name="money_no_amount">בלי סכום</string>
     <string name="money_bar_description">חלוקת החודש</string>
 
     <string name="money_row_income">הכנסות</string>
@@ -88,7 +87,6 @@
     <string name="money_new_card">כרטיס חדש</string>
     <string name="money_category">סעיף: %1$s</string>
     <string name="money_no_category">בלי סעיף</string>
-    <string name="money_pick_category">בחירת סעיף</string>
     <string name="money_class_fixed">חודשיות קבועות</string>
     <string name="money_class_current">שוטפות</string>
     <string name="money_class_periodic">תקופתיות</string>

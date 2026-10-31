@@ -22,15 +22,6 @@ class FirestoreDreamRepository(
     private val householdSession: HouseholdSession
 ) : DreamRepository {
 
-    private fun resolveLocation(action: String, isPrivate: Boolean): ItemLocation {
-        return try {
-            ItemLocation.resolve(isPrivate, householdSession) { lifeHub.currentUid() }
-        } catch (e: Exception) {
-            lifeHub.reportError(action, e)
-            throw e
-        }
-    }
-
     override fun observeDreams(listFilter: String?, filter: VisibilityFilter): Flow<List<Dream>> {
         return householdSession.currentHouseholdId.flatMapLatest { hid ->
             if (hid.isNullOrBlank()) {
@@ -53,19 +44,19 @@ class FirestoreDreamRepository(
     }
 
     override suspend fun createDream(dream: Dream) {
-        val location = resolveLocation("createDream", dream.isPrivate)
+        val location = lifeHub.locationFor("createDream", dream.isPrivate, householdSession)
         val hid = (location as? ItemLocation.Household)?.id ?: ""
         val dataItem = DreamMappers.dreamToData(dream, hid)
         lifeHub.createDream(dataItem, location)
     }
 
     override suspend fun updateDreamStatus(dreamId: String, status: String, isPrivate: Boolean) {
-        val location = resolveLocation("updateDreamStatus", isPrivate)
+        val location = lifeHub.locationFor("updateDreamStatus", isPrivate, householdSession)
         lifeHub.updateDreamStatus(dreamId, status, location)
     }
 
     override suspend fun updateDreamSavings(dreamId: String, savedAmount: Money, isPrivate: Boolean) {
-        val location = resolveLocation("updateDreamSavings", isPrivate)
+        val location = lifeHub.locationFor("updateDreamSavings", isPrivate, householdSession)
         lifeHub.updateDreamSavings(dreamId, savedAmount.shekels, location)
     }
 
@@ -75,12 +66,12 @@ class FirestoreDreamRepository(
         nextAction: String,
         isPrivate: Boolean
     ) {
-        val location = resolveLocation("updateDreamAppIdea", isPrivate)
+        val location = lifeHub.locationFor("updateDreamAppIdea", isPrivate, householdSession)
         lifeHub.updateDreamAppIdea(dreamId, questions, nextAction, location)
     }
 
     override suspend fun deleteDream(dreamId: String, isPrivate: Boolean) {
-        val location = resolveLocation("deleteDream", isPrivate)
+        val location = lifeHub.locationFor("deleteDream", isPrivate, householdSession)
         lifeHub.deleteDream(dreamId, location)
     }
 }

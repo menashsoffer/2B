@@ -2,7 +2,6 @@ package com.menash.myself.core.data.repository.impl
 
 import com.menash.myself.core.data.mapper.ModelMappers
 import com.menash.myself.core.data.mapper.TaskMappers
-import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.TaskRepository
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
@@ -22,15 +21,6 @@ class FirestoreTaskRepository(
     private val lifeHub: LifeHubRepository,
     private val householdSession: HouseholdSession
 ) : TaskRepository {
-
-    private fun resolveLocation(action: String, isPrivate: Boolean): ItemLocation {
-        return try {
-            ItemLocation.resolve(isPrivate, householdSession) { lifeHub.currentUid() }
-        } catch (e: Exception) {
-            lifeHub.reportError(action, e)
-            throw e
-        }
-    }
 
     override fun observeTasks(filter: VisibilityFilter): Flow<List<Task>> {
         return householdSession.currentHouseholdId.flatMapLatest { hid ->
@@ -63,7 +53,7 @@ class FirestoreTaskRepository(
         isPrivate: Boolean,
         tag: String
     ) {
-        val location = resolveLocation("createTask", isPrivate)
+        val location = lifeHub.locationFor("createTask", isPrivate, householdSession)
         val legacySpace = ModelMappers.forWhomToLegacySpace(forWhom, isPrivate)
         lifeHub.createTask(
             title = title,
@@ -77,22 +67,22 @@ class FirestoreTaskRepository(
     }
 
     override suspend fun toggleTaskDone(taskId: String, currentDone: Boolean, isPrivate: Boolean) {
-        val location = resolveLocation("toggleTaskDone", isPrivate)
+        val location = lifeHub.locationFor("toggleTaskDone", isPrivate, householdSession)
         lifeHub.toggleTaskDone(taskId, currentDone, location)
     }
 
     override suspend fun setTaskTop3(taskId: String, isTop3: Boolean, isPrivate: Boolean) {
-        val location = resolveLocation("setTaskTop3", isPrivate)
+        val location = lifeHub.locationFor("setTaskTop3", isPrivate, householdSession)
         lifeHub.setTaskTop3(taskId, isTop3, location)
     }
 
     override suspend fun setTaskFiveBefore11(taskId: String, isFive: Boolean, isPrivate: Boolean) {
-        val location = resolveLocation("setTaskFiveBefore11", isPrivate)
+        val location = lifeHub.locationFor("setTaskFiveBefore11", isPrivate, householdSession)
         lifeHub.setTaskFiveBefore11(taskId, isFive, location)
     }
 
     override suspend fun updateTaskDate(taskId: String, date: LocalDate?, isPrivate: Boolean) {
-        val location = resolveLocation("updateTaskDate", isPrivate)
+        val location = lifeHub.locationFor("updateTaskDate", isPrivate, householdSession)
         lifeHub.updateTaskDate(
             taskId = taskId,
             date = ModelMappers.formatLocalDate(date),
@@ -101,7 +91,7 @@ class FirestoreTaskRepository(
     }
 
     override suspend fun deleteTask(taskId: String, isPrivate: Boolean) {
-        val location = resolveLocation("deleteTask", isPrivate)
+        val location = lifeHub.locationFor("deleteTask", isPrivate, householdSession)
         lifeHub.deleteTask(taskId = taskId, location = location)
     }
 }
