@@ -1,6 +1,7 @@
 package com.menash.myself.core.data.repository.impl
 
 import com.google.firebase.firestore.CollectionReference
+import com.menash.myself.core.crash.CrashlyticsNonFatal
 import com.google.firebase.firestore.FirebaseFirestore
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.feature.money.data.MoneyCollection
@@ -60,13 +61,14 @@ class FirestoreMoneyRepository(
 
     override suspend fun save(entry: MoneyEntry) {
         try {
-            collection(householdSession.requireHouseholdId(), entry.collection)
+            val task = collection(householdSession.requireHouseholdId(), entry.collection)
                 .document(entry.id)
                 .set(MoneyDocuments.encode(entry))
-                .await()
+            awaitFirestoreWrite(task) { reportError("saveMoney:${entry.collection.path}", it) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            CrashlyticsNonFatal.record(e)
             throw e
         }
     }
@@ -79,10 +81,11 @@ class FirestoreMoneyRepository(
             entries.forEach { entry ->
                 batch.set(collection(hid, entry.collection).document(entry.id), MoneyDocuments.encode(entry))
             }
-            batch.commit().await()
+            awaitFirestoreWrite(batch.commit()) { reportError("saveMoneyBatch", it) }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
+            CrashlyticsNonFatal.record(e)
             throw e
         }
     }
