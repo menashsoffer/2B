@@ -177,7 +177,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         CompositionLocalProvider(LocalMoneyBackActive provides (displayed == destination)) {
     if (displayed == MoneyDestination.Import) {
         ImportContent(
-            ui = importUi,
+            ui = rememberShownState(importUi, importUi != ImportUi.Idle),
             actions = ImportActions(
                 onPick = importViewModel::openPicker,
                 onConfirm = importViewModel::confirm,
@@ -189,29 +189,29 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     }
     // The transactions screen comes first: the maaser screen opens it to link a month's income.
     if (displayed == MoneyDestination.Transactions) {
-        TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
+        TransactionsScreen(rememberShownState(transactionsUi, transactionsUi.open), transactionsViewModel, modifier)
         return@CompositionLocalProvider
     }
     if (displayed == MoneyDestination.Goals) {
-        GoalsScreen(goalsUi, goalsViewModel, modifier)
+        GoalsScreen(rememberShownState(goalsUi, goalsUi.open), goalsViewModel, modifier)
         return@CompositionLocalProvider
     }
     if (displayed == MoneyDestination.Tithe) {
-        TitheScreen(titheUi, titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
+        TitheScreen(rememberShownState(titheUi, titheUi.open), titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
         return@CompositionLocalProvider
     }
     if (displayed == MoneyDestination.Car) {
-        CarScreen(carUi, carViewModel, modifier)
+        CarScreen(rememberShownState(carUi, carUi.open), carViewModel, modifier)
         return@CompositionLocalProvider
     }
     if (displayed == MoneyDestination.Pension) {
-        PensionScreen(pensionUi, pensionViewModel, LocalDate.now(Israel), modifier)
+        PensionScreen(rememberShownState(pensionUi, pensionUi.open), pensionViewModel, LocalDate.now(Israel), modifier)
         return@CompositionLocalProvider
     }
     // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
     if (displayed == MoneyDestination.Close) {
         MonthCloseScreen(
-            ui = closeUi,
+            ui = rememberShownState(closeUi, closeUi.open),
             viewModel = closeViewModel,
             actions = MonthCloseActions(
                 onImport = { picker.launch(importMimeTypes) },
@@ -224,7 +224,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     }
     if (displayed == MoneyDestination.Subscriptions) {
         SubscriptionsContent(
-            ui = subsUi,
+            ui = rememberShownState(subsUi, subsUi.open),
             actions = SubscriptionsActions(
                 onEdit = { viewModel.startEditing(MoneyEntry.SubscriptionEntry(it)) },
                 onAdd = { viewModel.startAdding(EditKind.SUBSCRIPTION) },
