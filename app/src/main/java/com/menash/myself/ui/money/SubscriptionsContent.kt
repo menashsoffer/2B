@@ -35,6 +35,7 @@ data class SubscriptionsActions(
     val onEdit: (Subscription) -> Unit = {},
     val onAdd: () -> Unit = {},
     val onAddFrom: (UnlistedCharge) -> Unit = {},
+    val onBack: () -> Unit = {},
 )
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy")
@@ -55,7 +56,7 @@ fun SubscriptionsContent(ui: SubscriptionsUi, actions: SubscriptionsActions, mod
     ) {
         val view = ui.view ?: return@Column
         val colors = MaterialTheme.appColors
-        ScreenHeader(title = stringResource(R.string.subs_title), subtitle = stringResource(R.string.subs_subtitle))
+        MoneySubScreen(title = stringResource(R.string.subs_title), subtitle = stringResource(R.string.subs_subtitle), onBack = actions.onBack)
         MoneySurface(testTag = "subs_total") {
             AmountRow(
                 title = stringResource(R.string.subs_total),

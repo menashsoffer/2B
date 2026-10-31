@@ -62,7 +62,7 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
             .testTag("import_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.import_title))
+        MoneySubScreen(title = stringResource(R.string.import_title), onBack = actions.onClose)
         when (ui) {
             ImportUi.Idle -> Unit
             ImportUi.Reading -> LoadingState(message = stringResource(R.string.import_reading))

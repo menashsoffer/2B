@@ -56,7 +56,7 @@ fun GoalsContent(ui: GoalsUi, actions: GoalsActions, modifier: Modifier = Modifi
             .testTag("goals_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.goals_title), subtitle = stringResource(R.string.goals_subtitle))
+        MoneySubScreen(title = stringResource(R.string.goals_title), subtitle = stringResource(R.string.goals_subtitle), onBack = actions.onClose)
         val saving = view.monthlySaving
         val basis = when {
             view.basis == RateBasis.CLOSED_MONTHS && saving != null -> stringResource(R.string.goals_basis_closed, formatMoney(saving))
@@ -82,9 +82,6 @@ fun GoalsContent(ui: GoalsUi, actions: GoalsActions, modifier: Modifier = Modifi
                 .fillMaxWidth()
                 .testTag("goals_add"),
         )
-        TextButton(onClick = actions.onClose, modifier = Modifier.testTag("goals_back")) {
-            Text(stringResource(R.string.goals_back), style = AppType.body)
-        }
     }
 }
 

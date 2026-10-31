@@ -1,6 +1,5 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -22,12 +21,16 @@ import com.menash.myself.feature.money.GoalsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalsScreen(ui: GoalsUi, viewModel: GoalsViewModel, modifier: Modifier = Modifier) {
-    BackHandler { viewModel.close() }
     GoalsContent(
         ui = ui,
         actions = GoalsActions(onAdd = viewModel::startAdding, onGoal = viewModel::startEditing, onClose = viewModel::close),
         modifier = modifier,
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun GoalsOverlays(ui: GoalsUi, viewModel: GoalsViewModel) {
     val editor = ui.editor ?: return
     val month = ui.month ?: return
     ModalBottomSheet(

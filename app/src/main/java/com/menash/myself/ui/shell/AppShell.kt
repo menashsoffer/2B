@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,24 +71,6 @@ fun AppShell(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val snackbarHost = remember { SnackbarHostState() }
-    LaunchedEffect(appContainer, snackbarHost) {
-        var previous: kotlinx.coroutines.Job? = null
-        appContainer.uiEvents.events.collect { event ->
-            val text = when (event) {
-                UiEvent.MONEY_SAVED -> context.getString(R.string.feedback_saved)
-                UiEvent.DONATION_SAVED -> context.getString(R.string.feedback_donation_saved)
-                UiEvent.DELETED -> context.getString(R.string.feedback_deleted)
-                is UiEvent.ImportDone -> context.getString(R.string.feedback_import_done, event.written)
-                is UiEvent.CategoryAssigned -> context.getString(R.string.feedback_category_assigned, event.name)
-                is UiEvent.MonthClosed -> context.getString(R.string.feedback_month_closed, hebrewMonthYear(event.month))
-            }
-            if (event == UiEvent.DELETED || event is UiEvent.MonthClosed) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-            previous?.cancel()
-            snackbarHost.currentSnackbarData?.dismiss()
-            previous = scope.launch { snackbarHost.showSnackbar(text, duration = SnackbarDuration.Short) }
-        }
-    }
-
     fun openRoute(route: String) {
         val destination = navController.currentDestination
         val alreadyOpen = destination?.hierarchy?.any { it.route == route } == true
@@ -102,6 +85,39 @@ fun AppShell(
             }
         } else {
             navController.navigate(route)
+        }
+    }
+
+    LaunchedEffect(appContainer, snackbarHost) {
+        var previous: kotlinx.coroutines.Job? = null
+        appContainer.uiEvents.events.collect { event ->
+            val text = when (event) {
+                UiEvent.MONEY_SAVED -> context.getString(R.string.feedback_saved)
+                UiEvent.DONATION_SAVED -> context.getString(R.string.feedback_donation_saved)
+                UiEvent.DELETED -> context.getString(R.string.feedback_deleted)
+                is UiEvent.ImportDone -> context.getString(R.string.feedback_import_done, event.written)
+                is UiEvent.CategoryAssigned -> context.getString(R.string.feedback_category_assigned, event.name)
+                is UiEvent.SaveError -> event.message
+                is UiEvent.MonthClosed -> context.getString(R.string.feedback_month_closed, hebrewMonthYear(event.month))
+            }
+            if (event == UiEvent.DELETED || event is UiEvent.MonthClosed) haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            previous?.cancel()
+            snackbarHost.currentSnackbarData?.dismiss()
+            previous = scope.launch {
+                val month = (event as? UiEvent.ImportDone)?.unassignedMonth
+                val action = when {
+                    month != null -> context.getString(R.string.feedback_assign)
+                    event is UiEvent.SaveError -> context.getString(R.string.money_retry)
+                    else -> null
+                }
+                val result = snackbarHost.showSnackbar(text, actionLabel = action, duration = SnackbarDuration.Short)
+                if (result == SnackbarResult.ActionPerformed && month != null) {
+                    openRoute(ShellRoute.Money)
+                    appContainer.uiEvents.openUnassigned(month)
+                } else if (result == SnackbarResult.ActionPerformed && event is UiEvent.SaveError) {
+                    event.retry()
+                }
+            }
         }
     }
 

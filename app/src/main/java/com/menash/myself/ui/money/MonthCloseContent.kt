@@ -47,6 +47,7 @@ data class MonthCloseActions(
     val onLines: (YearMonth, LineFilter) -> Unit = { _, _ -> },
     val onAsset: (Asset) -> Unit = {},
     val onClose: () -> Unit = {},
+    val onBack: () -> Unit = {},
 )
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy")
@@ -68,9 +69,10 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
         val view = ui.view ?: return@Column
-        ScreenHeader(
+        MoneySubScreen(
             title = stringResource(R.string.close_title, monthTitle(view.month)),
             subtitle = stringResource(R.string.close_subtitle),
+            onBack = actions.onBack,
         )
         MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it } == true, actions)
         view.existing?.let {

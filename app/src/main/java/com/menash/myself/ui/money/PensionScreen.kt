@@ -1,6 +1,5 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -45,12 +44,16 @@ import java.time.YearMonth
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PensionScreen(ui: PensionUi, viewModel: PensionViewModel, today: LocalDate, modifier: Modifier = Modifier) {
-    BackHandler { viewModel.close() }
     PensionContent(
         ui = ui,
         actions = PensionActions(onAdd = viewModel::startAdding, onFund = viewModel::edit, onClose = viewModel::close),
         modifier = modifier,
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+fun PensionOverlays(ui: PensionUi, viewModel: PensionViewModel, today: LocalDate) {
     val editor = ui.editor ?: return
     ModalBottomSheet(
         onDismissRequest = viewModel::dismiss,

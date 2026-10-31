@@ -1,7 +1,10 @@
 package com.menash.myself.ui.money
 
 import android.net.Uri
-import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.CompositionLocalProvider
+import com.menash.myself.core.designsystem.theme.Motion
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -35,6 +38,7 @@ import com.menash.myself.feature.money.PensionViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
+import com.menash.myself.feature.money.importer.LineFilter
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.ZoneId
@@ -111,55 +115,19 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         }
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { importUris(it) }
+    val pendingUnassigned by appContainer.uiEvents.unassigned.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingUnassigned) {
+        pendingUnassigned?.let { month ->
+            importViewModel.close()
+            transactionsViewModel.open(month, LineFilter.UNASSIGNED)
+            appContainer.uiEvents.clearUnassigned()
+        }
+    }
     val shared by appContainer.importInbox.pending.collectAsStateWithLifecycle()
     LaunchedEffect(shared) {
         if (shared.isNotEmpty()) importUris(appContainer.importInbox.take().map(Uri::parse))
     }
 
-    if (importUi != ImportUi.Idle) {
-        BackHandler { importViewModel.close() }
-        ImportContent(
-            ui = importUi,
-            actions = ImportActions(
-                onPick = importViewModel::openPicker,
-                onConfirm = importViewModel::confirm,
-                onClose = importViewModel::close,
-            ),
-            modifier = modifier,
-        )
-        (importUi as? ImportUi.Review)?.let { review ->
-            review.review.merchants.firstOrNull { it.key == review.picking }?.let { merchant ->
-                ImportCategorySheet(
-                    merchant = merchant,
-                    categories = review.categories,
-                    onDecide = { importViewModel.decide(merchant.key, it) },
-                    onDismiss = importViewModel::closePicker,
-                )
-            }
-        }
-        return
-    }
-    // The transactions screen comes first: the maaser screen opens it to link a month's income.
-    if (transactionsUi.open) {
-        TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
-        return
-    }
-    if (goalsUi.open) {
-        GoalsScreen(goalsUi, goalsViewModel, modifier)
-        return
-    }
-    if (titheUi.open) {
-        TitheScreen(titheUi, titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
-        return
-    }
-    if (carUi.open) {
-        CarScreen(carUi, carViewModel, modifier)
-        return
-    }
-    if (pensionUi.open) {
-        PensionScreen(pensionUi, pensionViewModel, LocalDate.now(Israel), modifier)
-        return
-    }
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     @Composable
     fun EditorSheet() {
@@ -185,8 +153,63 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onDismiss = viewModel::dismissEditor,
         )
     }
+    var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
+    var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
+    var picking by remember { mutableStateOf(false) }
+
+    val destination = moneyDestination(MoneyOpenFlags(
+        importing = importUi != ImportUi.Idle,
+        transactions = transactionsUi.open,
+        goals = goalsUi.open,
+        tithe = titheUi.open,
+        car = carUi.open,
+        pension = pensionUi.open,
+        close = closeUi.open,
+        subscriptions = subsUi.open,
+    ))
+    val duration = Motion.duration(Motion.medium)
+    val enter = Motion.slideIn(duration)
+    val exit = Motion.slideOut(duration)
+    AnimatedContent(targetState = destination, transitionSpec = {
+        if (targetState.depth > initialState.depth) enter togetherWith Motion.fadeOut(duration)
+        else Motion.fadeIn(duration) togetherWith exit
+    }, label = "money_destination") { displayed ->
+        CompositionLocalProvider(LocalMoneyBackActive provides (displayed == destination)) {
+    if (displayed == MoneyDestination.Import) {
+        ImportContent(
+            ui = importUi,
+            actions = ImportActions(
+                onPick = importViewModel::openPicker,
+                onConfirm = importViewModel::confirm,
+                onClose = importViewModel::close,
+            ),
+            modifier = modifier,
+        )
+        return@CompositionLocalProvider
+    }
+    // The transactions screen comes first: the maaser screen opens it to link a month's income.
+    if (displayed == MoneyDestination.Transactions) {
+        TransactionsScreen(transactionsUi, transactionsViewModel, modifier)
+        return@CompositionLocalProvider
+    }
+    if (displayed == MoneyDestination.Goals) {
+        GoalsScreen(goalsUi, goalsViewModel, modifier)
+        return@CompositionLocalProvider
+    }
+    if (displayed == MoneyDestination.Tithe) {
+        TitheScreen(titheUi, titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
+        return@CompositionLocalProvider
+    }
+    if (displayed == MoneyDestination.Car) {
+        CarScreen(carUi, carViewModel, modifier)
+        return@CompositionLocalProvider
+    }
+    if (displayed == MoneyDestination.Pension) {
+        PensionScreen(pensionUi, pensionViewModel, LocalDate.now(Israel), modifier)
+        return@CompositionLocalProvider
+    }
     // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
-    if (closeUi.open) {
+    if (displayed == MoneyDestination.Close) {
         MonthCloseScreen(
             ui = closeUi,
             viewModel = closeViewModel,
@@ -197,27 +220,21 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             ),
             modifier = modifier,
         )
-        EditorSheet()
-        return
+        return@CompositionLocalProvider
     }
-    if (subsUi.open) {
-        BackHandler { subsViewModel.close() }
+    if (displayed == MoneyDestination.Subscriptions) {
         SubscriptionsContent(
             ui = subsUi,
             actions = SubscriptionsActions(
                 onEdit = { viewModel.startEditing(MoneyEntry.SubscriptionEntry(it)) },
                 onAdd = { viewModel.startAdding(EditKind.SUBSCRIPTION) },
                 onAddFrom = viewModel::startSubscriptionFrom,
+                onBack = subsViewModel::close,
             ),
             modifier = modifier,
         )
-        EditorSheet()
-        return
+        return@CompositionLocalProvider
     }
-    var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
-    var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
-    var picking by remember { mutableStateOf(false) }
-
     MoneyContent(
         state = state,
         selectedTab = selectedTab,
@@ -241,7 +258,30 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         modifier = modifier,
     )
 
-    if (picking) {
+        }
+    }
+    when (destination) {
+        MoneyDestination.Transactions -> TransactionsOverlays(transactionsUi, transactionsViewModel)
+        MoneyDestination.Goals -> GoalsOverlays(goalsUi, goalsViewModel)
+        MoneyDestination.Tithe -> TitheOverlays(titheUi, titheViewModel)
+        MoneyDestination.Car -> CarOverlays(carUi, carViewModel)
+        MoneyDestination.Pension -> PensionOverlays(pensionUi, pensionViewModel, LocalDate.now(Israel))
+        MoneyDestination.Close -> MonthCloseOverlays(closeUi, closeViewModel)
+        else -> Unit
+    }
+    if (destination == MoneyDestination.Import) {
+        (importUi as? ImportUi.Review)?.let { review ->
+            review.review.merchants.firstOrNull { it.key == review.picking }?.let { merchant ->
+                ImportCategorySheet(
+                    merchant = merchant,
+                    categories = review.categories,
+                    onDecide = { importViewModel.decide(merchant.key, it) },
+                    onDismiss = importViewModel::closePicker,
+                )
+            }
+        }
+    }
+    if (picking && destination == MoneyDestination.Root) {
         KindPickerSheet(
             onPick = { kind ->
                 picking = false
@@ -255,5 +295,5 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     }
 
-    EditorSheet()
+    if (destination in setOf(MoneyDestination.Root, MoneyDestination.Close, MoneyDestination.Subscriptions)) EditorSheet()
 }

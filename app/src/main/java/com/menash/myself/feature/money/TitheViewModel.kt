@@ -91,7 +91,7 @@ class TitheViewModel(
             return
         }
         sheets.update { it.copy(donation = editor.copy(draft = editor.draft.copy(id = donation.id), saving = true, saveError = null)) }
-        safeLaunch("saveDonation", onError = { error -> sheets.update { it.copy(donation = it.donation?.copy(saving = false, saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error))) } }) {
+        safeLaunch("saveDonation", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); sheets.update { it.copy(donation = it.donation?.copy(saving = false, saveError = message)) }; events?.send(UiEvent.SaveError(message) { if (sheets.value.donation?.draft?.id == donation.id) saveDonation() }) }) {
             money.save(MoneyEntry.DonationEntry(donation))
             sheets.value = TitheSheets()
             events?.send(UiEvent.DONATION_SAVED)
