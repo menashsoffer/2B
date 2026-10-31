@@ -54,7 +54,7 @@ class ModelMappersTest {
             createdAt = Timestamp(now)
         )
 
-        val domain = ModelMappers.taskToDomain(data)
+        val domain = TaskMappers.taskToDomain(data)
         assertEquals("task_42", domain.id)
         assertEquals("לקנות חלב", domain.title)
         assertEquals(LocalDate.of(2026, 10, 30), domain.dueDate)
@@ -62,7 +62,7 @@ class ModelMappersTest {
         assertFalse(domain.isPrivate)
         assertEquals("user_1", domain.ownerUid)
 
-        val roundTripData = ModelMappers.taskToData(domain, "house_1")
+        val roundTripData = TaskMappers.taskToData(domain, "house_1")
         assertEquals(data.id, roundTripData.id)
         assertEquals(data.title, roundTripData.title)
         assertEquals("2026-10-30", roundTripData.dueDate)
@@ -88,14 +88,14 @@ class ModelMappersTest {
             householdId = "house_1"
         )
 
-        val domain = ModelMappers.dreamToDomain(data)
+        val domain = DreamMappers.dreamToDomain(data)
         assertEquals(35000.0, domain.estimatedCost.shekels, 0.001)
         assertEquals(3500000L, domain.estimatedCost.agorot)
         assertEquals(12500.0, domain.savedAmount.shekels, 0.001)
         assertEquals(LocalDate.of(2027, 4, 15), domain.targetDate)
         assertEquals(ForWhom.BOTH, domain.forWhom)
 
-        val roundTripData = ModelMappers.dreamToData(domain, "house_1")
+        val roundTripData = DreamMappers.dreamToData(domain, "house_1")
         assertEquals(data.id, roundTripData.id)
         assertEquals(data.estimatedCost, roundTripData.estimatedCost, 0.001)
         assertEquals("shared", roundTripData.space)
@@ -113,12 +113,12 @@ class ModelMappersTest {
             userId = "user_1"
         )
 
-        val domain = ModelMappers.fitnessToDomain(data)
+        val domain = FitnessMappers.fitnessToDomain(data)
         assertEquals(LocalDate.of(2026, 10, 25), domain.date)
         assertTrue(domain.moved)
         assertEquals(45, domain.minutes)
 
-        val roundTripData = ModelMappers.fitnessToData(domain)
+        val roundTripData = FitnessMappers.fitnessToData(domain)
         assertEquals("2026-10-25", roundTripData.date)
         assertEquals(45, roundTripData.minutes)
     }
@@ -134,12 +134,12 @@ class ModelMappersTest {
             partnerUid = "bob"
         )
 
-        val domain = ModelMappers.householdToDomain(data)
+        val domain = HouseholdMappers.householdToDomain(data)
         assertEquals("h1", domain.id)
         assertEquals("בית משפחת כהן", domain.name)
         assertTrue(domain.isShared)
 
-        val roundTripData = ModelMappers.householdToData(domain)
+        val roundTripData = HouseholdMappers.householdToData(domain)
         assertEquals(data.id, roundTripData.id)
         assertEquals(data.name, roundTripData.name)
         assertEquals(data.partnerEmail, roundTripData.partnerEmail)

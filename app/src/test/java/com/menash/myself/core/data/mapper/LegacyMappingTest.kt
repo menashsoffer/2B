@@ -68,12 +68,12 @@ class LegacyMappingTest {
         )
 
         // Map to domain
-        val domainTask = ModelMappers.taskToDomain(taskItem)
+        val domainTask = TaskMappers.taskToDomain(taskItem)
         assertNull(domainTask.dueDate) // cannot be parsed as LocalDate
         assertEquals(rawInput, domainTask.rawDueDate) // raw string is preserved!
 
         // Map back to data (simulate save)
-        val savedItem = ModelMappers.taskToData(domainTask, "h1")
+        val savedItem = TaskMappers.taskToData(domainTask, "h1")
         assertEquals(rawInput, savedItem.dueDate) // NEVER overwritten with empty!
     }
 }

@@ -87,13 +87,3 @@ data class FitnessLog(
 )
 
 typealias CalendarEvent = com.menash.myself.core.domain.model.CalendarEvent
-
-data class CalculatorSync(
-    @DocumentId val id: String = "",
-    val calculatorType: String = "", // car, ai, pension
-    val recordsCount: Int = 0,
-    val dataJson: String = "",
-    val userId: String = "",
-    val space: String = SpaceType.SHARED.id,
-    @ServerTimestamp val createdAt: Timestamp? = null
-)
