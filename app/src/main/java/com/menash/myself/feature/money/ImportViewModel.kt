@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.ui.BaseViewModel
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Category
@@ -53,6 +55,7 @@ class ImportViewModel(
     money: MoneyRepository,
     errorReporter: ErrorReporter,
     private val io: CoroutineDispatcher = Dispatchers.Default,
+    private val events: UiEvents? = null,
 ) : BaseViewModel(errorReporter) {
 
     private val stored: StateFlow<List<StoredTransaction>> =
@@ -100,6 +103,7 @@ class ImportViewModel(
             transactions.apply(plan)
             updates.forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
             _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size)
+            events?.send(UiEvent.ImportDone(plan.toWrite.size))
         }
     }
 
@@ -112,10 +116,11 @@ class ImportViewModel(
             transactions: TransactionRepository,
             money: MoneyRepository,
             errorReporter: ErrorReporter,
+            events: UiEvents? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                ImportViewModel(transactions, money, errorReporter) as T
+                ImportViewModel(transactions, money, errorReporter, events = events) as T
         }
     }
 }

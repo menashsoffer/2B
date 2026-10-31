@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.ui.BaseViewModel
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Category
@@ -48,6 +50,7 @@ class TransactionsViewModel(
     private val transactions: TransactionRepository,
     money: MoneyRepository,
     errorReporter: ErrorReporter,
+    private val events: UiEvents? = null,
 ) : BaseViewModel(errorReporter) {
 
     private val query = MutableStateFlow(TransactionsQuery())
@@ -99,6 +102,7 @@ class TransactionsViewModel(
             is MerchantDecision.Categorise -> safeLaunch("setCategory") {
                 transactions.setCategory(line.id, decision.categoryId)
                 if (teachesMemory(line)) transactions.remember(key, decision.categoryId, false)
+                ui.value.categories.firstOrNull { it.id == decision.categoryId }?.let { events?.send(UiEvent.CategoryAssigned(it.name)) }
             }
             MerchantDecision.OwnTransfer -> safeLaunch("markOwnTransfer") { transactions.remember(key, null, true) }
             MerchantDecision.Later -> Unit
@@ -128,10 +132,11 @@ class TransactionsViewModel(
             transactions: TransactionRepository,
             money: MoneyRepository,
             errorReporter: ErrorReporter,
+            events: UiEvents? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T =
-                TransactionsViewModel(transactions, money, errorReporter) as T
+                TransactionsViewModel(transactions, money, errorReporter, events) as T
         }
     }
 }

@@ -91,7 +91,7 @@ class PensionViewModel(
         if (editor.value?.saving == true) return
         val id = editor.value?.draft?.id ?: return
         editor.value = null
-        safeLaunch("deletePensionFund") { money.delete(MoneyCollection.PENSION_FUNDS, id) }
+        safeLaunch("deletePensionFund") { money.delete(MoneyCollection.PENSION_FUNDS, id); events?.send(UiEvent.DELETED) }
     }
 
     fun dismiss() {
