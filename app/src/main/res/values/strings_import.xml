@@ -2,7 +2,7 @@
 <resources>
     <!-- Import bank and card files -->
     <string name="import_entry">ייבוא קובץ מהבנק או מהאשראי</string>
-    <string name="import_entry_detail">אקסל או CSV, גם של חודשים קודמים</string>
+    <string name="import_entry_detail">קובץ אקסל מהבנק או מהאשראי, גם של חודשים קודמים</string>
     <string name="import_title">ייבוא תנועות</string>
     <string name="import_reading">קוראים את הקבצים…</string>
     <string name="import_saving">שומרים…</string>
