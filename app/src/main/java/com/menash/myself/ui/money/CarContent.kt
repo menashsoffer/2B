@@ -124,7 +124,8 @@ private fun Current(current: CarCurrent) {
 private fun Compare(view: CarCompareView) {
     val colors = MaterialTheme.appColors
     Text(
-        text = stringResource(R.string.car_horizon, view.horizonMonths / 12) + " · " + stringResource(R.string.car_running_basis),
+        text = (if (view.horizonFromLease) stringResource(R.string.car_horizon_lease, view.horizonMonths) else stringResource(R.string.car_horizon, view.horizonMonths / 12)) +
+            " · " + stringResource(R.string.car_running_basis),
         style = AppType.caption,
         color = colors.textSecondary,
     )

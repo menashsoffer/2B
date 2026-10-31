@@ -118,6 +118,7 @@ fun CarCompareForm(draft: CarCompareDraft, onChange: ((CarCompareDraft) -> CarCo
             selectedIndex = horizons.indexOf(draft.horizonYears).coerceAtLeast(0),
             onSelect = { index -> onChange { it.copy(horizonYears = horizons[index]) } },
         )
+        Text(stringResource(R.string.car_horizon_hint), style = AppType.caption, color = colors.textSecondary)
         SectionTitle(stringResource(R.string.car_form_common))
         Field(draft.price, R.string.car_field_price, "price") { d, t -> d.copy(price = t) }
         Field(draft.tradeIn, R.string.car_field_trade_in, "trade_in") { d, t -> d.copy(tradeIn = t) }

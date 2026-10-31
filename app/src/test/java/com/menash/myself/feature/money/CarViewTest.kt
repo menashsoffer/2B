@@ -127,4 +127,14 @@ class CarViewTest {
         assertEquals(entry, MoneyDocuments.decode(MoneyCollection.CAR, CarPlan.ID, MoneyDocuments.encode(entry)))
         assertEquals(MoneyEntry.CarEntry(CarPlan()), MoneyDocuments.decode(MoneyCollection.CAR, CarPlan.ID, emptyMap()))
     }
+
+    @Test
+    fun compare_leaseSetsThePeriodForEveryOption() {
+        val draft = CarCompareDraft(horizonYears = 5, price = "100000", resale = "70000", leaseMonthly = "2000", leaseMonths = "36")
+        val view = carCompare(draft, current)
+        assertEquals(36, view.horizonMonths)
+        assertTrue(view.horizonFromLease)
+        assertTrue(view.rows.all { it is OptionCost })
+        assertEquals(60, carCompare(draft.copy(leaseMonthly = ""), current).horizonMonths)
+    }
 }

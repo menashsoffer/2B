@@ -23,6 +23,8 @@ fun Option.kind(): CarOption = when (this) {
  */
 data class CarCompareView(
     val horizonMonths: Int,
+    /** True when the period is the lease's own length, so every option is weighed over the same months. */
+    val horizonFromLease: Boolean = false,
     val rows: List<OptionComparison>,
     val incomplete: Set<CarOption>,
     val invalid: Set<CarOption>,
@@ -54,7 +56,9 @@ private fun build(kind: CarOption, typed: List<String>, required: List<Any?>, ma
 
 /** Builds each option the draft has numbers for and prices them with the engine's compareOptions. */
 fun carCompare(draft: CarCompareDraft, current: CarCurrent): CarCompareView {
-    val horizon = draft.horizonYears * 12
+    // Menash 31/10: a 3-year lease is weighed against keeping or buying for the same 3 years.
+    val leaseTerm = months(draft.leaseMonths)?.takeIf { money(draft.leaseMonthly) != null }
+    val horizon = leaseTerm ?: (draft.horizonYears * 12)
     val price = money(draft.price)
     val tradeIn = money(draft.tradeIn) ?: Money.ZERO
     val resale = money(draft.resale) ?: Money.ZERO
@@ -94,6 +98,7 @@ fun carCompare(draft: CarCompareDraft, current: CarCurrent): CarCompareView {
     val options = built.filterIsInstance<Built.Ready>().map { it.option }
     return CarCompareView(
         horizonMonths = horizon,
+        horizonFromLease = leaseTerm != null,
         rows = if (options.isEmpty()) emptyList() else compareOptions(carProfile(current), options, horizon),
         incomplete = built.filterIsInstance<Built.Missing>().map { it.kind }.toSet(),
         invalid = built.filterIsInstance<Built.Bad>().map { it.kind }.toSet(),
