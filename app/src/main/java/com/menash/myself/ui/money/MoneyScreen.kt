@@ -233,6 +233,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onCar = carViewModel::open,
             onPension = pensionViewModel::open,
             onSubscriptions = subsViewModel::open,
+            onImport = { picker.launch(importMimeTypes) },
         ),
         modifier = modifier,
     )

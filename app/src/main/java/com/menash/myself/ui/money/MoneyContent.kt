@@ -58,6 +58,7 @@ data class MoneyActions(
     val onCar: () -> Unit = {},
     val onPension: () -> Unit = {},
     val onSubscriptions: () -> Unit = {},
+    val onImport: () -> Unit = {},
 )
 
 @Composable
@@ -108,6 +109,15 @@ private fun MonthContent(
     actions: MoneyActions,
 ) {
     val colors = MaterialTheme.appColors
+    MoneySurface(testTag = "money_import_row") {
+        AmountRow(
+            title = stringResource(R.string.import_entry),
+            amount = null,
+            detail = stringResource(R.string.import_entry_detail),
+            onClick = actions.onImport,
+            testTag = "money_import_top",
+        )
+    }
     when (view) {
         is MonthView.Empty -> {
             if (view.usdRateMissing) UsdMissingChip()
