@@ -28,6 +28,10 @@ private fun loanCost(
     return LoanCost(payment, paid.add(balance).subtract(principal).add(fee))
 }
 
+/** What [amount] taken out of savings would have earned over [horizon] months, compounded monthly. */
+private fun lostReturn(amount: BigDecimal, annualPercent: BigDecimal, horizon: Int): BigDecimal =
+    if (amount.signum() <= 0) zero else amount.multiply(one.add(monthlyRate(annualPercent)).pow(horizon, carPrecision).subtract(one))
+
 private fun leaseRunning(car: CarProfile, lease: Option.Leasing, distance: Int): BigDecimal {
     var yearly = runningExact(car)
     for (included in lease.includedYearly) yearly = yearly.subtract(when (included) {
@@ -53,7 +57,7 @@ fun compareOptions(car: CarProfile, options: List<Option>, horizonMonths: Int = 
         val capital = when (option) {
             is Option.Cash -> {
                 upfront = option.price.decimal().subtract(option.tradeIn.decimal())
-                finance = upfront.multiply(one.add(monthlyRate(option.lostAnnualReturn)).pow(horizonMonths, carPrecision).subtract(one))
+                finance = lostReturn(upfront, option.lostAnnualReturn, horizonMonths)
                 resale = option.resale.decimal()
                 upfront
             }
@@ -62,7 +66,7 @@ fun compareOptions(car: CarProfile, options: List<Option>, horizonMonths: Int = 
                 val principal = option.price.decimal().subtract(option.tradeIn.decimal()).subtract(upfront)
                 val loan = loanCost(principal, option.annualRate, option.months, horizonMonths, earlyFee = option.earlyRepaymentFee)
                 payment = loan.payment
-                finance = loan.interestAndFee
+                finance = loan.interestAndFee.add(lostReturn(upfront, option.lostAnnualReturn, horizonMonths))
                 resale = option.resale.decimal()
                 upfront.add(principal)
             }
@@ -85,8 +89,10 @@ fun compareOptions(car: CarProfile, options: List<Option>, horizonMonths: Int = 
                 if (distance == null) return@map NotComparable(option, NotComparableReason.MISSING_ANNUAL_DISTANCE)
                 upfront = option.upfront.decimal().subtract(option.tradeIn.decimal())
                 payment = option.monthlyPayment.decimal()
+                finance = lostReturn(upfront, option.lostAnnualReturn, horizonMonths)
                 running = leaseRunning(car, option, distance).multiply(months).dividedBy(BigDecimal(12))
-                upfront.add(payment.multiply(months))
+                // A lease longer than the horizon still owes every payment: leaving early is not free.
+                upfront.add(payment.multiply(option.months.toBigDecimal()))
             }
         }
         val total = capital.add(finance).add(running).subtract(resale)

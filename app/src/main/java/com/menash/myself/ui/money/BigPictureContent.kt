@@ -139,6 +139,13 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             onClick = actions.onTithe,
             testTag = "money_tithe_entry",
         )
+        AmountRow(
+            title = stringResource(R.string.car_entry),
+            detail = stringResource(R.string.car_entry_detail),
+            amount = null,
+            onClick = actions.onCar,
+            testTag = "money_car_entry",
+        )
         val pension = picture.pension
         AmountRow(
             title = stringResource(R.string.pension_entry),

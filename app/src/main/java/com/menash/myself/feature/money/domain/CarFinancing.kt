@@ -17,10 +17,12 @@ sealed interface Option {
         val price: Money, val downPayment: Money, val annualRate: BigDecimal, val months: Int = 60,
         override val tradeIn: Money = Money.ZERO, val resale: Money = Money.ZERO,
         val earlyRepaymentFee: Money = Money.ZERO,
+        /** Return the down payment would have earned in savings, like Cash.lostAnnualReturn. */
+        val lostAnnualReturn: BigDecimal = BigDecimal.ZERO,
     ) : Option {
         init {
             nonnegative(price, downPayment, tradeIn, resale, earlyRepaymentFee)
-            require(annualRate.signum() >= 0 && months > 0)
+            require(annualRate.signum() >= 0 && months > 0 && lostAnnualReturn.signum() >= 0)
             require(downPayment.decimal().add(tradeIn.decimal()) <= price.decimal())
         }
     }
@@ -42,10 +44,12 @@ sealed interface Option {
         val pricePerExtraKm: Money, override val tradeIn: Money = Money.ZERO,
         /** Required for mileage-priced leases when Energy.Known supplies no annual distance. */
         val kmPerYear: Int? = null,
+        /** Return the upfront payment would have earned in savings. */
+        val lostAnnualReturn: BigDecimal = BigDecimal.ZERO,
     ) : Option {
         init {
             nonnegative(monthlyPayment, upfront, pricePerExtraKm, tradeIn)
-            require(months > 0 && kmLimitPerYear >= 0 && (kmPerYear == null || kmPerYear >= 0))
+            require(months > 0 && kmLimitPerYear >= 0 && (kmPerYear == null || kmPerYear >= 0) && lostAnnualReturn.signum() >= 0)
         }
     }
 }

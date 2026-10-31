@@ -62,7 +62,8 @@ class CarFinancingTest {
         val lease = Option.Leasing(Money(1000), Money(500), 24, Included.entries.toSet(), 10000, Money(10))
         val result = cost(lease, 6, profile)
         assertEquals(Money(10060), result.running) // 2000 extra km * 10 + 120 yearly, half a year
-        assertEquals(Money(16560), result.netTotal)
+        // All 24 payments are owed although the horizon is 6 months: 500 + 24 x 1000 + 10,060.
+        assertEquals(Money(34560), result.netTotal)
         assertEquals(Money.ZERO, result.resale)
     }
     @Test fun shortLeaseReturnsReasonAndComparableCostsStaySorted() {
@@ -98,5 +99,23 @@ class CarFinancingTest {
         assertThrows(IllegalArgumentException::class.java) { Option.BankLoan(Money(100), Money.ZERO, BigDecimal(-1)) }
         assertThrows(IllegalArgumentException::class.java) { Option.DealerFinancing(Money(100), Money.ZERO, zero, balloon = Money(101)) }
         assertThrows(IllegalArgumentException::class.java) { Option.Leasing(Money(1), Money.ZERO, 0, kmLimitPerYear = 1, pricePerExtraKm = Money.ZERO) }
+    }
+    @Test fun downPaymentAndLeaseUpfrontLoseTheSameReturnAsCash() {
+        val rate = BigDecimal(12)
+        val cash = cost(Option.Cash(Money(10000), rate), 2)
+        val loan = cost(Option.BankLoan(Money(50000), Money(10000), zero, months = 2, lostAnnualReturn = rate), 2)
+        val lease = cost(Option.Leasing(Money(0), Money(10000), 2, kmLimitPerYear = 12000, pricePerExtraKm = Money.ZERO, lostAnnualReturn = rate), 2)
+        assertEquals(Money(201), cash.financeCost)
+        assertEquals(Money(201), loan.financeCost)
+        assertEquals(Money(201), lease.financeCost)
+        val traded = cost(Option.Leasing(Money(0), Money(1000), 2, kmLimitPerYear = 12000, pricePerExtraKm = Money.ZERO,
+            tradeIn = Money(5000), lostAnnualReturn = rate), 2)
+        assertEquals(Money.ZERO, traded.financeCost)
+    }
+    @Test fun leaseLongerThanHorizonOwesEveryPayment() {
+        val lease = Option.Leasing(Money(2000), Money.ZERO, 72, kmLimitPerYear = 12000, pricePerExtraKm = Money.ZERO)
+        val atHorizon = cost(lease.copy(months = 60))
+        val longer = cost(lease)
+        assertEquals(12L * 2000, longer.netTotal.agorot - atHorizon.netTotal.agorot)
     }
 }

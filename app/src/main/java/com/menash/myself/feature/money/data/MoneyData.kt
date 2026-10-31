@@ -1,5 +1,6 @@
 package com.menash.myself.feature.money.data
 
+import com.menash.myself.feature.money.CarPlan
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
@@ -36,6 +37,8 @@ enum class MoneyCollection(val path: String) {
     TITHE("tithe"),
     /** One document per closed month, id "yyyy-MM". */
     CLOSED_MONTHS("closedMonths"),
+    /** One document, "settings": the car categories and the new-car comparison. */
+    CAR("car"),
     PENSION_FUNDS("pensionFunds"),
 }
 
@@ -53,6 +56,8 @@ data class MoneyData(
     val tithe: TitheSettings? = null,
     /** Frozen months, oldest first. */
     val closedMonths: List<ClosedMonth> = emptyList(),
+    /** Null until the car screen saves its settings; the defaults apply until then. */
+    val car: CarPlan? = null,
     /** Pension, hishtalmut and gemel funds: a current snapshot, updated by hand from the quarterly report. */
     val pensionFunds: List<PensionFund> = emptyList(),
 )
@@ -117,6 +122,10 @@ sealed interface MoneyEntry {
     data class ClosedMonthEntry(val value: ClosedMonth) : MoneyEntry {
         override val id get() = value.month.toString()
         override val collection get() = MoneyCollection.CLOSED_MONTHS
+    }
+    data class CarEntry(val value: CarPlan) : MoneyEntry {
+        override val id get() = CarPlan.ID
+        override val collection get() = MoneyCollection.CAR
     }
     data class PensionFundEntry(val value: PensionFund) : MoneyEntry {
         override val id get() = value.id
