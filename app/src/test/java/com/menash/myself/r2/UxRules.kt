@@ -55,6 +55,8 @@ object UxRules {
         val minPx = MinTouchDp * density
         return clickables.mapNotNull { node ->
             val b = node.boundsInRoot
+            // Cut by the edge of the captured viewport (a row half scrolled off): its real size is unknown here.
+            if (b.height + 1f < node.size.height || b.width + 1f < node.size.width) return@mapNotNull null
             if (b.width + Tolerance * density >= minPx && b.height + Tolerance * density >= minPx) return@mapNotNull null
             val dx = maxOf(0f, (minPx - b.width) / 2)
             val dy = maxOf(0f, (minPx - b.height) / 2)
