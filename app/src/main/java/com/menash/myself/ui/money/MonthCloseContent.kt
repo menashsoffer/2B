@@ -2,7 +2,6 @@ package com.menash.myself.ui.money
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.key
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -82,60 +81,61 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
     ) {
         val view = ui.view
         MoneySubScreen(
-            title = stringResource(R.string.close_title, view?.month?.let(::monthTitle) ?: ""),
+            title = view?.month?.let { stringResource(R.string.close_title, monthTitle(it)) } ?: stringResource(R.string.close_loading_title),
             subtitle = stringResource(R.string.close_subtitle),
             onBack = actions.onBack,
         )
-        Crossfade(targetState = when { ui.loadError -> 0; view == null -> 1; else -> 2 },
+        Crossfade(targetState = when { ui.noHousehold -> 3; ui.loadError -> 0; view == null -> 1; else -> 2 },
             animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "close_load") { state ->
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
-        if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
-        else if (state == 1 || view == null) { LoadingState(testTag = "close_loading") }
-        else {
-        MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it } == true, actions)
-        view.existing?.let {
-            Chip(
-                text = stringResource(R.string.close_done_on, it.closedOn.format(dateFormat)),
-                variant = ChipVariant.Success,
-                modifier = Modifier.testTag("close_done"),
-            )
-            MoneySurface(testTag = "close_summary_open") {
-                AmountRow(
-                    title = stringResource(R.string.summary_open, hebrewMonthName(view.month.month)),
-                    amount = null,
-                    detail = stringResource(R.string.summary_entry_detail),
-                    onClick = { actions.onSummary(view.month) },
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+                if (state == 3) { }
+                else if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+                else if (state == 1 || view == null) { LoadingState(testTag = "close_loading") }
+                else {
+                    MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it } == true, actions)
+                    view.existing?.let {
+                        Chip(
+                            text = stringResource(R.string.close_done_on, it.closedOn.format(dateFormat)),
+                            variant = ChipVariant.Success,
+                            modifier = Modifier.testTag("close_done"),
+                        )
+                        MoneySurface(testTag = "close_summary_open") {
+                            AmountRow(
+                                title = stringResource(R.string.summary_open, hebrewMonthName(view.month.month)),
+                                amount = null,
+                                detail = stringResource(R.string.summary_entry_detail),
+                                onClick = { actions.onSummary(view.month) },
+                            )
+                        }
+                    }
+                    SectionTitle(stringResource(R.string.close_checks_title))
+                    MoneySurface(testTag = "close_checks") { Checks(view, actions) }
+                    CloseBalancesContent(ui, actions)
+                    SectionTitle(stringResource(R.string.close_summary_title))
+                    MoneySurface(testTag = "close_summary") {
+                        val colors = MaterialTheme.appColors
+                        AmountRow(stringResource(R.string.close_income), formatMoney(view.preview.snapshot.actualIncomes))
+                        AmountRow(stringResource(R.string.close_expenses), formatMoney(view.preview.snapshot.actualExpenses))
+                        AmountRow(
+                            title = stringResource(R.string.close_saving),
+                            amount = formatMoney(view.saving),
+                            titleStyle = AppType.title,
+                            amountColor = if (view.saving.isNegative()) colors.danger else null,
+                            testTag = "close_saving",
+                        )
+                    }
+                    PrimaryButton(
+                        text = stringResource(
+                            if (view.existing == null) R.string.close_button else R.string.close_again,
+                            hebrewMonthName(view.month.month),
+                        ),
+                        onClick = actions.onClose,
+                        enabled = view.canClose && ui.balancesValid,
+                        isLoading = ui.saving,
+                        modifier = Modifier.fillMaxWidth().testTag("close_button"),
+                    )
+                }
             }
-        }
-        SectionTitle(stringResource(R.string.close_checks_title))
-        MoneySurface(testTag = "close_checks") { Checks(view, actions) }
-        CloseBalancesContent(ui, actions)
-        SectionTitle(stringResource(R.string.close_summary_title))
-        MoneySurface(testTag = "close_summary") {
-            val colors = MaterialTheme.appColors
-            AmountRow(stringResource(R.string.close_income), formatMoney(view.preview.snapshot.actualIncomes))
-            AmountRow(stringResource(R.string.close_expenses), formatMoney(view.preview.snapshot.actualExpenses))
-            AmountRow(
-                title = stringResource(R.string.close_saving),
-                amount = formatMoney(view.saving),
-                titleStyle = AppType.title,
-                amountColor = if (view.saving.isNegative()) colors.danger else null,
-                testTag = "close_saving",
-            )
-        }
-        PrimaryButton(
-            text = stringResource(
-                if (view.existing == null) R.string.close_button else R.string.close_again,
-                hebrewMonthName(view.month.month),
-            ),
-            onClick = actions.onClose,
-            enabled = view.canClose && ui.balancesValid,
-            isLoading = ui.saving,
-            modifier = Modifier.fillMaxWidth().testTag("close_button"),
-        )
-        }
-        }
         }
     }
 }

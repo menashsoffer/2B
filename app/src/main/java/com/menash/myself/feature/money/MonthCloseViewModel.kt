@@ -54,6 +54,7 @@ data class MonthCloseUi(
     val saving: Boolean = false,
     val saveError: String? = null,
     val loadError: Boolean = false,
+    val noHousehold: Boolean = false,
 )
 
 /** "לסגור את החודש": what is still missing, what closing would store, and the close itself. */
@@ -80,7 +81,7 @@ class MonthCloseViewModel(
         val day = today()
         if (input !is ScreenLoad.Ready) return@combine MonthCloseUi(open = q.open, currentMonth = YearMonth.from(day), loadError = input is ScreenLoad.Error)
         val input = input.value
-        if (!q.open || !input.data.householdReady) return@combine MonthCloseUi(q.open, currentMonth = YearMonth.from(day))
+        if (!q.open || !input.data.householdReady) return@combine MonthCloseUi(q.open, currentMonth = YearMonth.from(day), noHousehold = !input.data.householdReady)
         val month = q.month ?: closeTarget(day, input.stored, input.data.closedMonths)
         MonthCloseUi(
             open = true,

@@ -80,66 +80,66 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
             }
         }
         key(month) {
-        Crossfade(targetState = when { ui.loadError -> 0; lines == null -> 1; lines.lines.isEmpty() -> 2; else -> 3 },
-            animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "transactions_load") { state ->
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
-        if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
-        else if (state == 1 || lines == null) { LoadingState(testTag = "tx_loading") }
-        else if (state == 2) {
-            EmptyState(
-                title = stringResource(R.string.tx_empty_title),
-                description = stringResource(R.string.tx_empty_detail),
-                icon = Icons.AutoMirrored.Outlined.ReceiptLong,
-                testTag = "tx_empty",
-            )
-        } else {
-            MoneySurface(testTag = "tx_summary") {
-                AmountRow(title = stringResource(R.string.tx_spent), amount = formatMoney(lines.spent))
-                if (!lines.income.isZero()) AmountRow(title = stringResource(R.string.tx_income), amount = formatMoney(lines.income))
-                if (lines.unassignedCount > 0) {
-                    AmountRow(
-                        title = stringResource(R.string.tx_unassigned_count),
-                        amount = lines.unassignedCount.toString(),
-                        amountColor = MaterialTheme.appColors.warning,
-                        onClick = { actions.onFilter(LineFilter.UNASSIGNED) },
-                        testTag = "tx_unassigned_count",
-                    )
-                }
-                if (lines.pendingCount > 0) {
-                    AmountRow(
-                        title = stringResource(R.string.tx_pending_count),
-                        amount = lines.pendingCount.toString(),
-                        onClick = { actions.onFilter(LineFilter.PENDING) },
-                        testTag = "tx_pending_count",
-                    )
+            Crossfade(targetState = when { ui.loadError -> 0; lines == null -> 1; lines.lines.isEmpty() -> 2; else -> 3 },
+                animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "transactions_load") { state ->
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+                    if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+                    else if (state == 1 || lines == null) { LoadingState(testTag = "tx_loading") }
+                    else if (state == 2) {
+                        EmptyState(
+                            title = stringResource(R.string.tx_empty_title),
+                            description = stringResource(R.string.tx_empty_detail),
+                            icon = Icons.AutoMirrored.Outlined.ReceiptLong,
+                            testTag = "tx_empty",
+                        )
+                    } else {
+                        MoneySurface(testTag = "tx_summary") {
+                            AmountRow(title = stringResource(R.string.tx_spent), amount = formatMoney(lines.spent))
+                            if (!lines.income.isZero()) AmountRow(title = stringResource(R.string.tx_income), amount = formatMoney(lines.income))
+                            if (lines.unassignedCount > 0) {
+                                AmountRow(
+                                    title = stringResource(R.string.tx_unassigned_count),
+                                    amount = lines.unassignedCount.toString(),
+                                    amountColor = MaterialTheme.appColors.warning,
+                                    onClick = { actions.onFilter(LineFilter.UNASSIGNED) },
+                                    testTag = "tx_unassigned_count",
+                                )
+                            }
+                            if (lines.pendingCount > 0) {
+                                AmountRow(
+                                    title = stringResource(R.string.tx_pending_count),
+                                    amount = lines.pendingCount.toString(),
+                                    onClick = { actions.onFilter(LineFilter.PENDING) },
+                                    testTag = "tx_pending_count",
+                                )
+                            }
+                        }
+                        PillTabs(
+                            options = listOf(
+                                stringResource(R.string.tx_filter_all),
+                                stringResource(R.string.tx_filter_unassigned),
+                                stringResource(R.string.tx_filter_pending),
+                            ),
+                            selectedIndex = filters.indexOf(ui.query.filter),
+                            onSelect = { actions.onFilter(filters[it]) },
+                            modifier = Modifier.testTag("tx_filters"),
+                        )
+                        val shown = lines.filtered(ui.query.filter)
+                        if (shown.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.tx_empty_filter),
+                                style = AppType.body,
+                                color = MaterialTheme.appColors.textSecondary,
+                                modifier = Modifier.padding(horizontal = Spacing.s8).testTag("tx_empty_filter"),
+                            )
+                        } else {
+                            MoneySurface(testTag = "tx_lines") {
+                                shown.forEach { line -> LineRow(line, ui, actions) }
+                            }
+                        }
+                    }
                 }
             }
-            PillTabs(
-                options = listOf(
-                    stringResource(R.string.tx_filter_all),
-                    stringResource(R.string.tx_filter_unassigned),
-                    stringResource(R.string.tx_filter_pending),
-                ),
-                selectedIndex = filters.indexOf(ui.query.filter),
-                onSelect = { actions.onFilter(filters[it]) },
-                modifier = Modifier.testTag("tx_filters"),
-            )
-            val shown = lines.filtered(ui.query.filter)
-            if (shown.isEmpty()) {
-                Text(
-                    text = stringResource(R.string.tx_empty_filter),
-                    style = AppType.body,
-                    color = MaterialTheme.appColors.textSecondary,
-                    modifier = Modifier.padding(horizontal = Spacing.s8).testTag("tx_empty_filter"),
-                )
-            } else {
-                MoneySurface(testTag = "tx_lines") {
-                    shown.forEach { line -> LineRow(line, ui, actions) }
-                }
-            }
-        }
-        }
-        }
         }
     }
 }
