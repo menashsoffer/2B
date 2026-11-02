@@ -365,10 +365,16 @@ service cloud.firestore {
                               ['ownerUid', 'ownerEmail', 'memberUids', 'partnerUid', 'partnerEmail']) &&
                             (incoming().memberUids == existing().memberUids ||
                              incoming().memberUids == existing().memberUids.removeAll([request.auth.uid])) &&
-                            (incoming().partnerUid == '' ||
-                             (incoming().partnerUid in incoming().memberUids &&
-                              incoming().partnerUid != incoming().ownerUid)) &&
-                            (incoming().partnerUid != '' || incoming().partnerEmail == ''))
+                            incoming().get('ownerEmail', '') ==
+                              (incoming().ownerUid == existing().get('partnerUid', '') ? existing().get('partnerEmail', '') : '') &&
+                            (request.auth.uid in incoming().memberUids
+                              ? incoming().get('partnerUid', '') == request.auth.uid &&
+                                incoming().get('partnerEmail', '') == existing().get('ownerEmail', '')
+                              : (incoming().memberUids.size() == 1
+                                ? incoming().get('partnerUid', '') == '' && incoming().get('partnerEmail', '') == ''
+                                : incoming().get('partnerUid', '') in incoming().memberUids &&
+                                  incoming().get('partnerUid', '') != incoming().ownerUid &&
+                                  incoming().get('partnerEmail', '') == '')))
                          )) ||
                          // Members may leave themselves, never remove somebody else or take ownership.
                          (
@@ -378,16 +384,16 @@ service cloud.firestore {
                            incoming().get('deleting', false) == existing().get('deleting', false) &&
                            (
                              (incoming().memberUids == existing().memberUids &&
-                              incoming().partnerEmail == existing().partnerEmail &&
-                              incoming().partnerUid == existing().partnerUid) ||
+                              incoming().get('partnerEmail', '') == existing().get('partnerEmail', '') &&
+                              incoming().get('partnerUid', '') == existing().get('partnerUid', '')) ||
                              (incoming().memberUids == existing().memberUids.removeAll([request.auth.uid]) &&
                               request.resource.data.diff(resource.data).affectedKeys().hasOnly(
                                 ['memberUids', 'partnerUid', 'partnerEmail']) &&
-                              (existing().partnerUid == request.auth.uid
-                                ? ((incoming().partnerUid == '' && incoming().partnerEmail == '') ||
-                                   (incoming().partnerUid == existing().partnerUid && incoming().partnerEmail == existing().partnerEmail))
-                                : incoming().partnerUid == existing().partnerUid &&
-                                  incoming().partnerEmail == existing().partnerEmail))
+                              (existing().get('partnerUid', '') == request.auth.uid
+                                ? ((incoming().get('partnerUid', '') == '' && incoming().get('partnerEmail', '') == '') ||
+                                   (incoming().get('partnerUid', '') == existing().get('partnerUid', '') && incoming().get('partnerEmail', '') == existing().get('partnerEmail', '')))
+                                : incoming().get('partnerUid', '') == existing().get('partnerUid', '') &&
+                                  incoming().get('partnerEmail', '') == existing().get('partnerEmail', '')))
                            )
                          ) ||
                          // 3. Join flow: invitee can only add their uid to memberUids and set partnerUid,
@@ -398,7 +404,7 @@ service cloud.firestore {
                            get(/databases/$(database)/documents/invites/$(request.auth.token.email.lower())).data.householdId == householdId &&
                            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'partnerUid']) &&
                            incoming().memberUids == existing().memberUids.concat([request.auth.uid]) &&
-                           incoming().partnerUid == request.auth.uid
+                           incoming().get('partnerUid', '') == request.auth.uid
                          )
                        );
 
