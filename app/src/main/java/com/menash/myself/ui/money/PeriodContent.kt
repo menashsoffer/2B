@@ -48,7 +48,12 @@ import java.time.YearMonth
 import java.time.format.TextStyle
 import java.util.Locale
 
-data class PeriodActions(val onSelect: (PeriodPreset) -> Unit = {}, val onBack: () -> Unit = {})
+data class PeriodActions(
+    val onSelect: (PeriodPreset) -> Unit = {},
+    val onBack: () -> Unit = {},
+    /** Opens the category's trend. */
+    val onCategory: (String) -> Unit = {},
+)
 
 private val presets = PeriodPreset.entries
 private val shortMonth = Locale.forLanguageTag("he")
@@ -107,7 +112,7 @@ fun PeriodContent(ui: PeriodUi, actions: PeriodActions, modifier: Modifier = Mod
         }
         if (view.categories.isNotEmpty()) {
             SectionTitle(stringResource(R.string.period_top_categories))
-            MoneySurface(testTag = "period_categories") { view.categories.forEach { CategoryLine(it) } }
+            MoneySurface(testTag = "period_categories") { view.categories.forEach { CategoryLine(it, actions.onCategory) } }
         }
         view.netWorth?.let { change ->
             MoneySurface(testTag = "period_net_worth") {
@@ -215,7 +220,7 @@ private fun Bar(fraction: Float, color: Color) {
 }
 
 @Composable
-private fun CategoryLine(row: PeriodCategoryRow) {
+private fun CategoryLine(row: PeriodCategoryRow, onCategory: (String) -> Unit) {
     val colors = MaterialTheme.appColors
     val diff = row.diff
     AmountRow(
@@ -227,6 +232,7 @@ private fun CategoryLine(row: PeriodCategoryRow) {
             else -> stringResource(R.string.period_plan_diff_under, formatMoney(-diff))
         },
         amountColor = if (diff != null && diff.isPositive()) colors.danger else null,
+        onClick = row.categoryId?.let { id -> { onCategory(id) } },
     )
 }
 

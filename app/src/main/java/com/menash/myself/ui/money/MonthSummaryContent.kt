@@ -30,7 +30,7 @@ private fun monthLabel(month: YearMonth): String = "${hebrewMonthName(month.mont
 
 /** "סיכום החודש" after a close: five short cards, read from the frozen month. */
 @Composable
-fun MonthSummaryContent(ui: MonthSummaryUi, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun MonthSummaryContent(ui: MonthSummaryUi, onBack: () -> Unit, modifier: Modifier = Modifier, onCategory: (String) -> Unit = {}) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -73,6 +73,7 @@ fun MonthSummaryContent(ui: MonthSummaryUi, onBack: () -> Unit, modifier: Modifi
                     amount = formatMoney(row.actual),
                     detail = stringResource(R.string.summary_overrun_detail, formatMoney(row.planned), formatMoney(row.over)),
                     amountColor = MaterialTheme.appColors.danger,
+                    onClick = row.categoryId?.let { id -> { onCategory(id) } },
                 )
             }
         }
@@ -92,7 +93,7 @@ fun MonthSummaryContent(ui: MonthSummaryUi, onBack: () -> Unit, modifier: Modifi
             }
         }
         NetWorth(view)
-        Suggestions(view)
+        Suggestions(view, onCategory)
     }
 }
 
@@ -150,7 +151,7 @@ private fun NetWorth(view: MonthSummaryView) {
 }
 
 @Composable
-private fun Suggestions(view: MonthSummaryView) {
+private fun Suggestions(view: MonthSummaryView, onCategory: (String) -> Unit) {
     SectionTitle(stringResource(R.string.summary_plan))
     MoneySurface(testTag = "summary_plan") {
         val suggestions = view.suggestions
@@ -165,6 +166,7 @@ private fun Suggestions(view: MonthSummaryView) {
                         amount = formatMoney(row.suggested),
                         detail = row.current?.let { stringResource(R.string.summary_plan_now, formatMoney(it)) }
                             ?: stringResource(R.string.summary_plan_none),
+                        onClick = { onCategory(row.categoryId) },
                     )
                 }
             }

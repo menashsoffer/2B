@@ -33,6 +33,7 @@ import com.menash.myself.feature.money.MonthCloseViewModel
 import com.menash.myself.feature.money.SubscriptionsViewModel
 import com.menash.myself.feature.money.PeriodViewModel
 import com.menash.myself.feature.money.MonthSummaryViewModel
+import com.menash.myself.feature.money.CategoryTrendViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MoneyViewModel
@@ -112,6 +113,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         factory = MonthSummaryViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, appContainer.errorReporter)
     )
     val summaryUi by summaryViewModel.ui.collectAsStateWithLifecycle()
+    val trendViewModel: CategoryTrendViewModel = viewModel(
+        factory = CategoryTrendViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter, appContainer.uiEvents)
+    )
+    val trendUi by trendViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -178,6 +183,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         subscriptions = subsUi.open,
         period = periodUi.open,
         summary = summaryUi.open,
+        trend = trendUi.open,
     ))
     val duration = Motion.duration(Motion.medium)
     val enter = Motion.slideIn(duration)
@@ -222,9 +228,13 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             ),
             modifier = modifier,
         )
-        MoneyDestination.Summary -> MonthSummaryContent(rememberShownState(summaryUi, summaryUi.open), summaryViewModel::close, modifier)
+        MoneyDestination.Summary ->
+            MonthSummaryContent(rememberShownState(summaryUi, summaryUi.open), summaryViewModel::close, modifier, onCategory = trendViewModel::open)
+        MoneyDestination.Trend -> CategoryTrendContent(
+            rememberShownState(trendUi, trendUi.open), CategoryTrendActions(trendViewModel::acceptSuggestion, trendViewModel::close), modifier,
+        )
         MoneyDestination.Period ->
-            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close), modifier)
+            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close, trendViewModel::open), modifier)
         MoneyDestination.Root -> MoneyContent(
             state = state,
             selectedTab = selectedTab,

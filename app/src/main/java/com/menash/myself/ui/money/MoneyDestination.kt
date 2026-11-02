@@ -15,6 +15,7 @@ sealed class MoneyDestination(val depth: Int) {
     data object Transactions : MoneyDestination(2)
     data object Summary : MoneyDestination(2)
     data object Import : MoneyDestination(3)
+    data object Trend : MoneyDestination(3)
 }
 
 val LocalMoneyBackActive = staticCompositionLocalOf { true }
@@ -30,11 +31,13 @@ data class MoneyOpenFlags(
     val subscriptions: Boolean = false,
     val period: Boolean = false,
     val summary: Boolean = false,
+    val trend: Boolean = false,
 )
 
 fun moneyDestination(flags: MoneyOpenFlags): MoneyDestination = when {
     flags.importing -> MoneyDestination.Import
     flags.transactions -> MoneyDestination.Transactions
+    flags.trend -> MoneyDestination.Trend
     flags.summary -> MoneyDestination.Summary
     flags.goals -> MoneyDestination.Goals
     flags.tithe -> MoneyDestination.Tithe

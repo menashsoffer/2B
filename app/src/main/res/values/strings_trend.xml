@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Category trend (plan: reviews/plan-money-status-views-2026-11-02.md, stage 4) -->
+    <string name="trend_subtitle">12 החודשים האחרונים, רק חודשים סגורים</string>
+    <string name="trend_chart">בפועל מול התוכנית</string>
+    <string name="trend_legend">עמודה: בפועל · קו: התוכנית · –: חודש לא סגור</string>
+    <string name="trend_empty">אין עדיין חודש סגור ב-12 החודשים האחרונים</string>
+    <string name="trend_average">ממוצע לחודש</string>
+    <string name="trend_average_detail">לפי %1$d חודשים סגורים</string>
+    <string name="trend_range">הכי נמוך · הכי גבוה</string>
+    <string name="trend_range_value">%1$s · %2$s</string>
+    <string name="trend_latest">החודש הסגור האחרון</string>
+    <string name="trend_plan_now">התוכנית היום</string>
+    <string name="trend_plan_none">אין תוכנית</string>
+    <string name="trend_suggestion">הצעה לתוכנית</string>
+    <string name="trend_suggestion_detail">%1$s לחודש במקום %2$s</string>
+    <string name="trend_suggestion_new">%1$s לחודש. היום אין לקטגוריה תוכנית</string>
+    <string name="trend_accept">לעדכן ל-%1$s מ%2$s</string>
+    <string name="trend_accept_item">ישתנה הסכום של \"%1$s\". חודשים קודמים לא ישתנו</string>
+    <string name="trend_accept_new">ייפתח תקציב חדש בשם \"%1$s\" בשוטפות</string>
+    <string name="trend_manual">לקטגוריה יש %1$d פריטים, או פריט שנתי או בדולרים. משנים בעריכת הפריט בלשונית החודש</string>
+    <string name="trend_manual_none">אין לקטגוריה פריט. מוסיפים אותו בלשונית החודש</string>
+    <string name="trend_no_change">התוכנית קרובה למה שקורה בפועל</string>
+    <string name="trend_wait">אחרי 3 חודשים סגורים תופיע כאן הצעה</string>
+    <string name="trend_periodic">קטגוריה תקופתית: התוכנית שלה שנתית, ולא מוצעת כאן</string>
+</resources>
