@@ -5,13 +5,6 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
-import androidx.compose.ui.test.junit4.AndroidComposeTestRule
-import androidx.compose.ui.test.junit4.ComposeContentTestRule
-import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.tryPerformAccessibilityChecks
-import com.google.android.apps.common.testing.accessibility.framework.AccessibilityCheckResult.AccessibilityCheckResultType
-import com.google.android.apps.common.testing.accessibility.framework.integrations.espresso.AccessibilityValidator
 import java.io.File
 
 /**
@@ -57,31 +50,6 @@ object UxRules {
 
     /** Appends this capture's findings, keyed by the calling test, to the build report. */
     fun record(root: SemanticsNode, variant: String) = write(check(root), variant)
-
-    /**
-     * Layer 2: Google's Accessibility Test Framework (the engine behind Accessibility Scanner) on the
-     * same screen. Report-only: every warning or error becomes an "atf" line; if ATF cannot run under
-     * Robolectric for this screen, one "atf-unavailable" line says why.
-     */
-    fun recordAccessibilityChecks(rule: ComposeContentTestRule, variant: String) {
-        val lines = try {
-            val android = rule as? AndroidComposeTestRule<*, *> ?: return
-            android.enableAccessibilityChecks(
-                AccessibilityValidator().setThrowExceptionFor(AccessibilityCheckResultType.WARNING),
-            )
-            rule.onRoot().tryPerformAccessibilityChecks()
-            emptyList()
-        } catch (t: Throwable) {
-            val message = t.message.orEmpty()
-            if (t::class.java.simpleName.contains("AccessibilityViewCheckException")) {
-                message.lines().drop(1).map { it.trim() }.filter { it.isNotEmpty() }
-                    .map { Finding("atf", it.substringBefore(':').take(60), it.substringAfter(':').trim().take(200)) }
-            } else {
-                listOf(Finding("atf-unavailable", t::class.java.simpleName, message.lineSequence().firstOrNull().orEmpty().take(200)))
-            }
-        }
-        write(lines, variant)
-    }
 
     private fun write(findings: List<Finding>, variant: String) {
         if (findings.isEmpty()) return
