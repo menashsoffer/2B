@@ -3,9 +3,6 @@ package com.menash.myself.ui.account
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import com.github.takahirom.roborazzi.captureRoboImage
-import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import androidx.compose.ui.unit.LayoutDirection
 import com.menash.myself.core.data.account.AccountHousehold
 import com.menash.myself.feature.account.*
@@ -34,14 +31,11 @@ class AccountManagementScreenshotTest {
     }
     @Test fun managementMember_light_font10() = shoot(false)
     @Test fun managementOwner_light_font10() = shoot(true)
-    @Test fun typedConfirmation_light_font10() {
-        composeRule.setContent {
-            MyApplicationTheme(darkTheme = false) {
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    TypedDeletionDialog("למחוק", {}, {}, {})
-                }
+    // AlertDialog opens its own window, which Robolectric never reports idle; the golden shows its body.
+    @Test fun typedConfirmation_light_font10() =
+        composeRule.captureR2Screen(darkTheme = false, fontScale = 1f) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                TypedDeletionBody("למחוק") {}
             }
         }
-        composeRule.onNodeWithTag("account_typed_confirmation").captureRoboImage()
-    }
 }

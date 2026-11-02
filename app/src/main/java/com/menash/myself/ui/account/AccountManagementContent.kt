@@ -108,13 +108,19 @@ private fun AccountConfirmationDialogs(
 fun TypedDeletionDialog(typed: String, onType: (String) -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(onDismissRequest = onCancel, modifier = Modifier.testTag("account_typed_confirmation"),
         title = { Text(stringResource(R.string.account_delete_household)) },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
-            Text(stringResource(R.string.account_type_explanation))
-            OutlinedTextField(value = typed, onValueChange = onType, singleLine = true,
-                label = { Text(stringResource(R.string.account_delete_word)) })
-        } },
+        text = { TypedDeletionBody(typed, onType) },
         confirmButton = { PrimaryButton(stringResource(R.string.account_delete_household), onConfirm, enabled = typed == stringResource(R.string.account_delete_word)) },
         dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.account_cancel)) } })
+}
+
+/** The dialog's body on its own, so a screenshot test can render it without a window. */
+@Composable
+fun TypedDeletionBody(typed: String, onType: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+        Text(stringResource(R.string.account_type_explanation))
+        OutlinedTextField(value = typed, onValueChange = onType, singleLine = true,
+            label = { Text(stringResource(R.string.account_delete_word)) })
+    }
 }
 
 internal fun stepString(step: DeletionStep): Int = when (step) {
