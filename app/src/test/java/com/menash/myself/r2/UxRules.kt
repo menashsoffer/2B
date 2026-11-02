@@ -9,7 +9,7 @@ import java.io.File
 
 /**
  * UX check layer (docs/ux/UX-CHECKS.md, layer 4). Runs on every screen a golden test captures and
- * records measurable problems: tap targets under 48dp, clickable elements with no label for a screen
+ * records measurable problems: tap targets crowded below 48dp by a neighbour, clickable elements with no label for a screen
  * reader, and elements that stick out of the screen sideways. Report-only for now: findings go to
  * app/build/ux-findings/findings.tsv and the CI summary; thresholds come after the first measurement.
  */
@@ -23,18 +23,14 @@ object UxRules {
         val density = root.layoutInfo.density.density
         val screen = root.boundsInRoot
         val findings = mutableListOf<Finding>()
+        val clickables = mutableListOf<SemanticsNode>()
         fun visit(node: SemanticsNode, insideHorizontalScroll: Boolean) {
             val config = node.config
             val scrollsSideways = config.contains(SemanticsProperties.HorizontalScrollAxisRange)
-            val clickable = config.contains(SemanticsActions.OnClick)
             // A 0x0 node was not laid out (scrolled out of the captured viewport); nothing to measure.
             val laidOut = node.boundsInRoot.width > 0f && node.boundsInRoot.height > 0f
-            if (clickable && laidOut) {
-                val wDp = node.boundsInRoot.width / density
-                val hDp = node.boundsInRoot.height / density
-                if (wDp + Tolerance < MinTouchDp || hDp + Tolerance < MinTouchDp) {
-                    findings += Finding("touch-target", describe(node), "%.0fx%.0fdp".format(wDp, hDp))
-                }
+            if (config.contains(SemanticsActions.OnClick) && laidOut) {
+                clickables += node
                 if (label(node).isBlank()) {
                     findings += Finding("no-label", describe(node), "clickable without text or contentDescription")
                 }
@@ -45,7 +41,42 @@ object UxRules {
             node.children.forEach { visit(it, insideHorizontalScroll || scrollsSideways) }
         }
         root.children.forEach { visit(it, false) }
+        findings += crowdedTargets(clickables, density)
         return findings.distinct()
+    }
+
+    /**
+     * Compose already extends the touch area of a small clickable to 48x48dp (ViewConfiguration
+     * minimumTouchTargetSize), so a 32dp chip alone is fine. It is a real problem only when another
+     * clickable sits inside that 48dp area: there the neighbour wins the tap, and the small target
+     * is effectively smaller than 48dp. That is what this rule reports.
+     */
+    private fun crowdedTargets(clickables: List<SemanticsNode>, density: Float): List<Finding> {
+        val minPx = MinTouchDp * density
+        return clickables.mapNotNull { node ->
+            val b = node.boundsInRoot
+            if (b.width + Tolerance * density >= minPx && b.height + Tolerance * density >= minPx) return@mapNotNull null
+            val dx = maxOf(0f, (minPx - b.width) / 2)
+            val dy = maxOf(0f, (minPx - b.height) / 2)
+            val reach = Rect(b.left - dx, b.top - dy, b.right + dx, b.bottom + dy)
+            val neighbour = clickables.firstOrNull { other ->
+                other !== node && !related(node, other) && other.boundsInRoot.overlaps(reach) && !other.boundsInRoot.overlaps(b)
+            } ?: return@mapNotNull null
+            Finding(
+                "touch-target",
+                describe(node),
+                "%.0fx%.0fdp, '%s' inside its 48dp area".format(b.width / density, b.height / density, describe(neighbour)),
+            )
+        }
+    }
+
+    private fun related(a: SemanticsNode, b: SemanticsNode): Boolean {
+        fun SemanticsNode.isAncestorOf(other: SemanticsNode): Boolean {
+            var p = other.parent
+            while (p != null) { if (p.id == id) return true; p = p.parent }
+            return false
+        }
+        return a.isAncestorOf(b) || b.isAncestorOf(a)
     }
 
     /** Appends this capture's findings, keyed by the calling test, to the build report. */
@@ -62,10 +93,9 @@ object UxRules {
     }
 
     private fun label(node: SemanticsNode): String {
-        val text = node.config.getOrNull(SemanticsProperties.Text).orEmpty().joinToString(" ") { it.text }
-        val description = node.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty().joinToString(" ")
-        val nested = node.collectTexts().joinToString(" ") + node.collectDescriptions().joinToString(" ")
-        return "$text $description $nested".trim()
+        // collectTexts/collectDescriptions already include the node's own values.
+        return (node.collectTexts() + node.collectDescriptions()).map { it.trim() }.filter { it.isNotEmpty() }
+            .distinct().joinToString(" ")
     }
 
     private fun describe(node: SemanticsNode): String {
