@@ -1,4 +1,4 @@
-# חוקי הפיתוח והארכיטקטורה (Development Rules) — Myself
+# חוקי הפיתוח והארכיטקטורה (Development Rules) — 2B
 
 מסמך זה מהווה חוזה מחייב לפיתוח ולתחזוקת האפליקציה. יש לקרוא מסמך זה לפני כל שינוי עתידי בקוד.
 
@@ -12,6 +12,7 @@
 ---
 
 ## 2. ארכיטקטורת חבילות וקבצים
+- **שם המוצר:** 2B (`app_name`, מ-02/11/2026). שמות הקוד הפנימיים (`com.menash.myself`, `MyselfApp`, תוצר `myself-<versionCode>.aab`) נשארים כמו שהם.
 - **חבילה ו-Namespace:** `com.menash.myself`.
 - **מזהה אפליקציה (Application ID):** נשאר קבוע (`com.aistudio.mycalculators.qvxmzt`) כדי להבטיח עדכונים שוטפים של ה-APK המותקן על המכשיר.
 - **המבנה בפועל** (חבילות, זרימת נתונים, עמוד הכסף, בדיקות, CI): [ARCHITECTURE.md](ARCHITECTURE.md).

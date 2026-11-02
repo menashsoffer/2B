@@ -1,4 +1,4 @@
-# ארכיטקטורה — Myself
+# ארכיטקטורה — 2B
 
 המסמך מתאר את הקוד כפי שהוא ב-`main` (31/10/2026). כללי הפיתוח ב-[RULES.md](RULES.md), בעיות פתוחות ב-[KNOWN_ISSUES.md](KNOWN_ISSUES.md), מה הלאה ב-[ROADMAP.md](ROADMAP.md).
 
