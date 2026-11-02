@@ -31,6 +31,7 @@ import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.MonthCloseViewModel
 import com.menash.myself.feature.money.SubscriptionsViewModel
+import com.menash.myself.feature.money.PeriodViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MoneyViewModel
@@ -102,6 +103,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         )
     )
     val subsUi by subsViewModel.ui.collectAsStateWithLifecycle()
+    val periodViewModel: PeriodViewModel = viewModel(
+        factory = PeriodViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter)
+    )
+    val periodUi by periodViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -166,6 +171,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         pension = pensionUi.open,
         close = closeUi.open,
         subscriptions = subsUi.open,
+        period = periodUi.open,
     ))
     val duration = Motion.duration(Motion.medium)
     val enter = Motion.slideIn(duration)
@@ -175,42 +181,21 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         else Motion.fadeIn(duration) togetherWith exit
     }, label = "money_destination") { displayed ->
         CompositionLocalProvider(LocalMoneyBackActive provides (displayed == destination)) {
-    if (displayed == MoneyDestination.Import) {
-        ImportContent(
+    when (displayed) {
+        MoneyDestination.Import -> ImportContent(
             ui = rememberShownState(importUi, importUi != ImportUi.Idle),
-            actions = ImportActions(
-                onPick = importViewModel::openPicker,
-                onConfirm = importViewModel::confirm,
-                onClose = importViewModel::close,
-            ),
+            actions = ImportActions(onPick = importViewModel::openPicker, onConfirm = importViewModel::confirm, onClose = importViewModel::close),
             modifier = modifier,
         )
-        return@CompositionLocalProvider
-    }
-    // The transactions screen comes first: the maaser screen opens it to link a month's income.
-    if (displayed == MoneyDestination.Transactions) {
-        TransactionsScreen(rememberShownState(transactionsUi, transactionsUi.open), transactionsViewModel, modifier)
-        return@CompositionLocalProvider
-    }
-    if (displayed == MoneyDestination.Goals) {
-        GoalsScreen(rememberShownState(goalsUi, goalsUi.open), goalsViewModel, modifier)
-        return@CompositionLocalProvider
-    }
-    if (displayed == MoneyDestination.Tithe) {
-        TitheScreen(rememberShownState(titheUi, titheUi.open), titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
-        return@CompositionLocalProvider
-    }
-    if (displayed == MoneyDestination.Car) {
-        CarScreen(rememberShownState(carUi, carUi.open), carViewModel, modifier)
-        return@CompositionLocalProvider
-    }
-    if (displayed == MoneyDestination.Pension) {
-        PensionScreen(rememberShownState(pensionUi, pensionUi.open), pensionViewModel, LocalDate.now(Israel), modifier)
-        return@CompositionLocalProvider
-    }
-    // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
-    if (displayed == MoneyDestination.Close) {
-        MonthCloseScreen(
+        // The transactions screen comes first: the maaser screen opens it to link a month's income.
+        MoneyDestination.Transactions -> TransactionsScreen(rememberShownState(transactionsUi, transactionsUi.open), transactionsViewModel, modifier)
+        MoneyDestination.Goals -> GoalsScreen(rememberShownState(goalsUi, goalsUi.open), goalsViewModel, modifier)
+        MoneyDestination.Tithe ->
+            TitheScreen(rememberShownState(titheUi, titheUi.open), titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
+        MoneyDestination.Car -> CarScreen(rememberShownState(carUi, carUi.open), carViewModel, modifier)
+        MoneyDestination.Pension -> PensionScreen(rememberShownState(pensionUi, pensionUi.open), pensionViewModel, LocalDate.now(Israel), modifier)
+        // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
+        MoneyDestination.Close -> MonthCloseScreen(
             ui = rememberShownState(closeUi, closeUi.open),
             viewModel = closeViewModel,
             actions = MonthCloseActions(
@@ -220,10 +205,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             ),
             modifier = modifier,
         )
-        return@CompositionLocalProvider
-    }
-    if (displayed == MoneyDestination.Subscriptions) {
-        SubscriptionsContent(
+        MoneyDestination.Subscriptions -> SubscriptionsContent(
             ui = rememberShownState(subsUi, subsUi.open),
             actions = SubscriptionsActions(
                 onEdit = { viewModel.startEditing(MoneyEntry.SubscriptionEntry(it)) },
@@ -233,33 +215,34 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             ),
             modifier = modifier,
         )
-        return@CompositionLocalProvider
+        MoneyDestination.Period ->
+            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close), modifier)
+        MoneyDestination.Root -> MoneyContent(
+            state = state,
+            selectedTab = selectedTab,
+            expanded = expanded,
+            actions = MoneyActions(
+                onSelectTab = { selectedTab = it },
+                onPreviousMonth = viewModel::showPreviousMonth,
+                onNextMonth = viewModel::showNextMonth,
+                onToggleRow = { kind -> expanded = if (kind in expanded) expanded - kind else expanded + kind },
+                onAdd = { picking = true },
+                onStart = { viewModel.startAdding(EditKind.INCOME) },
+                onEdit = viewModel::startEditing,
+                onAddKind = viewModel::startAdding,
+                onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
+                onGoals = goalsViewModel::open,
+                onTithe = titheViewModel::open,
+                onCloseMonth = closeViewModel::open,
+                onCar = carViewModel::open,
+                onPension = pensionViewModel::open,
+                onSubscriptions = subsViewModel::open,
+                onPeriod = periodViewModel::open,
+                onImport = { picker.launch(importMimeTypes) },
+            ),
+            modifier = modifier,
+        )
     }
-    MoneyContent(
-        state = state,
-        selectedTab = selectedTab,
-        expanded = expanded,
-        actions = MoneyActions(
-            onSelectTab = { selectedTab = it },
-            onPreviousMonth = viewModel::showPreviousMonth,
-            onNextMonth = viewModel::showNextMonth,
-            onToggleRow = { kind -> expanded = if (kind in expanded) expanded - kind else expanded + kind },
-            onAdd = { picking = true },
-            onStart = { viewModel.startAdding(EditKind.INCOME) },
-            onEdit = viewModel::startEditing,
-            onAddKind = viewModel::startAdding,
-            onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
-            onGoals = goalsViewModel::open,
-            onTithe = titheViewModel::open,
-            onCloseMonth = closeViewModel::open,
-            onCar = carViewModel::open,
-            onPension = pensionViewModel::open,
-            onSubscriptions = subsViewModel::open,
-            onImport = { picker.launch(importMimeTypes) },
-        ),
-        modifier = modifier,
-    )
-
         }
     }
     when (destination) {
