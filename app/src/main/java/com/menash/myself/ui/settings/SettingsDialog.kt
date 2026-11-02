@@ -160,7 +160,7 @@ fun SettingsDialog(
                         .fillMaxWidth()
                         .testTag("settings_version_line")
                         .pointerInput(Unit) {
-                            detectTapGestures(onLongPress = { showDesignGallery = true })
+                            if (BuildConfig.DEBUG) detectTapGestures(onLongPress = { showDesignGallery = true })
                         },
                 )
             }
@@ -192,7 +192,7 @@ fun SettingsDialog(
             }
         }
     )
-    if (showDesignGallery) {
+    if (BuildConfig.DEBUG && showDesignGallery) {
         Dialog(
             onDismissRequest = { showDesignGallery = false },
             properties = DialogProperties(usePlatformDefaultWidth = false),

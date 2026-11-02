@@ -106,7 +106,6 @@ private fun MyselfRoot() {
                 currentUser = auth?.currentUser
                 showSignIn = false
             },
-            onContinueToCalculators = { showSignIn = false },
         )
     } else {
         AppShell(
