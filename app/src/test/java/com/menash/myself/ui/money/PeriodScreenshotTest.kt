@@ -47,8 +47,18 @@ class PeriodScreenshotTest {
         close(9, 18_400, 13_900, 3_100), close(10, 18_000, 13_300, 2_800, 61_000),
     )
 
-    private fun shoot(preset: PeriodPreset, withCloses: Boolean, dark: Boolean, font: Float) {
-        val data = if (withCloses) MoneySamples.filled.copy(closedMonths = closes) else MoneySamples.filled
+    private fun lastYear(month: Int, expense: Long, food: Long): ClosedMonth {
+        val m = YearMonth.of(2025, month)
+        return ClosedMonth(
+            m, MonthSnapshot(m, Money(1_750_000), Money(expense * 100)), mapOf("fixed-3" to Money(500_000), "current-1" to Money(food * 100)),
+            emptyMap(), emptyMap(), emptyMap(), m.plusMonths(1).atDay(2),
+        )
+    }
+
+    private val previousYear = listOf(lastYear(10, 12_900, 2_600), lastYear(11, 13_200, 2_700), lastYear(12, 13_600, 2_900))
+
+    private fun shoot(preset: PeriodPreset, withCloses: Boolean, dark: Boolean, font: Float, compare: Boolean = false) {
+        val data = if (withCloses) MoneySamples.filled.copy(closedMonths = closes + if (compare) previousYear else emptyList()) else MoneySamples.filled
         val ui = PeriodUi(open = true, view = periodView(data, preset, today, MoneySamples.rate))
         composeRule.captureR2Screen(darkTheme = dark, fontScale = font) {
             Rtl { PeriodContent(ui = ui, actions = PeriodActions()) }
@@ -58,6 +68,7 @@ class PeriodScreenshotTest {
     @Test fun periodYear_light_font10() = shoot(PeriodPreset.THIS_YEAR, withCloses = true, dark = false, font = 1.0f)
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun periodYear_dark_font13() = shoot(PeriodPreset.THIS_YEAR, withCloses = true, dark = true, font = 1.3f)
+    @Test fun periodCompare_light_font10() = shoot(PeriodPreset.THIS_YEAR, withCloses = true, dark = false, font = 1.0f, compare = true)
     @Test fun periodEmpty_light_font10() = shoot(PeriodPreset.LAST_YEAR, withCloses = true, dark = false, font = 1.0f)
 }
 

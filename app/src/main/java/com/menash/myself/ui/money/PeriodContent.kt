@@ -114,6 +114,7 @@ fun PeriodContent(ui: PeriodUi, actions: PeriodActions, modifier: Modifier = Mod
             SectionTitle(stringResource(R.string.period_top_categories))
             MoneySurface(testTag = "period_categories") { view.categories.forEach { CategoryLine(it, actions.onCategory) } }
         }
+        PeriodYearCompare(view, actions.onCategory)
         view.netWorth?.let { change ->
             MoneySurface(testTag = "period_net_worth") {
                 AmountRow(

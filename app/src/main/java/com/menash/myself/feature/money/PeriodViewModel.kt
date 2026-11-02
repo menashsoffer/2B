@@ -17,7 +17,7 @@ import java.time.LocalDate
 
 data class PeriodUi(val open: Boolean = false, val view: PeriodView? = null)
 
-/** "סיכום תקופה": read only, over closed months. Opens on this year by default. */
+/** "סיכום תקופה": read only, over closed months. Opens on this year, or on last year in January. */
 class PeriodViewModel(
     money: MoneyRepository,
     usdRates: Flow<BigDecimal?>,
@@ -33,6 +33,7 @@ class PeriodViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, PeriodUi())
 
     fun open() {
+        preset.value = defaultPreset(today())
         open.value = true
     }
 

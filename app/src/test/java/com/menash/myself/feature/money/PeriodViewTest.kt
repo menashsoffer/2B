@@ -58,4 +58,31 @@ class PeriodViewTest {
         assertEquals(Money(10_000), food.diff)
         assertEquals(Money(5_000_000), view.netWorth!!.end)
     }
+
+    @Test
+    fun calendarYear_comparesWithYearBefore_byMonthlyAverage() {
+        fun closeIn(year: Int, month: Int, expense: Long, food: Long) = YearMonth.of(year, month).let { m ->
+            ClosedMonth(m, MonthSnapshot(m, Money(1_800_000), Money(expense)), mapOf("current-1" to Money(food)), emptyMap(), emptyMap(), emptyMap(), m.plusMonths(1).atDay(2))
+        }
+        val data = MoneySamples.filled.copy(
+            closedMonths = listOf(
+                closeIn(2025, 11, 1_200_000, 280_000), closeIn(2025, 12, 1_400_000, 300_000),
+                closeIn(2026, 9, 1_300_000, 330_000), closeIn(2026, 10, 1_500_000, 350_000),
+            ),
+        )
+        val view = periodView(data, PeriodPreset.THIS_YEAR, LocalDate.of(2026, 11, 2), MoneySamples.rate)
+        val comparison = view.comparison!!
+        assertEquals(Money(1_400_000), comparison.expenses.thisYear)
+        assertEquals(Money(1_300_000), comparison.expenses.previousYear)
+        assertEquals(Money(100_000), comparison.expenses.difference)
+        assertEquals("current-1", view.risers.single().categoryId)
+        assertEquals(Money(50_000), view.risers.single().difference)
+        assertNull(periodView(data, PeriodPreset.LAST_3, LocalDate.of(2026, 11, 2), MoneySamples.rate).comparison)
+    }
+
+    @Test
+    fun january_opensOnLastYear() {
+        assertEquals(PeriodPreset.LAST_YEAR, defaultPreset(LocalDate.of(2027, 1, 5)))
+        assertEquals(PeriodPreset.THIS_YEAR, defaultPreset(LocalDate.of(2026, 11, 2)))
+    }
 }
