@@ -98,3 +98,13 @@ The engine only suggests changes; the caller decides what to accept. Money is in
 - `suggestPlan(baseline, currentPlan, categories)` compares non-periodic categories with their plans. For example, a current category averaging ₪120 against a ₪100 plan is under-planned at the default 10% tolerance. Fixed categories use the latest month; other categories use the average. At least three closes are needed. Proposed amounts round up to ₪50 by default.
 - `suggestPeriodic(closed, budgets, endMonth)` proposes annual budgets only with all twelve calendar months closed. For example, ₪1,020 spent over a complete year rounds up to ₪1,100 with the default ₪100 step. Partial years return no spending or suggestion.
 - `planImpact(currentPlan, suggestions, accepted, periodic, acceptedPeriodic, budgets)` compares monthly totals after only accepted, available suggestions are applied. For example, accepting a ₪50 monthly increase gives a ₪50 difference; annual budgets use their monthly reserve.
+
+## Period summary
+
+The year summary generalised to any inclusive run of months (`MonthRange`), for the period screen. Only closed months count; the caller picks the end, normally the last month that can be closed.
+
+- `MonthRange(from, to)` rejects an end before the start. `MonthRange.last(end, n)` is the n months ending with `end` (across years). `MonthRange.year(y, end)` is January through `end` when `end` is in `y`, otherwise the whole year.
+- `periodSummary(closed, range)` returns totals, saving and saving percentage, monthly averages of income, expenses and saving (HALF_UP once), a `MonthFlow` per closed month, best/worst month, or `null` with no close in the range. **Every month of the range without a close is reported in `missingMonths`, never counted as zero.** Duplicate closes are rejected.
+- `categoryPeriod(closed, range, plans)` is `categoryYear` over the range: plans are summed only for closed months. For a calendar year it equals `categoryYear`.
+- `periodicAtPeriodEnd(closed, range)` returns the periodic map of the last close in the range.
+- `netWorthChange(closed, range)` compares the last close in the range with known balances against the last known close before the range (any earlier month), or the first known close inside it. A close with both balance maps empty is unknown and skipped.
