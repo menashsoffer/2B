@@ -91,4 +91,11 @@ class XlsxReaderEdgeTest {
         assertEquals(FileProblem.TOO_LARGE, (error.cause as ImportException).problem)
     }
 
+    @Test fun rowPastLimit_readWorkbookReportsTooLargeNotCorrupt() {
+        val sheet = """<worksheet><sheetData><row r="${MAX_ROWS + 1}"/></sheetData></worksheet>"""
+        val bytes = archive("xl/workbook.xml" to workbook, "xl/_rels/workbook.xml.rels" to relationships, "xl/worksheets/sheet1.xml" to sheet)
+        val error = assertThrows(ImportException::class.java) { readWorkbook(bytes) }
+        assertEquals(FileProblem.TOO_LARGE, error.problem)
+    }
+
 }

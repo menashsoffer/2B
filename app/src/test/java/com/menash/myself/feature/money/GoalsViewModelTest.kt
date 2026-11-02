@@ -53,6 +53,18 @@ class GoalsViewModelTest {
     }
 
     @Test
+    fun usdRateNotLoaded_goalsStillShow_andThePlanBasisIsWithheld() {
+        val vm = GoalsViewModel(
+            FakeMoneyRepository(MoneySamples.filled.copy(goals = listOf(trip))),
+            MutableStateFlow<BigDecimal?>(null), { today }, DefaultErrorReporter(),
+        ) { "goal-new" }
+        vm.open()
+        assertTrue(vm.ui.value.open)
+        assertNull(vm.ui.value.view.basis)
+        assertEquals(listOf(trip.id), vm.ui.value.view.goals.map { it.goal.id })
+    }
+
+    @Test
     fun typing_updatesTheLivePreview() {
         val vm = viewModel(FakeMoneyRepository(MoneySamples.filled))
         vm.startAdding()
