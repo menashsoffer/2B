@@ -11,6 +11,8 @@ interface TransactionRepository {
     fun observeTransactions(): Flow<List<StoredTransaction>>
 
     fun observeMemory(): Flow<ImportMemory>
+    fun observeTransactionsForScreen(): Flow<List<StoredTransaction>> = observeTransactions()
+    fun observeMemoryForScreen(): Flow<ImportMemory> = observeMemory()
 
     /** Writes a confirmed [ImportPlan]: upserts by id, so applying the same plan twice changes nothing. */
     suspend fun apply(plan: ImportPlan)

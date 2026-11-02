@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface MoneyRepository {
     /** Emits the whole household money state on every change; [MoneyData] () when no household is active. */
     fun observe(): Flow<MoneyData>
+    fun observeForScreen(): Flow<MoneyData> = observe()
 
     /** Creates or replaces the document with the entry's id. */
     suspend fun save(entry: MoneyEntry)

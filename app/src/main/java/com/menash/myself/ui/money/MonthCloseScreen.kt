@@ -28,6 +28,7 @@ fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: 
             onEnterBalances = viewModel::enterBalances,
             onBalance = viewModel::setBalance,
             onMarkUnknown = viewModel::markBalancesUnknown,
+            onRetry = viewModel::retry,
         ),
         modifier = modifier,
     )
