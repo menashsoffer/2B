@@ -59,6 +59,20 @@ class HomeContentScreenshotTest {
     @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun homeDreams128_dark_font13() = capture(darkTheme = true, fontScale = 1.3f, dreamsActive = 128)
 
+    @Test
+    fun homeRelease_light_font10() {
+        org.junit.Assert.assertEquals(listOf("home", "money"),
+            com.menash.myself.ui.shell.shellTabsFor(false).map { it.route })
+        composeRule.captureR2Screen(darkTheme = false, fontScale = 1.0f) {
+            HomeContent(
+                state = HomeUiState(firstName = com.menash.myself.r2.SampleName),
+                hour = com.menash.myself.r2.FixedClock.HOUR,
+                epochMillis = com.menash.myself.r2.FixedClock.epochMillis,
+                onOpenRoute = {}, onOpenAccount = {}, debug = false,
+            )
+        }
+    }
+
     private fun capture(darkTheme: Boolean, fontScale: Float, dreamsActive: Int?) {
         composeRule.captureR2Screen(darkTheme = darkTheme, fontScale = fontScale) {
             HomeContentAtFixedClock(dreamsActive = dreamsActive)

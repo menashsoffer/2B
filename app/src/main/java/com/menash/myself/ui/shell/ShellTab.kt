@@ -7,6 +7,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.menash.myself.BuildConfig
 import com.menash.myself.R
 
 object ShellRoute {
@@ -33,12 +34,15 @@ data class ShellTab(
     val testTag: String,
 )
 
-val shellTabs = listOf(
+fun shellTabsFor(debug: Boolean): List<ShellTab> = listOf(
     ShellTab(ShellRoute.Home, R.string.nav_home, Icons.Outlined.Home, "nav_home"),
     ShellTab(ShellRoute.Money, R.string.nav_money, Icons.Outlined.AccountBalanceWallet, "nav_money"),
     ShellTab(ShellRoute.Dreams, R.string.nav_dreams, Icons.Outlined.StarOutline, "nav_dreams"),
     ShellTab(ShellRoute.Shopping, R.string.nav_shopping, Icons.Outlined.ShoppingBag, "nav_shopping"),
     ShellTab(ShellRoute.Tracking, R.string.nav_tracking, Icons.Outlined.BarChart, "nav_tracking"),
 )
+.filter { debug || it.route == ShellRoute.Home || it.route == ShellRoute.Money }
+
+val shellTabs = shellTabsFor(BuildConfig.DEBUG)
 
 val shellTabRoutes = shellTabs.map { tab -> tab.route }.toSet()
