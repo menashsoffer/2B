@@ -194,6 +194,10 @@ class HouseholdRepository(private val db: FirebaseFirestore, private val pending
                         // Empty cache is not proof of deletion. INCLUDE delivers the server's empty result too.
                         if (snapshot == null || (snapshot.isEmpty && snapshot.metadata.isFromCache)) return@addSnapshotListener
                         val doc = snapshot.documents.firstOrNull()
+                        // A household that exists only as a local pending write (just created, or just joined)
+                        // is not readable by the server rules yet: every listener started on it would be
+                        // rejected once and never retried (found by e2e, docs/E2E.md). Wait for the server copy.
+                        if (doc != null && doc.metadata.hasPendingWrites()) return@addSnapshotListener
                         trySend(doc?.toObject(Household::class.java)?.copy(id = doc.id))
                     }
             }
