@@ -13,6 +13,19 @@ data class Category(val id: String, val name: String, val klass: ExpenseClass, v
     init { requireId(id) }
 }
 
+const val MAX_CATEGORY_NAME = 40
+
+/**
+ * A category the household adds while sorting lines. Null for a blank or too long name.
+ * An existing category with the same name in the same class is reused instead of a duplicate.
+ */
+fun newCategory(name: String, klass: ExpenseClass, existing: List<Category>, newId: () -> String): Category? {
+    val clean = name.trim().replace(Regex("""\s+"""), " ")
+    if (clean.isEmpty() || clean.length > MAX_CATEGORY_NAME) return null
+    return existing.firstOrNull { it.klass == klass && it.name.equals(clean, ignoreCase = true) }
+        ?: Category(newId(), clean, klass)
+}
+
 /** Annual budget for a periodic category; the plan reserves annualAmount / 12 every month. */
 data class PeriodicBudget(
     val id: String, val categoryId: String, val name: String, val annualAmount: Money, val yearStartMonth: YearMonth,

@@ -56,9 +56,10 @@ data class TransactionsUi(
 /** The month's imported lines: look, give a category, or remove a cancelled pending line. */
 class TransactionsViewModel(
     private val transactions: TransactionRepository,
-    money: MoneyRepository,
+    private val money: MoneyRepository,
     errorReporter: ErrorReporter,
     private val events: UiEvents? = null,
+    private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
 ) : BaseViewModel(errorReporter) {
 
     private val query = MutableStateFlow(TransactionsQuery())
@@ -127,6 +128,16 @@ class TransactionsViewModel(
         safeLaunch("linkIncome") {
             transactions.setCategory(line.id, incomeId)
             transactions.remember(ImportIds.merchantKey(line.row.description), incomeId, false)
+        }
+    }
+
+    /** Adds a category from the line's sheet and gives it to the line, as [decide] would. */
+    fun createCategory(lineId: String, name: String, klass: com.menash.myself.feature.money.domain.ExpenseClass, thisLineOnly: Boolean = false) {
+        val category = com.menash.myself.feature.money.domain.newCategory(name, klass, ui.value.categories, newId) ?: return
+        val isNew = ui.value.categories.none { it.id == category.id }
+        safeLaunch("createCategory") {
+            if (isNew) money.save(com.menash.myself.feature.money.data.MoneyEntry.CategoryEntry(category))
+            decide(lineId, MerchantDecision.Categorise(category.id), thisLineOnly)
         }
     }
 
