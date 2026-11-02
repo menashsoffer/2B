@@ -5,10 +5,9 @@
     <string name="period_entry_detail">כמה נכנס, כמה יצא ומה נשאר, לפי חודשים סגורים</string>
     <string name="period_title">סיכום תקופה</string>
     <string name="period_subtitle">רק חודשים סגורים נספרים</string>
-    <string name="period_last_3">3 חודשים</string>
-    <string name="period_last_6">6 חודשים</string>
+    <string name="period_last_3">3 ח׳</string>
+    <string name="period_last_6">6 ח׳</string>
     <string name="period_this_year">השנה</string>
-    <string name="period_last_year">שנה שעברה</string>
     <string name="period_range">%1$s עד %2$s</string>
     <string name="period_empty">אין עדיין חודש סגור בתקופה הזו</string>
     <string name="period_empty_detail">סוגרים חודש ממסך החודש, והוא יופיע כאן</string>
@@ -19,7 +18,7 @@
     <string name="period_closed_count">%1$d חודשים סגורים · ממוצע הוצאה %2$s לחודש</string>
     <string name="period_missing">חסרים: %1$s. הם לא נספרים</string>
     <string name="period_chart">הכנסה מול הוצאה לפי חודש</string>
-    <string name="period_chart_missing">חסר</string>
+    <string name="period_chart_missing">–</string>
     <string name="period_by_class">לפי סוג הוצאה</string>
     <string name="period_class_other">לא משויך</string>
     <string name="period_top_categories">הקטגוריות הגדולות</string>
