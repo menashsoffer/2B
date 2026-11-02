@@ -20,6 +20,8 @@ tags: [smoke, import]
     timeout: 120000
 
 # First share: review, save, done.
+# Tap budget (docs/ux/UX-CHECKS.md): from the share to "saved" at most 2 taps inside the app.
+- evalScript: ${output.taps = 0}
 - openLink: myself-e2e://signin?share=hapoalim_oct.xlsx
 - extendedWaitUntil:
     visible:
@@ -33,10 +35,14 @@ tags: [smoke, import]
 - takeScreenshot: 02_import_review
 - tapOn:
     id: import_confirm
+- evalScript: ${output.taps = output.taps + 1}
 - extendedWaitUntil:
     visible:
       id: import_done
     timeout: 30000
+- assertTrue:
+    condition: ${output.taps <= 2}
+    label: "Tap budget: share to saved <= 2 taps"
 - takeScreenshot: 02_import_done
 - tapOn: "סגירה"
 
