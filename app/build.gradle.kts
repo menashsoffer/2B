@@ -1,5 +1,6 @@
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 
 plugins {
   alias(libs.plugins.kover)
@@ -102,6 +103,11 @@ roborazzi {
 }
 
 kover {
+  currentProject {
+    createVariant("moneyDomain") { add("debug") }
+    createVariant("moneyImport") { add("debug") }
+    createVariant("moneyPresentation") { add("debug") }
+  }
   reports {
     filters {
       excludes {
@@ -125,6 +131,33 @@ kover {
         classes("*_Impl*")
       }
     }
+    // Targets: domain 85% line / 75% branch; import 85% line / 75% branch;
+    // money presentation 60% line. Thresholds must never be lowered.
+    variant("moneyDomain") {
+      filtersAppend { includes { classes("com.menash.myself.feature.money.domain.*") } }
+      verify { rule { minBound(98); minBound(85, CoverageUnit.BRANCH) } }
+    }
+    variant("moneyImport") {
+      filtersAppend { includes { classes("com.menash.myself.feature.money.importer.*") } }
+      verify { rule { minBound(93); minBound(70, CoverageUnit.BRANCH) } }
+    }
+    variant("moneyPresentation") {
+      filtersAppend {
+        includes { classes("com.menash.myself.feature.money.*") }
+        excludes {
+          classes("com.menash.myself.feature.money.domain.*")
+          classes("com.menash.myself.feature.money.importer.*")
+          classes("com.menash.myself.feature.money.data.*")
+        }
+      }
+      verify { rule { minBound(88) } }
+    }
+  }
+}
+
+tasks.configureEach {
+  if (name == "koverVerifyDebug") {
+    dependsOn("koverVerifyMoneyDomain", "koverVerifyMoneyImport", "koverVerifyMoneyPresentation")
   }
 }
 
