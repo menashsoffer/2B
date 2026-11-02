@@ -4,6 +4,7 @@ import com.menash.myself.core.data.session.DefaultErrorReporter
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.domain.ClosedMonth
+import com.menash.myself.feature.money.domain.ExpenseClass
 import com.menash.myself.feature.money.domain.MonthSnapshot
 import com.menash.myself.feature.money.domain.SuggestionStatus
 import com.menash.myself.feature.money.domain.amountFor
@@ -25,6 +26,12 @@ import java.time.YearMonth
 /** "מגמה": twelve months up to last month, closed months only, and the suggested plan in one tap. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CategoryTrendTest {
+
+    @Test
+    fun missingFixedPlanRequiresManualEditing() {
+        val target = planTarget(MoneySamples.empty, "missing", ExpenseClass.FIXED, YearMonth.of(2026, 10))
+        assertEquals(PlanTarget.Manual(0), target)
+    }
 
     private val today = LocalDate.of(2026, 11, 2)
     private val november = YearMonth.of(2026, 11)
