@@ -47,6 +47,8 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.money.MonthRow
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.MonthView
+import com.menash.myself.feature.money.MoneyMonth
+import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.MoneyScreenState
 import com.menash.myself.feature.money.data.MoneyEntry
 import java.time.format.DateTimeFormatter
@@ -57,6 +59,8 @@ const val MoneyTabBigPicture = 1
 /** Callbacks of the money tab. Everything shown comes from [MoneyScreenState]; nothing is computed here. */
 data class MoneyActions(
     val onSelectTab: (Int) -> Unit = {},
+    val onPreviousMonth: () -> Unit = {},
+    val onNextMonth: () -> Unit = {},
     val onToggleRow: (MonthRowKind) -> Unit = {},
     val onAdd: () -> Unit = {},
     val onStart: () -> Unit = {},
@@ -115,7 +119,7 @@ fun MoneyContent(
                 ) { tab ->
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                         if (tab == MoneyTabBigPicture) BigPictureContent(money.bigPicture, actions)
-                        else MonthContent(money.month, money.view, expanded, actions)
+                        else MonthContent(money, expanded, actions)
                     }
                 }
             }
@@ -125,12 +129,14 @@ fun MoneyContent(
 
 @Composable
 private fun MonthContent(
-    month: java.time.YearMonth,
-    view: MonthView,
+    money: MoneyMonth,
     expanded: Set<MonthRowKind>,
     actions: MoneyActions,
 ) {
+    val view = money.view
     val colors = MaterialTheme.appColors
+    val status = (view as? MonthView.Planned)?.status
+    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth)
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
             title = stringResource(R.string.import_entry),
@@ -159,12 +165,7 @@ private fun MonthContent(
                     modifier = Modifier.padding(horizontal = Spacing.s16, vertical = Spacing.s8),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s8),
                 ) {
-                    Text(
-                        text = stringResource(R.string.money_surplus_label, hebrewMonthName(month.month)),
-                        style = AppType.caption,
-                        color = colors.textSecondary,
-                    )
-                    Text(
+                    if (status != null) MonthStatusHeadline(status) else Text(
                         text = formatMoney(surplus),
                         style = AppType.number,
                         color = if (surplus.isNegative()) colors.danger else colors.textPrimary,

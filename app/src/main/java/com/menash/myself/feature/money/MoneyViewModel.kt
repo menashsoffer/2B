@@ -76,10 +76,17 @@ class MoneyViewModel(
     /** Cards saved here that the repository may not have sent back yet, so an item saved right after finds its card. */
     private val createdCards = mutableListOf<Card>()
 
-    val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates, transactions, memory) { data, rate, lines, learnt ->
+    /** The month the month tab shows; null follows today's month. */
+    private val shown = MutableStateFlow<YearMonth?>(null)
+
+    val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates, transactions, memory, shown) { data, rate, lines, learnt, picked ->
         latest = data
         val day = today()
-        MoneyScreenState(money = buildMoneyMonth(data, YearMonth.from(day), day, rate, lines, learnt), data = data)
+        val current = YearMonth.from(day)
+        val now = buildMoneyMonth(data, current, day, rate, lines, learnt)
+        val money = if (picked == null || picked == current) now else
+            buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current)
+        MoneyScreenState(money = money, data = data)
     }
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
@@ -90,7 +97,20 @@ class MoneyViewModel(
     private val _editor = MutableStateFlow<EditorState?>(null)
     val editor: StateFlow<EditorState?> = _editor.asStateFlow()
 
-    private val month: YearMonth get() = YearMonth.from(today())
+    /** Items added or edited from the month tab belong to the month it shows. */
+    private val month: YearMonth get() = shown.value ?: YearMonth.from(today())
+
+    fun showPreviousMonth() {
+        val current = YearMonth.from(today())
+        val from = shown.value ?: current
+        if (from > current.minusMonths(MonthsBack)) shown.value = from.minusMonths(1)
+    }
+
+    fun showNextMonth() {
+        val current = YearMonth.from(today())
+        val next = (shown.value ?: current).plusMonths(1)
+        shown.value = if (next >= current) null else next
+    }
 
     private fun seedCategoriesOnce(data: MoneyData) {
         if (seeded || !data.householdReady) return

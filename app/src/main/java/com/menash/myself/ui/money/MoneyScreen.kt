@@ -241,6 +241,8 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         expanded = expanded,
         actions = MoneyActions(
             onSelectTab = { selectedTab = it },
+            onPreviousMonth = viewModel::showPreviousMonth,
+            onNextMonth = viewModel::showNextMonth,
             onToggleRow = { kind -> expanded = if (kind in expanded) expanded - kind else expanded + kind },
             onAdd = { picking = true },
             onStart = { viewModel.startAdding(EditKind.INCOME) },

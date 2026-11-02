@@ -20,7 +20,6 @@
     <string name="money_empty_description">מתחילים מהכנסה אחת. כל השאר אפשר להוסיף אחר כך.</string>
     <string name="money_empty_action">להתחיל</string>
     <string name="money_no_household">כדי לנהל כסף צריך להיות בבית משותף</string>
-    <string name="money_surplus_label">פנוי צפוי ב%1$s</string>
     <string name="money_usd_missing">חסר שער דולר</string>
     <string name="money_add">להוסיף</string>
     <string name="money_card_charges">חיובי אשראי צפויים</string>
