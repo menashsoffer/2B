@@ -2,7 +2,6 @@ package com.menash.myself.ui.money
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.key
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -63,47 +62,48 @@ fun SubscriptionsContent(ui: SubscriptionsUi, actions: SubscriptionsActions, mod
     ) {
         MoneySubScreen(title = stringResource(R.string.subs_title), subtitle = stringResource(R.string.subs_subtitle), onBack = actions.onBack)
         val view = ui.view
-        Crossfade(targetState = when { ui.loadError -> 0; view == null -> 1; else -> 2 },
+        Crossfade(targetState = when { ui.noHousehold -> 3; ui.loadError -> 0; view == null -> 1; else -> 2 },
             animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "subscriptions_load") { state ->
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
-        if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
-        else if (state == 1 || view == null) { LoadingState(testTag = "subs_loading") }
-        else {
-        val colors = MaterialTheme.appColors
-        MoneySurface(testTag = "subs_total") {
-            AmountRow(
-                title = stringResource(R.string.subs_total),
-                detail = view.monthlyTotal?.let { stringResource(R.string.subs_total_year, formatMoney(Money(it.agorot * 12))) }
-                    ?: stringResource(R.string.subs_rate_missing),
-                amount = view.monthlyTotal?.let { formatMoney(it) },
-                titleStyle = AppType.title,
-            )
-        }
-        SectionHeader(stringResource(R.string.subs_listed), onAdd = actions.onAdd)
-        MoneySurface(testTag = "subs_rows") {
-            if (view.rows.isEmpty()) AmountRow(title = stringResource(R.string.money_none_yet), amount = null)
-            view.rows.forEach { row -> SubscriptionLine(row, actions) }
-        }
-        if (view.unlisted.isNotEmpty()) {
-            SectionTitle(stringResource(R.string.subs_unlisted))
-            Text(stringResource(R.string.subs_unlisted_detail), style = AppType.caption, color = colors.textSecondary)
-            MoneySurface(testTag = "subs_unlisted") {
-                view.unlisted.forEach { charge ->
-                    AmountRow(
-                        title = charge.name,
-                        detail = stringResource(
-                            R.string.subs_unlisted_line, hebrewMonthName(charge.last.month.month), charge.months,
-                        ),
-                        amount = formatMoney(charge.last.amount),
-                        onClick = { actions.onAddFrom(charge) },
-                        onClickLabel = stringResource(R.string.subs_add_from),
-                        testTag = "subs_unlisted_${charge.merchantKey}",
-                    )
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+                if (state == 3) { }
+                else if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+                else if (state == 1 || view == null) { LoadingState(testTag = "subs_loading") }
+                else {
+                    val colors = MaterialTheme.appColors
+                    MoneySurface(testTag = "subs_total") {
+                        AmountRow(
+                            title = stringResource(R.string.subs_total),
+                            detail = view.monthlyTotal?.let { stringResource(R.string.subs_total_year, formatMoney(Money(it.agorot * 12))) }
+                                ?: stringResource(R.string.subs_rate_missing),
+                            amount = view.monthlyTotal?.let { formatMoney(it) },
+                            titleStyle = AppType.title,
+                        )
+                    }
+                    SectionHeader(stringResource(R.string.subs_listed), onAdd = actions.onAdd)
+                    MoneySurface(testTag = "subs_rows") {
+                        if (view.rows.isEmpty()) AmountRow(title = stringResource(R.string.money_none_yet), amount = null)
+                        view.rows.forEach { row -> SubscriptionLine(row, actions) }
+                    }
+                    if (view.unlisted.isNotEmpty()) {
+                        SectionTitle(stringResource(R.string.subs_unlisted))
+                        Text(stringResource(R.string.subs_unlisted_detail), style = AppType.caption, color = colors.textSecondary)
+                        MoneySurface(testTag = "subs_unlisted") {
+                            view.unlisted.forEach { charge ->
+                                AmountRow(
+                                    title = charge.name,
+                                    detail = stringResource(
+                                        R.string.subs_unlisted_line, hebrewMonthName(charge.last.month.month), charge.months,
+                                    ),
+                                    amount = formatMoney(charge.last.amount),
+                                    onClick = { actions.onAddFrom(charge) },
+                                    onClickLabel = stringResource(R.string.subs_add_from),
+                                    testTag = "subs_unlisted_${charge.merchantKey}",
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
-        }
-        }
         }
     }
 }

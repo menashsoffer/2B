@@ -21,6 +21,7 @@ data class SubscriptionsUi(
     /** Null means the data has not loaded, unless loadError is set. */
     val view: SubscriptionsView? = null,
     val loadError: Boolean = false,
+    val noHousehold: Boolean = false,
 )
 
 /** "מנויים": read only here; adding and editing go through the money item sheet. */
@@ -46,7 +47,7 @@ class SubscriptionsViewModel(
             ScreenLoad.Error -> SubscriptionsUi(isOpen, loadError = true)
             is ScreenLoad.Ready -> {
                 val (data, stored, memory, rate) = input.value
-                if (isOpen && data.householdReady) SubscriptionsUi(true, subscriptionsView(data, today(), rate, stored, memory)) else SubscriptionsUi(isOpen)
+                if (isOpen && data.householdReady) SubscriptionsUi(true, subscriptionsView(data, today(), rate, stored, memory)) else SubscriptionsUi(isOpen, noHousehold = !data.householdReady)
             }
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SubscriptionsUi())

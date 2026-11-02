@@ -36,4 +36,5 @@
     <string name="close_balances_suspect">היתרות נשמרו ביום הסגירה ולא בסוף החודש</string>
     <string name="close_balances_mark_unknown">לסמן כלא ידוע</string>
     <string name="close_balances_invalid">יש להזין סכום לא שלילי עם עד שתי ספרות אחרי הנקודה</string>
+    <string name="close_loading_title">סגירת חודש</string>
 </resources>
