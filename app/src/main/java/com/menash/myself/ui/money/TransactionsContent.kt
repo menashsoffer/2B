@@ -1,5 +1,8 @@
 package com.menash.myself.ui.money
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.key
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -23,10 +26,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.EmptyState
+import com.menash.myself.core.designsystem.component.LoadingState
+import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.PillTabs
 import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.domain.model.Money
@@ -43,6 +49,7 @@ data class TransactionsActions(
     val onFilter: (LineFilter) -> Unit = {},
     val onLine: (MonthLine) -> Unit = {},
     val onClose: () -> Unit = {},
+    val onRetry: () -> Unit = {},
 )
 
 private val filters = listOf(LineFilter.ALL, LineFilter.UNASSIGNED, LineFilter.PENDING)
@@ -72,7 +79,13 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                 Text(stringResource(R.string.tx_next_month), style = AppType.body)
             }
         }
-        if (lines == null || lines.lines.isEmpty()) {
+        key(month) {
+        Crossfade(targetState = when { ui.loadError -> 0; lines == null -> 1; lines.lines.isEmpty() -> 2; else -> 3 },
+            animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "transactions_load") { state ->
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+        if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+        else if (state == 1 || lines == null) { LoadingState(testTag = "tx_loading") }
+        else if (state == 2) {
             EmptyState(
                 title = stringResource(R.string.tx_empty_title),
                 description = stringResource(R.string.tx_empty_detail),
@@ -124,6 +137,9 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                     shown.forEach { line -> LineRow(line, ui, actions) }
                 }
             }
+        }
+        }
+        }
         }
     }
 }

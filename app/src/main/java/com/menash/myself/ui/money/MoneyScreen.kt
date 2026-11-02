@@ -1,5 +1,4 @@
 package com.menash.myself.ui.money
-
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
@@ -225,6 +224,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onAdd = { viewModel.startAdding(EditKind.SUBSCRIPTION) },
                 onAddFrom = viewModel::startSubscriptionFrom,
                 onBack = subsViewModel::close,
+                onRetry = subsViewModel::retry,
             ),
             modifier = modifier,
         )

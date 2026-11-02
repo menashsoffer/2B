@@ -30,6 +30,7 @@ fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, mod
             onFilter = viewModel::setFilter,
             onLine = { line -> if (line.removable) viewModel.askRemove(line.id) else viewModel.pick(line.id) },
             onClose = viewModel::close,
+            onRetry = viewModel::retry,
         ),
         modifier = modifier,
     )

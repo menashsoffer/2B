@@ -16,7 +16,12 @@ import kotlinx.coroutines.flow.stateIn
 import java.math.BigDecimal
 import java.time.LocalDate
 
-data class SubscriptionsUi(val open: Boolean = false, val view: SubscriptionsView? = null)
+data class SubscriptionsUi(
+    val open: Boolean = false,
+    /** Null means the data has not loaded, unless loadError is set. */
+    val view: SubscriptionsView? = null,
+    val loadError: Boolean = false,
+)
 
 /** "מנויים": read only here; adding and editing go through the money item sheet. */
 class SubscriptionsViewModel(
@@ -29,12 +34,31 @@ class SubscriptionsViewModel(
 
     private val open = MutableStateFlow(false)
 
-    val ui: StateFlow<SubscriptionsUi> = combine(
-        open, money.observe(), transactions.observeTransactions(), transactions.observeMemory(), usdRates,
-    ) { isOpen, data, stored, memory, rate ->
-        if (!isOpen || !data.householdReady) SubscriptionsUi(isOpen)
-        else SubscriptionsUi(true, subscriptionsView(data, today(), rate, stored, memory))
+    private val retry = MutableStateFlow(0)
+    private val inputs = screenLoad(retry) {
+        combine(money.observeForScreen(), transactions.observeTransactionsForScreen(), transactions.observeMemoryForScreen(), usdRates) { data, stored, memory, rate ->
+            Inputs(data, stored, memory, rate)
+        }
+    }
+    val ui: StateFlow<SubscriptionsUi> = combine(open, inputs) { isOpen, input ->
+        when (input) {
+            ScreenLoad.Loading -> SubscriptionsUi(isOpen)
+            ScreenLoad.Error -> SubscriptionsUi(isOpen, loadError = true)
+            is ScreenLoad.Ready -> {
+                val (data, stored, memory, rate) = input.value
+                if (isOpen && data.householdReady) SubscriptionsUi(true, subscriptionsView(data, today(), rate, stored, memory)) else SubscriptionsUi(isOpen)
+            }
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SubscriptionsUi())
+
+    private data class Inputs(
+        val data: com.menash.myself.feature.money.data.MoneyData,
+        val stored: List<com.menash.myself.feature.money.importer.StoredTransaction>,
+        val memory: com.menash.myself.feature.money.importer.ImportMemory,
+        val rate: BigDecimal?,
+    )
+
+    fun retry() { retry.value += 1 }
 
     fun open() {
         open.value = true
