@@ -43,13 +43,14 @@ class FirestoreTransactionRepository(
     private fun collection(hid: String, name: String): CollectionReference =
         db().collection("households").document(hid).collection(name)
 
-    private fun <T> observe(name: String, empty: T, map: (List<Pair<String, Map<String, Any?>>>) -> T): Flow<T> =
+    private fun <T> observe(name: String, empty: T, failOnError: Boolean = false, map: (List<Pair<String, Map<String, Any?>>>) -> T): Flow<T> =
         householdSession.currentHouseholdId.flatMapLatest { hid ->
             if (hid.isNullOrBlank()) flowOf(empty)
             else callbackFlow {
                 val listener = collection(hid, name).addSnapshotListener { snapshot, error ->
                     if (error != null) {
                         reportError("observe:$name", error)
+                        if (failOnError) close(error)
                         return@addSnapshotListener
                     }
                     trySend(map(snapshot?.documents?.map { it.id to it.data.orEmpty() }.orEmpty()))
@@ -58,8 +59,12 @@ class FirestoreTransactionRepository(
             }
         }
 
-    override fun observeTransactions(): Flow<List<StoredTransaction>> =
-        observe<List<StoredTransaction>>(ImportDocuments.TRANSACTIONS, emptyList()) { docs ->
+    override fun observeTransactions(): Flow<List<StoredTransaction>> = observeTransactions(false)
+
+    override fun observeTransactionsForScreen(): Flow<List<StoredTransaction>> = observeTransactions(true)
+
+    private fun observeTransactions(failOnError: Boolean): Flow<List<StoredTransaction>> =
+        observe<List<StoredTransaction>>(ImportDocuments.TRANSACTIONS, emptyList(), failOnError) { docs ->
             docs.mapNotNull { (id, data) ->
                 try {
                     ImportDocuments.decode(id, data)
@@ -73,8 +78,12 @@ class FirestoreTransactionRepository(
             }
         }
 
-    override fun observeMemory(): Flow<ImportMemory> =
-        observe<ImportMemory>(ImportDocuments.MERCHANT_MEMORY, ImportMemory()) { docs -> ImportDocuments.decodeMemory(docs.map { it.second }) }
+    override fun observeMemory(): Flow<ImportMemory> = observeMemory(false)
+
+    override fun observeMemoryForScreen(): Flow<ImportMemory> = observeMemory(true)
+
+    private fun observeMemory(failOnError: Boolean): Flow<ImportMemory> =
+        observe<ImportMemory>(ImportDocuments.MERCHANT_MEMORY, ImportMemory(), failOnError) { docs -> ImportDocuments.decodeMemory(docs.map { it.second }) }
 
     override suspend fun apply(plan: ImportPlan) {
         try {

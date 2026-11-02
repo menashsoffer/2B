@@ -25,6 +25,7 @@ fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: 
             onNoLines = viewModel::markNoLines,
             onClose = viewModel::closeMonth,
             onBack = viewModel::close,
+            onRetry = viewModel::retry,
         ),
         modifier = modifier,
     )

@@ -1,6 +1,8 @@
 package com.menash.myself.ui.money
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.key
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,10 +26,13 @@ import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.Chip
 import com.menash.myself.core.designsystem.component.ChipVariant
+import com.menash.myself.core.designsystem.component.LoadingState
+import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.PrimaryButton
 import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.money.CloseView
@@ -49,6 +54,7 @@ data class MonthCloseActions(
     val onAsset: (Asset) -> Unit = {},
     val onClose: () -> Unit = {},
     val onBack: () -> Unit = {},
+    val onRetry: () -> Unit = {},
 )
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy")
@@ -69,13 +75,18 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
             .testTag("close_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        BackHandler(enabled = ui.view == null && LocalMoneyBackActive.current) { actions.onBack() }
-        val view = ui.view ?: return@Column
+        val view = ui.view
         MoneySubScreen(
-            title = stringResource(R.string.close_title, monthTitle(view.month)),
+            title = stringResource(R.string.close_title, view?.month?.let(::monthTitle) ?: ""),
             subtitle = stringResource(R.string.close_subtitle),
             onBack = actions.onBack,
         )
+        Crossfade(targetState = when { ui.loadError -> 0; view == null -> 1; else -> 2 },
+            animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "close_load") { state ->
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+        if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+        else if (state == 1 || view == null) { LoadingState(testTag = "close_loading") }
+        else {
         MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it } == true, actions)
         view.existing?.let {
             Chip(
@@ -109,6 +120,9 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
             isLoading = ui.saving,
             modifier = Modifier.fillMaxWidth().testTag("close_button"),
         )
+        }
+        }
+        }
     }
 }
 

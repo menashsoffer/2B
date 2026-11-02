@@ -1,5 +1,4 @@
 package com.menash.myself.ui.money
-
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
@@ -208,7 +207,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         PensionScreen(rememberShownState(pensionUi, pensionUi.open), pensionViewModel, LocalDate.now(Israel), modifier)
         return@CompositionLocalProvider
     }
-    // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
+    // Close remains beneath transactions and import; stale balances open the item sheet.
     if (displayed == MoneyDestination.Close) {
         MonthCloseScreen(
             ui = rememberShownState(closeUi, closeUi.open),
@@ -230,6 +229,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onAdd = { viewModel.startAdding(EditKind.SUBSCRIPTION) },
                 onAddFrom = viewModel::startSubscriptionFrom,
                 onBack = subsViewModel::close,
+                onRetry = subsViewModel::retry,
             ),
             modifier = modifier,
         )

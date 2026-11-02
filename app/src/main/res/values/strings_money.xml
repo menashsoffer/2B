@@ -123,4 +123,6 @@
 
     <!-- Home -->
     <string name="home_money_planned">פנוי החודש, צפי</string>
+    <string name="money_load_error">לא הצלחנו לטעון את הנתונים.</string>
+    <string name="money_load_retry">לנסות שוב</string>
 </resources>

@@ -23,6 +23,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.transform
+import kotlinx.coroutines.yield
 import java.time.YearMonth
 
 /** What the user is looking at; null month means the screen is closed. */
@@ -37,10 +39,12 @@ data class TransactionsQuery(
 
 data class TransactionsUi(
     val query: TransactionsQuery = TransactionsQuery(),
+    /** Null means the selected month has not loaded. */
     val lines: MonthLines? = null,
     val categories: List<Category> = emptyList(),
     /** Income sources an income line can be linked to, for maaser. */
     val incomes: List<Income> = emptyList(),
+    val loadError: Boolean = false,
 ) {
     val open: Boolean get() = query.month != null
 }
@@ -55,16 +59,38 @@ class TransactionsViewModel(
 
     private val query = MutableStateFlow(TransactionsQuery())
 
-    val ui: StateFlow<TransactionsUi> = combine(
-        query,
-        transactions.observeTransactions(),
-        transactions.observeMemory(),
-        money.observe(),
-    ) { q, stored, memory, data ->
-        val incomes = data.items.incomes
-        val lines = q.month?.let { monthLines(stored, it, memory, data.categories, incomes.map { income -> income.id }.toSet()) }
-        TransactionsUi(q, lines, data.categories, incomes)
+    private val retry = MutableStateFlow(0)
+    private val inputs = screenLoad(retry) {
+        combine(transactions.observeTransactionsForScreen(), transactions.observeMemoryForScreen(), money.observeForScreen()) { stored, memory, data ->
+            Triple(stored, memory, data)
+        }
+    }
+    val ui: StateFlow<TransactionsUi> = combine(query, inputs) { q, input ->
+        when (input) {
+            ScreenLoad.Loading -> TransactionsUi(query = q)
+            ScreenLoad.Error -> TransactionsUi(query = q, loadError = true)
+            is ScreenLoad.Ready -> {
+                val (stored, memory, data) = input.value
+                val incomes = data.items.incomes
+                val lines = q.month?.let { monthLines(stored, it, memory, data.categories, incomes.map { income -> income.id }.toSet()) }
+                TransactionsUi(q, lines, data.categories, incomes)
+            }
+        }
+    }.let { upstream ->
+        var displayedMonth: YearMonth? = null
+        upstream.transform { value ->
+            if (value.query.month != displayedMonth) {
+                displayedMonth = value.query.month
+                if (displayedMonth != null && value.lines != null) {
+                    emit(value.copy(lines = null))
+                    yield()
+                }
+            }
+            emit(value)
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TransactionsUi())
+
+    fun retry() { retry.update { it + 1 } }
 
     fun open(month: YearMonth, filter: LineFilter = LineFilter.ALL) {
         query.value = TransactionsQuery(month = month, filter = filter)

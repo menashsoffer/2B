@@ -45,6 +45,7 @@ data class MonthCloseUi(
     val currentMonth: YearMonth? = null,
     val saving: Boolean = false,
     val saveError: String? = null,
+    val loadError: Boolean = false,
 )
 
 /** "לסגור את החודש": what is still missing, what closing would store, and the close itself. */
@@ -60,12 +61,17 @@ class MonthCloseViewModel(
     private val query = MutableStateFlow(CloseQuery())
     private var closing = false
 
-    private val inputs = combine(money.observe(), transactions.observeTransactions(), transactions.observeMemory(), usdRates) {
+    private val retry = MutableStateFlow(0)
+    private val inputs = screenLoad(retry) {
+        combine(money.observeForScreen(), transactions.observeTransactionsForScreen(), transactions.observeMemoryForScreen(), usdRates) {
             data, stored, memory, rate -> CloseInputs(data, stored, memory, rate)
+        }
     }
 
     val ui: StateFlow<MonthCloseUi> = combine(query, inputs) { q, input ->
         val day = today()
+        if (input !is ScreenLoad.Ready) return@combine MonthCloseUi(open = q.open, currentMonth = YearMonth.from(day), loadError = input is ScreenLoad.Error)
+        val input = input.value
         if (!q.open || !input.data.householdReady) return@combine MonthCloseUi(q.open, currentMonth = YearMonth.from(day))
         val month = q.month ?: closeTarget(day, input.stored, input.data.closedMonths)
         MonthCloseUi(
@@ -77,6 +83,8 @@ class MonthCloseViewModel(
             saveError = q.saveError,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MonthCloseUi())
+
+    fun retry() { retry.update { it + 1 } }
 
     fun open() {
         query.value = CloseQuery(open = true, saving = closing)

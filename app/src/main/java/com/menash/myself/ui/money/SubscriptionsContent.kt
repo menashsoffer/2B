@@ -1,5 +1,8 @@
 package com.menash.myself.ui.money
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.key
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,9 +20,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
+import com.menash.myself.core.designsystem.component.LoadingState
+import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.domain.model.Money
@@ -36,6 +42,7 @@ data class SubscriptionsActions(
     val onAdd: () -> Unit = {},
     val onAddFrom: (UnlistedCharge) -> Unit = {},
     val onBack: () -> Unit = {},
+    val onRetry: () -> Unit = {},
 )
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy")
@@ -55,7 +62,13 @@ fun SubscriptionsContent(ui: SubscriptionsUi, actions: SubscriptionsActions, mod
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
         MoneySubScreen(title = stringResource(R.string.subs_title), subtitle = stringResource(R.string.subs_subtitle), onBack = actions.onBack)
-        val view = ui.view ?: return@Column
+        val view = ui.view
+        Crossfade(targetState = when { ui.loadError -> 0; view == null -> 1; else -> 2 },
+            animationSpec = tween(Motion.duration(Motion.medium), easing = Motion.easing), label = "subscriptions_load") { state ->
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+        if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+        else if (state == 1 || view == null) { LoadingState(testTag = "subs_loading") }
+        else {
         val colors = MaterialTheme.appColors
         MoneySurface(testTag = "subs_total") {
             AmountRow(
@@ -88,6 +101,9 @@ fun SubscriptionsContent(ui: SubscriptionsUi, actions: SubscriptionsActions, mod
                     )
                 }
             }
+        }
+        }
+        }
         }
     }
 }

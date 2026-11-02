@@ -47,12 +47,16 @@ class FirestoreMoneyRepository(
 
     private data class RawDoc(val id: String, val data: Map<String, Any?>)
 
-    override fun observe(): Flow<MoneyData> =
+    override fun observe(): Flow<MoneyData> = observeMoney(false)
+
+    override fun observeForScreen(): Flow<MoneyData> = observeMoney(true)
+
+    private fun observeMoney(failOnError: Boolean): Flow<MoneyData> =
         householdSession.currentHouseholdId.flatMapLatest { hid ->
             if (hid.isNullOrBlank()) {
                 flowOf(MoneyData())
             } else {
-                val flows = MoneyCollection.entries.map { collection -> observeRaw(hid, collection) }
+                val flows = MoneyCollection.entries.map { collection -> observeRaw(hid, collection, failOnError) }
                 combine(flows) { snapshots ->
                     decodeAll(MoneyCollection.entries.zip(snapshots.toList()).toMap())
                 }
@@ -117,10 +121,11 @@ class FirestoreMoneyRepository(
     private fun collection(hid: String, collection: MoneyCollection): CollectionReference =
         db().collection("households").document(hid).collection(collection.path)
 
-    private fun observeRaw(hid: String, collection: MoneyCollection): Flow<List<RawDoc>> = callbackFlow {
+    private fun observeRaw(hid: String, collection: MoneyCollection, failOnError: Boolean): Flow<List<RawDoc>> = callbackFlow {
         val listener = collection(hid, collection).addSnapshotListener { snapshot, error ->
             if (error != null) {
                 reportError("observeMoney:${collection.path}", error)
+                if (failOnError) close(error)
                 return@addSnapshotListener
             }
             val docs = snapshot?.documents?.map { doc -> RawDoc(doc.id, doc.data.orEmpty()) }.orEmpty()
