@@ -88,9 +88,11 @@ private fun InjectNavigationInset(bottom: Dp) {
         // Drop that listener, then write the same AndroidWindowInsets instance
         // contentPadding() reads. `applied` recomposes so the readout sees the write.
         clearInsetListener(view)
-        val setter = bars.javaClass.methods.first { method ->
-            method.name == "setInsets\$foundation_layout_release"
-        }
+        // The setter is internal, so its JVM name carries a module suffix that changes between
+        // Compose versions (foundation_layout_release in 1.7, different from 1.8 on). Match by shape.
+        val setter = bars.javaClass.methods.firstOrNull { method ->
+            method.name.startsWith("setInsets") && method.parameterTypes.contentEquals(arrayOf(Insets::class.java))
+        } ?: error("No insets setter on ${bars.javaClass.name}: ${bars.javaClass.methods.map { it.name }.filter { "nsets" in it }}")
         setter.invoke(bars, Insets.of(0, 0, 0, bottomPx))
         applied = true
     }
