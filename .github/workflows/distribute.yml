@@ -95,14 +95,57 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --no-daemon
 
+      - name: Set release version code
+        run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
       - name: Build the signed release APK
         env:
           KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          VERSION_CODE: ${{ github.run_number }}
         run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build the signed release AAB
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Verify release artifacts
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release.apk
+          aab=app/build/outputs/bundle/release/app-release.aab
+          tools="${ANDROID_HOME}/build-tools/36.0.0"
+          jarsigner -verify -verbose -certs "$aab" > "${RUNNER_TEMP}/aab-verification.txt"
+          apk_cert=$("$tools/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr '[:lower:]' '[:upper:]')
+          aab_cert=$(keytool -printcert -jarfile "$aab" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')
+          test -n "$apk_cert" && test -n "$aab_cert" && test "$apk_cert" = "$aab_cert" || { echo "Release signing certificates differ or could not be read"; exit 1; }
+          echo "Release certificate SHA-256: $apk_cert"
+          target=$("$tools/aapt" dump badging "$apk" | sed -n "s/^targetSdkVersion:'\\([0-9]*\\)'/\\1/p")
+          test -n "$target" && test "$target" -ge 35 || { echo "Release targetSdk must be at least 35"; exit 1; }
+          echo "Release targetSdk: $target"
+          python3 - <<'PYTHON'
+          import glob, xml.etree.ElementTree as ET
+          paths = glob.glob("app/build/intermediates/merged_manifests/release/**/AndroidManifest.xml", recursive=True)
+          paths += glob.glob("app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml", recursive=True)
+          assert paths, "Merged release manifest missing"
+          for path in paths:
+              names = [e.get("{http://schemas.android.com/apk/res/android}name") for e in ET.parse(path).getroot().findall("uses-permission")]
+              assert "android.permission.READ_CALENDAR" not in names, "READ_CALENDAR present in release manifest"
+          print("Release manifest: READ_CALENDAR absent")
+          PYTHON
+
+      - name: Upload release bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: myself-${{ env.VERSION_CODE }}.aab
+          path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
 
       - name: Lint debug
         # lint.xml: NewApi is fatal, every other id is a warning.
@@ -110,6 +153,7 @@ jobs:
         run: ./gradlew lintDebug --no-daemon
 
       - name: Upload to Firebase App Distribution
+        if: ${{ github.ref == 'refs/heads/main' }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
