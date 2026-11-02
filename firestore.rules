@@ -382,6 +382,7 @@ service cloud.firestore {
                            existing().ownerUid != request.auth.uid &&
                            incoming().ownerUid == existing().ownerUid &&
                            incoming().get('deleting', false) == existing().get('deleting', false) &&
+                           incoming().get('ownerEmail', '') == existing().get('ownerEmail', '') &&
                            (
                              (incoming().memberUids == existing().memberUids &&
                               incoming().get('partnerEmail', '') == existing().get('partnerEmail', '') &&
