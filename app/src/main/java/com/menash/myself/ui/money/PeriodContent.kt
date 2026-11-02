@@ -74,7 +74,7 @@ fun PeriodContent(ui: PeriodUi, actions: PeriodActions, modifier: Modifier = Mod
         PillTabs(
             options = listOf(
                 stringResource(R.string.period_last_3), stringResource(R.string.period_last_6),
-                stringResource(R.string.period_this_year), stringResource(R.string.period_last_year),
+                stringResource(R.string.period_this_year), view.lastYear.toString(),
             ),
             selectedIndex = presets.indexOf(view.preset),
             onSelect = { actions.onSelect(presets[it]) },
@@ -127,11 +127,9 @@ private fun PeriodTotals(view: PeriodView) {
     val colors = MaterialTheme.appColors
     MoneySurface(testTag = "period_totals") {
         Column(Modifier.padding(horizontal = Spacing.s16, vertical = Spacing.s8), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Figure(stringResource(R.string.period_income), summary.income)
-                Figure(stringResource(R.string.period_expenses), summary.expenses)
-                Figure(stringResource(R.string.period_left), summary.saving, highlight = true)
-            }
+            Figure(stringResource(R.string.period_income), summary.income)
+            Figure(stringResource(R.string.period_expenses), summary.expenses)
+            Figure(stringResource(R.string.period_left), summary.saving, highlight = true)
             summary.savingPercent?.let {
                 Text(
                     stringResource(R.string.period_left_percent, formatMoney(summary.saving), it.toPlainString()),
@@ -155,8 +153,8 @@ private fun PeriodTotals(view: PeriodView) {
 @Composable
 private fun Figure(label: String, amount: Money, highlight: Boolean = false) {
     val colors = MaterialTheme.appColors
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s4)) {
-        Text(label, style = AppType.caption, color = colors.textSecondary)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = AppType.body, color = colors.textSecondary)
         Text(
             formatMoney(amount),
             style = AppType.numberCompact,

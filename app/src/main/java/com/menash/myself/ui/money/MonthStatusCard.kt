@@ -44,7 +44,7 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         IconButton(onClick = onPrevious, enabled = money.canGoBack, modifier = Modifier.testTag("money_month_previous")) {
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = stringResource(R.string.status_previous_month), tint = colors.textSecondary)
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, contentDescription = stringResource(R.string.status_previous_month), tint = arrowTint(money.canGoBack))
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.s8)) {
             Text(
@@ -59,7 +59,7 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
             )
         }
         IconButton(onClick = onNext, enabled = money.canGoNext, modifier = Modifier.testTag("money_month_next")) {
-            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = stringResource(R.string.status_next_month), tint = colors.textSecondary)
+            Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, contentDescription = stringResource(R.string.status_next_month), tint = arrowTint(money.canGoNext))
         }
     }
 }
@@ -138,3 +138,6 @@ private fun SmallFigure(label: String, amount: Money) {
         )
     }
 }
+
+@Composable
+private fun arrowTint(enabled: Boolean) = MaterialTheme.appColors.textSecondary.copy(alpha = if (enabled) 1f else 0.3f)
