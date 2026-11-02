@@ -72,7 +72,10 @@ async function checkDocs(testEnv, docs) {
 async function readLive(householdId) {
   const { initializeApp, applicationDefault } = require("firebase-admin/app");
   const { getFirestore } = require("firebase-admin/firestore");
-  const app = initializeApp({ credential: applicationDefault() }, "check-money-docs");
+  // `firebase emulators:exec` sets GCLOUD_PROJECT to the emulator's demo project; read the real one from the key.
+  const { project_id: projectId } = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, "utf8"));
+  if (!projectId) throw new Error("The service account JSON has no project_id.");
+  const app = initializeApp({ credential: applicationDefault(), projectId }, "check-money-docs");
   const db = getFirestore(app, DATABASE);
   const households = householdId ? [householdId] : (await db.collection("households").listDocuments()).map((d) => d.id);
   const docs = [];
@@ -95,6 +98,8 @@ async function main() {
   if (!emulator) throw new Error("Run inside `firebase emulators:exec --only firestore` (FIRESTORE_EMULATOR_HOST is not set).");
   if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) throw new Error("Set GOOGLE_APPLICATION_CREDENTIALS to a service account JSON.");
   delete process.env.FIRESTORE_EMULATOR_HOST;
+  delete process.env.GCLOUD_PROJECT;
+  delete process.env.GOOGLE_CLOUD_PROJECT;
   const { households, docs } = await readLive(householdId);
 
   const { initializeTestEnvironment } = require("@firebase/rules-unit-testing");
