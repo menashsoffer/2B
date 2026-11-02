@@ -53,6 +53,7 @@ async function setupHousehold(hid = "house_1", ownerUid = ALICE_UID, memberUids 
     await context.firestore().collection("households").doc(hid).set({
       name: "הבית שלנו",
       ownerUid,
+      ownerEmail: ALICE_EMAIL,
       memberUids,
       partnerEmail,
       partnerUid: memberUids.includes(BOB_UID) ? BOB_UID : "",
@@ -616,4 +617,12 @@ test('Deletion lock freezes shared writers and invites but permits draining and 
   await assertFails(owner.doc('invites/new@example.com').set({householdId:'house_1'}));
   await assertSucceeds(owner.doc('households/house_1/tasks/old').delete());
   await assertSucceeds(owner.doc('households/house_1').delete());
+});
+
+test('Client deletion inventory exactly matches isMoneyCollection', () => {
+  const rules = fs.readFileSync('firestore.rules', 'utf8');
+  const kotlin = fs.readFileSync('app/src/main/java/com/menash/myself/core/data/account/AccountDeletion.kt', 'utf8');
+  const moneyRules = [...rules.match(/function isMoneyCollection\(name\)[\s\S]*?\[([\s\S]*?)\]/)[1].matchAll(/'([^']+)'/g)].map(m => m[1]).sort();
+  const moneyClient = [...kotlin.match(/val money = listOf\(([\s\S]*?)\)/)[1].matchAll(/"([^"]+)"/g)].map(m => m[1]).sort();
+  assert.deepStrictEqual(moneyClient, moneyRules);
 });

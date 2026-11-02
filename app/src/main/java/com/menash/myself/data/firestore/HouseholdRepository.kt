@@ -14,8 +14,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.sync.withLock
+import com.google.firebase.firestore.Source
 
-class HouseholdRepository(private val db: FirebaseFirestore) {
+class HouseholdRepository(private val db: FirebaseFirestore, private val pendingDeletionUid: () -> String? = { null }) {
 
     constructor(context: Context) : this(FirestoreManager.get(context))
 
@@ -47,7 +49,14 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
         lastTechnicalError = null
     }
 
-    suspend fun getOrCreateHousehold(): Household {
+    private val creationMutex = kotlinx.coroutines.sync.Mutex()
+
+    suspend fun getOrCreateHousehold(): Household = creationMutex.withLock {
+        check(pendingDeletionUid() != requireUid()) { "Account deletion pending" }
+        getOrCreateUnlocked()
+    }
+
+    private suspend fun getOrCreateUnlocked(): Household {
         val uid = requireUid()
         val email = userEmail()
 
@@ -56,7 +65,7 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
             var inviteHouseholdId: String? = null
             if (email.isNotEmpty()) {
                 try {
-                    val inviteDoc = db.collection("invites").document(email).get().await()
+                    val inviteDoc = db.collection("invites").document(email).get(Source.SERVER).await()
                     if (inviteDoc.exists()) {
                         inviteHouseholdId = inviteDoc.getString("householdId")
                     }
@@ -68,7 +77,7 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
             // 2. Query households where user is already a member
             val memberQuery = db.collection("households")
                 .whereArrayContains("memberUids", uid)
-                .get()
+                .get(Source.SERVER)
                 .await()
 
             if (!memberQuery.isEmpty) {
@@ -143,7 +152,7 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
             ).await()
 
             // After join succeeds, caller is in memberUids and can now read the document
-            val doc = docRef.get().await()
+            val doc = docRef.get(Source.SERVER).await()
             val household = doc.toObject(Household::class.java)?.copy(id = doc.id)
 
             // Clean up the invite doc
@@ -166,26 +175,31 @@ class HouseholdRepository(private val db: FirebaseFirestore) {
     }
 
     fun observeHousehold(): Flow<Household?> = callbackFlow {
-        val uid = auth.currentUser?.uid
-        if (uid == null) {
-            trySend(null)
-            close()
-            return@callbackFlow
-        }
-
-        val listener = db.collection("households")
-            .whereArrayContains("memberUids", uid)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    reportError("observeHousehold", error)
-                    return@addSnapshotListener
-                }
-                val doc = snapshot?.documents?.firstOrNull()
-                val household = doc?.toObject(Household::class.java)?.copy(id = doc.id)
-                trySend(household)
+        var listener: com.google.firebase.firestore.ListenerRegistration? = null
+        var observedUid: String? = null
+        val authListener = com.google.firebase.auth.FirebaseAuth.AuthStateListener { firebaseAuth ->
+            val uid = firebaseAuth.currentUser?.uid
+            if (uid == null) {
+                listener?.remove(); listener = null; observedUid = null
+                trySend(null)
+            } else if (observedUid != uid) {
+                listener?.remove()
+                observedUid = uid
+                listener = db.collection("households").whereArrayContains("memberUids", uid)
+                    .addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE) { snapshot, error ->
+                        if (error != null) {
+                            reportError("observeHousehold", error)
+                            return@addSnapshotListener
+                        }
+                        // Empty cache is not proof of deletion. INCLUDE delivers the server's empty result too.
+                        if (snapshot == null || (snapshot.isEmpty && snapshot.metadata.isFromCache)) return@addSnapshotListener
+                        val doc = snapshot.documents.firstOrNull()
+                        trySend(doc?.toObject(Household::class.java)?.copy(id = doc.id))
+                    }
             }
-
-        awaitClose { listener.remove() }
+        }
+        auth.addAuthStateListener(authListener)
+        awaitClose { auth.removeAuthStateListener(authListener); listener?.remove() }
     }
 
     suspend fun invitePartner(householdId: String, email: String) {

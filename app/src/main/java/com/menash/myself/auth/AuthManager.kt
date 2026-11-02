@@ -118,15 +118,21 @@ object AuthManager {
         scope: CoroutineScope,
         signOutOfFirebase: () -> Unit = { Firebase.auth.signOut() },
     ) {
-        signOutOfFirebase()
         scope.launch {
-            try {
-                credentialManager.clearCredentialState(ClearCredentialStateRequest())
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to clear credential state", e)
-            } finally {
-                onSignOutComplete()
-            }
+            signOutAndClear(credentialManager, signOutOfFirebase)
+            onSignOutComplete()
+        }
+    }
+
+    suspend fun signOutAndClear(
+        credentialManager: CredentialManager,
+        signOutOfFirebase: () -> Unit = { Firebase.auth.signOut() },
+    ) {
+        signOutOfFirebase()
+        try {
+            credentialManager.clearCredentialState(ClearCredentialStateRequest())
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear credential state", e)
         }
     }
 }
