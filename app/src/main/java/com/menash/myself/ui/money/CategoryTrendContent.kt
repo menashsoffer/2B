@@ -114,6 +114,7 @@ private fun Suggestion(ui: CategoryTrendUi, view: CategoryTrendView, actions: Ca
                     style = AppType.body,
                     color = MaterialTheme.appColors.textPrimary,
                 )
+                Text(stringResource(R.string.trend_suggestion_basis, view.suggestionMonths), style = AppType.caption, color = MaterialTheme.appColors.textSecondary)
                 val note = when (target) {
                     is PlanTarget.Item -> stringResource(R.string.trend_accept_item, target.name)
                     PlanTarget.NewBudget -> stringResource(R.string.trend_accept_new, view.name)

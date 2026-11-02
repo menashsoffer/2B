@@ -14,6 +14,7 @@
     <string name="trend_plan_none">אין תוכנית</string>
     <string name="trend_suggestion">הצעה לתוכנית</string>
     <string name="trend_suggestion_detail">%1$s לחודש במקום %2$s</string>
+    <string name="trend_suggestion_basis">לפי %1$d החודשים הסגורים האחרונים</string>
     <string name="trend_suggestion_new">%1$s לחודש. היום אין לקטגוריה תוכנית</string>
     <string name="trend_accept">לעדכן ל-%1$s מ%2$s</string>
     <string name="trend_accept_item">ישתנה הסכום של \"%1$s\". חודשים קודמים לא ישתנו</string>
