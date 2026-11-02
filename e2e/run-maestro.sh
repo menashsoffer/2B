@@ -18,7 +18,7 @@ if [ "${status}" -ne 0 ]; then
   maestro hierarchy 2>/dev/null | grep -oE '"(resource-id|text|accessibilityText)" *: *"[^"]+"' | sort | uniq | head -200 || true
   echo "::endgroup::"
   echo "::group::App log (errors and e2e)"
-  grep -E "E2eActivity|AndroidRuntime|FATAL| E/(Firestore|Import|Money|ErrorReporter)" e2e-logcat.txt | tail -150 || true
+  grep -E "E2eActivity|AndroidRuntime|FATAL|PERMISSION_DENIED|permission|Firestore|ErrorReporter|reportError|Exception" e2e-logcat.txt | grep -v "GoogleApiManager\|Phenotype" | tail -200 || true
   echo "::endgroup::"
 fi
 exit "${status}"
