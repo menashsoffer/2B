@@ -61,6 +61,12 @@ val LocalAppContainer = compositionLocalWithComputedDefaultOf<AppContainer> {
  * Features and ViewModels depend only on repository interfaces from core/data/repository.
  */
 class AppContainer(private val context: Context) {
+    val accountDeletionPending = com.menash.myself.core.data.account.AccountDeletionPending(context)
+
+    fun accountDeletionPort() = com.menash.myself.core.data.account.FirebaseAccountDeletionPort(
+        context.applicationContext, firestore, householdSession, accountDeletionPending,
+    )
+
     val uiEvents = com.menash.myself.core.ui.UiEvents()
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -70,7 +76,7 @@ class AppContainer(private val context: Context) {
 
     private val firestore by lazy { FirestoreManager.get(context) }
     private val rawLifeHubRepository by lazy { LifeHubRepository(firestore) }
-    private val rawHouseholdRepository by lazy { HouseholdRepository(firestore) }
+    private val rawHouseholdRepository by lazy { HouseholdRepository(firestore) { accountDeletionPending.uid.value } }
 
     // Single source of truth for active household (survives Activity recreation)
     val householdSession: HouseholdSession by lazy { DefaultHouseholdSession() }
