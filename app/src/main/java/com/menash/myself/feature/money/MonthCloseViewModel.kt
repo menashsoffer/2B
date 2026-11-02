@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.hasSuspectBalances
+import com.menash.myself.feature.money.domain.needsHistoricalBalances
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -78,7 +79,7 @@ class MonthCloseViewModel(
         MonthCloseUi(
             open = true,
             view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines, q.balanceDraft.balances(input.data.assets)),
-            showBalancesStep = month < YearMonth.from(day),
+            showBalancesStep = needsHistoricalBalances(month, day),
             assets = input.data.assets,
             balanceDraft = q.balanceDraft,
             balancesValid = q.balanceDraft.valid(input.data.assets),

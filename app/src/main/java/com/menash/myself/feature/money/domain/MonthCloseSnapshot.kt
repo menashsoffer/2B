@@ -15,6 +15,8 @@ data class ClosedMonth(
     val balances: Map<String, Money>,
     val liabilities: Map<String, Money>,
     val closedOn: LocalDate,
+    /** The balances were typed for this month on the close screen, not copied from today's assets. */
+    val balancesEntered: Boolean = false,
 ) {
     init {
         require(snapshot.month == month) { "Snapshot month must match the close" }
@@ -52,5 +54,6 @@ fun closeMonth(
         balances = balances,
         liabilities = liabilities,
         closedOn = today,
+        balancesEntered = balancesAtClose is BalancesAtClose.Entered,
     )
 }

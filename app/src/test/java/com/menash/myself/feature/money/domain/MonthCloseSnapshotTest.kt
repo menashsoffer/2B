@@ -35,6 +35,18 @@ class MonthCloseSnapshotTest {
         assertFalse(row.copy(closedOn = boundary).hasSuspectBalances())
         assertTrue(row.copy(closedOn = boundary.plusDays(1)).hasSuspectBalances())
         assertFalse(row.copy(closedOn = boundary.plusDays(1), balances = emptyMap()).hasSuspectBalances())
+        assertFalse(row.copy(closedOn = boundary.plusDays(1), balancesEntered = true).hasSuspectBalances())
+    }
+
+    @Test fun historicalBalancesOnlyAfterTheFollowingMonthEnds() {
+        val boundary = month.plusMonths(1).atEndOfMonth()
+        assertFalse(needsHistoricalBalances(month, month.atEndOfMonth()))
+        assertFalse(needsHistoricalBalances(month, boundary))
+        assertTrue(needsHistoricalBalances(month, boundary.plusDays(1)))
+        val entered = closeMonth(month, MoneyItems(), emptyList(), Money.ZERO,
+            BalancesAtClose.Entered(mapOf("old" to Money(10)), emptyMap()), null, today)
+        assertTrue(entered.balancesEntered)
+        assertFalse(close(assets = listOf(asset("bank", AssetKind.ASSET))).balancesEntered)
     }
 
     @Test fun refundsReduceExpensesAndCategories() {

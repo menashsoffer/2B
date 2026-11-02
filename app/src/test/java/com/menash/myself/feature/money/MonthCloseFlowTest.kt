@@ -60,7 +60,7 @@ class MonthCloseFlowTest {
         assertTrue(v.checks.toString(), v.canClose)
         assertEquals(Money(40_000), v.preview.snapshot.actualExpenses)
         assertEquals(Money(40_000), v.preview.byCategory["current-1"])
-        assertTrue(v.preview.balances.isEmpty())
+        assertEquals(Money(3_000_000), v.preview.balances["asset-bank"])
         assertEquals(Money(-40_000), v.saving)
         assertNull(v.existing)
     }
@@ -106,11 +106,22 @@ class MonthCloseFlowTest {
     }
 
     @Test
-    fun pastMonth_doesNotRequireTodaysBalances() {
+    fun staleBalance_namesTheAsset() {
         val old = bank.copy(id = "asset-old", lastUpdated = LocalDate.of(2026, 10, 1))
         val v = view(listOf(line(LocalDate.of(2026, 10, 5), 25_000)), d = data.copy(assets = listOf(bank, old)))
+        assertEquals(listOf(old), v.staleAssets)
+        assertFalse(v.canClose)
+    }
+
+    @Test
+    fun monthBeforeLast_doesNotUseTodaysBalances() {
+        val old = bank.copy(id = "asset-old", lastUpdated = LocalDate.of(2026, 10, 1))
+        val stored = listOf(line(LocalDate.of(2026, 9, 5), 25_000))
+        val v = closeView(data.copy(assets = listOf(bank, old)), september, afterOctober, null, stored, ImportMemory())
         assertTrue(v.staleAssets.isEmpty())
         assertTrue(v.canClose)
+        assertTrue(v.preview.balances.isEmpty())
+        assertFalse(v.preview.balancesEntered)
     }
 
     @Test
