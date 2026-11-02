@@ -52,6 +52,8 @@ data class MonthCloseActions(
     val onEnterBalances: (Boolean) -> Unit = {},
     val onBalance: (String, String) -> Unit = { _, _ -> },
     val onMarkUnknown: () -> Unit = {},
+    /** Opens "סיכום החודש" for a month that is closed. */
+    val onSummary: (YearMonth) -> Unit = {},
 )
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy")
@@ -86,6 +88,14 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                 variant = ChipVariant.Success,
                 modifier = Modifier.testTag("close_done"),
             )
+            MoneySurface(testTag = "close_summary_open") {
+                AmountRow(
+                    title = stringResource(R.string.summary_open, hebrewMonthName(view.month.month)),
+                    amount = null,
+                    detail = stringResource(R.string.summary_entry_detail),
+                    onClick = { actions.onSummary(view.month) },
+                )
+            }
         }
         SectionTitle(stringResource(R.string.close_checks_title))
         MoneySurface(testTag = "close_checks") { Checks(view, actions) }

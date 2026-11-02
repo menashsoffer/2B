@@ -2,7 +2,7 @@ package com.menash.myself.ui.money
 
 import androidx.compose.runtime.staticCompositionLocalOf
 
-/** Depth preserves the existing nested flows: close → import and maaser → transactions. */
+/** Depth preserves the existing nested flows: close → import, maaser → transactions and close → month summary. */
 sealed class MoneyDestination(val depth: Int) {
     data object Root : MoneyDestination(0)
     data object Goals : MoneyDestination(1)
@@ -13,6 +13,7 @@ sealed class MoneyDestination(val depth: Int) {
     data object Subscriptions : MoneyDestination(1)
     data object Period : MoneyDestination(1)
     data object Transactions : MoneyDestination(2)
+    data object Summary : MoneyDestination(2)
     data object Import : MoneyDestination(3)
 }
 
@@ -28,11 +29,13 @@ data class MoneyOpenFlags(
     val close: Boolean = false,
     val subscriptions: Boolean = false,
     val period: Boolean = false,
+    val summary: Boolean = false,
 )
 
 fun moneyDestination(flags: MoneyOpenFlags): MoneyDestination = when {
     flags.importing -> MoneyDestination.Import
     flags.transactions -> MoneyDestination.Transactions
+    flags.summary -> MoneyDestination.Summary
     flags.goals -> MoneyDestination.Goals
     flags.tithe -> MoneyDestination.Tithe
     flags.car -> MoneyDestination.Car

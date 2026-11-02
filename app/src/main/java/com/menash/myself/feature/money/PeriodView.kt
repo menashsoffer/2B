@@ -56,7 +56,7 @@ private const val TopCategories = 6
  * The plan of each closed month, per category, from today's items (the plan is not frozen at close).
  * A month that cannot be planned (a USD subscription with no stored rate) has no plan rather than a wrong one.
  */
-private fun plansFor(data: MoneyData, months: List<YearMonth>, rate: BigDecimal?): Map<YearMonth, Map<String?, Money>> =
+internal fun plansFor(data: MoneyData, months: List<YearMonth>, rate: BigDecimal?): Map<YearMonth, Map<String?, Money>> =
     months.mapNotNull { month ->
         runCatching { planVsActual(month, data.items, emptyList(), rate) }.getOrNull()
             ?.let { result -> month to result.categories.associate { it.categoryId to it.planned } }
