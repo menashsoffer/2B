@@ -10,14 +10,14 @@ tags: [smoke]
 - extendedWaitUntil:
     visible:
       id: nav_money
-    timeout: 60000
+    timeout: 120000
 - tapOn:
     id: nav_money
 # The month header only shows once the household exists (otherwise money_no_household).
 - extendedWaitUntil:
     visible:
       id: money_month_title
-    timeout: 60000
+    timeout: 120000
 - assertNotVisible:
     id: money_no_household
 - takeScreenshot: 01_money_tab

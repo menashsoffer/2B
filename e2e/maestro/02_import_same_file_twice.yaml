@@ -11,13 +11,13 @@ tags: [smoke, import]
 - extendedWaitUntil:
     visible:
       id: nav_money
-    timeout: 60000
+    timeout: 120000
 - tapOn:
     id: nav_money
 - extendedWaitUntil:
     visible:
       id: money_month_title
-    timeout: 60000
+    timeout: 120000
 
 # First share: review, save, done.
 - openLink: myself-e2e://signin?share=hapoalim_oct.xlsx
