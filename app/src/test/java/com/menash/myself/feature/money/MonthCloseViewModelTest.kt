@@ -7,6 +7,7 @@ import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.defaultCategories
+import com.menash.myself.feature.money.domain.hasSuspectBalances
 import com.menash.myself.feature.money.importer.Source
 import com.menash.myself.feature.money.importer.StatementRow
 import com.menash.myself.feature.money.importer.StoredTransaction
@@ -75,10 +76,22 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun lastMonth_keepsTodaysBalancesWithoutAStep() {
+        val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
+        vm.open()
+        assertEquals(october, vm.ui.value.view!!.month)
+        assertFalse(vm.ui.value.showBalancesStep)
+        assertEquals(mapOf(bank.id to bank.balance), vm.ui.value.view!!.preview.balances)
+    }
+
+    @Test
     fun historicalBalancesAreExplicitAndResetBetweenMonths() {
         val repo = FakeMoneyRepository(data)
-        val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 10, 5))))
+        val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 9, 5))))
         vm.open()
+        vm.previousMonth()
+        vm.previousMonth()
+        assertEquals(YearMonth.of(2026, 9), vm.ui.value.view!!.month)
         assertTrue(vm.ui.value.showBalancesStep)
         assertTrue(vm.ui.value.balanceDraft.values.isEmpty())
         assertTrue(vm.ui.value.view!!.preview.balances.isEmpty())
@@ -100,8 +113,10 @@ class MonthCloseViewModelTest {
         val loan = bank.copy(id = "loan", kind = AssetKind.LIABILITY)
         val untouched = bank.copy(id = "untouched")
         val repo = FakeMoneyRepository(data.copy(assets = listOf(bank, loan, untouched)))
-        val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 10, 5))))
+        val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 9, 5))))
         vm.open()
+        vm.previousMonth()
+        vm.previousMonth()
         vm.enterBalances(true)
         vm.setBalance(bank.id, "0")
         vm.setBalance(loan.id, "100")
@@ -109,6 +124,8 @@ class MonthCloseViewModelTest {
         val saved = (repo.saved.single() as MoneyEntry.ClosedMonthEntry).value
         assertEquals(mapOf(bank.id to Money.ZERO), saved.balances)
         assertEquals(mapOf(loan.id to Money(10000)), saved.liabilities)
+        assertTrue(saved.balancesEntered)
+        assertFalse(saved.hasSuspectBalances())
     }
 
     @Test

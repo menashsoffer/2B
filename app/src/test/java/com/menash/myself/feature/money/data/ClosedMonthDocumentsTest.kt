@@ -30,6 +30,14 @@ class ClosedMonthDocumentsTest {
         assertTrue(decode(encoded).snapshot.balances.isEmpty())
     }
 
+    @Test fun enteredBalancesFlagRoundTripsAndIsOmittedWhenFalse() {
+        assertFalse("balancesEntered" in ClosedMonthDocuments.encode(closed))
+        assertFalse(decode(ClosedMonthDocuments.encode(closed)).balancesEntered)
+        val entered = closed.copy(balancesEntered = true)
+        assertEquals(true, ClosedMonthDocuments.encode(entered)["balancesEntered"])
+        assertEquals(entered, decode(ClosedMonthDocuments.encode(entered)))
+    }
+
     @Test fun absentOptionalMapsBecomeEmpty() {
         val decoded = decode(required)
         assertTrue(decoded.byCategory.isEmpty())

@@ -3,6 +3,7 @@ package com.menash.myself.feature.money
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.domain.BalancesAtClose
+import com.menash.myself.feature.money.domain.needsHistoricalBalances
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.CloseCheck
 import com.menash.myself.feature.money.domain.CloseCheckKind
@@ -82,7 +83,7 @@ fun closeView(
             sourcesExpected = expected.map { it.key }.toSet(),
             unassignedCount = lines.unassignedCount,
             pendingCount = lines.pendingCount,
-            assets = if (month < YearMonth.from(today)) emptyList() else data.assets,
+            assets = if (needsHistoricalBalances(month, today)) emptyList() else data.assets,
         )
     )
     val byKey = (thisMonth + expected).associateBy { it.key }
@@ -94,7 +95,7 @@ fun closeView(
         staleAssets = checks.filter { it.kind == CloseCheckKind.STALE_BALANCE }.mapNotNull { assets[it.detail] },
         preview = closeMonth(
             month, data.items, toTransactions(stored, memory), actualIncome(stored, month, memory),
-            if (month < YearMonth.from(today)) pastBalances else BalancesAtClose.Current(data.assets), usdToIls, today,
+            if (needsHistoricalBalances(month, today)) pastBalances else BalancesAtClose.Current(data.assets), usdToIls, today,
         ),
         existing = data.closedMonths.firstOrNull { it.month == month },
     )

@@ -1,6 +1,8 @@
 package com.menash.myself.feature.money.domain
 
 import com.menash.myself.core.domain.model.Money
+import java.time.LocalDate
+import java.time.YearMonth
 
 sealed interface BalancesAtClose {
     data class Current(val assets: List<Asset>) : BalancesAtClose
@@ -18,5 +20,12 @@ sealed interface BalancesAtClose {
     }
 }
 
+/**
+ * Closing [month] on [day] needs balances typed for that month only when the following month is already over.
+ * Closing October during November (the usual close) keeps today's balances: they are close to October's end.
+ */
+fun needsHistoricalBalances(month: YearMonth, day: LocalDate): Boolean = day > month.plusMonths(1).atEndOfMonth()
+
+/** Today's balances were frozen into a month that ended long before the close, and nobody typed them. */
 fun ClosedMonth.hasSuspectBalances(): Boolean =
-    closedOn > month.plusMonths(1).atEndOfMonth() && (balances.isNotEmpty() || liabilities.isNotEmpty())
+    !balancesEntered && needsHistoricalBalances(month, closedOn) && (balances.isNotEmpty() || liabilities.isNotEmpty())
