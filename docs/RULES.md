@@ -233,7 +233,7 @@ Explicit, confirmed account/household deletion is the approved exception to the 
 | G1 | money/domain | 98% | 85% |
 | G2 | money/importer | 95% | 75% |
 | G3 | money/data | מדידה בלבד | מדידה בלבד |
-| G4 | יתר money (כולל ViewModels) | 92% | מדידה בלבד |
+| G4 | יתר money (כולל ViewModels) | 95% | מדידה בלבד |
 | G5 | יתר feature | מדידה בלבד | מדידה בלבד |
 | G6 | יתר הקוד | מדידה בלבד | מדידה בלבד |
 

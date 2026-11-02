@@ -150,7 +150,7 @@ kover {
           classes("com.menash.myself.feature.money.data.*")
         }
       }
-      verify { rule { minBound(92) } }
+      verify { rule { minBound(95) } }
     }
   }
 }
