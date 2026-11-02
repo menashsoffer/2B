@@ -10,8 +10,8 @@ import java.io.File
 /**
  * UX check layer (docs/ux/UX-CHECKS.md, layer 4). Runs on every screen a golden test captures and
  * records measurable problems: tap targets crowded below 48dp by a neighbour, clickable elements with no label for a screen
- * reader, and elements that stick out of the screen sideways. Report-only for now: findings go to
- * app/build/ux-findings/findings.tsv and the CI summary; thresholds come after the first measurement.
+ * reader, and elements that stick out of the screen sideways. Blocking: a finding fails the golden test, unless
+ * it is listed in [knownFindings]. Findings also go to app/build/ux-findings/findings.tsv and the CI summary.
  */
 object UxRules {
     private const val MinTouchDp = 48f
@@ -82,7 +82,25 @@ object UxRules {
     }
 
     /** Appends this capture's findings, keyed by the calling test, to the build report. */
-    fun record(root: SemanticsNode, variant: String) = write(check(root), variant)
+    fun record(root: SemanticsNode, variant: String): List<Finding> = check(root).also { write(it, variant) }
+
+    /**
+     * Findings that are known and not fixed yet, as "Test.method rule element". This list may only
+     * shrink: a new finding anywhere fails the golden test that captured it.
+     */
+    val knownFindings: Set<String> = emptySet()
+
+    fun assertNoNewFindings(findings: List<Finding>, variant: String) {
+        val caller = Throwable().stackTrace.firstOrNull { it.className.endsWith("Test") }
+        val test = caller?.let { "${it.className.substringAfterLast('.')}.${it.methodName}" } ?: "unknown"
+        val fresh = findings.filter { "$test ${it.rule} ${it.element}" !in knownFindings }
+        if (fresh.isNotEmpty()) {
+            throw AssertionError(
+                "UX rules (docs/ux/UX-CHECKS.md) found in $test [$variant]:\n" +
+                    fresh.joinToString("\n") { "- ${it.rule}: ${it.element} (${it.detail})" },
+            )
+        }
+    }
 
     private fun write(findings: List<Finding>, variant: String) {
         if (findings.isEmpty()) return
