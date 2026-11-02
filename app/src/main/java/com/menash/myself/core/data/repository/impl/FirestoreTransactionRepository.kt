@@ -7,6 +7,8 @@ import com.google.firebase.firestore.SetOptions
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.data.firestore.FirestoreErrors
 import com.menash.myself.feature.money.data.ImportDocuments
+import com.menash.myself.feature.money.data.NewerSchemaException
+import com.menash.myself.feature.money.data.SchemaVersion
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.ImportPlan
@@ -74,7 +76,12 @@ class FirestoreTransactionRepository(
         }
 
     override fun observeMemory(): Flow<ImportMemory> =
-        observe<ImportMemory>(ImportDocuments.MERCHANT_MEMORY, ImportMemory()) { docs -> ImportDocuments.decodeMemory(docs.map { it.second }) }
+        observe<ImportMemory>(ImportDocuments.MERCHANT_MEMORY, ImportMemory()) { docs ->
+            docs.firstOrNull { (_, data) -> SchemaVersion.of(data) > SchemaVersion.CURRENT }?.let { (id, data) ->
+                reportError("decodeMerchantMemory:$id", NewerSchemaException(SchemaVersion.of(data)))
+            }
+            ImportDocuments.decodeMemory(docs.map { it.second })
+        }
 
     override suspend fun apply(plan: ImportPlan) {
         try {
@@ -118,7 +125,7 @@ class FirestoreTransactionRepository(
         try {
             val doc = collection(householdSession.requireHouseholdId(), ImportDocuments.MERCHANT_MEMORY)
                 .document(ImportDocuments.memoryId(merchantKey))
-            val fields: Map<String, Any> = if (alias.isNullOrBlank()) mapOf("key" to merchantKey, "alias" to FieldValue.delete())
+            val fields: Map<String, Any> = if (alias.isNullOrBlank()) ImportDocuments.memoryKey(merchantKey) + ("alias" to FieldValue.delete())
             else ImportDocuments.encodeAlias(merchantKey, alias)
             doc.set(fields, SetOptions.merge()).await()
         } catch (e: Exception) {
@@ -131,8 +138,8 @@ class FirestoreTransactionRepository(
         try {
             val doc = collection(householdSession.requireHouseholdId(), ImportDocuments.MERCHANT_MEMORY)
                 .document(ImportDocuments.memoryId(merchantKey))
-            val fields: Map<String, Any> = if (ask) mapOf("key" to merchantKey, "askEachTime" to true, "categoryId" to FieldValue.delete())
-            else mapOf("key" to merchantKey, "askEachTime" to FieldValue.delete())
+            val fields: Map<String, Any> = if (ask) ImportDocuments.encodeAskEachTime(merchantKey) + ("categoryId" to FieldValue.delete())
+            else ImportDocuments.memoryKey(merchantKey) + ("askEachTime" to FieldValue.delete())
             doc.set(fields, SetOptions.merge()).await()
         } catch (e: Exception) {
             reportError("setMerchantAskEachTime", e)

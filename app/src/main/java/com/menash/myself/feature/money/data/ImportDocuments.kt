@@ -22,6 +22,7 @@ object ImportDocuments {
 
     fun encode(stored: StoredTransaction): Map<String, Any> = stored.row.let { row ->
         buildMap {
+            put(SchemaVersion.KEY, SchemaVersion.CURRENT)
             put("source", row.source.name)
             put("sourceId", row.sourceId)
             put("date", row.date.toString())
@@ -40,6 +41,7 @@ object ImportDocuments {
     }
 
     fun decode(id: String, data: Map<String, Any?>): StoredTransaction {
+        SchemaVersion.check(data)
         fun string(key: String): String = requireNotNull(data[key] as? String) { "Missing text field '$key'" }
         fun stringOrNull(key: String): String? = (data[key] as? String)?.takeIf { it.isNotEmpty() }
         fun longOrNull(key: String): Long? = (data[key] as? Number)?.toLong()
@@ -66,6 +68,7 @@ object ImportDocuments {
 
     /** One document per normalised merchant: its category and / or "this is our own account". */
     fun encodeMemory(merchantKey: String, categoryId: String?, ownTransfer: Boolean): Map<String, Any> = buildMap {
+        put(SchemaVersion.KEY, SchemaVersion.CURRENT)
         put("key", merchantKey)
         categoryId?.let { put("categoryId", it) }
         put("ownTransfer", ownTransfer)
@@ -77,8 +80,15 @@ object ImportDocuments {
     fun encodeAlias(merchantKey: String, alias: String): Map<String, Any> {
         val clean = alias.trim()
         require(clean.isNotEmpty() && clean.length <= MAX_ALIAS) { "Alias must be 1..$MAX_ALIAS characters" }
-        return mapOf("key" to merchantKey, "alias" to clean)
+        return memoryKey(merchantKey) + ("alias" to clean)
     }
+
+    /** The fields every merchant merge write carries, so a merge that only deletes still leaves a valid document. */
+    fun memoryKey(merchantKey: String): Map<String, Any> = mapOf(SchemaVersion.KEY to SchemaVersion.CURRENT, "key" to merchantKey)
+
+    /** Merge fields that make a merchant ask every time; the caller also deletes its learnt categoryId. */
+    fun encodeAskEachTime(merchantKey: String): Map<String, Any> =
+        memoryKey(merchantKey) + ("askEachTime" to true)
 
     const val MAX_ALIAS = 60
 
@@ -88,6 +98,8 @@ object ImportDocuments {
         val aliases = mutableMapOf<String, String>()
         val ask = mutableSetOf<String>()
         docs.forEach { data ->
+            // A merchant written by a newer app version is ignored here; its lines simply ask again.
+            if (SchemaVersion.of(data) > SchemaVersion.CURRENT) return@forEach
             val key = (data["key"] as? String)?.takeIf { it.isNotEmpty() } ?: return@forEach
             val asks = data["askEachTime"] == true
             if (asks) ask += key
