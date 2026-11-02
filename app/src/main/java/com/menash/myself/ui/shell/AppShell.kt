@@ -65,6 +65,8 @@ fun AppShell(
     val activeError by mainViewModel.errorFlow.collectAsStateWithLifecycle(initialValue = null)
     val vmError by mainViewModel.errorState.collectAsStateWithLifecycle()
     var showAccount by remember { mutableStateOf(false) }
+    var showManagement by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var managementKey by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var showSettings by remember { mutableStateOf(false) }
     val appContainer = LocalAppContainer.current
     val scope = rememberCoroutineScope()
@@ -153,6 +155,7 @@ fun AppShell(
             displayName = currentUser?.displayName?.takeIf { it.isNotBlank() },
             email = currentUser?.email?.takeIf { it.isNotBlank() },
             onDismiss = { showAccount = false },
+            onManageAccount = { showAccount = false; managementKey = java.util.UUID.randomUUID().toString(); showManagement = true },
             onSettings = {
                 showAccount = false
                 showSettings = true
@@ -169,6 +172,14 @@ fun AppShell(
                 showAccount = false
                 onSignedOut()
             },
+        )
+    }
+
+    if (showManagement) {
+        com.menash.myself.ui.account.AccountManagementRoute(
+            instanceKey = managementKey,
+            onClose = { showManagement = false },
+            onSignIn = { showManagement = false; onSignedOut(); onRequestSignIn() },
         )
     }
 

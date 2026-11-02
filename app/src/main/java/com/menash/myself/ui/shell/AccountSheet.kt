@@ -45,6 +45,7 @@ fun AccountSheet(
     onHousehold: () -> Unit,
     onSignIn: () -> Unit,
     onSignedOut: () -> Unit,
+    onManageAccount: () -> Unit = {},
 ) {
     val colors = MaterialTheme.appColors
     var confirmSignOut by remember { mutableStateOf(false) }
@@ -103,6 +104,8 @@ fun AccountSheet(
                 testTag = "account_household",
             )
             if (signedIn) {
+                ListRow(title = stringResource(R.string.account_management), onClick = onManageAccount,
+                    testTag = "account_management")
                 ListRow(
                     title = stringResource(R.string.account_sign_out),
                     titleColor = colors.danger,

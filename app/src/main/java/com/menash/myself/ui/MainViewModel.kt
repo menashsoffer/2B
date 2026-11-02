@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.map
 
 class MainViewModel(
     private val appContainer: AppContainer
@@ -18,13 +21,22 @@ class MainViewModel(
 
     val errorFlow: Flow<String?> = appContainer.errorFlow
 
-    val household: StateFlow<Household?> = appContainer.householdRepository.observeMyHousehold()
+    val household: StateFlow<Household?> = combine(
+        appContainer.householdRepository.observeMyHousehold(), appContainer.accountDeletionPending.uid,
+    ) { home, pending -> home to pending }
+        .onEach { (home, pending) ->
+            if (com.menash.myself.core.data.account.shouldRecoverHousehold(home?.id, pending, com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid)) {
+                safeLaunch("recoverHousehold") { appContainer.householdRepository.ensureHouseholdExists() }
+            }
+        }
+        .map { it.first }
         .catch { e -> if (e is Exception) handleException("observeHousehold", e) else throw e }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun initializeHouseholdForUser() {
         safeLaunch("initializeHouseholdForUser") {
-            appContainer.householdRepository.ensureHouseholdExists()
+            if (appContainer.accountDeletionPending.uid.value != com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid)
+                appContainer.householdRepository.ensureHouseholdExists()
         }
         safeLaunch("refreshExternalDataOnStartup") {
             runCatching { appContainer.exchangeRateRepository.refreshRateIfNeeded() }
