@@ -17,9 +17,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,6 +39,7 @@ import com.menash.myself.ui.money.sharedFileUris
 import com.menash.myself.ui.shell.AppShell
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalComposeUiApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -48,7 +52,10 @@ class MainActivity : ComponentActivity() {
                     LocalAppContainer provides appContainer,
                 ) {
                     Surface(
-                        modifier = Modifier.fillMaxSize(),
+                        // Debug builds expose testTags as resource ids, so Maestro (docs/E2E.md) can find them.
+                        modifier = Modifier.fillMaxSize().then(
+                            if (BuildConfig.DEBUG) Modifier.semantics { testTagsAsResourceId = true } else Modifier
+                        ),
                         color = MaterialTheme.appColors.background,
                     ) {
                         MyselfRoot()

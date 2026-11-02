@@ -22,6 +22,8 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    // Empty = the real Firebase project. Only the e2e build points at the local emulators.
+    buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"\"")
   }
 
   // The release key must never change: a different key cannot update the installed app (docs/RULES.md section 8).
@@ -57,6 +59,17 @@ android {
     }
     debug {
       signingConfig = signingConfigs.getByName("debugConfig")
+      configure<CrashlyticsExtension> {
+        mappingFileUploadEnabled = false
+      }
+    }
+    // End-to-end tests only (docs/E2E.md): talks to the Firebase emulators on the host
+    // (10.0.2.2 from an Android emulator) and adds the test sign-in in src/e2e. Never distributed.
+    create("e2e") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".e2e"
+      matchingFallbacks += listOf("debug")
+      buildConfigField("String", "FIREBASE_EMULATOR_HOST", "\"10.0.2.2\"")
       configure<CrashlyticsExtension> {
         mappingFileUploadEnabled = false
       }
