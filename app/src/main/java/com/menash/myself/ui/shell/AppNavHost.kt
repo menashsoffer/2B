@@ -10,6 +10,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import com.menash.myself.BuildConfig
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.ui.calendar.CalendarScreen
 import com.menash.myself.ui.catalog.FileCatalogScreen
@@ -63,6 +64,7 @@ fun AppNavHost(
                 }
             }
         }
+        if (BuildConfig.DEBUG) {
         composable(ShellRoute.LegacyHome) {
             LegacyPage {
                 LifeHomeScreen(onNavigate = onOpenRoute, onOpenQuickCapture = {})
@@ -88,6 +90,7 @@ fun AppNavHost(
         }
         composable(ShellRoute.Catalog) {
             LegacyPage { FileCatalogScreen(onBack = { navController.popBackStack() }) }
+        }
         }
         composable(ShellRoute.Household) {
             LegacyPage {
