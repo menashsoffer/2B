@@ -35,6 +35,10 @@ import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Frequency
 import com.menash.myself.feature.money.domain.TitheRate
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.heightIn
 
 /** The sheet body, stateless so goldens render it without a window. */
 @Composable
@@ -236,11 +240,18 @@ private fun amountLabel(kind: EditKind): Int = when (kind) {
 @Composable
 internal fun SwitchRow(label: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     val colors = MaterialTheme.appColors
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    // The whole row is the switch, so a screen reader announces the label with it and the label is tappable.
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(text = label, style = AppType.body, color = colors.textPrimary, modifier = Modifier.weight(1f))
         Switch(
             checked = checked,
-            onCheckedChange = onChange,
+            onCheckedChange = null,
             colors = SwitchDefaults.colors(
                 checkedTrackColor = colors.accent,
                 checkedThumbColor = colors.onAccent,
