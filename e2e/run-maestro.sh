@@ -3,6 +3,11 @@
 # MAESTRO_TAGS: empty = every flow, "smoke" = only flows tagged smoke.
 set -euo pipefail
 adb install -r app/build/outputs/apk/e2e/app-e2e.apk
+# A freshly booted CI emulator sometimes shows "Pixel Launcher isn't responding" over everything,
+# which hides the app from Maestro. Hide system error dialogs; an app crash still fails the flow
+# and its FATAL line still reaches the log below.
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS >/dev/null 2>&1 || true
 adb logcat -c || true
 adb logcat -v time > e2e-logcat.txt 2>&1 &
 logcat_pid=$!
