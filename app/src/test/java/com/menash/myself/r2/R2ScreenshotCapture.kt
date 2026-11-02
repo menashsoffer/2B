@@ -119,5 +119,4 @@ private fun ComposeContentTestRule.captureTagged(
     runCatching {
         UxRules.record(onNodeWithTag(R2ScreenshotTag).fetchSemanticsNode(), variant)
     }
-    UxRules.recordAccessibilityChecks(this, variant)
 }

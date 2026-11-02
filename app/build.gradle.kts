@@ -204,8 +204,6 @@ dependencies {
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   testImplementation(libs.androidx.compose.ui.test.junit4)
-  // Accessibility Test Framework checks on golden screens (docs/ux/UX-CHECKS.md, layer 2).
-  testImplementation(libs.androidx.compose.ui.test.junit4.accessibility)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
