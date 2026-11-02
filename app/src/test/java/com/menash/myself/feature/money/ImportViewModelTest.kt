@@ -48,10 +48,21 @@ class FakeTransactionRepository : TransactionRepository {
 
     override suspend fun remember(merchantKey: String, categoryId: String?, ownTransfer: Boolean) {
         val m = memory.value
-        memory.value = ImportMemory(
-            if (categoryId != null) MerchantMemory(m.merchants.categories + (merchantKey to categoryId)) else m.merchants,
-            if (ownTransfer) m.ownTransfers + merchantKey else m.ownTransfers,
+        memory.value = m.copy(
+            merchants = if (categoryId != null) MerchantMemory(m.merchants.categories + (merchantKey to categoryId)) else m.merchants,
+            ownTransfers = if (ownTransfer) m.ownTransfers + merchantKey else m.ownTransfers,
         )
+    }
+
+    override suspend fun setAlias(merchantKey: String, alias: String?) {
+        val m = memory.value
+        memory.value = m.copy(aliases = if (alias.isNullOrBlank()) m.aliases - merchantKey else m.aliases + (merchantKey to alias.trim()))
+    }
+
+    override suspend fun setAskEachTime(merchantKey: String, ask: Boolean) {
+        val m = memory.value
+        memory.value = if (ask) m.copy(askEachTime = m.askEachTime + merchantKey, merchants = MerchantMemory(m.merchants.categories - merchantKey))
+        else m.copy(askEachTime = m.askEachTime - merchantKey)
     }
 }
 

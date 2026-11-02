@@ -73,9 +73,9 @@ fun monthLines(
 }
 
 /** What the category list needs to ask about one line; the hint and suggestion work as in the import. */
-fun choiceFor(line: MonthLine, categories: List<Category>): MerchantChoice = MerchantChoice(
+fun choiceFor(line: MonthLine, categories: List<Category>, name: String = line.row.description): MerchantChoice = MerchantChoice(
     key = ImportIds.merchantKey(line.row.description),
-    name = line.row.description,
+    name = name,
     total = line.row.charge ?: Money.ZERO,
     count = 1,
     hint = line.row.hint,

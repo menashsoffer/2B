@@ -73,14 +73,29 @@ object ImportDocuments {
 
     fun memoryId(merchantKey: String): String = ImportIds.memoryDocId(merchantKey)
 
+    /** Merge fields for the merchant's display name; a blank alias is removed by the caller. */
+    fun encodeAlias(merchantKey: String, alias: String): Map<String, Any> {
+        val clean = alias.trim()
+        require(clean.isNotEmpty() && clean.length <= MAX_ALIAS) { "Alias must be 1..$MAX_ALIAS characters" }
+        return mapOf("key" to merchantKey, "alias" to clean)
+    }
+
+    const val MAX_ALIAS = 60
+
     fun decodeMemory(docs: List<Map<String, Any?>>): ImportMemory {
         val categories = mutableMapOf<String, String>()
         val own = mutableSetOf<String>()
+        val aliases = mutableMapOf<String, String>()
+        val ask = mutableSetOf<String>()
         docs.forEach { data ->
             val key = (data["key"] as? String)?.takeIf { it.isNotEmpty() } ?: return@forEach
-            (data["categoryId"] as? String)?.takeIf { it.isNotEmpty() }?.let { categories[key] = it }
+            val asks = data["askEachTime"] == true
+            if (asks) ask += key
+            // A merchant that asks each time has no learnt category, even if an older one is still stored.
+            if (!asks) (data["categoryId"] as? String)?.takeIf { it.isNotEmpty() }?.let { categories[key] = it }
             if (data["ownTransfer"] == true) own += key
+            (data["alias"] as? String)?.trim()?.takeIf { it.isNotEmpty() }?.let { aliases[key] = it }
         }
-        return ImportMemory(MerchantMemory(categories), own)
+        return ImportMemory(MerchantMemory(categories), own, aliases, ask)
     }
 }

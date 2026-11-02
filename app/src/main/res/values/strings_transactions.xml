@@ -29,4 +29,11 @@
     <string name="tx_income_pick_title">של איזו הכנסה: %1$s</string>
     <string name="tx_income_pick_detail">בשביל חשבון המעשרות. בחודשים הבאים שורה מאותו משלם תשויך לבד.</string>
     <string name="tx_income_none">עוד אין הכנסות קבועות. מוסיפים אותן בחודש, עם "להוסיף".</string>
+    <string name="tx_alias_label">שם לתצוגה</string>
+    <string name="tx_alias_bank_name">בקובץ: %1$s</string>
+    <string name="tx_alias_save">לשמור את השם</string>
+    <string name="tx_this_line_only">רק לתנועה הזו</string>
+    <string name="tx_this_line_only_detail">שאר התנועות של %1$s לא ישתנו</string>
+    <string name="tx_ask_each_time">תמיד לשאול על %1$s</string>
+    <string name="tx_ask_each_time_detail">בית העסק לא נלמד: כל תנועה שלו מקבלת קטגוריה משלה</string>
 </resources>

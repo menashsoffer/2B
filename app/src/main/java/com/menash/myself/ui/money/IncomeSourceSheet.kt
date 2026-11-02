@@ -27,19 +27,31 @@ import com.menash.myself.feature.money.importer.MonthLine
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun IncomeSourceSheet(line: MonthLine, incomes: List<Income>, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+fun IncomeSourceSheet(
+    line: MonthLine,
+    incomes: List<Income>,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit,
+    name: String = line.row.description,
+) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.appColors.card,
     ) {
-        IncomeSourceList(line, incomes, onPick)
+        IncomeSourceList(line, incomes, onPick, name = name)
     }
 }
 
 /** Which income source an imported income line is; the payer is remembered for next month. */
 @Composable
-fun IncomeSourceList(line: MonthLine, incomes: List<Income>, onPick: (String) -> Unit, modifier: Modifier = Modifier) {
+fun IncomeSourceList(
+    line: MonthLine,
+    incomes: List<Income>,
+    onPick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    name: String = line.row.description,
+) {
     val colors = MaterialTheme.appColors
     Column(
         modifier = modifier
@@ -51,7 +63,7 @@ fun IncomeSourceList(line: MonthLine, incomes: List<Income>, onPick: (String) ->
             .testTag("income_source_list"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s8),
     ) {
-        Text(text = stringResource(R.string.tx_income_pick_title, line.row.description), style = AppType.title, color = colors.textPrimary)
+        Text(text = stringResource(R.string.tx_income_pick_title, name), style = AppType.title, color = colors.textPrimary)
         line.row.charge?.let {
             Text(text = formatMoney(Money(-it.agorot)), style = AppType.body, color = colors.textSecondary)
         }

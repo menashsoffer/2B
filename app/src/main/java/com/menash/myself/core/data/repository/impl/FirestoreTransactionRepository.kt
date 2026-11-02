@@ -114,6 +114,32 @@ class FirestoreTransactionRepository(
         }
     }
 
+    override suspend fun setAlias(merchantKey: String, alias: String?) {
+        try {
+            val doc = collection(householdSession.requireHouseholdId(), ImportDocuments.MERCHANT_MEMORY)
+                .document(ImportDocuments.memoryId(merchantKey))
+            val fields: Map<String, Any> = if (alias.isNullOrBlank()) mapOf("key" to merchantKey, "alias" to FieldValue.delete())
+            else ImportDocuments.encodeAlias(merchantKey, alias)
+            doc.set(fields, SetOptions.merge()).await()
+        } catch (e: Exception) {
+            reportError("setMerchantAlias", e)
+            throw e
+        }
+    }
+
+    override suspend fun setAskEachTime(merchantKey: String, ask: Boolean) {
+        try {
+            val doc = collection(householdSession.requireHouseholdId(), ImportDocuments.MERCHANT_MEMORY)
+                .document(ImportDocuments.memoryId(merchantKey))
+            val fields: Map<String, Any> = if (ask) mapOf("key" to merchantKey, "askEachTime" to true, "categoryId" to FieldValue.delete())
+            else mapOf("key" to merchantKey, "askEachTime" to FieldValue.delete())
+            doc.set(fields, SetOptions.merge()).await()
+        } catch (e: Exception) {
+            reportError("setMerchantAskEachTime", e)
+            throw e
+        }
+    }
+
     override suspend fun remember(merchantKey: String, categoryId: String?, ownTransfer: Boolean) {
         try {
             collection(householdSession.requireHouseholdId(), ImportDocuments.MERCHANT_MEMORY)

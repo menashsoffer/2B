@@ -12,6 +12,10 @@ import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Category
 import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.importer.ImportIds
+import com.menash.myself.feature.money.importer.ImportMemory
+import com.menash.myself.feature.money.importer.RowKind
+import com.menash.myself.feature.money.importer.StoredTransaction
+import com.menash.myself.feature.money.importer.classify
 import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.feature.money.importer.MerchantDecision
 import com.menash.myself.feature.money.importer.MonthLines
@@ -41,6 +45,10 @@ data class TransactionsUi(
     val categories: List<Category> = emptyList(),
     /** Income sources an income line can be linked to, for maaser. */
     val incomes: List<Income> = emptyList(),
+    /** Merchant aliases and "ask each time" marks; the memory itself drives the categories in [lines]. */
+    val memory: ImportMemory = ImportMemory(),
+    /** Every stored line of the household, for pinning categories when a merchant stops learning. */
+    val stored: List<StoredTransaction> = emptyList(),
 ) {
     val open: Boolean get() = query.month != null
 }
@@ -63,7 +71,7 @@ class TransactionsViewModel(
     ) { q, stored, memory, data ->
         val incomes = data.items.incomes
         val lines = q.month?.let { monthLines(stored, it, memory, data.categories, incomes.map { income -> income.id }.toSet()) }
-        TransactionsUi(q, lines, data.categories, incomes)
+        TransactionsUi(q, lines, data.categories, incomes, memory, stored)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TransactionsUi())
 
     fun open(month: YearMonth, filter: LineFilter = LineFilter.ALL) {
@@ -91,17 +99,19 @@ class TransactionsViewModel(
     }
 
     /**
-     * A category for one line is kept by later re-imports, and the merchant is learnt so its other
-     * uncategorised lines and future ones follow. Card bills and cash are never learnt.
+     * A category for one line is kept by later re-imports. Unless [thisLineOnly], or the merchant asks each
+     * time, the merchant is learnt so its other uncategorised lines and future ones follow.
+     * Card bills and cash are never learnt.
      */
-    fun decide(lineId: String, decision: MerchantDecision) {
+    fun decide(lineId: String, decision: MerchantDecision, thisLineOnly: Boolean = false) {
         val line = ui.value.lines?.lines?.firstOrNull { it.id == lineId } ?: return
         query.update { it.copy(picking = null) }
         val key = ImportIds.merchantKey(line.row.description)
+        val learn = teachesMemory(line) && !thisLineOnly && !ui.value.memory.asksEachTime(line.row.description)
         when (decision) {
             is MerchantDecision.Categorise -> safeLaunch("setCategory") {
                 transactions.setCategory(line.id, decision.categoryId)
-                if (teachesMemory(line)) transactions.remember(key, decision.categoryId, false)
+                if (learn) transactions.remember(key, decision.categoryId, false)
                 ui.value.categories.firstOrNull { it.id == decision.categoryId }?.let { events?.send(UiEvent.CategoryAssigned(it.name)) }
             }
             MerchantDecision.OwnTransfer -> safeLaunch("markOwnTransfer") { transactions.remember(key, null, true) }
@@ -117,6 +127,35 @@ class TransactionsViewModel(
         safeLaunch("linkIncome") {
             transactions.setCategory(line.id, incomeId)
             transactions.remember(ImportIds.merchantKey(line.row.description), incomeId, false)
+        }
+    }
+
+    /** The household's name for this line's merchant, shown instead of the bank's text. Blank removes it. */
+    fun setAlias(lineId: String, alias: String) {
+        val line = ui.value.lines?.lines?.firstOrNull { it.id == lineId } ?: return
+        val clean = alias.trim().take(com.menash.myself.feature.money.data.ImportDocuments.MAX_ALIAS)
+        val key = ImportIds.merchantKey(line.row.description)
+        if (clean == ui.value.memory.aliases[key].orEmpty() || (clean == line.row.description && key !in ui.value.memory.aliases)) return
+        safeLaunch("setMerchantAlias") { transactions.setAlias(key, clean.takeIf { it.isNotEmpty() && it != line.row.description }) }
+    }
+
+    /**
+     * Marks a generic merchant (ביט, העברה) to ask on every line. Lines that followed the learnt category
+     * keep it as their own first, so closed and past months do not change.
+     */
+    fun setAskEachTime(lineId: String, ask: Boolean) {
+        val line = ui.value.lines?.lines?.firstOrNull { it.id == lineId } ?: return
+        val memory = ui.value.memory
+        val key = ImportIds.merchantKey(line.row.description)
+        if (ask == (key in memory.askEachTime)) return
+        val learnt = memory.merchants.categories[key]
+        val followers = if (ask && learnt != null) ui.value.stored.filter {
+            it.categoryId == null && ImportIds.merchantKey(it.row.description) == key &&
+                classify(it.row, memory) !in setOf(RowKind.CARD_TOTAL, RowKind.CASH_WITHDRAWAL)
+        } else emptyList()
+        safeLaunch("setMerchantAskEachTime") {
+            followers.forEach { transactions.setCategory(it.id, learnt) }
+            transactions.setAskEachTime(key, ask)
         }
     }
 

@@ -102,7 +102,7 @@ internal fun newMerchants(
         val hint = rows.firstNotNullOfOrNull { it.hint }
         MerchantChoice(
             key = key,
-            name = rows.first().description,
+            name = memory.aliases[key] ?: rows.first().description,
             total = Money(rows.sumOf { (it.charge ?: it.originalAmount ?: Money.ZERO).agorot }),
             count = rows.size,
             hint = hint,

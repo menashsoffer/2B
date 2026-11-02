@@ -26,7 +26,19 @@ enum class RowKind {
 enum class Issuer { MAX, CAL, ISRACARD, AMEX, DINERS }
 
 /** What the household taught the app: merchant → category, and names that are its own accounts. */
-data class ImportMemory(val merchants: MerchantMemory = MerchantMemory(), val ownTransfers: Set<String> = emptySet())
+data class ImportMemory(
+    val merchants: MerchantMemory = MerchantMemory(),
+    val ownTransfers: Set<String> = emptySet(),
+    /** The household's own name for a merchant, by merchant key. Matching always uses the bank's text. */
+    val aliases: Map<String, String> = emptyMap(),
+    /** Generic merchants (ביט, העברה): never learnt, every line gets its own category. */
+    val askEachTime: Set<String> = emptySet(),
+) {
+    /** The name to show for a bank line: the alias when the household gave one, else the bank's text. */
+    fun displayName(description: String): String = aliases[ImportIds.merchantKey(description)] ?: description
+
+    fun asksEachTime(description: String): Boolean = ImportIds.merchantKey(description) in askEachTime
+}
 
 private fun has(text: String, vararg words: String) = words.any { text.contains(headerKey(it)) }
 
