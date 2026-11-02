@@ -114,9 +114,8 @@ private fun ComposeContentTestRule.captureTagged(
         }
     }
     onNodeWithTag(R2ScreenshotTag).captureRoboImage()
-    // UX rules ride on every golden capture (docs/ux/UX-CHECKS.md); report-only, never fails the golden.
+    // UX rules ride on every golden capture (docs/ux/UX-CHECKS.md); a new finding fails the test.
     val variant = "${if (darkTheme) "dark" else "light"}-font$fontScale"
-    runCatching {
-        UxRules.record(onNodeWithTag(R2ScreenshotTag).fetchSemanticsNode(), variant)
-    }
+    val findings = UxRules.record(onNodeWithTag(R2ScreenshotTag).fetchSemanticsNode(), variant)
+    UxRules.assertNoNewFindings(findings, variant)
 }
