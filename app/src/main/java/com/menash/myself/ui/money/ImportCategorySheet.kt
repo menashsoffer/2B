@@ -20,6 +20,8 @@ import com.menash.myself.R
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
+import com.menash.myself.feature.money.ImportUi
+import com.menash.myself.feature.money.ImportViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.domain.Category
 import com.menash.myself.feature.money.domain.ExpenseClass
@@ -123,4 +125,18 @@ fun ImportCategoryList(
             )
         }
     }
+}
+
+/** The category sheet of the merchant being picked in the import review. */
+@Composable
+fun ImportOverlays(importUi: ImportUi, importViewModel: ImportViewModel) {
+    val review = importUi as? ImportUi.Review ?: return
+    val merchant = review.review.merchants.firstOrNull { it.key == review.picking } ?: return
+    ImportCategorySheet(
+        merchant = merchant,
+        categories = review.categories,
+        onDecide = { importViewModel.decide(merchant.key, it) },
+        onDismiss = importViewModel::closePicker,
+        onCreate = { name, klass -> importViewModel.createCategory(merchant.key, name, klass) },
+    )
 }

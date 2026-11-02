@@ -269,19 +269,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         MoneyDestination.Close -> MonthCloseOverlays(closeUi, closeViewModel)
         else -> Unit
     }
-    if (destination == MoneyDestination.Import) {
-        (importUi as? ImportUi.Review)?.let { review ->
-            review.review.merchants.firstOrNull { it.key == review.picking }?.let { merchant ->
-                ImportCategorySheet(
-                    merchant = merchant,
-                    categories = review.categories,
-                    onDecide = { importViewModel.decide(merchant.key, it) },
-                    onDismiss = importViewModel::closePicker,
-                    onCreate = { name, klass -> importViewModel.createCategory(merchant.key, name, klass) },
-                )
-            }
-        }
-    }
+    if (destination == MoneyDestination.Import) ImportOverlays(importUi, importViewModel)
     if (picking && destination == MoneyDestination.Root) {
         KindPickerSheet(
             onPick = { kind ->
