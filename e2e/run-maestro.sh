@@ -12,4 +12,13 @@ maestro test e2e/maestro \
   --format junit --output e2e-report.xml \
   --test-output-dir e2e-output || status=$?
 kill "${logcat_pid}" || true
+if [ "${status}" -ne 0 ]; then
+  # CI artifacts are not always reachable, so the failure state also goes to the log.
+  echo "::group::Screen at failure (ids and texts)"
+  maestro hierarchy 2>/dev/null | grep -oE '"(resource-id|text|accessibilityText)" *: *"[^"]+"' | sort | uniq | head -200 || true
+  echo "::endgroup::"
+  echo "::group::App log (errors and e2e)"
+  grep -E "E2eActivity|AndroidRuntime|FATAL| E/(Firestore|Import|Money|ErrorReporter)" e2e-logcat.txt | tail -150 || true
+  echo "::endgroup::"
+fi
 exit "${status}"
