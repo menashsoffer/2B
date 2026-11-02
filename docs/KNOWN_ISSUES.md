@@ -55,3 +55,11 @@
 - כלל סגירת החודש הקיים עדיין חוסם סגירה לפני סוף החודש; תצוגת חודש נוכחי ממשיכה להשתמש ביתרות הנוכחיות.
 - תיקון יתרות חשודות שומר עותק של החודש שנצפה; טיפול בהתנגשות בין עריכות מקבילות של בני הזוג אינו חלק מהמשימה.
 - אימות ידני על מכשיר אמיתי, מחיקת חשבון, AAB והכנה ל-Play נשארים למשימות נפרדות.
+
+## Account deletion (task 13)
+
+- The household model contains owner/partner emails and UIDs, but no partner display name. Account management uses the available email (or a localized generic partner label); it does not invent a name or query somebody else's private profile.
+- Client SDKs cannot discover arbitrary subcollections. Deletion covers the 19 current money collections, tasks/dreams/inbox, fitness, the three known private `items` collections and their parents, calculator_sync and invites. Future collections must update the explicit inventory. Unknown historical collections require an inventory/migration before deletion can cover them.
+- An owner can still delete the household document directly with another client and strand subcollections. Rules enforce membership, not recursive deletion; this app deletes the document last. A client cannot repair an already orphaned household with its own permissions.
+- Existing `getOrCreateHousehold` invite migration calls a sole-member household "empty" without checking its collections and deletes its parent after joining another home. This pre-existing join/migration behavior is outside task 13; it should be replaced by explicit user-approved migration/cleanup before enabling broader invite migrations.
+- Device-only Google Credential Manager UX and real Google/Firebase account deletion need a signed device check. Unit tests and the Firestore emulator cannot exercise Google's account chooser, real recent-login policy or Crashlytics backend retention. Already uploaded reports are not removed by `deleteUnsentReports()`.
