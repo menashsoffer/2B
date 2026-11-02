@@ -96,6 +96,8 @@ object CalendarHelper {
                     )
                 }
             }
+        } catch (_: SecurityException) {
+            return emptyList()
         } catch (e: Exception) {
             e.printStackTrace()
         }
