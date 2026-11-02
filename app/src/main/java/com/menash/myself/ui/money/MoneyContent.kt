@@ -73,6 +73,7 @@ data class MoneyActions(
     val onCar: () -> Unit = {},
     val onPension: () -> Unit = {},
     val onSubscriptions: () -> Unit = {},
+    val onPeriod: () -> Unit = {},
     val onImport: () -> Unit = {},
 )
 
@@ -204,6 +205,13 @@ private fun MonthContent(
                     detail = stringResource(R.string.close_entry_detail),
                     onClick = actions.onCloseMonth,
                     testTag = "money_close_month",
+                )
+                AmountRow(
+                    title = stringResource(R.string.period_entry),
+                    amount = null,
+                    detail = stringResource(R.string.period_entry_detail),
+                    onClick = actions.onPeriod,
+                    testTag = "money_period",
                 )
             }
             if (view.cardCharges.isNotEmpty()) {

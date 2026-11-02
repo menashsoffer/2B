@@ -11,6 +11,7 @@ sealed class MoneyDestination(val depth: Int) {
     data object Pension : MoneyDestination(1)
     data object Close : MoneyDestination(1)
     data object Subscriptions : MoneyDestination(1)
+    data object Period : MoneyDestination(1)
     data object Transactions : MoneyDestination(2)
     data object Import : MoneyDestination(3)
 }
@@ -26,6 +27,7 @@ data class MoneyOpenFlags(
     val pension: Boolean = false,
     val close: Boolean = false,
     val subscriptions: Boolean = false,
+    val period: Boolean = false,
 )
 
 fun moneyDestination(flags: MoneyOpenFlags): MoneyDestination = when {
@@ -37,5 +39,6 @@ fun moneyDestination(flags: MoneyOpenFlags): MoneyDestination = when {
     flags.pension -> MoneyDestination.Pension
     flags.close -> MoneyDestination.Close
     flags.subscriptions -> MoneyDestination.Subscriptions
+    flags.period -> MoneyDestination.Period
     else -> MoneyDestination.Root
 }

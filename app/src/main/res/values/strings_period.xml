@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Period summary (plan: reviews/plan-money-status-views-2026-11-02.md, stage 3) -->
+    <string name="period_entry">סיכום תקופה</string>
+    <string name="period_entry_detail">כמה נכנס, כמה יצא ומה נשאר, לפי חודשים סגורים</string>
+    <string name="period_title">סיכום תקופה</string>
+    <string name="period_subtitle">רק חודשים סגורים נספרים</string>
+    <string name="period_last_3">3 חודשים</string>
+    <string name="period_last_6">6 חודשים</string>
+    <string name="period_this_year">השנה</string>
+    <string name="period_last_year">שנה שעברה</string>
+    <string name="period_range">%1$s עד %2$s</string>
+    <string name="period_empty">אין עדיין חודש סגור בתקופה הזו</string>
+    <string name="period_empty_detail">סוגרים חודש ממסך החודש, והוא יופיע כאן</string>
+    <string name="period_income">הכנסה</string>
+    <string name="period_expenses">הוצאה</string>
+    <string name="period_left">נשאר</string>
+    <string name="period_left_percent">נשאר %1$s · %2$s%% מההכנסה</string>
+    <string name="period_closed_count">%1$d חודשים סגורים · ממוצע הוצאה %2$s לחודש</string>
+    <string name="period_missing">חסרים: %1$s. הם לא נספרים</string>
+    <string name="period_chart">הכנסה מול הוצאה לפי חודש</string>
+    <string name="period_chart_missing">חסר</string>
+    <string name="period_by_class">לפי סוג הוצאה</string>
+    <string name="period_class_other">לא משויך</string>
+    <string name="period_top_categories">הקטגוריות הגדולות</string>
+    <string name="period_plan_diff_over">%1$s מעל התוכנית</string>
+    <string name="period_plan_diff_under">%1$s מתחת לתוכנית</string>
+    <string name="period_no_plan">בלי תוכנית</string>
+    <string name="period_net_worth">שווי נקי</string>
+    <string name="period_net_worth_detail">מ-%1$s: %2$s</string>
+</resources>
