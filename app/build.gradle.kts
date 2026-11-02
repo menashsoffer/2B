@@ -152,7 +152,7 @@ kover {
     }
     variant("moneyImport") {
       filtersAppend { includes { classes("com.menash.myself.feature.money.importer.*") } }
-      verify { rule { minBound(93); minBound(70, CoverageUnit.BRANCH) } }
+      verify { rule { minBound(95); minBound(75, CoverageUnit.BRANCH) } }
     }
     variant("moneyPresentation") {
       filtersAppend {
@@ -163,7 +163,7 @@ kover {
           classes("com.menash.myself.feature.money.data.*")
         }
       }
-      verify { rule { minBound(88) } }
+      verify { rule { minBound(92) } }
     }
   }
 }
