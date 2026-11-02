@@ -42,4 +42,7 @@
     <string name="import_close">סגירה</string>
     <string name="import_pick_title">קטגוריה ל%1$s</string>
     <string name="import_unassigned">בפועל, עוד בלי קטגוריה</string>
+    <string name="import_new_category">+ קטגוריה חדשה</string>
+    <string name="import_new_category_name">שם הקטגוריה</string>
+    <string name="import_new_category_add">להוסיף ולבחור</string>
 </resources>

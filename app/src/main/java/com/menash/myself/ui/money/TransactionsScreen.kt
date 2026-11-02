@@ -58,6 +58,7 @@ fun TransactionsOverlays(ui: TransactionsUi, viewModel: TransactionsViewModel) {
             categories = ui.categories,
             onDecide = { viewModel.decide(line.id, it, thisLineOnly) },
             onDismiss = { viewModel.pick(null) },
+            onCreate = { name, klass -> viewModel.createCategory(line.id, name, klass, thisLineOnly) },
             header = {
                 if (line.canCategorise) MerchantOptions(
                     bankName = bankName,

@@ -277,6 +277,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                     categories = review.categories,
                     onDecide = { importViewModel.decide(merchant.key, it) },
                     onDismiss = importViewModel::closePicker,
+                    onCreate = { name, klass -> importViewModel.createCategory(merchant.key, name, klass) },
                 )
             }
         }

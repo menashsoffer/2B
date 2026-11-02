@@ -7,6 +7,7 @@ import com.menash.myself.core.data.session.ErrorReporter
 import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.core.ui.UiEvent
 import com.menash.myself.core.ui.UiEvents
+import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.domain.Category
@@ -52,10 +53,11 @@ sealed interface ImportUi {
 
 class ImportViewModel(
     private val transactions: TransactionRepository,
-    money: MoneyRepository,
+    private val money: MoneyRepository,
     errorReporter: ErrorReporter,
     private val io: CoroutineDispatcher = Dispatchers.Default,
     private val events: UiEvents? = null,
+    private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
 ) : BaseViewModel(errorReporter) {
 
     private val stored: StateFlow<List<StoredTransaction>> =
@@ -90,6 +92,23 @@ class ImportViewModel(
     fun decide(merchantKey: String, decision: MerchantDecision) {
         _ui.update { state ->
             (state as? ImportUi.Review)?.copy(decisions = state.decisions + (merchantKey to decision), picking = null) ?: state
+        }
+    }
+
+    /** Adds a category from the merchant's sheet, shows it in the review, and picks it for the merchant. */
+    fun createCategory(merchantKey: String, name: String, klass: com.menash.myself.feature.money.domain.ExpenseClass) {
+        val review = _ui.value as? ImportUi.Review ?: return
+        val category = com.menash.myself.feature.money.domain.newCategory(name, klass, review.categories, newId) ?: return
+        val isNew = review.categories.none { it.id == category.id }
+        safeLaunch("createCategory") {
+            if (isNew) money.save(MoneyEntry.CategoryEntry(category))
+            _ui.update { state ->
+                (state as? ImportUi.Review)?.copy(
+                    categories = if (isNew) state.categories + category else state.categories,
+                    decisions = state.decisions + (merchantKey to MerchantDecision.Categorise(category.id)),
+                    picking = null,
+                ) ?: state
+            }
         }
     }
 

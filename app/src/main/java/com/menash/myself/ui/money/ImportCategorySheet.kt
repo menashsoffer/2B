@@ -34,13 +34,14 @@ fun ImportCategorySheet(
     onDecide: (MerchantDecision) -> Unit,
     onDismiss: () -> Unit,
     header: @Composable () -> Unit = {},
+    onCreate: ((String, ExpenseClass) -> Unit)? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.appColors.card,
     ) {
-        ImportCategoryList(merchant, categories, onDecide, header = header)
+        ImportCategoryList(merchant, categories, onDecide, header = header, onCreate = onCreate)
     }
 }
 
@@ -58,6 +59,7 @@ fun ImportCategoryList(
     onDecide: (MerchantDecision) -> Unit,
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit = {},
+    onCreate: ((String, ExpenseClass) -> Unit)? = null,
 ) {
     val colors = MaterialTheme.appColors
     Column(
@@ -111,6 +113,7 @@ fun ImportCategoryList(
                 }
             }
         }
+        onCreate?.let { NewCategoryForm(it) }
         MoneySurface {
             AmountRow(
                 title = stringResource(R.string.import_later),

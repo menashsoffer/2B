@@ -119,6 +119,25 @@ class ImportViewModelTest {
     }
 
     @Test
+    fun newCategoryFromTheSheet_isSavedShownAndPicked() {
+        val money = FakeMoneyRepository(MoneySamples.filled)
+        val vm = ImportViewModel(FakeTransactionRepository(), money, DefaultErrorReporter(), io = dispatcher, newId = { "cat-new" })
+        vm.load(listOf(file("max_nov.xlsx")))
+        val coffee = (vm.ui.value as ImportUi.Review).review.merchants.single { it.name == "קפה גרג" }.key
+        vm.openPicker(coffee)
+        vm.createCategory(coffee, "  בתי קפה ", com.menash.myself.feature.money.domain.ExpenseClass.CURRENT)
+        val review = vm.ui.value as ImportUi.Review
+        val saved = (money.saved.single() as com.menash.myself.feature.money.data.MoneyEntry.CategoryEntry).value
+        assertEquals("cat-new", saved.id)
+        assertEquals("בתי קפה", saved.name)
+        assertTrue(review.categories.any { it.id == "cat-new" })
+        assertEquals(MerchantDecision.Categorise("cat-new"), review.decisionFor(coffee))
+        assertEquals(null, review.picking)
+        vm.createCategory(coffee, "   ", com.menash.myself.feature.money.domain.ExpenseClass.CURRENT)
+        assertEquals(1, money.saved.size)
+    }
+
+    @Test
     fun sameFileAgainAfterSaving_nothingToSave() {
         val repo = FakeTransactionRepository()
         val vm = viewModel(repo)

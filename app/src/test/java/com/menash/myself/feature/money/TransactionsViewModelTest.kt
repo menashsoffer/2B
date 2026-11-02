@@ -110,6 +110,24 @@ class TransactionsViewModelTest {
     }
 
     @Test
+    fun newCategoryForOneLine_reusesAnExistingNameInTheSameClass() {
+        val repo = repo("max_nov.xlsx")
+        val money = FakeMoneyRepository(MoneySamples.filled)
+        val vm = TransactionsViewModel(repo, money, DefaultErrorReporter(), newId = { "cat-new" })
+        vm.open(november)
+        val coffee = vm.ui.value.lines!!.lines.first { it.row.description == "קפה גרג" }
+        vm.createCategory(coffee.id, "בתי קפה", com.menash.myself.feature.money.domain.ExpenseClass.CURRENT, thisLineOnly = true)
+        assertEquals("cat-new", repo.lines.value.single { it.id == coffee.id }.categoryId)
+        assertNull(repo.memory.value.merchants.categories[ImportIds.merchantKey("קפה גרג")])
+        assertEquals(1, money.saved.size)
+
+        val existing = MoneySamples.filled.categories.first()
+        vm.createCategory(coffee.id, " ${existing.name.uppercase()} ", existing.klass)
+        assertEquals(1, money.saved.size)
+        assertEquals(existing.id, repo.lines.value.single { it.id == coffee.id }.categoryId)
+    }
+
+    @Test
     fun aliasIsShownButMatchingKeepsTheBankName() {
         val repo = repo("max_nov.xlsx")
         val vm = viewModel(repo)
