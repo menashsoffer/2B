@@ -34,7 +34,9 @@ object UxRules {
             val config = node.config
             val scrollsSideways = config.contains(SemanticsProperties.HorizontalScrollAxisRange)
             val clickable = config.contains(SemanticsActions.OnClick)
-            if (clickable) {
+            // A 0x0 node was not laid out (scrolled out of the captured viewport); nothing to measure.
+            val laidOut = node.boundsInRoot.width > 0f && node.boundsInRoot.height > 0f
+            if (clickable && laidOut) {
                 val wDp = node.boundsInRoot.width / density
                 val hDp = node.boundsInRoot.height / density
                 if (wDp + Tolerance < MinTouchDp || hDp + Tolerance < MinTouchDp) {
