@@ -626,3 +626,39 @@ test('Client deletion inventory exactly matches isMoneyCollection', () => {
   const moneyClient = [...kotlin.match(/val money = listOf\(([\s\S]*?)\)/)[1].matchAll(/"([^"]+)"/g)].map(m => m[1]).sort();
   assert.deepStrictEqual(moneyClient, moneyRules);
 });
+
+test('Online transaction batches delete 500 documents while the household still exists', async () => {
+  await setupHousehold();
+  await testEnv.withSecurityRulesDisabled(async c => {
+    const batch = c.firestore().batch();
+    for (let i = 0; i < 500; i++) batch.set(c.firestore().doc(`households/house_1/tasks/t${i}`), {title:'task',userId:ALICE_UID});
+    await batch.commit();
+  });
+  const db = testEnv.authenticatedContext(ALICE_UID, {email: ALICE_EMAIL}).firestore();
+  await db.runTransaction(async tx => {
+    const ref = db.doc('households/house_1');
+    assert.strictEqual((await tx.get(ref)).data().ownerUid, ALICE_UID);
+    tx.update(ref, {deleting:true});
+  });
+  const docs = await db.collection('households/house_1/tasks').limit(500).get({source:'server'});
+  await assertSucceeds(db.runTransaction(async tx => {
+    await tx.get(db.doc('households/house_1'));
+    for (const doc of docs.docs) tx.delete(doc.ref);
+  }));
+  assert.strictEqual((await db.collection('households/house_1/tasks').get()).size, 0);
+  await assertSucceeds(db.doc('households/house_1').delete());
+});
+
+test('Removed partner observes an empty membership query and can create a replacement household', async () => {
+  for (const deleted of [true, false]) {
+    await setupHousehold();
+    const owner = testEnv.authenticatedContext(ALICE_UID, {email:ALICE_EMAIL}).firestore();
+    const partner = testEnv.authenticatedContext(BOB_UID, {email:BOB_EMAIL}).firestore();
+    if (deleted) await owner.doc('households/house_1').delete();
+    else await owner.doc('households/house_1').update({memberUids:[ALICE_UID],partnerUid:'',partnerEmail:''});
+    const query = await assertSucceeds(partner.collection('households').where('memberUids', 'array-contains', BOB_UID).get({source:'server'}));
+    assert.strictEqual(query.size, 0);
+    await assertSucceeds(partner.doc('households/replacement').set({ownerUid:BOB_UID,memberUids:[BOB_UID],partnerUid:'',partnerEmail:''}));
+    await testEnv.clearFirestore();
+  }
+});
