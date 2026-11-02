@@ -37,7 +37,9 @@ fun readWorkbook(bytes: ByteArray): Workbook {
     } catch (e: ImportException) {
         throw e
     } catch (e: Exception) {
-        throw ImportException(FileProblem.CORRUPT, "Unreadable file: ${e.javaClass.simpleName}", e)
+        // The SAX parser wraps exceptions thrown from its handler (e.g. TOO_LARGE on row 20,001).
+        throw generateSequence(e.cause) { it.cause }.filterIsInstance<ImportException>().firstOrNull()
+            ?: ImportException(FileProblem.CORRUPT, "Unreadable file: ${e.javaClass.simpleName}", e)
     }
 }
 

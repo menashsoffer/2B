@@ -90,4 +90,23 @@ class CanWeTest {
     fun preview_ofAPassedTarget_isNull() {
         assertNull(previewAnswer(trip.copy(targetMonth = YearMonth.of(2026, 9)), filled, october, rate, shekels(5_000)))
     }
+
+    @Test
+    fun usdSubscriptionWithoutRate_noPlanBasisInsteadOfACrash() {
+        // filled has an active USD subscription (ChatGPT); the rate has not loaded yet.
+        val view = canWe(withGoals, october, usdToIls = null)
+
+        assertNull(view.basis)
+        assertNull(view.monthlySaving)
+        assertEquals(listOf(trip.id, car.id), view.goals.map { it.goal.id })
+    }
+
+    @Test
+    fun usdSubscriptionWithoutRate_closedMonthsStillAnswer() {
+        val view = canWe(withGoals, october, usdToIls = null, closedSaving = shekels(5_000))
+
+        assertEquals(RateBasis.CLOSED_MONTHS, view.basis)
+        assertTrue(view.goals.first().answer is Feasibility.Possible)
+        assertTrue(previewAnswer(trip, withGoals, october, usdToIls = null, closedSaving = shekels(5_000)) is Feasibility.Possible)
+    }
 }

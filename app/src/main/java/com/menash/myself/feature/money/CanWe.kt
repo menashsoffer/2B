@@ -3,10 +3,12 @@ package com.menash.myself.feature.money
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.domain.AssetKind
+import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Feasibility
 import com.menash.myself.feature.money.domain.FeasibilityInput
 import com.menash.myself.feature.money.domain.Goal
 import com.menash.myself.feature.money.domain.MonthPlan
+import com.menash.myself.feature.money.domain.amountFor
 import com.menash.myself.feature.money.domain.isItPossible
 import com.menash.myself.feature.money.domain.monthPlan
 import com.menash.myself.feature.money.domain.sumMoney
@@ -26,6 +28,16 @@ data class GoalAnswer(val goal: Goal, val answer: Feasibility?)
 
 data class CanWeView(val basis: RateBasis?, val monthlySaving: Money?, val goals: List<GoalAnswer>)
 
+/**
+ * The month's plan, or null when it cannot be priced: an active USD subscription with no USD rate yet.
+ * Leaving that subscription out would understate expenses and make every answer look better than it is.
+ */
+private fun plannedMonth(data: MoneyData, month: YearMonth, usdToIls: BigDecimal?): MonthPlan.Planned? {
+    val rate = usdToIls?.takeIf { it > BigDecimal.ZERO }
+    if (rate == null && data.items.subscriptions.any { it.currency == Currency.USD && amountFor(it, month) != null }) return null
+    return monthPlan(month, data.items, rate) as? MonthPlan.Planned
+}
+
 private fun inputFor(goal: Goal, others: List<Goal>, data: MoneyData, month: YearMonth, plan: MonthPlan.Planned?, saving: Money?) =
     FeasibilityInput(
         goal = goal,
@@ -43,7 +55,7 @@ private fun inputFor(goal: Goal, others: List<Goal>, data: MoneyData, month: Yea
  * once months are closed; until then the plan's expected surplus is used and [CanWeView.basis] says so.
  */
 fun canWe(data: MoneyData, month: YearMonth, usdToIls: BigDecimal?, closedSaving: Money? = null): CanWeView {
-    val plan = monthPlan(month, data.items, usdToIls) as? MonthPlan.Planned
+    val plan = plannedMonth(data, month, usdToIls)
     val basis = when {
         closedSaving != null -> RateBasis.CLOSED_MONTHS
         plan != null -> RateBasis.PLAN
@@ -60,7 +72,7 @@ fun canWe(data: MoneyData, month: YearMonth, usdToIls: BigDecimal?, closedSaving
 /** The answer for a goal being typed, judged against the stored goals (the one being edited left out). */
 fun previewAnswer(goal: Goal, data: MoneyData, month: YearMonth, usdToIls: BigDecimal?, closedSaving: Money? = null): Feasibility? {
     if (goal.targetMonth.isBefore(month)) return null
-    val plan = monthPlan(month, data.items, usdToIls) as? MonthPlan.Planned
+    val plan = plannedMonth(data, month, usdToIls)
     val others = data.goals.filter { it.id != goal.id && !it.targetMonth.isBefore(month) }
     return isItPossible(inputFor(goal, others, data, month, plan, closedSaving ?: plan?.expectedSurplus))
 }
