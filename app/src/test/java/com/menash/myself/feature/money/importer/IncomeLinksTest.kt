@@ -43,4 +43,11 @@ class IncomeLinksTest {
         val total = Money(-incomeLines.filter { it.row.billingMonth == month }.sumOf { it.row.charge!!.agorot })
         assertEquals(actualIncome(rows, month), total)
     }
+
+    @Test
+    fun pendingAndMissingAmountsNeverCountAsIncome() {
+        assertEquals(false, isIncomeLine(allowance.copy(row = allowance.row.copy(charge = null)), ImportMemory()))
+        assertEquals(false, isIncomeLine(allowance.copy(row = allowance.row.copy(status = RowStatus.PENDING)), ImportMemory()))
+        assertEquals(false, isIncomeLine(allowance.copy(row = allowance.row.copy(charge = Money.ZERO)), ImportMemory()))
+    }
 }
