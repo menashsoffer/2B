@@ -76,10 +76,237 @@ service cloud.firestore {
                       'transactions', 'merchantMemory', 'goals', 'donations', 'tithe', 'closedMonths', 'pensionFunds', 'car'];
     }
 
-    function isValidMoneyDoc(data) {
-      return data.keys().size() <= 20 &&
-             (!('name' in data) || (data.name is string && data.name.size() > 0 && data.name.size() <= 200)) &&
-             (!('creditor' in data) || (data.creditor is string && data.creditor.size() > 0 && data.creditor.size() <= 200));
+    // One validator per money collection, generated from and tested against the app's own writers:
+    // firestore-fixtures/money holds what the writers produce (MoneyFixturesTest keeps it in sync) and
+    // firestore.test.js requires every fixture to be accepted. Change a writer -> re-record -> update here.
+    // "v" (schema version) is optional: documents from app versions before it have none.
+
+    function isAgorot(x) {
+      return x is int && x >= -10000000000 && x <= 10000000000;
+    }
+
+    function isName(x) {
+      return x is string && x.size() > 0 && x.size() <= 200;
+    }
+
+    function isText(x, max) {
+      return x is string && x.size() <= max;
+    }
+
+    function isRef(x) {
+      return x is string && x.size() > 0 && x.size() <= 128;
+    }
+
+    function isMonth(x) {
+      return x is string && x.matches('^[0-9]{4}-(0[1-9]|1[0-2])$');
+    }
+
+    function isDate(x) {
+      return x is string && x.matches('^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
+    }
+
+    function isDecimal(x) {
+      return x is string && x.matches('^-?[0-9]{1,9}([.][0-9]{1,12})?$');
+    }
+
+    function isIntIn(x, low, high) {
+      return x is int && x >= low && x <= high;
+    }
+
+    function isClass(x) {
+      return x in ['FIXED', 'CURRENT', 'PERIODIC'];
+    }
+
+    function isMapUpTo(x, max) {
+      return x is map && x.size() <= max;
+    }
+
+    function isListUpTo(x, max) {
+      return x is list && x.size() <= max;
+    }
+
+    // AmountHistory: {changes: [{from, amount}], overrides: {"yyyy-MM": agorot}}
+    function isHistory(h) {
+      return h is map && h.keys().hasOnly(['changes', 'overrides']) &&
+             (!('changes' in h) || isListUpTo(h.changes, 600)) &&
+             (!('overrides' in h) || isMapUpTo(h.overrides, 600));
+    }
+
+    function hasValidVersion(data) {
+      return !('v' in data) || isIntIn(data.v, 1, 100);
+    }
+
+    function optRef(data, key) {
+      return !(key in data) || isRef(data[key]);
+    }
+
+    function isValidCard(d) {
+      return d.keys().hasOnly(['name', 'billingDay', 'v']) && d.keys().hasAll(['name', 'billingDay']) &&
+             isName(d.name) && isIntIn(d.billingDay, 1, 31);
+    }
+
+    function isValidIncome(d) {
+      return d.keys().hasOnly(['name', 'amounts', 'titheRate', 'v']) && d.keys().hasAll(['name', 'amounts', 'titheRate']) &&
+             isName(d.name) && isHistory(d.amounts) && d.titheRate in ['NONE', 'MAASER', 'CHOMESH'];
+    }
+
+    function isValidFixedExpense(d) {
+      return d.keys().hasOnly(['name', 'amounts', 'frequency', 'klass', 'cardId', 'billingMonth', 'categoryId', 'v']) &&
+             d.keys().hasAll(['name', 'amounts', 'frequency', 'klass']) &&
+             isName(d.name) && isHistory(d.amounts) && d.frequency in ['MONTHLY', 'YEARLY'] && isClass(d.klass) &&
+             optRef(d, 'cardId') && optRef(d, 'categoryId') &&
+             (!('billingMonth' in d) || isIntIn(d.billingMonth, 1, 12));
+    }
+
+    function isValidSubscription(d) {
+      return d.keys().hasOnly(['name', 'amounts', 'currency', 'frequency', 'renewalDate', 'klass', 'cardId', 'categoryId', 'v']) &&
+             d.keys().hasAll(['name', 'amounts', 'currency', 'frequency', 'renewalDate', 'klass']) &&
+             isName(d.name) && isHistory(d.amounts) && d.currency in ['ILS', 'USD'] &&
+             d.frequency in ['MONTHLY', 'YEARLY'] && isDate(d.renewalDate) && isClass(d.klass) &&
+             optRef(d, 'cardId') && optRef(d, 'categoryId');
+    }
+
+    function isValidVariableBudget(d) {
+      return d.keys().hasOnly(['name', 'amounts', 'klass', 'cardId', 'categoryId', 'v']) &&
+             d.keys().hasAll(['name', 'amounts', 'klass']) &&
+             isName(d.name) && isHistory(d.amounts) && isClass(d.klass) && optRef(d, 'cardId') && optRef(d, 'categoryId');
+    }
+
+    function isValidInstallment(d) {
+      return d.keys().hasOnly(['name', 'total', 'currentMonth', 'numberOfPayments', 'firstMonth', 'cardId', 'v']) &&
+             d.keys().hasAll(['name', 'total', 'currentMonth', 'numberOfPayments', 'firstMonth']) &&
+             isName(d.name) && isAgorot(d.total) && isMonth(d.currentMonth) && isIntIn(d.numberOfPayments, 1, 1000) &&
+             isMonth(d.firstMonth) && optRef(d, 'cardId');
+    }
+
+    function isValidPeriodicBudget(d) {
+      return d.keys().hasOnly(['categoryId', 'name', 'annualAmount', 'yearStartMonth', 'v']) &&
+             d.keys().hasAll(['categoryId', 'name', 'annualAmount', 'yearStartMonth']) &&
+             isRef(d.categoryId) && isName(d.name) && isAgorot(d.annualAmount) && isMonth(d.yearStartMonth);
+    }
+
+    function isValidDebt(d) {
+      return d.keys().hasOnly(['creditor', 'balance', 'asOf', 'annualInterestPercent', 'remainingPayments', 'monthlyPayment', 'v']) &&
+             d.keys().hasAll(['creditor', 'balance', 'asOf', 'annualInterestPercent', 'remainingPayments', 'monthlyPayment']) &&
+             isName(d.creditor) && isAgorot(d.balance) && isDate(d.asOf) && isDecimal(d.annualInterestPercent) &&
+             isIntIn(d.remainingPayments, 0, 1200) && isAgorot(d.monthlyPayment);
+    }
+
+    function isValidSaving(d) {
+      return d.keys().hasOnly(['name', 'monthlyDeposit', 'accumulated', 'maturity', 'v']) &&
+             d.keys().hasAll(['name', 'monthlyDeposit', 'accumulated']) &&
+             isName(d.name) && isAgorot(d.monthlyDeposit) && isAgorot(d.accumulated) &&
+             (!('maturity' in d) || isMonth(d.maturity));
+    }
+
+    function isValidAsset(d) {
+      return d.keys().hasOnly(['name', 'type', 'balance', 'kind', 'liquid', 'lastUpdated', 'v']) &&
+             d.keys().hasAll(['name', 'type', 'balance', 'kind', 'liquid', 'lastUpdated']) &&
+             isName(d.name) && isText(d.type, 100) && isAgorot(d.balance) && d.kind in ['ASSET', 'LIABILITY'] &&
+             d.liquid is bool && isDate(d.lastUpdated);
+    }
+
+    function isValidCategory(d) {
+      return d.keys().hasOnly(['name', 'klass', 'parentId', 'v']) && d.keys().hasAll(['name', 'klass']) &&
+             isName(d.name) && isClass(d.klass) && optRef(d, 'parentId');
+    }
+
+    function isValidGoal(d) {
+      return d.keys().hasOnly(['name', 'amount', 'targetMonth', 'allocated', 'newMonthlyCost', 'v']) &&
+             d.keys().hasAll(['name', 'amount', 'targetMonth', 'allocated']) &&
+             isName(d.name) && isAgorot(d.amount) && isMonth(d.targetMonth) && isAgorot(d.allocated) &&
+             (!('newMonthlyCost' in d) || isAgorot(d.newMonthlyCost));
+    }
+
+    function isValidDonation(d) {
+      return d.keys().hasOnly(['date', 'amount', 'organisation', 'submittedForTaxRefund', 'v']) &&
+             d.keys().hasAll(['date', 'amount', 'organisation', 'submittedForTaxRefund']) &&
+             isDate(d.date) && isAgorot(d.amount) && isText(d.organisation, 200) && d.submittedForTaxRefund is bool;
+    }
+
+    function isValidTithe(docId, d) {
+      return docId == 'settings' &&
+             d.keys().hasOnly(['startMonth', 'opening', 'portfolioAssetId', 'depositsBefore', 'v']) &&
+             d.keys().hasAll(['startMonth', 'opening', 'depositsBefore']) &&
+             isMonth(d.startMonth) && isAgorot(d.opening) && optRef(d, 'portfolioAssetId') && isAgorot(d.depositsBefore);
+    }
+
+    function isValidClosedMonth(docId, d) {
+      return isMonth(docId) &&
+             d.keys().hasOnly(['actualIncomes', 'actualExpenses', 'byCategory', 'periodic', 'balances', 'liabilities',
+                               'closedOn', 'balancesEntered', 'v']) &&
+             d.keys().hasAll(['actualIncomes', 'actualExpenses', 'byCategory', 'periodic', 'balances', 'liabilities', 'closedOn']) &&
+             isAgorot(d.actualIncomes) && isAgorot(d.actualExpenses) &&
+             isMapUpTo(d.byCategory, 500) && isMapUpTo(d.periodic, 500) &&
+             isMapUpTo(d.balances, 500) && isMapUpTo(d.liabilities, 500) &&
+             isDate(d.closedOn) && (!('balancesEntered' in d) || d.balancesEntered is bool);
+    }
+
+    function isValidCar(docId, d) {
+      return docId == 'settings' &&
+             d.keys().hasOnly(['categoryIds', 'horizonYears', 'included', 'fields', 'v']) &&
+             d.keys().hasAll(['categoryIds', 'horizonYears', 'included', 'fields']) &&
+             isListUpTo(d.categoryIds, 100) && isIntIn(d.horizonYears, 1, 50) &&
+             isListUpTo(d.included, 10) && isMapUpTo(d.fields, 30);
+    }
+
+    function isValidPensionFund(d) {
+      return d.keys().hasOnly(['kind', 'provider', 'value', 'totalDeposits', 'monthlyDeposit', 'feeOnBalance', 'feeOnDeposits',
+                               'openedOn', 'lastUpdated', 'v']) &&
+             d.keys().hasAll(['kind', 'provider', 'value', 'totalDeposits', 'monthlyDeposit', 'feeOnBalance', 'feeOnDeposits',
+                              'lastUpdated']) &&
+             d.kind in ['PENSION', 'HISHTALMUT', 'GEMEL'] && isText(d.provider, 200) &&
+             isAgorot(d.value) && isAgorot(d.totalDeposits) && isAgorot(d.monthlyDeposit) &&
+             isDecimal(d.feeOnBalance) && isDecimal(d.feeOnDeposits) &&
+             (!('openedOn' in d) || isDate(d.openedOn)) && isDate(d.lastUpdated);
+    }
+
+    function isValidTransaction(d) {
+      return d.keys().hasOnly(['source', 'sourceId', 'date', 'chargeDate', 'description', 'details', 'charge', 'originalAmount',
+                               'originalCurrency', 'status', 'installmentNumber', 'installmentOf', 'hint', 'operation',
+                               'categoryId', 'v']) &&
+             d.keys().hasAll(['source', 'sourceId', 'date', 'description', 'originalCurrency', 'status']) &&
+             d.source in ['HAPOALIM', 'ONE_ZERO', 'MAX', 'CAL'] && isText(d.sourceId, 200) && isDate(d.date) &&
+             (!('chargeDate' in d) || isDate(d.chargeDate)) && isText(d.description, 1000) &&
+             (!('details' in d) || isText(d.details, 1000)) &&
+             (!('charge' in d) || isAgorot(d.charge)) && (!('originalAmount' in d) || isAgorot(d.originalAmount)) &&
+             isText(d.originalCurrency, 10) && d.status in ['COUNTED', 'PENDING', 'WAITING_FX'] &&
+             (!('installmentNumber' in d) || isIntIn(d.installmentNumber, 1, 1000)) &&
+             (!('installmentOf' in d) || isIntIn(d.installmentOf, 1, 1000)) &&
+             (!('hint' in d) || isText(d.hint, 1000)) && (!('operation' in d) || isText(d.operation, 1000)) &&
+             optRef(d, 'categoryId');
+    }
+
+    function isValidMerchantMemory(d) {
+      return d.keys().hasOnly(['key', 'categoryId', 'ownTransfer', 'alias', 'askEachTime', 'v']) && d.keys().hasAll(['key']) &&
+             d.key is string && d.key.size() > 0 && d.key.size() <= 1000 && optRef(d, 'categoryId') &&
+             (!('ownTransfer' in d) || d.ownTransfer is bool) &&
+             (!('alias' in d) || (d.alias is string && d.alias.size() > 0 && d.alias.size() <= 60)) &&
+             (!('askEachTime' in d) || d.askEachTime is bool);
+    }
+
+    function isValidMoneyDoc(collection, docId, d) {
+      return hasValidVersion(d) && (
+        (collection == 'cards' && isValidCard(d)) ||
+        (collection == 'incomes' && isValidIncome(d)) ||
+        (collection == 'fixedExpenses' && isValidFixedExpense(d)) ||
+        (collection == 'subscriptions' && isValidSubscription(d)) ||
+        (collection == 'variableBudgets' && isValidVariableBudget(d)) ||
+        (collection == 'installments' && isValidInstallment(d)) ||
+        (collection == 'periodicBudgets' && isValidPeriodicBudget(d)) ||
+        (collection == 'debts' && isValidDebt(d)) ||
+        (collection == 'savings' && isValidSaving(d)) ||
+        (collection == 'assets' && isValidAsset(d)) ||
+        (collection == 'categories' && isValidCategory(d)) ||
+        (collection == 'goals' && isValidGoal(d)) ||
+        (collection == 'donations' && isValidDonation(d)) ||
+        (collection == 'tithe' && isValidTithe(docId, d)) ||
+        (collection == 'closedMonths' && isValidClosedMonth(docId, d)) ||
+        (collection == 'car' && isValidCar(docId, d)) ||
+        (collection == 'pensionFunds' && isValidPensionFund(d)) ||
+        (collection == 'transactions' && isValidTransaction(d)) ||
+        (collection == 'merchantMemory' && isValidMerchantMemory(d))
+      );
     }
 
     // --- Invites Collection (Join Flow) ---
@@ -168,7 +395,7 @@ service cloud.firestore {
       match /{moneyCollection}/{docId} {
         allow get, list: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId);
         allow create, update: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) &&
-                                 isValidId(docId) && isValidMoneyDoc(incoming());
+                                 isValidId(docId) && isValidMoneyDoc(moneyCollection, docId, incoming());
         allow delete: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) && isValidId(docId);
       }
 

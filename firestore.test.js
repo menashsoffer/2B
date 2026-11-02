@@ -5,6 +5,7 @@ const {
 } = require("@firebase/rules-unit-testing");
 const { test, before, after, beforeEach } = require("node:test");
 const fs = require("node:fs");
+const assert = require("node:assert");
 
 const firebase = require("firebase/compat/app");
 require("firebase/compat/firestore");
@@ -325,48 +326,167 @@ test("Private items: stored under users/{uid}/private and readable only by owner
   );
 });
 
-// Money pillar: every collection is shared by household members and closed to everyone else.
+// Money pillar: the app's own documents, as its writers produce them (MoneyFixturesTest keeps these in sync).
+const path = require("node:path");
+const FIXTURES_DIR = path.join(__dirname, "firestore-fixtures", "money");
 const MONEY_COLLECTIONS = [
   "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
   "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
   "transactions", "merchantMemory", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
 ];
 
+function fixtures(collection) {
+  const dir = path.join(FIXTURES_DIR, collection);
+  return fs.readdirSync(dir).filter((f) => f.endsWith(".json")).sort()
+    .map((f) => ({ name: f.replace(/\.json$/, ""), doc: JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) }));
+}
+
+// The document id the app would use: settings documents are fixed, closed months are "yyyy-MM".
+function docIdFor(collection, index) {
+  if (collection === "tithe" || collection === "car") return "settings";
+  if (collection === "closedMonths") return `2025-${String(index + 1).padStart(2, "0")}`;
+  return `0b7c5f3e-money-${index + 1}`;
+}
+
+function moneyDb(uid = ALICE_UID, email = ALICE_EMAIL) {
+  return testEnv.authenticatedContext(uid, { email }).firestore().collection("households").doc("house_1");
+}
+
+test("Money fixtures: every money collection has fixtures", () => {
+  assert.deepStrictEqual(fs.readdirSync(FIXTURES_DIR).sort(), [...MONEY_COLLECTIONS].sort());
+});
+
 for (const collection of MONEY_COLLECTIONS) {
+  test(`Money ${collection}: every app document is accepted, with and without "v"`, async () => {
+    await setupHousehold();
+    const house = moneyDb();
+    const cases = fixtures(collection);
+    assert.ok(cases.length > 0);
+    for (const [i, { name, doc }] of cases.entries()) {
+      const ref = house.collection(collection).doc(docIdFor(collection, i));
+      await assertSucceeds(ref.set(doc)).catch((e) => { throw new Error(`${collection}/${name}: ${e.message}`); });
+      const { v, ...withoutVersion } = doc;
+      await assertSucceeds(ref.set(withoutVersion)).catch((e) => { throw new Error(`${collection}/${name} without v: ${e.message}`); });
+    }
+  });
+
   test(`Money ${collection}: members read and write, partner edits, stranger denied`, async () => {
     await setupHousehold();
-    const doc = (db) => db.collection("households").doc("house_1").collection(collection).doc("0b7c5f3e-money-1");
+    const [{ doc: body }] = fixtures(collection);
+    const doc = (db) => db.collection(collection).doc(docIdFor(collection, 0));
 
-    const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
-    await assertSucceeds(doc(aliceDb).set({ name: "פריט", amount: 125000 }));
+    const aliceDb = moneyDb();
+    await assertSucceeds(doc(aliceDb).set(body));
     await assertSucceeds(doc(aliceDb).get());
 
-    const bobDb = testEnv.authenticatedContext(BOB_UID, { email: BOB_EMAIL }).firestore();
+    const bobDb = moneyDb(BOB_UID, BOB_EMAIL);
     await assertSucceeds(doc(bobDb).get());
-    await assertSucceeds(doc(bobDb).set({ name: "פריט מעודכן", amount: 130000 }));
-    await assertSucceeds(bobDb.collection("households").doc("house_1").collection(collection).get());
+    await assertSucceeds(doc(bobDb).set(body));
+    await assertSucceeds(bobDb.collection(collection).get());
 
-    const charlieDb = testEnv.authenticatedContext(CHARLIE_UID, { email: CHARLIE_EMAIL }).firestore();
+    const charlieDb = moneyDb(CHARLIE_UID, CHARLIE_EMAIL);
     await assertFails(doc(charlieDb).get());
-    await assertFails(doc(charlieDb).set({ name: "זר" }));
+    await assertFails(doc(charlieDb).set(body));
     await assertFails(doc(charlieDb).delete());
-    await assertFails(charlieDb.collection("households").doc("house_1").collection(collection).get());
+    await assertFails(charlieDb.collection(collection).get());
 
-    const anonDb = testEnv.unauthenticatedContext().firestore();
+    const anonDb = testEnv.unauthenticatedContext().firestore().collection("households").doc("house_1");
     await assertFails(doc(anonDb).get());
 
     await assertSucceeds(doc(bobDb).delete());
   });
 }
 
+// A required key each collection's writer always produces.
+const REQUIRED = {
+  cards: "name", incomes: "titheRate", fixedExpenses: "klass", subscriptions: "renewalDate", variableBudgets: "amounts",
+  installments: "total", periodicBudgets: "categoryId", debts: "creditor", savings: "accumulated", assets: "liquid",
+  categories: "klass", goals: "allocated", donations: "submittedForTaxRefund", tithe: "startMonth", closedMonths: "closedOn",
+  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key",
+};
+// A number field, pushed past its allowed range (agorot beyond ±₪100M, or a day / count / horizon too big).
+const OUT_OF_RANGE = {
+  cards: "billingDay", installments: "total", periodicBudgets: "annualAmount", debts: "balance", savings: "accumulated",
+  assets: "balance", goals: "amount", donations: "amount", tithe: "opening", closedMonths: "actualIncomes",
+  pensionFunds: "value", transactions: "charge", car: "horizonYears",
+};
+// A month ("yyyy-MM") or a date ("yyyy-MM-dd") field.
+const MONTH_OR_DATE = {
+  installments: "firstMonth", periodicBudgets: "yearStartMonth", savings: "maturity", goals: "targetMonth", tithe: "startMonth",
+  subscriptions: "renewalDate", debts: "asOf", assets: "lastUpdated", donations: "date", closedMonths: "closedOn",
+  pensionFunds: "lastUpdated", transactions: "date",
+};
+// An enum field and a value the app never writes.
+const ENUM = {
+  incomes: "titheRate", fixedExpenses: "frequency", subscriptions: "currency", variableBudgets: "klass", assets: "kind",
+  categories: "klass", pensionFunds: "kind", transactions: "status",
+};
+
+function wrongType(doc) {
+  const numberKey = Object.keys(doc).find((k) => k !== "v" && typeof doc[k] === "number");
+  if (numberKey) return { ...doc, [numberKey]: String(doc[numberKey]) };
+  const textKey = Object.keys(doc).find((k) => typeof doc[k] === "string");
+  return { ...doc, [textKey]: 5 };
+}
+
+for (const collection of MONEY_COLLECTIONS) {
+  test(`Money ${collection}: malformed documents are denied`, async () => {
+    await setupHousehold();
+    const ref = moneyDb().collection(collection).doc(docIdFor(collection, 0));
+    const cases = fixtures(collection);
+    const base = cases.find((c) => !MONTH_OR_DATE[collection] || MONTH_OR_DATE[collection] in c.doc).doc;
+    const deny = async (label, doc) => assertFails(ref.set(doc)).catch((e) => { throw new Error(`${collection} ${label}: ${e.message}`); });
+
+    await deny("unknown key", { ...base, hacked: 1 });
+    await deny("wrong type", wrongType(base));
+    const { [REQUIRED[collection]]: _dropped, ...missing } = base;
+    await deny("missing required key", missing);
+    await deny("v = 0", { ...base, v: 0 });
+    await deny("v as text", { ...base, v: "1" });
+    if (OUT_OF_RANGE[collection]) await deny("out of range", { ...base, [OUT_OF_RANGE[collection]]: 10000000001 });
+    if (MONTH_OR_DATE[collection]) {
+      const key = MONTH_OR_DATE[collection];
+      await deny("bad month", { ...base, [key]: base[key].length === 7 ? "2026-13" : "2026-1-05" });
+    }
+    if (ENUM[collection]) await deny("unknown enum", { ...base, [ENUM[collection]]: "HACKED" });
+  });
+}
+
+test("Money: settings documents and closed months only under their own ids", async () => {
+  await setupHousehold();
+  const house = moneyDb();
+  await assertFails(house.collection("tithe").doc("other").set(fixtures("tithe")[0].doc));
+  await assertFails(house.collection("car").doc("other").set(fixtures("car")[0].doc));
+  await assertFails(house.collection("closedMonths").doc("2026-13").set(fixtures("closedMonths")[0].doc));
+  await assertFails(house.collection("closedMonths").doc("sept").set(fixtures("closedMonths")[0].doc));
+});
+
+test("Money: the app's partial writes (merge and field update) stay valid", async () => {
+  await setupHousehold();
+  const house = moneyDb();
+  const memory = house.collection("merchantMemory").doc("m-3f2a9c0d1e4b5a6c7d8e9f01");
+  const learnt = fixtures("merchantMemory").find((c) => c.name === "learnt").doc;
+  await assertSucceeds(memory.set(learnt));
+  await assertSucceeds(memory.set({ v: 1, key: learnt.key, alias: "סופר" }, { merge: true }));
+  await assertSucceeds(memory.set({ v: 1, key: learnt.key, askEachTime: true, categoryId: FieldValue.delete() }, { merge: true }));
+  await assertSucceeds(memory.set({ v: 1, key: learnt.key, alias: FieldValue.delete() }, { merge: true }));
+  await assertFails(memory.set({ alias: "x".repeat(61) }, { merge: true }));
+
+  const tx = house.collection("transactions").doc("tx-max-1");
+  await assertSucceeds(tx.set(fixtures("transactions")[0].doc));
+  await assertSucceeds(tx.update("categoryId", "current-2"));
+  await assertSucceeds(tx.update("categoryId", FieldValue.delete()));
+  await assertFails(tx.update("charge", "a lot"));
+});
+
 test("Money: unknown collection, bad id and empty name are denied", async () => {
   await setupHousehold();
   const aliceDb = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
   const house = aliceDb.collection("households").doc("house_1");
   await assertFails(house.collection("secrets").doc("x1").set({ name: "לא" }));
-  await assertFails(house.collection("incomes").doc("bad id!").set({ name: "משכורת" }));
-  await assertFails(house.collection("incomes").doc("inc_1").set({ name: "" }));
-  await assertFails(house.collection("debts").doc("debt_1").set({ creditor: "" }));
+  await assertFails(house.collection("incomes").doc("bad id!").set(fixtures("incomes")[0].doc));
+  await assertFails(house.collection("incomes").doc("inc_1").set({ ...fixtures("incomes")[0].doc, name: "" }));
+  await assertFails(house.collection("debts").doc("debt_1").set({ ...fixtures("debts")[0].doc, creditor: "" }));
 });
 
 test("Import: a full transaction and a merchant memory document are accepted, oversized ones denied", async () => {
