@@ -114,4 +114,8 @@ private fun ComposeContentTestRule.captureTagged(
         }
     }
     onNodeWithTag(R2ScreenshotTag).captureRoboImage()
+    // UX rules ride on every golden capture (docs/ux/UX-CHECKS.md); report-only, never fails the golden.
+    runCatching {
+        UxRules.record(onNodeWithTag(R2ScreenshotTag).fetchSemanticsNode(), "${if (darkTheme) "dark" else "light"}-font$fontScale")
+    }
 }

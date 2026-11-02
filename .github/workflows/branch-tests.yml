@@ -151,6 +151,23 @@ jobs:
           print(f"XML: tests={t} failures={f} errors={e} skipped={s}")
           PY
 
+      - name: UX findings (report only, docs/ux/UX-CHECKS.md)
+        if: always()
+        run: |
+          f=app/build/ux-findings/findings.tsv
+          if [ ! -f "$f" ]; then echo "UX rules: no findings" >> "$GITHUB_STEP_SUMMARY"; exit 0; fi
+          {
+            echo "### UX rules (report only)"
+            echo "| rule | findings | screens |"; echo "|---|---:|---:|"
+            cut -f3 "$f" | sort | uniq -c | while read n rule; do
+              screens=$(awk -F'\t' -v r="$rule" '$3==r{print $1}' "$f" | sort -u | wc -l)
+              echo "| $rule | $n | $screens |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::group::UX findings (unique per screen and element)"
+          cut -f1,3,4,5 "$f" | sort -u
+          echo "::endgroup::"
+
       - name: Upload goldens and reports
         if: always()
         uses: actions/upload-artifact@v4
