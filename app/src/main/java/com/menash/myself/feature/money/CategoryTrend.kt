@@ -44,6 +44,8 @@ data class CategoryTrendView(
     /** The suggested monthly plan, when the closed months suggest a change. */
     val suggested: Money?,
     val status: SuggestionStatus?,
+    /** How many closed months the suggestion reads (up to six). */
+    val suggestionMonths: Int,
     val target: PlanTarget?,
     /** The month a one-tap change starts from: this month. */
     val from: YearMonth,
@@ -98,8 +100,9 @@ fun categoryTrend(data: MoneyData, categoryId: String, today: LocalDate, rate: B
         TrendMonth(month, closed[month]?.let { it.byCategory[categoryId] ?: Money.ZERO }, plans[month]?.get(categoryId)?.takeIf { it.isPositive() })
     }
     val inWindow = data.closedMonths.filter { it.month in range.months }
+    // The figures read every closed month of the window; the suggestion keeps the calibration engine's six.
+    val row = categoryBaseline(data.closedMonths, range.to, TrendMonths).rows.firstOrNull { it.categoryId == categoryId }
     val baseline = categoryBaseline(data.closedMonths, range.to)
-    val row = baseline.rows.firstOrNull { it.categoryId == categoryId }
     val currentPlan = plans[current]?.get(categoryId)?.takeIf { it.isPositive() }
     val suggestion = suggestPlan(baseline, currentPlan?.let { mapOf(categoryId to it) } ?: emptyMap(), data.categories)
         .firstOrNull { it.categoryId == categoryId }
@@ -114,6 +117,7 @@ fun categoryTrend(data: MoneyData, categoryId: String, today: LocalDate, rate: B
         currentPlan = currentPlan,
         suggested = suggested,
         status = suggestion?.status,
+        suggestionMonths = baseline.months.size,
         target = if (category.klass == ExpenseClass.PERIODIC) null else planTarget(data, categoryId, category.klass, current),
         from = current,
     )
