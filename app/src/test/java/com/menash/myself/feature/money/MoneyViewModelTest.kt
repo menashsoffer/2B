@@ -56,6 +56,28 @@ class MoneyViewModelTest {
     }
 
     @Test
+    fun monthNavigation_stopsAtTodayAndKeepsTodaysBigPicture() {
+        val vm = viewModel(FakeMoneyRepository(MoneySamples.filled))
+        val today = vm.state.value.money!!
+        assertEquals(MoneySamples.month, today.month)
+        assertFalse(today.canGoNext)
+        vm.showNextMonth()
+        assertEquals(MoneySamples.month, vm.state.value.money!!.month)
+        vm.showPreviousMonth()
+        val september = vm.state.value.money!!
+        assertEquals(MoneySamples.month.minusMonths(1), september.month)
+        assertEquals(MoneySamples.month, september.current)
+        assertTrue(september.canGoNext)
+        assertEquals(today.bigPicture, september.bigPicture)
+        assertEquals(buildMoneyMonth(MoneySamples.filled, september.month, MoneySamples.today, MoneySamples.rate).view, september.view)
+        vm.showNextMonth()
+        assertEquals(today, vm.state.value.money)
+        repeat(40) { vm.showPreviousMonth() }
+        assertEquals(MoneySamples.month.minusMonths(MonthsBack), vm.state.value.money!!.month)
+        assertFalse(vm.state.value.money!!.canGoBack)
+    }
+
+    @Test
     fun noItems_isTheEmptyMonth() {
         val vm = viewModel(FakeMoneyRepository(MoneySamples.empty))
         val money = assertNotNull(vm.state.value.money).let { vm.state.value.money!! }

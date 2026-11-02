@@ -53,6 +53,8 @@ sealed interface MonthView {
         val unassigned: Money? = null,
         /** Imported lines billed this month, shown or not; 0 hides the transactions entry. */
         val importedLines: Int = 0,
+        /** The headline; null only before [buildMoneyMonth] fills it. */
+        val status: MonthStatus? = null,
     ) : MonthView
 }
 
@@ -80,7 +82,14 @@ data class BigPicture(
     val totalWorth: Money? = netWorth,
 )
 
-data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture)
+/** [month] is the month shown; [current] is today's month. The big picture is always today's. */
+data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month) {
+    val canGoNext: Boolean get() = month < current
+    val canGoBack: Boolean get() = month > current.minusMonths(MonthsBack)
+}
+
+/** How far back the month screen goes (three years). */
+const val MonthsBack = 36L
 
 /**
  * [usdToIls] is the stored Bank of Israel rate, or null when none is stored. [transactions] are the imported
@@ -113,6 +122,7 @@ fun buildMoneyMonth(
             bar = bar(plan),
             usdRateMissing = missingUsd.isNotEmpty(),
         ).let { withActuals(it, data.copy(items = items), month, rate, transactions, memory) }
+            .let { it.copy(status = monthStatus(it, data.closedMonths.lastOrNull { c -> c.month == month }, transactions, month)) }
     }
     val planned = (view as? MonthView.Planned)?.plan
     val closed = closedFigures(data.closedMonths)

@@ -1,5 +1,11 @@
 package com.menash.myself.ui.money
 
+import com.menash.myself.core.domain.model.Money
+import com.menash.myself.feature.money.domain.ClosedMonth
+import com.menash.myself.feature.money.domain.MonthSnapshot
+import com.menash.myself.feature.money.importer.ImportFixtures
+import com.menash.myself.feature.money.importer.StoredTransaction
+import java.time.LocalDate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,6 +69,11 @@ class MoneyScreenshotTest {
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun moneyBigPicture_dark_font13() = month(MoneySamples.filled, dark = true, font = 1.3f, tab = MoneyTabBigPicture)
 
+    @Test fun moneyMonthImported_light_font10() = month(MoneySamples.filled, dark = false, font = 1.0f, lines = octoberLines())
+    @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
+    fun moneyMonthImported_dark_font13() = month(MoneySamples.filled, dark = true, font = 1.3f, lines = octoberLines())
+    @Test fun moneyMonthClosed_light_font10() = month(MoneySamples.filled.copy(closedMonths = listOf(octoberClose)), dark = false, font = 1.0f)
+
     @Test fun moneyAddSheet_light_font10() = sheet(dark = false, font = 1.0f)
     @Test fun moneyAddSheet_light_font13() = sheet(dark = false, font = 1.3f)
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
@@ -70,9 +81,15 @@ class MoneyScreenshotTest {
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun moneyAddSheet_dark_font13() = sheet(dark = true, font = 1.3f)
 
-    private fun month(data: MoneyData, dark: Boolean, font: Float, tab: Int = MoneyTabMonth) {
+    private fun octoberLines() = ImportFixtures.parse("hapoalim_oct.xlsx").rows.map { StoredTransaction(it) }
+
+    private val octoberClose = MoneySamples.month.let { m ->
+        ClosedMonth(m, MonthSnapshot(m, Money(1_517_300), Money(1_281_000)), emptyMap(), emptyMap(), emptyMap(), emptyMap(), LocalDate.of(2026, 11, 2))
+    }
+
+    private fun month(data: MoneyData, dark: Boolean, font: Float, tab: Int = MoneyTabMonth, lines: List<StoredTransaction> = emptyList()) {
         val state = MoneyScreenState(
-            money = buildMoneyMonth(data, MoneySamples.month, MoneySamples.today, MoneySamples.rate),
+            money = buildMoneyMonth(data, MoneySamples.month, MoneySamples.today, MoneySamples.rate, lines),
             data = data,
         )
         composeRule.captureR2Screen(darkTheme = dark, fontScale = font) {
