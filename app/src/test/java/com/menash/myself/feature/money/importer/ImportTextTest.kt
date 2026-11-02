@@ -33,6 +33,29 @@ class ImportTextTest {
     }
 
     @Test
+    fun amountSignsAndRoundingAreHandledAtBoundaries() {
+        assertEquals(Money(0), money("0"))
+        assertEquals(Money(10000), money("(-100)"))
+        assertEquals(Money(10000), money("-100-"))
+        assertEquals(Money(-1), money("-0.005"))
+        assertEquals(Money(1), money("0.005"))
+        assertEquals(AmountCell.Blank, amountOf(Cell.Text("₪")))
+    }
+
+    @Test
+    fun dateAndInstallmentLimitsRejectInvalidValues() {
+        assertNull(dateOf(null))
+        assertNull(dateOf(Cell.Number(0.0)))
+        assertNull(dateOf(Cell.Number(2_958_466.0)))
+        assertNull(installmentOf("תשלום 0 מתוך 3"))
+        assertNull(installmentOf("תשלום 1 מתוך 0"))
+        assertNull(installmentOf())
+        assertNull(Cell.Text("   ").text())
+        assertEquals("12.5", Cell.Number(12.5).text())
+        assertEquals("שלום", fixReversedHebrew("\u202eםולש\u202c"))
+    }
+
+    @Test
     fun dateForms() {
         val day = LocalDate.of(2026, 10, 5)
         assertEquals(day, dateOf(Cell.Number(46300.0)))
