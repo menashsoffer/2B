@@ -83,6 +83,13 @@ jobs:
               assert "android.permission.READ_CALENDAR" not in names
           PYTHON
 
+      - name: Firestore rules emulator tests (no deployment)
+        run: |
+          npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools firebase @firebase/rules-unit-testing
+          export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
+          export NODE_PATH="${RUNNER_TEMP}/firebase/node_modules"
+          firebase emulators:exec --only firestore --project demo-no-project "node --test firestore.test.js"
+
       - name: Unit tests
         run: |
           set -uo pipefail
