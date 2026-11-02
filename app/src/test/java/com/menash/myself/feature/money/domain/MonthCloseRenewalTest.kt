@@ -11,7 +11,7 @@ class MonthCloseRenewalTest {
     private fun tx(id: String, month: YearMonth, amount: Long, category: String = "car") =
         Transaction(id, month.atDay(1), month, "merchant", Money(amount), PaymentMethod.CASH, "cash", category)
     private fun close(month: YearMonth, budgets: List<PeriodicBudget> = listOf(budget), txs: List<Transaction> = emptyList()) =
-        closeMonth(month, MoneyItems(periodicBudgets = budgets), txs, Money.ZERO, emptyList(), null, month.atEndOfMonth().plusDays(1))
+        closeMonth(month, MoneyItems(periodicBudgets = budgets), txs, Money.ZERO, BalancesAtClose.Unknown, null, month.atEndOfMonth().plusDays(1))
 
     @Test fun marchNextYearAccruesThreeMonthsAndUsesOnlyRenewedYearsHistory() {
         val month = YearMonth.of(2026, 3)

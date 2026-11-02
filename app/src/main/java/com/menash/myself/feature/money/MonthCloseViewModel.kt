@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import com.menash.myself.feature.money.domain.Asset
+import com.menash.myself.feature.money.domain.hasSuspectBalances
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.YearMonth
@@ -33,6 +35,7 @@ private data class CloseQuery(
     val confirming: Boolean = false,
     val saving: Boolean = false,
     val saveError: String? = null,
+    val balanceDraft: CloseBalanceDraft = CloseBalanceDraft(),
 )
 
 data class MonthCloseUi(
@@ -43,6 +46,10 @@ data class MonthCloseUi(
     val confirmReclose: Boolean = false,
     /** The latest month that can be shown: this month. */
     val currentMonth: YearMonth? = null,
+    val showBalancesStep: Boolean = false,
+    val assets: List<Asset> = emptyList(),
+    val balanceDraft: CloseBalanceDraft = CloseBalanceDraft(),
+    val balancesValid: Boolean = true,
     val saving: Boolean = false,
     val saveError: String? = null,
 )
@@ -70,7 +77,11 @@ class MonthCloseViewModel(
         val month = q.month ?: closeTarget(day, input.stored, input.data.closedMonths)
         MonthCloseUi(
             open = true,
-            view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines),
+            view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines, q.balanceDraft.balances(input.data.assets)),
+            showBalancesStep = month < YearMonth.from(day),
+            assets = input.data.assets,
+            balanceDraft = q.balanceDraft,
+            balancesValid = q.balanceDraft.valid(input.data.assets),
             confirmReclose = q.confirming,
             currentMonth = YearMonth.from(day),
             saving = q.saving,
@@ -94,7 +105,7 @@ class MonthCloseViewModel(
         val shown = ui.value.view?.month ?: return
         val target = shown.plusMonths(by)
         if (target > YearMonth.from(today())) return
-        query.update { it.copy(month = target, noLines = emptySet(), confirming = false) }
+        query.update { it.copy(month = target, noLines = emptySet(), confirming = false, balanceDraft = CloseBalanceDraft()) }
     }
 
     /** "אין חיובים החודש" on a missing card or account. */
@@ -106,7 +117,7 @@ class MonthCloseViewModel(
     fun closeMonth() {
         if (closing) return
         val view = ui.value.view ?: return
-        if (!view.canClose) return
+        if (!view.canClose || !ui.value.balancesValid) return
         if (view.existing != null && !query.value.confirming) {
             query.update { it.copy(confirming = true) }
             return
@@ -119,6 +130,34 @@ class MonthCloseViewModel(
             closing = false
             query.update { it.copy(saving = false) }
             events?.send(if (acknowledged) UiEvent.MonthClosed(view.month) else UiEvent.SavedOffline)
+        }
+    }
+
+    fun enterBalances(entering: Boolean) {
+        if (!closing) query.update { it.copy(balanceDraft = it.balanceDraft.copy(entering = entering), confirming = false) }
+    }
+
+    fun setBalance(id: String, text: String) {
+        if (!closing) query.update { it.copy(balanceDraft = it.balanceDraft.copy(values = it.balanceDraft.values + (id to text)), confirming = false) }
+    }
+
+    fun markBalancesUnknown() {
+        if (closing) return
+        val existing = ui.value.view?.existing ?: return
+        if (!existing.hasSuspectBalances()) return
+        closing = true
+        query.update { it.copy(saving = true, saveError = null) }
+        safeLaunch("markBalancesUnknown", onError = { error ->
+            closing = false
+            query.update { it.copy(saving = false, saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error)) }
+        }) {
+            val acknowledged = withTimeoutOrNull(3_000) {
+                money.save(MoneyEntry.ClosedMonthEntry(existing.copy(balances = emptyMap(), liabilities = emptyMap())))
+                true
+            } == true
+            closing = false
+            query.update { it.copy(saving = false) }
+            events?.send(if (acknowledged) UiEvent.MonthClosed(existing.month) else UiEvent.SavedOffline)
         }
     }
 

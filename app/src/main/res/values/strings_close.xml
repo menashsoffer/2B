@@ -30,4 +30,10 @@
     <string name="close_again_detail">הסגירה הקודמת תוחלף במספרים של עכשיו</string>
     <string name="close_again_confirm">לסגור מחדש</string>
     <string name="close_keep">להשאיר</string>
+    <string name="close_balances_title">יתרות סוף החודש</string>
+    <string name="close_balances_enter">להקליד יתרות</string>
+    <string name="close_balances_skip">לדלג, לא ידוע</string>
+    <string name="close_balances_suspect">היתרות נשמרו ביום הסגירה ולא בסוף החודש</string>
+    <string name="close_balances_mark_unknown">לסמן כלא ידוע</string>
+    <string name="close_balances_invalid">יש להזין סכום לא שלילי עם עד שתי ספרות אחרי הנקודה</string>
 </resources>
