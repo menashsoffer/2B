@@ -5,8 +5,10 @@ import java.time.YearMonth
 
 data class CategoryYear(val categoryId: String?, val planned: Money?, val actual: Money, val diff: Money?)
 
-fun categoryYear(closed: List<ClosedMonth>, year: Int, plannedByMonth: Map<YearMonth, Map<String?, Money>>): List<CategoryYear> {
-    val rows = yearCloses(closed, year)
+fun categoryYear(closed: List<ClosedMonth>, year: Int, plannedByMonth: Map<YearMonth, Map<String?, Money>>): List<CategoryYear> =
+    categoryTotals(yearCloses(closed, year), plannedByMonth)
+
+internal fun categoryTotals(rows: List<ClosedMonth>, plannedByMonth: Map<YearMonth, Map<String?, Money>>): List<CategoryYear> {
     val actual = mutableMapOf<String?, Money>()
     val planned = mutableMapOf<String?, Money>()
     fun add(target: MutableMap<String?, Money>, entries: Map<String?, Money>) {
