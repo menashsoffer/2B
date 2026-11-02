@@ -30,6 +30,14 @@ class ClosedMonthDocumentsTest {
         assertTrue(decode(encoded).snapshot.balances.isEmpty())
     }
 
+    @Test fun enteredBalancesFlagRoundTripsAndIsOmittedWhenFalse() {
+        assertFalse("balancesEntered" in ClosedMonthDocuments.encode(closed))
+        assertFalse(decode(ClosedMonthDocuments.encode(closed)).balancesEntered)
+        val entered = closed.copy(balancesEntered = true)
+        assertEquals(true, ClosedMonthDocuments.encode(entered)["balancesEntered"])
+        assertEquals(entered, decode(ClosedMonthDocuments.encode(entered)))
+    }
+
     @Test fun absentOptionalMapsBecomeEmpty() {
         val decoded = decode(required)
         assertTrue(decoded.byCategory.isEmpty())
@@ -127,7 +135,7 @@ class ClosedMonthDocumentsTest {
 
     @Test fun assetsStoreOnlyIdsAndAmountsWithoutNamesOrFabricatedMetadata() {
         val asset = Asset("asset-id", "private bank name", "private type", Money(100), AssetKind.ASSET, true, date)
-        val value = closeMonth(month, MoneyItems(), emptyList(), Money.ZERO, listOf(asset), null, date)
+        val value = closeMonth(month, MoneyItems(), emptyList(), Money.ZERO, com.menash.myself.feature.money.domain.BalancesAtClose.Current(listOf(asset)), null, date)
         val encoded = ClosedMonthDocuments.encode(value)
         assertEquals(mapOf("asset-id" to 100L), encoded["balances"])
         assertFalse(encoded.toString().contains("private"))

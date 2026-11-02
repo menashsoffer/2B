@@ -114,6 +114,17 @@ class MonthCloseFlowTest {
     }
 
     @Test
+    fun monthBeforeLast_doesNotUseTodaysBalances() {
+        val old = bank.copy(id = "asset-old", lastUpdated = LocalDate.of(2026, 10, 1))
+        val stored = listOf(line(LocalDate.of(2026, 9, 5), 25_000))
+        val v = closeView(data.copy(assets = listOf(bank, old)), september, afterOctober, null, stored, ImportMemory())
+        assertTrue(v.staleAssets.isEmpty())
+        assertTrue(v.canClose)
+        assertTrue(v.preview.balances.isEmpty())
+        assertFalse(v.preview.balancesEntered)
+    }
+
+    @Test
     fun existingCloseIsReturned() {
         val stored = ClosedMonth(october, MonthSnapshot(october, Money(1), Money(1)), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
         val v = view(listOf(line(LocalDate.of(2026, 10, 5), 25_000)), d = data.copy(closedMonths = listOf(stored)))

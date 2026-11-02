@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
 import com.menash.myself.core.domain.model.Money
+import com.menash.myself.feature.money.CloseBalanceDraft
 import com.menash.myself.feature.money.MonthCloseUi
 import com.menash.myself.feature.money.closeView
 import com.menash.myself.feature.money.data.MoneyData
@@ -77,6 +78,21 @@ class MonthCloseScreenshotTest {
     @Test fun closeDone_light_font13() = done(dark = false, font = 1.3f)
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun closeDone_dark_font10() = done(dark = true, font = 1.0f)
+
+    /** September closed in November: the following month is over, so the balances are typed for September. */
+    @Test fun closeHistorical_light_font10() {
+        val september = october.minusMonths(1)
+        val d = data.copy(assets = listOf(bank, fund))
+        val draft = CloseBalanceDraft(entering = true, values = mapOf(bank.id to "31250"))
+        val stored = listOf(line("s", 8, 30_000, "שופרסל דיל", month = september))
+        val ui = MonthCloseUi(
+            true, closeView(d, september, today, null, stored, ImportMemory(), pastBalances = draft.balances(d.assets)),
+            currentMonth = YearMonth.from(today), showBalancesStep = true, assets = d.assets, balanceDraft = draft,
+        )
+        composeRule.captureR2Screen(darkTheme = false, fontScale = 1.0f) {
+            Rtl { MonthCloseContent(ui = ui, actions = MonthCloseActions()) }
+        }
+    }
 
     private fun done(dark: Boolean, font: Float) {
         val preview = closeView(data, october, today, null, ready, ImportMemory()).preview

@@ -24,6 +24,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
+import com.menash.myself.BuildConfig
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.HeroCard
@@ -45,6 +46,7 @@ fun HomeContent(
     onOpenRoute: (String) -> Unit,
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
+    debug: Boolean = BuildConfig.DEBUG,
 ) {
     val colors = MaterialTheme.appColors
     val dreamsValue = state.dreamsActive?.toString()
@@ -91,6 +93,7 @@ fun HomeContent(
             value = surplus?.let { MoneyFormatter.format(it) },
             onClick = { onOpenRoute(ShellRoute.Money) },
         )
+        if (debug) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,6 +129,7 @@ fun HomeContent(
             onClick = { onOpenRoute(ShellRoute.Tracking) },
             valueStyle = MetricValueStyle.Medium,
         )
+        }
     }
 }
 
@@ -171,5 +175,6 @@ private fun HomePreview(dreamsActive: Int?) {
         epochMillis = calendar.timeInMillis,
         onOpenRoute = {},
         onOpenAccount = {},
+        debug = false,
     )
 }

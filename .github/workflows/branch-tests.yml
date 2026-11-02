@@ -69,6 +69,27 @@ jobs:
           JSON
           # A missing debug.keystore only matters for packaging, which unit tests skip.
 
+      - name: Verify release permissions
+        run: |
+          ./gradlew processReleaseMainManifest --no-daemon
+          python3 - <<'PYTHON'
+          import glob, xml.etree.ElementTree as ET
+          paths = glob.glob("app/build/intermediates/merged_manifests/release/**/AndroidManifest.xml", recursive=True)
+          paths += glob.glob("app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml", recursive=True)
+          assert paths, "Merged release manifest missing"
+          for path in paths:
+              names = [e.get("{http://schemas.android.com/apk/res/android}name") for e in ET.parse(path).getroot().findall("uses-permission")]
+              print("Release permissions:", names)
+              assert "android.permission.READ_CALENDAR" not in names
+          PYTHON
+
+      - name: Firestore rules emulator tests (no deployment)
+        run: |
+          npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools firebase @firebase/rules-unit-testing
+          export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
+          export NODE_PATH="${RUNNER_TEMP}/firebase/node_modules"
+          firebase emulators:exec --only firestore --project demo-no-project "node --test firestore.test.js"
+
       - name: Unit tests
         run: |
           set -uo pipefail

@@ -20,6 +20,13 @@ object ClosedMonthDocuments {
     fun encode(closed: ClosedMonth): Map<String, Any> {
         month(closed.month.toString())
         require(NO_CATEGORY !in closed.byCategory) { "Category id '$NO_CATEGORY' is reserved" }
+        return buildMap {
+            putAll(encodeFields(closed))
+            if (closed.balancesEntered) put("balancesEntered", true)
+        }
+    }
+
+    private fun encodeFields(closed: ClosedMonth): Map<String, Any> {
         return mapOf(
             "actualIncomes" to closed.snapshot.actualIncomes.agorot,
             "actualExpenses" to closed.snapshot.actualExpenses.agorot,
@@ -55,6 +62,7 @@ object ClosedMonthDocuments {
             balances = optionalMap(data, "balances").mapValues { money(it.value) },
             liabilities = optionalMap(data, "liabilities").mapValues { money(it.value) },
             closedOn = closedOn,
+            balancesEntered = data["balancesEntered"] as? Boolean ?: false,
         )
     }
 
