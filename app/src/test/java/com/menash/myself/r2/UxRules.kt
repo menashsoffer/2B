@@ -102,7 +102,17 @@ object UxRules {
 
     private fun describe(node: SemanticsNode): String {
         val tag = node.config.getOrNull(SemanticsProperties.TestTag)
-        return tag ?: label(node).take(30).ifBlank { "node#${node.id}" }
+        return tag ?: label(node).take(30).ifBlank {
+            // Unlabelled: say where it is, so the finding can be traced back to code.
+            var p = node.parent
+            var context: String? = null
+            while (p != null && context == null) {
+                context = p.config.getOrNull(SemanticsProperties.TestTag) ?: label(p).take(30).takeIf { it.isNotBlank() }
+                p = p.parent
+            }
+            val role = node.config.getOrNull(SemanticsProperties.Role)?.toString() ?: "no role"
+            "node#${node.id} ($role, ${node.boundsInRoot.width.toInt()}x${node.boundsInRoot.height.toInt()}px in '${context ?: "root"}')"
+        }
     }
 
     private fun sticksOut(bounds: Rect, screen: Rect): Boolean =
