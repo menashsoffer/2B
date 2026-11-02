@@ -64,7 +64,7 @@ fun SignInScreen(
             ) {
                 // Header
                 Text(
-                    text = "אפליקציית החיים שלי",
+                    text = "2B",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
