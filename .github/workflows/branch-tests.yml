@@ -114,7 +114,7 @@ jobs:
         if: ${{ github.event.inputs.record != 'true' }}
         run: |
           python3 -m pip install diff-cover==9.7.1
-          diff-cover app/build/reports/kover/reportDebug.xml --compare-branch=origin/main --fail-under=80 --markdown-report coverage-diff.md
+          diff-cover app/build/reports/kover/reportDebug.xml --compare-branch=origin/main --fail-under=80 --src-roots app/src/main/java --format markdown:coverage-diff.md
 
       - name: Coverage summary
         if: ${{ always() && github.event.inputs.record != 'true' }}
