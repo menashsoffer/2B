@@ -3,6 +3,8 @@ package com.menash.myself.ui.money
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.ui.Alignment
@@ -58,6 +60,7 @@ fun CloseBalancesContent(ui: MonthCloseUi, actions: MonthCloseActions) {
 private fun BalanceChoice(label: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth()
+            .heightIn(min = 48.dp)
             .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = Spacing.s8),
         verticalAlignment = Alignment.CenterVertically,
