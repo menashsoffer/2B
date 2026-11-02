@@ -32,7 +32,9 @@ import java.time.YearMonth
  */
 object MoneyDocuments {
 
-    fun encode(entry: MoneyEntry): Map<String, Any> = when (entry) {
+    fun encode(entry: MoneyEntry): Map<String, Any> = SchemaVersion.stamp(encodeBody(entry))
+
+    private fun encodeBody(entry: MoneyEntry): Map<String, Any> = when (entry) {
         is MoneyEntry.CardEntry -> entry.value.let { mapOf("name" to it.name, "billingDay" to it.billingDay.toLong()) }
         is MoneyEntry.IncomeEntry -> entry.value.let {
             mapOf("name" to it.name, "amounts" to encodeHistory(it.amounts), "titheRate" to it.titheRate.name)
@@ -140,6 +142,7 @@ object MoneyDocuments {
         data: Map<String, Any?>,
         cards: Map<String, Card> = emptyMap(),
     ): MoneyEntry {
+        SchemaVersion.check(data)
         val doc = MoneyDoc(data)
         val card = doc.stringOrNull("cardId")?.let { cards[it] }
         return when (collection) {
