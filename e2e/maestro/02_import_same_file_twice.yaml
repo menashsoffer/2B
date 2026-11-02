@@ -1,0 +1,51 @@
+# Sharing a bank file imports it; sharing the SAME file again writes nothing new
+# (edge case "same file twice" from the import spec).
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Import a shared bank file, then the same file again
+tags: [smoke, import]
+---
+- launchApp:
+    clearState: true
+- evalScript: ${output.email = 'import' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}
+- extendedWaitUntil:
+    visible:
+      id: nav_money
+    timeout: 60000
+- tapOn:
+    id: nav_money
+- extendedWaitUntil:
+    visible:
+      id: money_month_title
+    timeout: 60000
+
+# First share: review, save, done.
+- openLink: myself-e2e://signin?share=hapoalim_oct.xlsx
+- extendedWaitUntil:
+    visible:
+      id: import_content
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: import_confirm
+    direction: DOWN
+    timeout: 30000
+- takeScreenshot: 02_import_review
+- tapOn:
+    id: import_confirm
+- extendedWaitUntil:
+    visible:
+      id: import_done
+    timeout: 30000
+- takeScreenshot: 02_import_done
+- tapOn: "סגירה"
+
+# Second share of the same file: nothing new to save.
+- openLink: myself-e2e://signin?share=hapoalim_oct.xlsx
+- extendedWaitUntil:
+    visible:
+      id: import_nothing_new
+    timeout: 30000
+- assertNotVisible:
+    id: import_confirm
+- takeScreenshot: 02_import_nothing_new

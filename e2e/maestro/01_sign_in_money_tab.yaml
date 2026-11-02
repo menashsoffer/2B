@@ -1,0 +1,23 @@
+# A new test user signs in (Auth emulator), gets a household, and the money tab opens on this month.
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Sign in and open the money tab
+tags: [smoke]
+---
+- launchApp:
+    clearState: true
+- evalScript: ${output.email = 'smoke' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}
+- extendedWaitUntil:
+    visible:
+      id: nav_money
+    timeout: 60000
+- tapOn:
+    id: nav_money
+# The month header only shows once the household exists (otherwise money_no_household).
+- extendedWaitUntil:
+    visible:
+      id: money_month_title
+    timeout: 60000
+- assertNotVisible:
+    id: money_no_household
+- takeScreenshot: 01_money_tab

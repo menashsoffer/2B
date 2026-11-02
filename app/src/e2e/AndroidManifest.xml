@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- e2e build type only (docs/E2E.md). Nothing here reaches debug or release builds. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- The Firebase emulators on the host speak plain http. -->
+    <application android:networkSecurityConfig="@xml/e2e_network_security">
+        <!-- Maestro opens myself-e2e://signin?email=...&share=... to sign in a test user
+             against the Auth emulator and optionally share a bundled sample file into the app. -->
+        <activity
+            android:name="com.menash.myself.e2e.E2eActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="myself-e2e" android:host="signin" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

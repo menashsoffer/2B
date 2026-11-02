@@ -1,0 +1,167 @@
+# End-to-end tests (docs/E2E.md): the e2e build on an Android emulator, driven by Maestro,
+# against the Firebase Auth + Firestore emulators. No secrets, no real Firebase project,
+# nothing signed for release or uploaded. Pull requests run the smoke flows; the nightly
+# run and a manual run (tags empty) run every flow.
+name: E2E (Maestro)
+
+on:
+  push:
+    branches: ["claude/e2e-**"]
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/src/main/**"
+      - "app/src/e2e/**"
+      - "app/build.gradle.kts"
+      - "e2e/**"
+      - "firestore.rules"
+      - ".github/workflows/e2e.yml"
+  schedule:
+    - cron: "30 1 * * *"
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: "Maestro tags to run (empty = all flows)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANDROID_HOME: /home/runner/android-sdk
+      ANDROID_SDK_ROOT: /home/runner/android-sdk
+      MAESTRO_TAGS: ${{ github.event_name == 'pull_request' && 'smoke' || github.event.inputs.tags || '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+
+      - name: Enable KVM for the Android emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install Android SDK
+        run: |
+          set -euo pipefail
+          mkdir -p "${ANDROID_HOME}/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip
+          unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools
+          mv /tmp/cmdtools/cmdline-tools "${ANDROID_HOME}/cmdline-tools/latest"
+          set +o pipefail
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" --licenses > /dev/null
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --sdk_root="${ANDROID_HOME}" \
+            "platforms;android-36.1" "build-tools;36.0.0" "platform-tools" > /dev/null
+          set -o pipefail
+          echo "sdk.dir=${ANDROID_HOME}" > local.properties
+          echo "${ANDROID_HOME}/platform-tools" >> "${GITHUB_PATH}"
+
+      - name: Fake google-services.json and debug key (never installed outside the emulator)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          def client(pkg):
+              return {
+                  "client_info": {"mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": {"package_name": pkg}},
+                  "oauth_client": [{"client_id": "000000000000-fake.apps.googleusercontent.com", "client_type": 3}],
+                  "api_key": [{"current_key": "AIzaFakeKeyForUnitTestsOnly000000000000"}],
+                  "services": {"appinvite_service": {"other_platform_oauth_client": [{"client_id": "000000000000-fake.apps.googleusercontent.com", "client_type": 3}]}},
+              }
+          base = "com.aistudio.mycalculators.qvxmzt"
+          doc = {
+              "project_info": {"project_number": "000000000000", "project_id": "demo-no-project", "storage_bucket": "demo-no-project.appspot.com"},
+              "client": [client(base), client(base + ".e2e")],
+              "configuration_version": "1",
+          }
+          open("app/google-services.json", "w").write(json.dumps(doc))
+          PY
+          keytool -genkeypair -keystore debug.keystore -storepass android -alias androiddebugkey \
+            -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
+
+      - name: Release build has no e2e code
+        run: |
+          set -euo pipefail
+          ./gradlew processReleaseMainManifest generateReleaseBuildConfig --no-daemon
+          python3 - <<'PY'
+          import glob
+          manifests = glob.glob("app/build/intermediates/merged_manifest*/release/**/AndroidManifest.xml", recursive=True)
+          assert manifests, "merged release manifest missing"
+          for path in manifests:
+              text = open(path).read()
+              for bad in ("E2eActivity", "myself-e2e", "e2e_network_security"):
+                  assert bad not in text, f"{bad} found in {path}"
+          configs = glob.glob("app/build/generated/source/buildConfig/release/**/BuildConfig.*", recursive=True)
+          assert configs, "release BuildConfig missing"
+          for path in configs:
+              text = open(path).read()
+              assert 'FIREBASE_EMULATOR_HOST = ""' in text, f"release must use the real Firebase project: {path}"
+          print("release is clean:", manifests, configs)
+          PY
+
+      - name: Build the e2e app
+        run: ./gradlew assembleE2e --no-daemon
+
+      - name: Install Firebase emulators and Maestro
+        run: |
+          set -euo pipefail
+          npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools
+          echo "${RUNNER_TEMP}/firebase/node_modules/.bin" >> "${GITHUB_PATH}"
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "${HOME}/.maestro/bin" >> "${GITHUB_PATH}"
+
+      - name: Start Auth + Firestore emulators
+        run: |
+          set -euo pipefail
+          nohup firebase emulators:start --only auth,firestore --project demo-no-project > firebase-emulators.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -fs http://127.0.0.1:9099/ > /dev/null && curl -fs http://127.0.0.1:8085/ > /dev/null; then
+              echo "emulators up after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          cat firebase-emulators.log
+          exit 1
+
+      - name: Maestro flows on the Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: bash e2e/run-maestro.sh
+
+      - name: Upload e2e output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-output
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            e2e-report.xml
+            e2e-output/
+            e2e-logcat.txt
+            firebase-emulators.log
+            *.png
+            ~/.maestro/tests/
