@@ -151,7 +151,7 @@ private fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsAc
         else -> null
     }
     AmountRow(
-        title = row.description,
+        title = ui.memory.displayName(row.description),
         amount = amount,
         detail = stringResource(R.string.tx_line_detail, row.date.format(dayFormat), sourceLabel(row.source), state),
         amountColor = when {

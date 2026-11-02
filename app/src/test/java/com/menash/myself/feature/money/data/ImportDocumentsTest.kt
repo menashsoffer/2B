@@ -42,4 +42,23 @@ class ImportDocumentsTest {
         assertEquals(mapOf(shufersal to "current-1"), memory.merchants.categories)
         assertEquals(setOf(oneZero), memory.ownTransfers)
     }
+
+    @Test
+    fun aliasAndAskEachTimeDecode() {
+        val bit = ImportIds.merchantKey("BIT העברה")
+        val shufersal = ImportIds.merchantKey("שופרסל דיל 123")
+        val memory = ImportDocuments.decodeMemory(listOf(
+            ImportDocuments.encodeMemory(shufersal, "current-1", false) + ImportDocuments.encodeAlias(shufersal, " סופר "),
+            mapOf("key" to bit, "categoryId" to "stale", "askEachTime" to true, "ownTransfer" to false),
+            mapOf("key" to "blank", "alias" to "   "),
+        ))
+        assertEquals(mapOf(shufersal to "current-1"), memory.merchants.categories)
+        assertEquals(mapOf(shufersal to "סופר"), memory.aliases)
+        assertEquals(setOf(bit), memory.askEachTime)
+        assertEquals("סופר", memory.displayName("שופרסל דיל 123"))
+        assertEquals("רמי לוי", memory.displayName("רמי לוי"))
+        assertTrue(memory.asksEachTime("BIT העברה"))
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) { ImportDocuments.encodeAlias(bit, " ") }
+        org.junit.Assert.assertThrows(IllegalArgumentException::class.java) { ImportDocuments.encodeAlias(bit, "x".repeat(61)) }
+    }
 }

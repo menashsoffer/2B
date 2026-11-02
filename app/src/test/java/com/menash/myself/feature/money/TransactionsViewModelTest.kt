@@ -75,6 +75,59 @@ class TransactionsViewModelTest {
     }
 
     @Test
+    fun thisLineOnly_keepsTheOtherLinesOfTheMerchant() {
+        val repo = repo("max_nov.xlsx")
+        val vm = viewModel(repo)
+        vm.open(november)
+        val coffees = vm.ui.value.lines!!.lines.filter { it.row.description == "קפה גרג" }
+        assertTrue(coffees.size > 1)
+        vm.decide(coffees.first().id, MerchantDecision.Categorise("current-9"), thisLineOnly = true)
+        assertEquals("current-9", repo.lines.value.single { it.id == coffees.first().id }.categoryId)
+        assertNull(repo.memory.value.merchants.categories[ImportIds.merchantKey("קפה גרג")])
+        assertTrue(vm.ui.value.lines!!.lines.single { it.id == coffees[1].id }.unassigned)
+    }
+
+    @Test
+    fun askEachTime_pinsFollowersAndNeverLearnsAgain() {
+        val repo = repo("max_nov.xlsx")
+        val vm = viewModel(repo)
+        vm.open(november)
+        val coffees = vm.ui.value.lines!!.lines.filter { it.row.description == "קפה גרג" }
+        vm.decide(coffees.first().id, MerchantDecision.Categorise("current-9"))
+        val key = ImportIds.merchantKey("קפה גרג")
+        assertNull(repo.lines.value.single { it.id == coffees[1].id }.categoryId)
+
+        vm.setAskEachTime(coffees[1].id, true)
+        // The line that followed the memory keeps the category as its own; nothing moves.
+        assertEquals("current-9", repo.lines.value.single { it.id == coffees[1].id }.categoryId)
+        assertTrue(key in repo.memory.value.askEachTime)
+        assertNull(repo.memory.value.merchants.categories[key])
+
+        vm.decide(coffees[1].id, MerchantDecision.Categorise("current-2"))
+        assertEquals("current-2", repo.lines.value.single { it.id == coffees[1].id }.categoryId)
+        assertEquals("current-9", repo.lines.value.single { it.id == coffees.first().id }.categoryId)
+        assertNull(repo.memory.value.merchants.categories[key])
+    }
+
+    @Test
+    fun aliasIsShownButMatchingKeepsTheBankName() {
+        val repo = repo("max_nov.xlsx")
+        val vm = viewModel(repo)
+        vm.open(november)
+        val coffee = vm.ui.value.lines!!.lines.first { it.row.description == "קפה גרג" }
+        vm.setAlias(coffee.id, "  קפה של הבוקר ")
+        val key = ImportIds.merchantKey("קפה גרג")
+        assertEquals("קפה של הבוקר", repo.memory.value.aliases[key])
+        assertEquals("קפה של הבוקר", vm.ui.value.memory.displayName("קפה גרג"))
+        assertEquals("קפה גרג", coffee.row.description)
+        vm.decide(coffee.id, MerchantDecision.Categorise("current-9"))
+        assertEquals("current-9", repo.memory.value.merchants.categories[key])
+        vm.setAlias(coffee.id, "")
+        assertNull(repo.memory.value.aliases[key])
+        assertEquals("קפה גרג", vm.ui.value.memory.displayName("קפה גרג"))
+    }
+
+    @Test
     fun cardBillCategoryIsNotLearnt_transferCanBeOwn() {
         val repo = repo("hapoalim_oct.xlsx")
         val vm = viewModel(repo)

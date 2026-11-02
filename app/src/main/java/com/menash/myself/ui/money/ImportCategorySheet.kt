@@ -33,13 +33,14 @@ fun ImportCategorySheet(
     categories: List<Category>,
     onDecide: (MerchantDecision) -> Unit,
     onDismiss: () -> Unit,
+    header: @Composable () -> Unit = {},
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.appColors.card,
     ) {
-        ImportCategoryList(merchant, categories, onDecide)
+        ImportCategoryList(merchant, categories, onDecide, header = header)
     }
 }
 
@@ -56,6 +57,7 @@ fun ImportCategoryList(
     categories: List<Category>,
     onDecide: (MerchantDecision) -> Unit,
     modifier: Modifier = Modifier,
+    header: @Composable () -> Unit = {},
 ) {
     val colors = MaterialTheme.appColors
     Column(
@@ -76,6 +78,7 @@ fun ImportCategoryList(
         merchant.hint?.let {
             Text(text = stringResource(R.string.import_hint, it), style = AppType.caption, color = colors.textSecondary)
         }
+        header()
         val suggested = categories.firstOrNull { it.id == merchant.suggested }
         if (suggested != null) {
             MoneySurface(testTag = "import_suggested") {

@@ -101,7 +101,9 @@ class ImportViewModel(
         _ui.value = ImportUi.Saving
         safeLaunch("applyImport", onError = { _ui.value = review }) {
             transactions.apply(plan)
-            updates.forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
+            // A merchant that asks each time keeps this batch's category on its lines only.
+            updates.filter { it.ownTransfer || it.merchantKey !in memory.value.askEachTime }
+                .forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
             _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size)
             val month = plan.toWrite.map { it.row.billingMonth }.distinct().sortedDescending().firstOrNull { month ->
                 com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, memory.value, categories.value).unassignedCount > 0

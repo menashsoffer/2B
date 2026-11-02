@@ -63,7 +63,7 @@ stored lines + ImportMemory ──toTransactions──▶ engine Transaction ─
 
 ## Storage
 
-`households/{hid}/transactions/{id}` has 15 fields at most. Amounts are agorot and dates are `YYYY-MM-DD`. `households/{hid}/merchantMemory/m-<hash>` holds `{key, categoryId?, ownTransfer}`. Both are added to `isMoneyCollection` in `firestore.rules`: members read and write, everyone else is denied. `apply` writes in batches of 450.
+`households/{hid}/transactions/{id}` has 15 fields at most. Amounts are agorot and dates are `YYYY-MM-DD`. `households/{hid}/merchantMemory/m-<hash>` holds `{key, categoryId?, ownTransfer, alias?, askEachTime?}`. `alias` (1–60 characters) is only a display name: matching and the document id always use the bank's text. `askEachTime` marks a generic merchant (ביט, העברה): it is never learnt, its stored `categoryId` is ignored, and turning it on first copies the learnt category onto the lines that followed it. A category chosen with "רק לתנועה הזו" is saved on that line only. Both are added to `isMoneyCollection` in `firestore.rules`: members read and write, everyone else is denied. `apply` writes in batches of 450.
 
 ## Not verified yet
 

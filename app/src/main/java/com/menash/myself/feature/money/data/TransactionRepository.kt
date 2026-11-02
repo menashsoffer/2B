@@ -23,4 +23,10 @@ interface TransactionRepository {
 
     /** Remembers a merchant's category and / or marks it as one of the household's own accounts. */
     suspend fun remember(merchantKey: String, categoryId: String?, ownTransfer: Boolean)
+
+    /** The household's display name for a merchant; null or blank removes it. Matching keeps the bank's text. */
+    suspend fun setAlias(merchantKey: String, alias: String?)
+
+    /** A generic merchant (ביט, העברה) asks for a category on every line and forgets the one it learnt. */
+    suspend fun setAskEachTime(merchantKey: String, ask: Boolean)
 }
