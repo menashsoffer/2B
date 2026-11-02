@@ -32,6 +32,7 @@ import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.MonthCloseViewModel
 import com.menash.myself.feature.money.SubscriptionsViewModel
 import com.menash.myself.feature.money.PeriodViewModel
+import com.menash.myself.feature.money.MonthSummaryViewModel
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MoneyViewModel
@@ -107,6 +108,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         factory = PeriodViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter)
     )
     val periodUi by periodViewModel.ui.collectAsStateWithLifecycle()
+    val summaryViewModel: MonthSummaryViewModel = viewModel(
+        factory = MonthSummaryViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, appContainer.errorReporter)
+    )
+    val summaryUi by summaryViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
@@ -172,6 +177,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         close = closeUi.open,
         subscriptions = subsUi.open,
         period = periodUi.open,
+        summary = summaryUi.open,
     ))
     val duration = Motion.duration(Motion.medium)
     val enter = Motion.slideIn(duration)
@@ -202,6 +208,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onImport = { picker.launch(importMimeTypes) },
                 onLines = { month, filter -> transactionsViewModel.open(month, filter) },
                 onAsset = { viewModel.startEditing(MoneyEntry.AssetEntry(it)) },
+                onSummary = summaryViewModel::open,
             ),
             modifier = modifier,
         )
@@ -215,6 +222,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             ),
             modifier = modifier,
         )
+        MoneyDestination.Summary -> MonthSummaryContent(rememberShownState(summaryUi, summaryUi.open), summaryViewModel::close, modifier)
         MoneyDestination.Period ->
             PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close), modifier)
         MoneyDestination.Root -> MoneyContent(
@@ -238,6 +246,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onPension = pensionViewModel::open,
                 onSubscriptions = subsViewModel::open,
                 onPeriod = periodViewModel::open,
+                onMonthSummary = summaryViewModel::open,
                 onImport = { picker.launch(importMimeTypes) },
             ),
             modifier = modifier,

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Month summary after close (plan: reviews/plan-money-status-views-2026-11-02.md, stage 2) -->
+    <string name="summary_entry">סיכום החודש</string>
+    <string name="summary_entry_detail">מה נשאר, איפה חרגנו ומה כדאי לשנות</string>
+    <string name="summary_open">לסיכום של %1$s</string>
+    <string name="summary_title">סיכום %1$s</string>
+    <string name="summary_subtitle">החודש סגור. המספרים לא ישתנו</string>
+    <string name="summary_left">נשאר בפועל</string>
+    <string name="summary_left_percent">%1$s%% מההכנסה</string>
+    <string name="summary_income_expenses">הכנסה %1$s · הוצאה %2$s</string>
+    <string name="summary_vs_average_more">%1$s יותר מהממוצע של %2$d החודשים הסגורים שלפניו</string>
+    <string name="summary_vs_average_less">%1$s פחות מהממוצע של %2$d החודשים הסגורים שלפניו</string>
+    <string name="summary_vs_average_same">בדיוק כמו הממוצע של %1$d החודשים הסגורים שלפניו</string>
+    <string name="summary_first">זה החודש הסגור הראשון, עוד אין למה להשוות</string>
+    <string name="summary_by_class">תוכנית מול בפועל</string>
+    <string name="summary_planned">תוכנן %1$s</string>
+    <string name="summary_overruns">איפה עברנו את התוכנית</string>
+    <string name="summary_no_overruns">אף קטגוריה לא עברה את התוכנית</string>
+    <string name="summary_overrun_detail">תוכנן %1$s · %2$s מעל</string>
+    <string name="summary_periodic">קרנות תקופתיות</string>
+    <string name="summary_periodic_detail">נצבר %1$s · יצא %2$s</string>
+    <string name="summary_periodic_ahead">יצא %1$s לפני שנצבר</string>
+    <string name="summary_periodic_left">נשאר לשנה</string>
+    <string name="summary_net_worth">שווי נקי בסוף החודש</string>
+    <string name="summary_net_worth_unknown">היתרות של החודש הזה לא ידועות, אז אין כאן שווי נקי</string>
+    <string name="summary_plan">להתאים את התוכנית?</string>
+    <string name="summary_plan_detail">לפי %1$d החודשים הסגורים האחרונים. משנים בעריכת הפריט בלשונית החודש</string>
+    <string name="summary_plan_wait">אחרי 3 חודשים סגורים נציע כאן התאמות לתוכנית</string>
+    <string name="summary_plan_ok">התוכנית קרובה למה שקרה בפועל</string>
+    <string name="summary_plan_now">היום %1$s</string>
+    <string name="summary_plan_none">אין לה תוכנית היום</string>
+</resources>

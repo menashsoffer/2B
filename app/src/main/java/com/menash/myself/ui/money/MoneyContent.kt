@@ -51,6 +51,7 @@ import com.menash.myself.feature.money.MoneyMonth
 import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.MoneyScreenState
 import com.menash.myself.feature.money.data.MoneyEntry
+import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
 const val MoneyTabMonth = 0
@@ -74,6 +75,7 @@ data class MoneyActions(
     val onPension: () -> Unit = {},
     val onSubscriptions: () -> Unit = {},
     val onPeriod: () -> Unit = {},
+    val onMonthSummary: (YearMonth) -> Unit = {},
     val onImport: () -> Unit = {},
 )
 
@@ -197,6 +199,15 @@ private fun MonthContent(
                         detail = stringResource(R.string.tx_entry_detail, view.importedLines),
                         onClick = { actions.onTransactions(LineFilter.ALL) },
                         testTag = "money_transactions",
+                    )
+                }
+                if (status is MonthStatus.Closed) {
+                    AmountRow(
+                        title = stringResource(R.string.summary_entry),
+                        amount = null,
+                        detail = stringResource(R.string.summary_entry_detail),
+                        onClick = { actions.onMonthSummary(money.month) },
+                        testTag = "money_month_summary",
                     )
                 }
                 AmountRow(
