@@ -30,10 +30,17 @@ service cloud.firestore {
         request.auth.uid in get(/databases/$(database)/documents/households/$(hid)).data.memberUids;
     }
 
+    // A resumable deletion freezes writers before draining collections, avoiding orphan races.
+    function isHouseholdWritable(hid) {
+      return isHouseholdMember(hid) &&
+        get(/databases/$(database)/documents/households/$(hid)).data.get('deleting', false) == false;
+    }
+
     // --- Validation Helpers ---
 
     function isValidHousehold(data) {
-      return data.ownerUid is string && data.ownerUid.size() <= 128 &&
+      return (!('deleting' in data) || data.deleting is bool) &&
+             data.ownerUid is string && data.ownerUid.size() <= 128 &&
              data.memberUids is list && data.memberUids.size() <= 10 &&
              (!('name' in data) || (data.name is string && data.name.size() <= 100)) &&
              (!('ownerEmail' in data) || (data.ownerEmail is string && data.ownerEmail.size() <= 120)) &&
@@ -316,12 +323,14 @@ service cloud.firestore {
       allow get: if isSignedIn() &&
                     request.auth.token.email != null &&
                     request.auth.token.email.lower() == emailLower;
-      allow list: if false;
+      // Owner query must constrain householdId; needed to delete ALL outstanding invites.
+      allow list: if isSignedIn() && isHouseholdMember(resource.data.householdId) &&
+        get(/databases/$(database)/documents/households/$(resource.data.householdId)).data.ownerUid == request.auth.uid;
 
       // Only the household owner can create or delete an invite
       allow create, update: if isSignedIn() &&
                                incoming().householdId is string &&
-                               isHouseholdMember(incoming().householdId) &&
+                               isHouseholdWritable(incoming().householdId) &&
                                get(/databases/$(database)/documents/households/$(incoming().householdId)).data.ownerUid == request.auth.uid;
 
       allow delete: if isSignedIn() && (
@@ -345,19 +354,40 @@ service cloud.firestore {
 
       allow update: if isSignedIn() &&
                        isValidId(householdId) &&
-                       isValidHousehold(incoming()) && (
-                         // 1. Owner can update fields (including partnerEmail and memberUids), but cannot change ownerUid
-                         (existing().ownerUid == request.auth.uid && incoming().ownerUid == existing().ownerUid) ||
-                         // 2. Member (partner) can update fields, but CANNOT change ownerUid or partnerEmail,
-                         //    and CANNOT change memberUids except removing themselves
+                       isValidHousehold(incoming()) && existing().get('deleting', false) == false && (
+                         // Owner may transfer only to an existing member, optionally leaving atomically.
+                         (existing().ownerUid == request.auth.uid && (
+                           (incoming().ownerUid == existing().ownerUid &&
+                            incoming().ownerUid in incoming().memberUids) ||
+                           (incoming().ownerUid in existing().memberUids &&
+                            incoming().ownerUid in incoming().memberUids &&
+                            request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                              ['ownerUid', 'ownerEmail', 'memberUids', 'partnerUid', 'partnerEmail']) &&
+                            (incoming().memberUids == existing().memberUids ||
+                             incoming().memberUids == existing().memberUids.removeAll([request.auth.uid])) &&
+                            (incoming().partnerUid == '' ||
+                             (incoming().partnerUid in incoming().memberUids &&
+                              incoming().partnerUid != incoming().ownerUid)) &&
+                            (incoming().partnerUid != '' || incoming().partnerEmail == ''))
+                         )) ||
+                         // Members may leave themselves, never remove somebody else or take ownership.
                          (
                            request.auth.uid in existing().memberUids &&
                            existing().ownerUid != request.auth.uid &&
                            incoming().ownerUid == existing().ownerUid &&
-                           incoming().partnerEmail == existing().partnerEmail &&
+                           incoming().get('deleting', false) == existing().get('deleting', false) &&
                            (
-                             incoming().memberUids == existing().memberUids ||
-                             incoming().memberUids == existing().memberUids.removeAll([request.auth.uid])
+                             (incoming().memberUids == existing().memberUids &&
+                              incoming().partnerEmail == existing().partnerEmail &&
+                              incoming().partnerUid == existing().partnerUid) ||
+                             (incoming().memberUids == existing().memberUids.removeAll([request.auth.uid]) &&
+                              request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+                                ['memberUids', 'partnerUid', 'partnerEmail']) &&
+                              (existing().partnerUid == request.auth.uid
+                                ? ((incoming().partnerUid == '' && incoming().partnerEmail == '') ||
+                                   (incoming().partnerUid == existing().partnerUid && incoming().partnerEmail == existing().partnerEmail))
+                                : incoming().partnerUid == existing().partnerUid &&
+                                  incoming().partnerEmail == existing().partnerEmail))
                            )
                          ) ||
                          // 3. Join flow: invitee can only add their uid to memberUids and set partnerUid,
@@ -377,16 +407,16 @@ service cloud.firestore {
       // Subcollection: Tasks scoped to household
       match /tasks/{taskId} {
         allow get, list: if isHouseholdMember(householdId);
-        allow create: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == request.auth.uid;
-        allow update: if isHouseholdMember(householdId) && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == existing().userId;
+        allow create: if isHouseholdWritable(householdId) && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isHouseholdWritable(householdId) && isValidId(taskId) && isValidTaskItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(taskId);
       }
 
       // Subcollection: Dreams scoped to household
       match /dreams/{dreamId} {
         allow get, list: if isHouseholdMember(householdId);
-        allow create: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == request.auth.uid;
-        allow update: if isHouseholdMember(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == existing().userId;
+        allow create: if isHouseholdWritable(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isHouseholdWritable(householdId) && isValidId(dreamId) && isValidDreamItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(dreamId);
       }
 
@@ -394,7 +424,7 @@ service cloud.firestore {
       // imported transactions and the merchant memory)
       match /{moneyCollection}/{docId} {
         allow get, list: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId);
-        allow create, update: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) &&
+        allow create, update: if isMoneyCollection(moneyCollection) && isHouseholdWritable(householdId) &&
                                  isValidId(docId) && isValidMoneyDoc(moneyCollection, docId, incoming());
         allow delete: if isMoneyCollection(moneyCollection) && isHouseholdMember(householdId) && isValidId(docId);
       }
@@ -402,8 +432,8 @@ service cloud.firestore {
       // Subcollection: Inbox scoped to household
       match /inbox/{itemId} {
         allow get, list: if isHouseholdMember(householdId);
-        allow create: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming()) && incoming().userId == request.auth.uid;
-        allow update: if isHouseholdMember(householdId) && isValidId(itemId) && isValidInboxItem(incoming()) && incoming().userId == existing().userId;
+        allow create: if isHouseholdWritable(householdId) && isValidId(itemId) && isValidInboxItem(incoming()) && incoming().userId == request.auth.uid;
+        allow update: if isHouseholdWritable(householdId) && isValidId(itemId) && isValidInboxItem(incoming()) && incoming().userId == existing().userId;
         allow delete: if isHouseholdMember(householdId) && isValidId(itemId);
       }
     }

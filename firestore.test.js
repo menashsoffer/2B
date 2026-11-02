@@ -544,3 +544,76 @@ test("check-money-docs: reports exactly the documents the rules refuse", async (
   assert.deepStrictEqual(refused.map((r) => `${r.collection}/${r.id}`), broken.map((b) => `${b.collection}/${b.id}`));
   assert.strictEqual(refused[0].reason, "unknown keys: amount; missing keys: amounts, titheRate");
 });
+
+// Task 13: ownership and deletion order, using the same query shapes as the client.
+test('Owner transfers to a member, optionally leaving in the same write', async () => {
+  for (const leave of [false, true]) {
+    await setupHousehold();
+    const db = testEnv.authenticatedContext(ALICE_UID, { email: ALICE_EMAIL }).firestore();
+    await assertSucceeds(db.doc('households/house_1').update({
+      ownerUid: BOB_UID, ownerEmail: BOB_EMAIL,
+      memberUids: leave ? [BOB_UID] : [ALICE_UID, BOB_UID],
+      partnerUid: leave ? '' : ALICE_UID, partnerEmail: leave ? '' : ALICE_EMAIL,
+    }));
+  }
+});
+test('Ownership transfer rejects outsiders, non-owners and inconsistent partners', async () => {
+  await setupHousehold();
+  const alice = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const bob = testEnv.authenticatedContext(BOB_UID).firestore();
+  await assertFails(alice.doc('households/house_1').update({ ownerUid: CHARLIE_UID, memberUids: [ALICE_UID, BOB_UID, CHARLIE_UID] }));
+  await assertFails(bob.doc('households/house_1').update({ ownerUid: BOB_UID, partnerUid: ALICE_UID }));
+  await assertFails(alice.doc('households/house_1').update({ ownerUid: BOB_UID }));
+  await assertFails(alice.doc('households/house_1').update({ ownerUid: BOB_UID, memberUids: [ALICE_UID], partnerUid: '' }));
+});
+test('Member leaves with cleared partner metadata, cannot remove another member', async () => {
+  await setupHousehold();
+  const db = testEnv.authenticatedContext(BOB_UID).firestore();
+  await assertFails(db.doc('households/house_1').update({ memberUids: [BOB_UID], partnerUid: '', partnerEmail: '' }));
+  await assertSucceeds(db.doc('households/house_1').update({ memberUids: [ALICE_UID], partnerUid: '', partnerEmail: '' }));
+});
+test('Owner lists and deletes household invites; another member cannot', async () => {
+  await setupHousehold();
+  await testEnv.withSecurityRulesDisabled(async c => {
+    await c.firestore().doc('invites/test@example.com').set({ householdId: 'house_1' });
+  });
+  const owner = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const member = testEnv.authenticatedContext(BOB_UID).firestore();
+  await assertSucceeds(owner.collection('invites').where('householdId', '==', 'house_1').get());
+  await assertFails(owner.collection('invites').get());
+  await assertFails(member.collection('invites').where('householdId', '==', 'house_1').get());
+  await assertFails(member.doc('invites/test@example.com').delete());
+  await assertSucceeds(owner.doc('invites/test@example.com').delete());
+});
+test('Household must be deleted LAST: former members cannot read or delete ANY orphan collection', async () => {
+  await setupHousehold();
+  const money = [...fs.readFileSync('firestore.rules', 'utf8').match(/function isMoneyCollection\(name\)[\s\S]*?\[([\s\S]*?)\]/)[1].matchAll(/'([^']+)'/g)].map(m => m[1]);
+  const collections = [...money, 'tasks', 'dreams', 'inbox'];
+  await testEnv.withSecurityRulesDisabled(async c => {
+    for (const name of collections) await c.firestore().doc(`households/house_1/${name}/orphan`).set({});
+  });
+  const owner = testEnv.authenticatedContext(ALICE_UID).firestore();
+  await assertSucceeds(owner.doc('households/house_1').delete());
+  for (const uid of [ALICE_UID, BOB_UID]) {
+    const db = testEnv.authenticatedContext(uid).firestore();
+    for (const name of collections) {
+      const ref = db.doc(`households/house_1/${name}/orphan`);
+      await assertFails(ref.get());
+      await assertFails(ref.delete());
+      await assertFails(ref.parent.get());
+    }
+  }
+});
+test('Deletion lock freezes shared writers and invites but permits draining and final deletion', async () => {
+  await setupHousehold();
+  const owner = testEnv.authenticatedContext(ALICE_UID, {email: ALICE_EMAIL}).firestore();
+  const member = testEnv.authenticatedContext(BOB_UID, {email: BOB_EMAIL}).firestore();
+  await assertFails(member.doc('households/house_1').update({deleting: true}));
+  await assertSucceeds(owner.doc('households/house_1/tasks/old').set({title:'old',userId:ALICE_UID}));
+  await assertSucceeds(owner.doc('households/house_1').update({deleting:true}));
+  await assertFails(owner.doc('households/house_1').update({deleting:false}));
+  await assertFails(member.doc('households/house_1/tasks/new').set({title:'new',userId:BOB_UID}));
+  await assertFails(owner.doc('invites/new@example.com').set({householdId:'house_1'}));
+  await assertSucceeds(owner.doc('households/house_1/tasks/old').delete());
+  await assertSucceeds(owner.doc('households/house_1').delete());
+});
