@@ -222,3 +222,21 @@ Explicit, confirmed account/household deletion is the approved exception to the 
 - Legacy private paths are `users/{uid}/private/{tasks|dreams|inbox}/items`, as defined by `LifeHubRepository.privateCollection` and the three legacy data sources. Delete those children even when parent documents are missing, then private parent documents, fitness, user-owned `calculator_sync`, and the user's invite. Add any future private subcollection to this inventory too.
 - After data cleanup: call `deleteUnsentReports` (the SDK returns void), delete the Firebase Auth user, and use the shared sign-out cleanup (credential state + household session). A persisted per-user pending flag suppresses `getOrCreateHousehold` while deleting/retrying. Server-confirmed household disappearance/removal otherwise clears the session and invokes the existing creation flow. Empty cache snapshots do not trigger creation.
 - Double confirmation applies to deleting a shared household: type `למחוק`, then explicitly confirm the other member's loss. Progress cannot be dismissed. Account deletion has a path-specific explanation and Google reauthentication.
+
+## טסטים וכיסוי
+
+- כל PR חייב להגיע לכיסוי של לפחות 80% מהשורות הנמדדות שהשתנו. כשאין שורות מדידות, הבדיקה עוברת ומציינת זאת בסיכום.
+- ספי הכיסוי לקבוצות יכולים רק לעלות. קבוצות G3, G5 ו־G6 מדווחות ללא סף לעת עתה:
+
+| קבוצה | תחום | סף שורות | סף ענפים |
+| --- | --- | ---: | ---: |
+| G1 | money/domain | 98% | 85% |
+| G2 | money/importer | 95% | 75% |
+| G3 | money/data | מדידה בלבד | מדידה בלבד |
+| G4 | יתר money (כולל ViewModels) | 92% | מדידה בלבד |
+| G5 | יתר feature | מדידה בלבד | מדידה בלבד |
+| G6 | יתר הקוד | מדידה בלבד | מדידה בלבד |
+
+- פונקציות Compose מוחרגות ממדידת האחוזים. מסכים שיש להם תמונות ייחוס של Roborazzi נבדקים מולן. לוגיקה בתוך `LaunchedEffect` או `remember` בפונקציית Composable אינה נמדדת; לוגיקה עסקית צריכה להיות ב־ViewModel או בשכבת domain.
+- לפי קובצי `ui/**/*Screen.kt` ותמונות הייחוס הקיימות, למסכים הבאים אין golden ייעודי: FileCatalog, InboxTriage, Dreams, Fitness, Household, Calendar, More, LifeHome, Tasks ו־MoneySubScreen. תמונות הרכיבים ו־HomeContent אינן הוכחה לכיסוי מלא של המסך.
+- להרצה מקומית: `./gradlew testDebugUnitTest koverHtmlReportDebug`. הדוח נפתח מ־`app/build/reports/kover/htmlDebug/index.html`.
