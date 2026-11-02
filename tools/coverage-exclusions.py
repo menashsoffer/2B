@@ -31,6 +31,7 @@ def source_functions(path):
 removed = methods(sys.argv[1]) - methods(sys.argv[2])
 counts = collections.Counter()
 unmapped = []
+mapped = []
 groups = {1: [], 2: [], 4: []}
 for cls, method, desc, filename in sorted(removed):
     path = root / cls.rsplit('/', 1)[0] / filename
@@ -42,6 +43,7 @@ for cls, method, desc, filename in sorted(removed):
         unmapped.append((label, candidates, str(path)))
     else:
         counts[(str(path.relative_to(root)), candidates[0])] += 1
+        mapped.append((label, str(path.relative_to(root)), candidates[0]))
     money = 'com/menash/myself/feature/money/'
     if cls.startswith(money):
         tail = cls[len(money):]
@@ -56,6 +58,9 @@ for group, entries in groups.items():
     print(f'G{group}: {len(entries)}')
     for entry in entries:
         print('  ' + entry)
+print('Method-to-source mappings:')
+for method, file, function in mapped:
+    print(f'  {method} -> {file}:{function}')
 print(f'Unmapped or ambiguous: {len(unmapped)}')
 for entry, candidates, path in unmapped:
     print(f'  {entry} candidates={candidates} source={path}')
