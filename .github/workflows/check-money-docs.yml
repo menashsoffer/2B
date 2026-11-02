@@ -1,0 +1,45 @@
+# Read-only: lists live money documents that the firestore.rules on the chosen branch would refuse.
+# Run it (Actions -> "Check money docs" -> Run workflow, pick the PR branch) BEFORE merging a rules change,
+# because the push to main deploys the rules. Prints collection and id only, never values.
+# The service account needs read access to Firestore (for example the "Cloud Datastore Viewer" role).
+name: Check money docs
+
+on:
+  workflow_dispatch:
+    inputs:
+      household:
+        description: "Household id (empty = all households)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Firebase CLI and packages
+        run: npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools firebase firebase-admin @firebase/rules-unit-testing
+
+      - name: Check live money documents against these rules
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          HOUSEHOLD: ${{ inputs.household }}
+        run: |
+          set -euo pipefail
+          cred="${RUNNER_TEMP}/firebase-service-account.json"
+          printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${cred}"
+          export GOOGLE_APPLICATION_CREDENTIALS="${cred}"
+          export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
+          export NODE_PATH="${RUNNER_TEMP}/firebase/node_modules"
+          args=""
+          if [ -n "${HOUSEHOLD}" ]; then args="--household ${HOUSEHOLD}"; fi
+          firebase emulators:exec --only firestore --project demo-no-project "node tools/check-money-docs.js ${args}"

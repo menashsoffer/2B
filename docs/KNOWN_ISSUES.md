@@ -40,7 +40,9 @@
 - **שתי שכבות נתונים לעמודים הישנים**: `data/firestore/*` (DataSources + `LifeHubRepository`) ומעליה `core/data/repository/impl/*`. מועמד לאיחוד אחרי סקירת ה-UX.
 - `FirestoreMoneyRepository` ו-`FirestoreTransactionRepository` יושבים ב-`core/data/repository/impl` אבל שייכים לעמוד הכסף (`feature/money/data`).
 - כ-200 מחרוזות בעמודים הישנים נקראות `ui_str_NNN` בלי שם עם משמעות.
-- אין `schemaVersion` במסמכי Firestore, למרות ש-`RULES.md` מבקש מיגרציות מפורשות.
+- `schemaVersion` (`v`) קיים רק במסמכי הכסף. המסמכים הישנים (משימות, חלומות, inbox) עדיין בלי, ועם בדיקות חוקים כלליות.
+- חוקי הכסף בודקים מפות ורשימות מקוננות (היסטוריית סכומים, מפות החודש הסגור, שדות הרכב) רק לפי סוג וגודל, לא כל ערך בפנים.
+- הבדיקה של מסמכים קיימים (`tools/check-money-docs.js`) לא מבחינה בין 5 ל-5.0, כי ה-Admin SDK קורא את שניהם כמספר.
 - Room משמש רק לשורת הגדרות אחת (`app_settings`: `usdToIlsRate` שאף מסך לא קורא, ותאריך גיבוי היסטורי). אפשרות הגיבוי המקומית הוסרה כי לא כללה נתוני כסף.
 - בדיקות שקוראות קוד מקור (`ShellAndViewModelGuardsTest`, `LayerBoundariesTest`, `NightBlueGuardTest`) תלויות בנתיבי קבצים, ונשברות כשמזיזים קבצים.
 - `testTag("skip_to_calculators_button")` ב-`SignInScreen` נשאר מהשם הישן.

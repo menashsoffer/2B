@@ -43,7 +43,8 @@
    - **שחזור = החלפה (REPLACE):** מחליף את הנתונים רק לאחר אישור מפורש של המשתמש וביצוע גיבוי אוטומטי מקדים.
    - **ייבוא קפדני:** לעולם אין להמציא ערכי ברירת מחדל לשדות חסרים או לא תקינים. שורה שגויה נדחית ומוצגת בדו"ח שגיאות מפורט לפי שורה.
 6. **מבנה Firestore:**
-   - שינויי מבנה נתונים עוברים מיגרציות מפורשות ללא Fallback הרסני. שדה `schemaVersion` עוד לא קיים במסמכים (ראו `KNOWN_ISSUES.md`).
+   - שינויי מבנה נתונים עוברים מיגרציות מפורשות ללא Fallback הרסני.
+   - כל מסמך כסף נכתב עם `"v": 1` (`feature/money/data/SchemaVersion.kt`). מסמך בלי `v` נקרא כגרסה 1. מסמך עם `v` גבוה ממה שהאפליקציה מכירה מדולג ומדווח כ-non-fatal, ולא נקרא חלקית.
 
 ---
 
@@ -66,6 +67,11 @@
 6. **חוקי אבטחה ב-Firestore (Default-Deny):**
    - `users/{uid}/private/...`: נגיש לקריאה ולכתיבה אך ורק ל-`ownerUid` (`request.auth.uid == uid`).
    - `households/{householdId}/...`: פריטי הבית המשותפים נגישים לחברי משק הבית בלבד.
+   - **אוספי הכסף**: לכל אוסף יש בודק משלו ב-`firestore.rules` (מפתחות מדויקים, סוגים, אגורות עד ±₪100M, פורמט חודש ותאריך, ערכי enum, אורכים).
+   - **כל שינוי בכותב של מסמך כסף מחייב לעדכן את ה-fixtures**: `firestore-fixtures/money/{collection}/{case}.json` נוצרים מהכותבים האמיתיים (`MoneyFixtures.kt`). `MoneyFixturesTest` נכשל כשהכותב והקבצים שונים. מקליטים מחדש עם `RECORD_FIXTURES=true ./gradlew testDebugUnitTest --tests '*MoneyFixturesTest*'`, ואז מעדכנים את `firestore.rules` עד ש-`firestore.test.js` (שמחייב קבלה של כל fixture) עובר.
+   - **לפני פריסת חוקים**: `tools/check-money-docs.js` קורא (קריאה בלבד) את מסמכי הכסף בענן ומריץ כל אחד מול החוקים החדשים באמולטור. ה-workflow `firestore-rules.yml` מריץ אותו לפני הפריסה ועוצר אותה אם יש מסמך שיידחה. הרצה ידנית:
+     `GOOGLE_APPLICATION_CREDENTIALS=<service-account.json> firebase emulators:exec --only firestore --project demo-no-project "node tools/check-money-docs.js [--household <id>]"`
+     חשבון השירות צריך הרשאת קריאה ל-Firestore (למשל Cloud Datastore Viewer).
    - הצטרפות למשק בית מותנית באימות אימייל: `resource.data.partnerEmail == request.auth.token.email.lower()`, ועדכון מוגבל אך ורק להוספת ה-UID של המצטרף למערך `members` (`diff.affectedKeys().hasOnly(['members'])`). כתובות נשמרות באותיות קטנות.
 7. **צבעי `SpaceBadge`:** נצבעים לפי `forWhom` (שלי / בן-בת הזוג / של שנינו), ולא לפי צבע אדם קבוע.
 8. **גיבוי ושחזור מתוחם:** שחזור פריטים המסומנים כ-`BOTH` מציג אזהרה ברורה שהפעולה משפיעה על שני בני הזוג.

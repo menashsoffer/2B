@@ -530,3 +530,17 @@ test("calculator_sync: existing data is read/delete only for its owner", async (
   await assertFails(testEnv.unauthenticatedContext().firestore().collection("calculator_sync").get());
   await assertSucceeds(owner.doc("old").delete());
 });
+
+test("check-money-docs: reports exactly the documents the rules refuse", async () => {
+  const { checkDocs } = require("./tools/check-money-docs.js");
+  const good = MONEY_COLLECTIONS.flatMap((collection) =>
+    fixtures(collection).map(({ name, doc }, i) => ({ household: "h", collection, id: docIdFor(collection, i), data: doc, name })));
+  const broken = [
+    { household: "h", collection: "incomes", id: "old-income", data: { name: "משכורת", amount: 100 } },
+    { household: "h", collection: "debts", id: "bad-balance", data: { ...fixtures("debts")[0].doc, balance: "1000" } },
+    { household: "h", collection: "closedMonths", id: "2026-13", data: fixtures("closedMonths")[0].doc },
+  ];
+  const refused = await checkDocs(testEnv, [...good, ...broken]);
+  assert.deepStrictEqual(refused.map((r) => `${r.collection}/${r.id}`), broken.map((b) => `${b.collection}/${b.id}`));
+  assert.strictEqual(refused[0].reason, "unknown keys: amount; missing keys: amounts, titheRate");
+});
