@@ -49,6 +49,9 @@ data class MonthCloseActions(
     val onAsset: (Asset) -> Unit = {},
     val onClose: () -> Unit = {},
     val onBack: () -> Unit = {},
+    val onEnterBalances: (Boolean) -> Unit = {},
+    val onBalance: (String, String) -> Unit = { _, _ -> },
+    val onMarkUnknown: () -> Unit = {},
 )
 
 private val dateFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.yyyy")
@@ -86,6 +89,7 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
         }
         SectionTitle(stringResource(R.string.close_checks_title))
         MoneySurface(testTag = "close_checks") { Checks(view, actions) }
+        CloseBalancesContent(ui, actions)
         SectionTitle(stringResource(R.string.close_summary_title))
         MoneySurface(testTag = "close_summary") {
             val colors = MaterialTheme.appColors
@@ -105,7 +109,7 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                 hebrewMonthName(view.month.month),
             ),
             onClick = actions.onClose,
-            enabled = view.canClose,
+            enabled = view.canClose && ui.balancesValid,
             isLoading = ui.saving,
             modifier = Modifier.fillMaxWidth().testTag("close_button"),
         )

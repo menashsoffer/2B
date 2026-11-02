@@ -32,11 +32,11 @@ fun closeMonth(
     items: MoneyItems,
     transactions: List<Transaction>,
     actualIncome: Money,
-    assets: List<Asset>,
+    balancesAtClose: BalancesAtClose,
     usdToIls: BigDecimal?,
     today: LocalDate,
 ): ClosedMonth {
-    require(assets.map { it.id }.distinct().size == assets.size) { "Asset ids must be unique" }
+    val (balances, liabilities) = balancesAtClose.maps()
     val total = sumMoney(transactions.filter { it.billingMonth == month }.map { it.amount })
     val actuals = planVsActual(month, items, transactions, usdToIls)
     val periodic = items.periodicBudgets.filter { it.yearStartMonth <= month }.associate { budget ->
@@ -49,8 +49,8 @@ fun closeMonth(
         snapshot = MonthSnapshot(month, actualIncome, maxOf(total, Money.ZERO), balances = emptyList()),
         byCategory = actuals.categories.associate { it.categoryId to it.actual },
         periodic = periodic,
-        balances = assets.filter { it.kind == AssetKind.ASSET }.associate { it.id to it.balance },
-        liabilities = assets.filter { it.kind == AssetKind.LIABILITY }.associate { it.id to it.balance },
+        balances = balances,
+        liabilities = liabilities,
         closedOn = today,
     )
 }

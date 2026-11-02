@@ -14,7 +14,28 @@ class MonthCloseSnapshotTest {
         Transaction(id, month.atDay(1), billing, "merchant", Money(amount), PaymentMethod.CREDIT_CARD, "card", category)
     private fun asset(id: String, kind: AssetKind) = Asset(id, "private name", "bank", Money(500), kind, true, today)
     private fun close(txs: List<Transaction> = emptyList(), items: MoneyItems = MoneyItems(), assets: List<Asset> = emptyList()) =
-        closeMonth(month, items, txs, Money(1000), assets, null, today)
+        closeMonth(month, items, txs, Money(1000), BalancesAtClose.Current(assets), null, today)
+
+    @Test fun suppliedHistoricalBalancesAndUnknownNetWorth() {
+        val entered = closeMonth(month, MoneyItems(), emptyList(), Money.ZERO,
+            BalancesAtClose.Entered(mapOf("old" to Money(10)), mapOf("loan" to Money(3))), null, today)
+        assertEquals(mapOf("old" to Money(10)), entered.balances)
+        assertEquals(mapOf("loan" to Money(3)), entered.liabilities)
+        val unknown = closeMonth(month.plusMonths(1), MoneyItems(), emptyList(), Money.ZERO,
+            BalancesAtClose.Unknown, null, today.plusMonths(1))
+        assertTrue(unknown.balances.isEmpty())
+        assertTrue(unknown.liabilities.isEmpty())
+        assertEquals(netWorthChange(listOf(entered), 2026), netWorthChange(listOf(entered, unknown), 2026))
+        assertNull(netWorthChange(listOf(unknown), 2026))
+    }
+
+    @Test fun suspectBoundaryAndEmptyBalances() {
+        val row = close(assets = listOf(asset("bank", AssetKind.ASSET)))
+        val boundary = month.plusMonths(1).atEndOfMonth()
+        assertFalse(row.copy(closedOn = boundary).hasSuspectBalances())
+        assertTrue(row.copy(closedOn = boundary.plusDays(1)).hasSuspectBalances())
+        assertFalse(row.copy(closedOn = boundary.plusDays(1), balances = emptyMap()).hasSuspectBalances())
+    }
 
     @Test fun refundsReduceExpensesAndCategories() {
         val closed = close(listOf(tx("purchase", 300), tx("refund", -100)))
@@ -95,7 +116,7 @@ class MonthCloseSnapshotTest {
         val subscription = Subscription("usd", "usd", AmountHistory(listOf(AmountChange(month, Money(100)))), Currency.USD, renewalDate = early)
         val items = MoneyItems(subscriptions = listOf(subscription))
         assertThrows(IllegalArgumentException::class.java) { close(items = items) }
-        val closed = closeMonth(month, items, emptyList(), Money.ZERO, emptyList(), BigDecimal("3.5"), early)
+        val closed = closeMonth(month, items, emptyList(), Money.ZERO, BalancesAtClose.Unknown, BigDecimal("3.5"), early)
         assertEquals(early, closed.closedOn)
         assertEquals(mapOf<String?, Money>(null to Money.ZERO), closed.byCategory)
     }

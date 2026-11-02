@@ -127,7 +127,7 @@ class ClosedMonthDocumentsTest {
 
     @Test fun assetsStoreOnlyIdsAndAmountsWithoutNamesOrFabricatedMetadata() {
         val asset = Asset("asset-id", "private bank name", "private type", Money(100), AssetKind.ASSET, true, date)
-        val value = closeMonth(month, MoneyItems(), emptyList(), Money.ZERO, listOf(asset), null, date)
+        val value = closeMonth(month, MoneyItems(), emptyList(), Money.ZERO, com.menash.myself.feature.money.domain.BalancesAtClose.Current(listOf(asset)), null, date)
         val encoded = ClosedMonthDocuments.encode(value)
         assertEquals(mapOf("asset-id" to 100L), encoded["balances"])
         assertFalse(encoded.toString().contains("private"))

@@ -84,7 +84,7 @@ class MonthCloseScreenshotTest {
     }
 
     private fun screen(lines: List<StoredTransaction>, d: MoneyData, dark: Boolean, font: Float) {
-        val ui = MonthCloseUi(true, closeView(d, october, today, null, lines, ImportMemory()), currentMonth = YearMonth.from(today))
+        val ui = MonthCloseUi(true, closeView(d, october, today, null, lines, ImportMemory()), currentMonth = YearMonth.from(today), showBalancesStep = true, assets = d.assets)
         composeRule.captureR2Screen(darkTheme = dark, fontScale = font) {
             Rtl { MonthCloseContent(ui = ui, actions = MonthCloseActions()) }
         }
