@@ -6,6 +6,8 @@ import com.menash.myself.feature.money.domain.ExpenseClass
 import com.menash.myself.feature.money.domain.MonthRange
 import com.menash.myself.feature.money.domain.NetWorthChange
 import com.menash.myself.feature.money.domain.PeriodSummary
+import com.menash.myself.feature.money.domain.YearComparison
+import com.menash.myself.feature.money.domain.compareYears
 import com.menash.myself.feature.money.domain.categoryPeriod
 import com.menash.myself.feature.money.domain.classYear
 import com.menash.myself.feature.money.domain.netWorthChange
@@ -48,7 +50,16 @@ data class PeriodView(
     val netWorth: NetWorthChange?,
     /** The "last year" tab is labelled with the year itself. */
     val lastYear: Int,
+    /** A calendar year against the year before, by monthly averages; null for the other ranges or without both years. */
+    val comparison: YearComparison? = null,
+    /** The categories whose monthly average grew the most against the year before, largest first. */
+    val risers: List<PeriodRiser> = emptyList(),
 )
+
+/** A category whose monthly average rose against the year before. */
+data class PeriodRiser(val categoryId: String?, val name: String?, val thisYear: Money, val previousYear: Money, val difference: Money)
+
+private const val TopRisers = 3
 
 private const val TopCategories = 6
 
@@ -73,5 +84,16 @@ fun periodView(data: MoneyData, preset: PeriodPreset, today: LocalDate, rate: Bi
     val names = data.categories.associate { it.id to it.name }
     val categories = rows.filter { it.actual.isPositive() }.sortedByDescending { it.actual.agorot }.take(TopCategories)
         .map { PeriodCategoryRow(it.categoryId, it.categoryId?.let(names::get), it.planned, it.actual, it.diff) }
-    return PeriodView(preset, range, summary, classes, categories, netWorthChange(data.closedMonths, range), today.year - 1)
+    val comparison = if (preset == PeriodPreset.THIS_YEAR || preset == PeriodPreset.LAST_YEAR)
+        compareYears(data.closedMonths, range.from.year, emptyMap()) else null
+    val risers = comparison?.categories.orEmpty().filter { it.averages.difference.isPositive() }
+        .sortedByDescending { it.averages.difference.agorot }.take(TopRisers)
+        .map { PeriodRiser(it.categoryId, it.categoryId?.let(names::get), it.averages.thisYear, it.averages.previousYear, it.averages.difference) }
+    return PeriodView(
+        preset, range, summary, classes, categories, netWorthChange(data.closedMonths, range), today.year - 1, comparison, risers,
+    )
 }
+
+/** In January this year has no closed month yet, so the period screen opens on the year that just ended. */
+fun defaultPreset(today: LocalDate): PeriodPreset =
+    if (today.monthValue == 1) PeriodPreset.LAST_YEAR else PeriodPreset.THIS_YEAR

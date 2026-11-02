@@ -218,7 +218,8 @@ private fun MonthContent(
                     testTag = "money_close_month",
                 )
                 AmountRow(
-                    title = stringResource(R.string.period_entry),
+                    title = if (money.current.monthValue == 1) stringResource(R.string.period_year_entry, money.current.year - 1)
+                        else stringResource(R.string.period_entry),
                     amount = null,
                     detail = stringResource(R.string.period_entry_detail),
                     onClick = actions.onPeriod,

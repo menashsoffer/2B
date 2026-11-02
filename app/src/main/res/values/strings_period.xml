@@ -27,4 +27,10 @@
     <string name="period_no_plan">בלי תוכנית</string>
     <string name="period_net_worth">שווי נקי</string>
     <string name="period_net_worth_detail">מ-%1$s: %2$s</string>
+    <string name="period_year_entry">סיכום שנת %1$d</string>
+    <string name="period_compare_title">לעומת %1$d, ממוצע לחודש</string>
+    <string name="period_compare_months">%1$d חודשים סגורים מול %2$d</string>
+    <string name="period_compare_detail">ב-%1$d: %2$s · %3$s</string>
+    <string name="period_risers">עלו הכי הרבה</string>
+    <string name="period_riser_detail">%1$s לחודש יותר מב-%2$d</string>
 </resources>
