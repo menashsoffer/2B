@@ -1,6 +1,7 @@
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.kover)
@@ -12,6 +13,18 @@ plugins {
   alias(libs.plugins.roborazzi)
 }
 
+val releaseVersion = Properties().apply {
+  rootProject.file("version.properties").inputStream().use { load(it) }
+}
+val versionCodeFromEnvironment = System.getenv("VERSION_CODE")
+val parsedVersionCode = versionCodeFromEnvironment?.toIntOrNull()?.takeIf { it > 0 }
+
+gradle.taskGraph.whenReady {
+  if (allTasks.any { it.project == project && it.name in setOf("assembleRelease", "bundleRelease", "packageRelease", "signReleaseBundle") }) {
+    require(parsedVersionCode != null) { "Release builds require VERSION_CODE to be set to a positive integer." }
+  }
+}
+
 android {
   namespace = "com.menash.myself"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
@@ -20,8 +33,8 @@ android {
     applicationId = "com.aistudio.mycalculators.qvxmzt"
     minSdk = 24
     targetSdk = 36
-    versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
-    versionName = "1.0"
+    versionCode = parsedVersionCode ?: 1
+    versionName = "${releaseVersion.getProperty("major")}.${releaseVersion.getProperty("minor")}.${parsedVersionCode ?: 1}"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     // Empty = the real Firebase project. Only the e2e build points at the local emulators.
