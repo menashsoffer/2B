@@ -202,8 +202,8 @@ service cloud.firestore {
 
     match /calculator_sync/{syncId} {
       allow get, list: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && isValidId(syncId) && isValidCalculatorSync(incoming());
-      allow update, delete: if isSignedIn() && isValidId(syncId) && existing().userId == request.auth.uid;
+      // Retired collection: no client creates or updates.
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
     }
   }
 }

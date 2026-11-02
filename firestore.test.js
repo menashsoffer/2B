@@ -388,3 +388,25 @@ test("Import: a full transaction and a merchant memory document are accepted, ov
   await assertFails(house.collection("transactions").doc("tx-max-oversized").set(oversized));
   await assertFails(house.collection("transactions").doc("tx max!").set(tx));
 });
+
+// Legacy calculator data is retained for owner reads/deletion, never writable.
+test("calculator_sync: owner create denied", async () => {
+  const db = testEnv.authenticatedContext(ALICE_UID).firestore();
+  await assertFails(db.collection("calculator_sync").doc("new").set({ userId: ALICE_UID }));
+});
+test("calculator_sync: existing data is read/delete only for its owner", async () => {
+  await testEnv.withSecurityRulesDisabled(async context => {
+    await context.firestore().collection("calculator_sync").doc("old").set({userId: ALICE_UID, value: 1});
+  });
+  const owner = testEnv.authenticatedContext(ALICE_UID).firestore().collection("calculator_sync");
+  const other = testEnv.authenticatedContext(BOB_UID).firestore().collection("calculator_sync");
+  await assertFails(owner.doc("old").update({value: 2}));
+  await assertFails(owner.doc("old").update({userId: BOB_UID}));
+  await assertSucceeds(owner.doc("old").get());
+  await assertSucceeds(owner.where("userId", "==", ALICE_UID).get());
+  await assertFails(other.doc("old").get());
+  await assertFails(other.where("userId", "==", ALICE_UID).get());
+  await assertFails(other.doc("old").delete());
+  await assertFails(testEnv.unauthenticatedContext().firestore().collection("calculator_sync").get());
+  await assertSucceeds(owner.doc("old").delete());
+});
