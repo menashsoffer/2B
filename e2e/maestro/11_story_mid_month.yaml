@@ -2,8 +2,7 @@ appId: com.aistudio.mycalculators.qvxmzt.e2e
 name: Story - mid month
 tags: [smoke]
 ---
-- launchApp:
-    clearState: true
+- runFlow: subflows/fresh_start.yaml
 - evalScript: ${output.email = 'story11' + Date.now() + '@example.test'}
 - openLink: myself-e2e://signin?email=${output.email}&seed=mid_month&today=2026-10-20
 - extendedWaitUntil:

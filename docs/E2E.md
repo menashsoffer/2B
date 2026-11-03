@@ -32,7 +32,7 @@ maestro test e2e/maestro
 `app/google-services.json` מקומי צריך client גם ל-`com.aistudio.mycalculators.qvxmzt.e2e` (ה-workflow מייצר קובץ מזויף כזה).
 
 ## תרחיש חדש
-קובץ YAML ב-`e2e/maestro/`, מתחיל ב-`launchApp: clearState: true` ו-`openLink: myself-e2e://signin?email=...`.
+קובץ YAML ב-`e2e/maestro/`, מתחיל ב-`runFlow: subflows/fresh_start.yaml` (ניקוי האפליקציה והמתנה למסך הראשון שלה) ו-`openLink: myself-e2e://signin?email=...`.
 מחפשים לפי `id:` (testTag) ולא לפי טקסט כשאפשר. tag `smoke` רק לתרחישים קצרים וקריטיים.
 
 ## סיפורים בדיוניים
