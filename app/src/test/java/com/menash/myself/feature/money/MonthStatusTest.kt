@@ -54,6 +54,13 @@ class MonthStatusTest {
     }
 
     @Test
+    fun planWithoutCurrentAndPeriodicItemsIsMarkedIncomplete() {
+        val base = view(november)
+        val planned = base.copy(rows = base.rows.filter { it.kind != MonthRowKind.CURRENT && it.kind != MonthRowKind.PERIODIC })
+        assertEquals(MonthStatus.PlanOnly(base.plan.expectedSurplus, planHasGaps = true), monthStatus(planned, null, emptyList(), november))
+    }
+
+    @Test
     fun importedWithoutCurrentBudget_showsAllSpending() {
         val base = view(november)
         val planned = base.copy(

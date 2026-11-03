@@ -28,6 +28,16 @@ class MonthStatusHeadlineTest {
         assertEquals(LineFilter.UNASSIGNED, selected)
     }
 
+    @Test fun openMonthUnassignedOpensFilteredTransactions() {
+        var selected: LineFilter? = null
+        compose.setContent {
+            MonthStatusHeadline(MonthStatus.Open(Money(100), Money(200), Money(100), Money.ZERO,
+                Money(100), null, Money(50)), onTransactions = { selected = it })
+        }
+        compose.onNodeWithTag("money_status_unassigned").performClick()
+        assertEquals(LineFilter.UNASSIGNED, selected)
+    }
+
     @Test fun zeroUnassignedIsHidden() {
         compose.setContent { MonthStatusHeadline(MonthStatus.NoCurrentBudget(Money.ZERO, Money.ZERO, null)) }
         compose.onNodeWithTag("money_status_unassigned").assertDoesNotExist()

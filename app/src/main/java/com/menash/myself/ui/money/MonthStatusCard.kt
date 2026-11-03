@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -24,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.Chip
 import com.menash.myself.core.designsystem.component.ChipVariant
@@ -62,7 +65,7 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
                 text = stringResource(R.string.status_month_title, hebrewMonthName(money.month.month), money.month.year),
                 style = AppType.body.copy(fontWeight = FontWeight.Medium),
                 color = colors.textPrimary,
-                modifier = Modifier.clickable { picking = true }.testTag("money_month_title"),
+                modifier = Modifier.heightIn(min = 48.dp).clickable { picking = true }.wrapContentHeight(Alignment.CenterVertically).testTag("money_month_title"),
             )
             if (money.month != money.current) {
                 TextButton(onClick = { onShowMonth(money.current) }, modifier = Modifier.testTag("money_return_today")) {
