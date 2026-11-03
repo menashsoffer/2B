@@ -130,4 +130,7 @@
     <string name="status_unassigned_hint">חלק מזה כנראה שוטפות</string>
     <string name="status_income_not_imported">עוד לא יובאו הכנסות</string>
     <string name="status_expected_surplus_gaps">צפוי להישאר לפי התוכנית (התוכנית בלי שוטפות ותקופתיות)</string>
+    <string name="status_return_today">חזרה להיום</string>
+    <string name="status_choose_month">בחירת חודש</string>
+    <string name="status_month_imported">יובאו תנועות</string>
 </resources>
