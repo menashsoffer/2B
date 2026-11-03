@@ -43,6 +43,7 @@ import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
+import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.MonthRow
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.MonthView
