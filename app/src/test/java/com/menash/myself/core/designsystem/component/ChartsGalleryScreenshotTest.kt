@@ -9,7 +9,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.menash.myself.core.designsystem.component.charts.ChartLegend
 import com.menash.myself.core.designsystem.component.charts.ChartSeries
 import com.menash.myself.core.designsystem.component.charts.ChartTone
 import com.menash.myself.core.designsystem.component.charts.ColumnChart
@@ -53,7 +52,7 @@ class ChartsGalleryScreenshotTest {
     @Test fun chartsGallery_light_font13() = shoot(dark = false, font = 1.3f)
 
     private fun shoot(dark: Boolean, font: Float) {
-        val series = listOf(ChartSeries("הכנסות", ChartTone.Accent), ChartSeries("הוצאות", ChartTone.Soft))
+        val series = listOf(ChartSeries("הכנסות", ChartTone.Accent), ChartSeries("הוצאות", ChartTone.Warning))
         composeRule.captureR2Screen(darkTheme = dark, fontScale = font) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -76,7 +75,6 @@ class ChartsGalleryScreenshotTest {
                         series = series,
                         format = shekels,
                     )
-                    ChartLegend(series.map { it.label to it.tone })
                     LineChart(
                         points = listOf(
                             LinePoint("יולי", 15_000_000), LinePoint("אוג׳", 15_400_000), LinePoint("ספט׳", null),
@@ -88,7 +86,7 @@ class ChartsGalleryScreenshotTest {
                         segments = listOf(
                             ShareSegment("עו״ש", 2_000_000, ChartTone.Accent),
                             ShareSegment("חיסכון", 6_000_000, ChartTone.Strong),
-                            ShareSegment("השקעות", 8_000_000, ChartTone.Soft),
+                            ShareSegment("השקעות", 8_000_000, ChartTone.Success),
                         ),
                         format = shekels,
                     )

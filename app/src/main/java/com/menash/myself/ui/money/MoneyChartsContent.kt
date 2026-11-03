@@ -35,6 +35,8 @@ import com.menash.myself.feature.money.importer.LineFilter
 import java.time.format.TextStyle
 import java.util.Locale
 
+private const val MaxAssetSegments = 5
+
 private val formatAgorot: (Long) -> String = { formatMoney(Money(it)) }
 
 private fun classTone(kind: MonthRowKind?): ChartTone = when (kind) {
@@ -153,9 +155,12 @@ internal fun BigPictureCharts(picture: BigPicture) {
     val assets = picture.assets.map { it.asset }.filter { it.kind == AssetKind.ASSET && it.balance.isPositive() }
     if (assets.size >= 2) {
         val tones = listOf(ChartTone.Strong, ChartTone.Accent, ChartTone.Success, ChartTone.Warning, ChartTone.Neutral, ChartTone.Soft)
-        val byType = assets.groupBy { it.type.ifBlank { it.name } }
-            .map { (type, list) -> type to list.sumOf { it.balance.agorot } }
-            .sortedByDescending { it.second }
+        // Names, not the internal type key: what the household typed is what it recognises.
+        val sorted = assets.sortedByDescending { it.balance.agorot }
+        val shown = sorted.take(MaxAssetSegments).map { it.name to it.balance.agorot }
+        val rest = sorted.drop(MaxAssetSegments).sumOf { it.balance.agorot }
+        val otherLabel = stringResource(R.string.chart_assets_other)
+        val byType = if (rest > 0) shown + (otherLabel to rest) else shown
         SectionTitle(stringResource(R.string.chart_assets))
         MoneySurface(testTag = "money_chart_assets") {
             ShareBar(
