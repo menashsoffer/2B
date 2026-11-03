@@ -162,7 +162,7 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
     }
 }
 
-internal val dayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M")
+private val dayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M")
 
 @Composable
 internal fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsActions) {
