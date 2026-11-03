@@ -85,7 +85,7 @@ class TransactionsViewModel(
     errorReporter: ErrorReporter,
     private val events: UiEvents? = null,
     private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
-    private val today: () -> java.time.LocalDate = { java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jerusalem")) },
+    private val today: () -> java.time.LocalDate = com.menash.myself.core.time.TodayProvider::today,
 ) : BaseViewModel(errorReporter) {
 
     private val query = MutableStateFlow(TransactionsQuery())

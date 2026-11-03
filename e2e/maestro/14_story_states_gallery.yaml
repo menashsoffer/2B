@@ -1,0 +1,84 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Story states gallery
+tags: [states]
+---
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'galleryplan_only' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=plan_only&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- takeScreenshot: gallery_plan_only_month
+- tapOn: "התמונה הגדולה"
+- extendedWaitUntil:
+    visible: {id: money_net_worth}
+    timeout: 30000
+- takeScreenshot: gallery_plan_only_big_picture
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'gallerymid_month' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=mid_month&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- takeScreenshot: gallery_mid_month_month
+- tapOn: "התמונה הגדולה"
+- extendedWaitUntil:
+    visible: {id: money_net_worth}
+    timeout: 30000
+- takeScreenshot: gallery_mid_month_big_picture
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'galleryready_to_close' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=ready_to_close&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- takeScreenshot: gallery_ready_to_close_month
+- tapOn: "התמונה הגדולה"
+- extendedWaitUntil:
+    visible: {id: money_net_worth}
+    timeout: 30000
+- takeScreenshot: gallery_ready_to_close_big_picture
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'galleryhistory' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=history&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- takeScreenshot: gallery_history_month
+- tapOn: "התמונה הגדולה"
+- extendedWaitUntil:
+    visible: {id: money_net_worth}
+    timeout: 30000
+- takeScreenshot: gallery_history_big_picture
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'galleryno_current_budget' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=no_current_budget&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- takeScreenshot: gallery_no_current_budget_month
+- tapOn: "התמונה הגדולה"
+- extendedWaitUntil:
+    visible: {id: money_net_worth}
+    timeout: 30000
+- takeScreenshot: gallery_no_current_budget_big_picture

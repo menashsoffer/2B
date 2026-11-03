@@ -13,6 +13,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.time.TodayProvider
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.home.HomeViewModel
 import kotlinx.coroutines.delay
@@ -31,7 +32,7 @@ fun HomeScreen(
             errorReporter = appContainer.errorReporter,
             moneyRepository = appContainer.moneyRepository,
             usdRates = appContainer.usdRateFlow,
-            today = { java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jerusalem")) },
+            today = TodayProvider::today,
         )
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()

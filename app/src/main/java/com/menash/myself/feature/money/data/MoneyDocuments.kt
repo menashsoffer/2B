@@ -6,6 +6,7 @@ import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.AssetKind
 import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
+import com.menash.myself.feature.money.domain.VEHICLE_ENERGY_CATEGORY_NAME
 import com.menash.myself.feature.money.domain.Currency
 import com.menash.myself.feature.money.domain.Debt
 import com.menash.myself.feature.money.domain.ExpenseClass
@@ -255,7 +256,7 @@ object MoneyDocuments {
             MoneyCollection.CATEGORIES -> MoneyEntry.CategoryEntry(
                 Category(
                     id = id,
-                    name = doc.string("name"),
+                    name = doc.string("name").let { if (id == "current-3" && it == "דלק") VEHICLE_ENERGY_CATEGORY_NAME else it },
                     klass = doc.enumOrNull("klass", ExpenseClass.entries) ?: ExpenseClass.CURRENT,
                     parentId = doc.stringOrNull("parentId"),
                 )

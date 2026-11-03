@@ -1,0 +1,55 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Story - close last month
+tags: [smoke]
+---
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'story12' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=ready_to_close&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- scrollUntilVisible:
+    element: {id: money_close_month}
+    direction: DOWN
+    centerElement: true
+- tapOn: {id: money_close_month}
+- extendedWaitUntil:
+    visible: {id: close_ready}
+    timeout: 30000
+- takeScreenshot: story12_ready
+- scrollUntilVisible:
+    element: {id: close_button}
+    direction: DOWN
+    centerElement: true
+- tapOn: {id: close_button}
+- scrollUntilVisible:
+    element: {id: close_done}
+    direction: UP
+    timeout: 30000
+- takeScreenshot: story12_closed
+- back
+- scrollUntilVisible:
+    element: {id: money_month_previous}
+    direction: UP
+- tapOn: {id: money_month_previous}
+- assertVisible: "סגור"
+- assertVisible:
+    id: money_status_value
+    text: "\u2066?₪13,000\u2069?"
+- scrollUntilVisible:
+    element: {id: money_month_summary}
+    direction: DOWN
+    centerElement: true
+- tapOn: {id: money_month_summary}
+- extendedWaitUntil:
+    visible: {id: summary_overruns}
+    timeout: 30000
+- scrollUntilVisible:
+    element: "מזון"
+    direction: DOWN
+- assertVisible: "מזון"
+- takeScreenshot: story12_summary

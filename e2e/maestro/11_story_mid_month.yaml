@@ -1,0 +1,54 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Story - mid month
+tags: [smoke]
+---
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'story11' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=mid_month&today=2026-10-20
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_status_value}
+    timeout: 120000
+- assertVisible: "נשאר לשוטפות"
+- assertVisible:
+    id: money_status_value
+    text: "\u2066?₪1,800\u2069?"
+- assertVisible: ".*₪5,000.*"
+- takeScreenshot: story11_before
+- scrollUntilVisible:
+    element: {id: money_row_income}
+    direction: DOWN
+    centerElement: true
+- assertVisible: ".*₪20,000.*"
+- scrollUntilVisible:
+    element: {id: money_transactions}
+    direction: DOWN
+    centerElement: true
+- tapOn: {id: money_transactions}
+- extendedWaitUntil:
+    visible: {id: tx_content}
+    timeout: 30000
+- scrollUntilVisible:
+    element: {id: tx_line_story-2026-10-card-0}
+    direction: DOWN
+    centerElement: true
+- tapOn: {id: tx_line_story-2026-10-card-0}
+- scrollUntilVisible:
+    element: "שכר דירה"
+    direction: DOWN
+    centerElement: true
+- tapOn: "שכר דירה"
+- back
+- extendedWaitUntil:
+    visible: {id: money_content}
+    timeout: 30000
+- scrollUntilVisible:
+    element: {id: money_status_value}
+    direction: UP
+- assertVisible:
+    id: money_status_value
+    text: "\u2066?₪1,960\u2069?"
+- takeScreenshot: story11_after

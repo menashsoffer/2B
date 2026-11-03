@@ -9,8 +9,16 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.menash.myself.data.firestore.FirestoreManager
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import com.menash.myself.MainActivity
+import com.menash.myself.MyselfApp
+import com.menash.myself.e2e.stories.Stories
+import com.menash.myself.feature.money.importer.ImportPlan
+import java.time.LocalDate
 import java.io.File
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -33,6 +41,10 @@ class E2eActivity : ComponentActivity() {
         lifecycleScope.launch {
             val next = runCatching {
                 signIn(email)
+                link?.getQueryParameter("today")?.let { com.menash.myself.core.time.TodayProvider.setForE2e(LocalDate.parse(it)) }
+                link?.getQueryParameter("seed")?.let { seed ->
+                    seedStory(seed, com.menash.myself.core.time.TodayProvider.today())
+                }
                 Intent(this@E2eActivity, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     if (share != null) {
@@ -64,6 +76,32 @@ class E2eActivity : ComponentActivity() {
         } catch (e: FirebaseAuthUserCollisionException) {
             auth.signInWithEmailAndPassword(user, PASSWORD).await()
         }
+    }
+
+    private suspend fun seedStory(name: String, today: LocalDate) {
+        val container = (application as MyselfApp).appContainer
+        val story = Stories.build(name, today)
+        val uid = requireNotNull(FirebaseAuth.getInstance().currentUser).uid
+        // Private user documents are permitted by the existing rules. Only this marker is raw;
+        // all household data below goes through the app's own writers.
+        val marker = FirestoreManager.get(this@E2eActivity).collection("users").document(uid)
+            .collection("private").document("e2e-story-$name")
+        // A cold emulator may briefly be offline. Probe before starting household writes.
+        var attempt = 0
+        while (true) {
+            try {
+                if (marker.get(Source.SERVER).await().exists()) return
+                break
+            } catch (e: FirebaseFirestoreException) {
+                if (e.code != FirebaseFirestoreException.Code.UNAVAILABLE || ++attempt >= 10) throw e
+                delay(2_000)
+            }
+        }
+        container.householdRepository.ensureHouseholdExists()
+        val rows = story.rows
+        container.transactionRepository.apply(ImportPlan(rows, emptyList(), rows.size, 0, 0, 0, 0, emptyList()))
+        container.moneyRepository.saveAll(story.entries)
+        marker.set(mapOf("seeded" to true)).await()
     }
 
     private fun copyAsset(name: String): File {

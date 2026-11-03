@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.menash.myself.core.time.TodayProvider
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.money.CarViewModel
 import com.menash.myself.feature.money.EditKind
@@ -39,11 +40,8 @@ import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
 import com.menash.myself.feature.money.importer.LineFilter
-import java.time.LocalDate
 import java.time.YearMonth
-import java.time.ZoneId
 
-private val Israel: ZoneId = ZoneId.of("Asia/Jerusalem")
 
 @Composable
 fun MoneyScreen(modifier: Modifier = Modifier) {
@@ -52,7 +50,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         factory = MoneyViewModel.factory(
             repository = appContainer.moneyRepository,
             usdRates = appContainer.usdRateFlow,
-            today = { LocalDate.now(Israel) },
+            today = TodayProvider::today,
             errorReporter = appContainer.errorReporter,
             transactions = appContainer.transactionRepository,
             events = appContainer.uiEvents,
@@ -66,13 +64,13 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     )
     val goalsViewModel: GoalsViewModel = viewModel(
         factory = GoalsViewModel.factory(
-            appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter,
+            appContainer.moneyRepository, appContainer.usdRateFlow, TodayProvider::today, appContainer.errorReporter,
         )
     )
     val goalsUi by goalsViewModel.ui.collectAsStateWithLifecycle()
     val titheViewModel: TitheViewModel = viewModel(
         factory = TitheViewModel.factory(
-            appContainer.moneyRepository, appContainer.transactionRepository, { LocalDate.now(Israel) }, appContainer.errorReporter,
+            appContainer.moneyRepository, appContainer.transactionRepository, TodayProvider::today, appContainer.errorReporter,
             events = appContainer.uiEvents,
         )
     )
@@ -80,30 +78,30 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     val closeViewModel: MonthCloseViewModel = viewModel(
         factory = MonthCloseViewModel.factory(
             appContainer.moneyRepository, appContainer.transactionRepository, appContainer.usdRateFlow,
-            { LocalDate.now(Israel) }, appContainer.errorReporter,
+            TodayProvider::today, appContainer.errorReporter,
             events = appContainer.uiEvents,
         )
     )
     val closeUi by closeViewModel.ui.collectAsStateWithLifecycle()
     val carViewModel: CarViewModel = viewModel(
         factory = CarViewModel.factory(
-            appContainer.moneyRepository, appContainer.transactionRepository, { LocalDate.now(Israel) }, appContainer.errorReporter,
+            appContainer.moneyRepository, appContainer.transactionRepository, TodayProvider::today, appContainer.errorReporter,
         )
     )
     val carUi by carViewModel.ui.collectAsStateWithLifecycle()
     val pensionViewModel: PensionViewModel = viewModel(
-        factory = PensionViewModel.factory(appContainer.moneyRepository, { LocalDate.now(Israel) }, appContainer.errorReporter, appContainer.uiEvents)
+        factory = PensionViewModel.factory(appContainer.moneyRepository, TodayProvider::today, appContainer.errorReporter, appContainer.uiEvents)
     )
     val pensionUi by pensionViewModel.ui.collectAsStateWithLifecycle()
     val subsViewModel: SubscriptionsViewModel = viewModel(
         factory = SubscriptionsViewModel.factory(
             appContainer.moneyRepository, appContainer.transactionRepository, appContainer.usdRateFlow,
-            { LocalDate.now(Israel) }, appContainer.errorReporter,
+            TodayProvider::today, appContainer.errorReporter,
         )
     )
     val subsUi by subsViewModel.ui.collectAsStateWithLifecycle()
     val periodViewModel: PeriodViewModel = viewModel(
-        factory = PeriodViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter)
+        factory = PeriodViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, TodayProvider::today, appContainer.errorReporter)
     )
     val periodUi by periodViewModel.ui.collectAsStateWithLifecycle()
     val summaryViewModel: MonthSummaryViewModel = viewModel(
@@ -111,7 +109,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     )
     val summaryUi by summaryViewModel.ui.collectAsStateWithLifecycle()
     val trendViewModel: CategoryTrendViewModel = viewModel(
-        factory = CategoryTrendViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, { LocalDate.now(Israel) }, appContainer.errorReporter, appContainer.uiEvents)
+        factory = CategoryTrendViewModel.factory(appContainer.moneyRepository, appContainer.usdRateFlow, TodayProvider::today, appContainer.errorReporter, appContainer.uiEvents)
     )
     val trendUi by trendViewModel.ui.collectAsStateWithLifecycle()
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -149,8 +147,8 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             choices = EditorChoices(
                 cards = state.data.cards,
                 categories = state.data.categories,
-                preview = draftPreview(current.draft, state.money?.month ?: YearMonth.now(Israel)),
-                month = state.money?.month ?: YearMonth.now(Israel),
+                preview = draftPreview(current.draft, state.money?.month ?: YearMonth.from(TodayProvider.today())),
+                month = state.money?.month ?: YearMonth.from(TodayProvider.today()),
             ),
             actions = EditorActions(
                 onChange = viewModel::updateDraft,
@@ -204,7 +202,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         MoneyDestination.Tithe ->
             TitheScreen(rememberShownState(titheUi, titheUi.open), titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
         MoneyDestination.Car -> CarScreen(rememberShownState(carUi, carUi.open), carViewModel, modifier)
-        MoneyDestination.Pension -> PensionScreen(rememberShownState(pensionUi, pensionUi.open), pensionViewModel, LocalDate.now(Israel), modifier)
+        MoneyDestination.Pension -> PensionScreen(rememberShownState(pensionUi, pensionUi.open), pensionViewModel, TodayProvider.today(), modifier)
         // The close screen sits under transactions and import, which it opens; a stale balance opens the item sheet here.
         MoneyDestination.Close -> MonthCloseScreen(
             ui = rememberShownState(closeUi, closeUi.open),
@@ -253,7 +251,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onStart = { viewModel.startAdding(EditKind.INCOME) },
                 onEdit = viewModel::startEditing,
                 onAddKind = viewModel::startAdding,
-                onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.now(Israel), filter) },
+                onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.from(TodayProvider.today()), filter) },
                 onGoals = goalsViewModel::open,
                 onTithe = titheViewModel::open,
                 onCloseMonth = { closeViewModel.open(state.money?.month) },
@@ -277,7 +275,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         MoneyDestination.Goals -> GoalsOverlays(goalsUi, goalsViewModel)
         MoneyDestination.Tithe -> TitheOverlays(titheUi, titheViewModel)
         MoneyDestination.Car -> CarOverlays(carUi, carViewModel)
-        MoneyDestination.Pension -> PensionOverlays(pensionUi, pensionViewModel, LocalDate.now(Israel))
+        MoneyDestination.Pension -> PensionOverlays(pensionUi, pensionViewModel, TodayProvider.today())
         MoneyDestination.Close -> MonthCloseOverlays(closeUi, closeViewModel)
         else -> Unit
     }

@@ -20,6 +20,17 @@ import java.time.YearMonth
 /** Every stored type survives encode then decode unchanged, cards resolved by id. */
 class MoneyDocumentsTest {
 
+    @Test
+    fun legacyFuelCategoryKeepsItsIdAndCustomNames() {
+        fun decoded(id: String, name: String): Category {
+            val entry = MoneyEntry.CategoryEntry(Category(id, name, ExpenseClass.CURRENT))
+            return (roundTrip(entry) as MoneyEntry.CategoryEntry).value
+        }
+        assertEquals(defaultCategories().single { it.id == "current-3" }, decoded("current-3", "דלק"))
+        assertEquals("טעינה בבית", decoded("current-3", "טעינה בבית").name)
+        assertEquals("דלק", decoded("custom", "דלק").name)
+    }
+
     private val cards = MoneySamples.filled.cards.associateBy { it.id }
 
     private fun roundTrip(entry: MoneyEntry): MoneyEntry =

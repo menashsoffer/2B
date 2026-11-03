@@ -4,8 +4,7 @@ appId: com.aistudio.mycalculators.qvxmzt.e2e
 name: Import a shared bank file, then the same file again
 tags: [smoke, import]
 ---
-- launchApp:
-    clearState: true
+- runFlow: subflows/fresh_start.yaml
 - evalScript: ${output.email = 'import' + Date.now() + '@example.test'}
 - openLink: myself-e2e://signin?email=${output.email}
 - extendedWaitUntil:
@@ -31,6 +30,7 @@ tags: [smoke, import]
     element:
       id: import_confirm
     direction: DOWN
+    centerElement: true
     timeout: 30000
 - takeScreenshot: 02_import_review
 - tapOn:

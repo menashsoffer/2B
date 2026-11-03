@@ -1,0 +1,17 @@
+# Shared start for every flow: a cleared app that has drawn its first screen
+# (the shell, or the sign-in screen).
+# clearState kills the old process. On the CI emulator the launch that follows is sometimes
+# lost while that process is still dying, and nothing draws at all (seen as a random flow
+# failing on its first wait). Only this start is retried; every assertion of the flow
+# itself still runs once.
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+---
+- retry:
+    maxRetries: 2
+    commands:
+      - launchApp:
+          clearState: true
+      - extendedWaitUntil:
+          visible:
+            id: "nav_home|google_sign_in_button"
+          timeout: 30000

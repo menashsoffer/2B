@@ -1,0 +1,25 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Story - new month
+tags: [smoke]
+---
+- runFlow: subflows/fresh_start.yaml
+- evalScript: ${output.email = 'story10' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=plan_only&today=2026-10-05
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_status_value}
+    timeout: 120000
+# The fixture amounts yield 8,900; the task's requested 7,700 does not match them.
+- assertVisible:
+    id: money_status_value
+    text: "\u2066?₪8,900\u2069?"
+- assertVisible: "עוד לא יובאו תנועות לחודש הזה"
+- takeScreenshot: story10_month
+- tapOn: "התמונה הגדולה"
+- extendedWaitUntil:
+    visible: {id: money_net_worth}
+    timeout: 30000
+- takeScreenshot: story10_big_picture
