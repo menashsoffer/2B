@@ -105,7 +105,7 @@ internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit =
                 status.dataUntil?.let { Caption(stringResource(R.string.status_data_until, it.format(untilFormat))) }
             }
             is MonthStatus.PlanOnly -> {
-                Caption(stringResource(R.string.status_expected_surplus))
+                Caption(stringResource(if (status.planHasGaps) R.string.status_expected_surplus_gaps else R.string.status_expected_surplus))
                 BigAmount(status.expectedSurplus)
                 Caption(stringResource(R.string.status_no_import))
             }

@@ -263,7 +263,7 @@ private fun PlanRow(row: MonthRow, isExpanded: Boolean, actions: MoneyActions) {
         modifier = Modifier.semantics { stateDescription = state },
         trailing = { Icon(Icons.Outlined.ExpandMore, contentDescription = null, modifier = Modifier.rotate(rotation.value), tint = colors.textSecondary) },
         amount = formatMoney(row.total),
-        detail = actual?.let { stringResource(R.string.money_actual, formatMoney(it)) },
+        detail = if (!row.actualKnown) stringResource(R.string.status_income_not_imported) else actual?.let { stringResource(R.string.money_actual, formatMoney(it)) },
         titleStyle = AppType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
         onClick = { actions.onToggleRow(row.kind) },
         testTag = "money_row_${row.kind.name.lowercase()}",
