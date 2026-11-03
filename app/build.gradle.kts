@@ -108,7 +108,8 @@ android {
     compose = true
     buildConfig = true
   }
-  sourceSets.getByName("test").java.srcDir("src/e2e/java/com/menash/myself/e2e/stories")
+  // Pure story fixtures are shared by unit tests and the E2E build, never release.
+  sourceSets.getByName("e2e").java.srcDir("src/test/java/com/menash/myself/e2e/stories")
   testOptions {
     unitTests {
       isIncludeAndroidResources = true
