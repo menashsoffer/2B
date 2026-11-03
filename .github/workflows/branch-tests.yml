@@ -7,7 +7,8 @@ name: Branch tests
 
 on:
   push:
-    branches: ["claude/**", "codex/**"]
+    # main: runs after each merge and seeds the Gradle cache that every branch can read.
+    branches: ["main", "claude/**", "codex/**"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -40,6 +41,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+
+      # Caches Gradle dependencies, the build cache and the configuration cache between runs.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          # Branches write their own cache too (reruns on the same branch); main's run seeds every branch.
+          cache-read-only: false
 
       - name: Install Android SDK
         run: |
@@ -92,7 +99,27 @@ jobs:
               assert "android.permission.READ_CALENDAR" not in names
           PYTHON
 
+      - name: Did rules or money documents change?
+        id: rules
+        run: |
+          if git diff --name-only origin/main...HEAD | grep -qE '^(firestore\.|firestore-fixtures/|tools/check-money-docs)'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Firestore rules and fixtures unchanged against main: emulator tests skipped." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Cache firebase-tools and the emulator
+        if: steps.rules.outputs.changed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/firebase/emulators
+          key: firebase-tools-v1
+
       - name: Firestore rules emulator tests (no deployment)
+        if: steps.rules.outputs.changed == 'true'
         run: |
           npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools firebase @firebase/rules-unit-testing
           export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
@@ -196,6 +223,12 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      # Caches Gradle dependencies, the build cache and the configuration cache between runs.
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          # Branches write their own cache too (reruns on the same branch); main's run seeds every branch.
+          cache-read-only: false
+
       - name: Install Android SDK
         run: |
           set -euo pipefail
@@ -233,34 +266,13 @@ jobs:
           JSON
           # A missing debug.keystore only matters for packaging, which unit tests skip.
 
-      - name: Verify release permissions
-        run: |
-          ./gradlew processReleaseMainManifest --no-daemon
-          python3 - <<'PYTHON'
-          import glob, xml.etree.ElementTree as ET
-          paths = glob.glob("app/build/intermediates/merged_manifests/release/**/AndroidManifest.xml", recursive=True)
-          paths += glob.glob("app/build/intermediates/merged_manifest/release/**/AndroidManifest.xml", recursive=True)
-          assert paths, "Merged release manifest missing"
-          for path in paths:
-              names = [e.get("{http://schemas.android.com/apk/res/android}name") for e in ET.parse(path).getroot().findall("uses-permission")]
-              print("Release permissions:", names)
-              assert "android.permission.READ_CALENDAR" not in names
-          PYTHON
-
-      - name: Firestore rules emulator tests (no deployment)
-        run: |
-          npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools firebase @firebase/rules-unit-testing
-          export PATH="${RUNNER_TEMP}/firebase/node_modules/.bin:${PATH}"
-          export NODE_PATH="${RUNNER_TEMP}/firebase/node_modules"
-          firebase emulators:exec --only firestore --project demo-no-project "node --test firestore.test.js"
-
       - name: Unit tests
         run: |
           set -uo pipefail
           if [ "${{ github.event.inputs.record }}" = "true" ]; then
             # Writes only goldens that do not exist yet; a changed existing golden still fails below.
-            status=0
-            ./gradlew testDebugUnitTest --no-daemon --continue -Proborazzi.test.record=true || status=$?
+            # Recording fails the tests that wrote an image; the verify below decides the result.
+            ./gradlew testDebugUnitTest --no-daemon --continue -Proborazzi.test.record=true || true
             if git diff --quiet -- app/src/test/snapshots; then
               new_files="$(git ls-files --others --exclude-standard -- app/src/test/snapshots)"
               if [ -n "${new_files}" ]; then
@@ -276,7 +288,9 @@ jobs:
               git diff --stat -- app/src/test/snapshots
               exit 1
             fi
-            exit "${status}"
+            # Verify in the same run, so a green record run means the branch passes with its goldens
+            # (the bot commit does not trigger CI by itself).
+            ./gradlew testDebugUnitTest --no-daemon --continue
           else
             ./gradlew testDebugUnitTest --no-daemon --continue
           fi

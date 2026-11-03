@@ -113,6 +113,8 @@ android {
       isIncludeAndroidResources = true
       all {
         it.systemProperties["robolectric.pixelCopyRenderMode"] = "hardware"
+        // Two test JVMs in parallel (CI runners have 4 cores); each class still runs in one JVM.
+        it.maxParallelForks = 2
       }
     }
   }

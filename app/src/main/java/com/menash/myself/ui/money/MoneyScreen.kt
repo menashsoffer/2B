@@ -165,8 +165,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             onDismiss = viewModel::dismissEditor,
         )
     }
-    var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }
-    var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
+    var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }; var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
     var picking by remember { mutableStateOf(false) }
 
     val destination = moneyDestination(MoneyOpenFlags(
@@ -197,7 +196,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             modifier = modifier,
         )
         // The transactions screen comes first: the maaser screen opens it to link a month's income.
-        MoneyDestination.Transactions -> TransactionsScreen(rememberShownState(transactionsUi, transactionsUi.open), transactionsViewModel, modifier)
+        MoneyDestination.Transactions -> TransactionsScreen(rememberShownState(transactionsUi, transactionsUi.open), transactionsViewModel, modifier, onMonth = { month ->
+            val current = state.money?.current
+            if (current != null && month in current.minusMonths(com.menash.myself.feature.money.MonthsBack)..current) { viewModel.showMonth(month); true } else false
+        })
         MoneyDestination.Goals -> GoalsScreen(rememberShownState(goalsUi, goalsUi.open), goalsViewModel, modifier)
         MoneyDestination.Tithe ->
             TitheScreen(rememberShownState(titheUi, titheUi.open), titheViewModel, onLink = { transactionsViewModel.open(it) }, modifier = modifier)
@@ -214,6 +216,10 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onSummary = summaryViewModel::open,
             ),
             modifier = modifier,
+            onMonth = { month ->
+                val current = state.money?.current
+                if (current != null && month in current.minusMonths(com.menash.myself.feature.money.MonthsBack)..current) { viewModel.showMonth(month); true } else false
+            },
         )
         MoneyDestination.Subscriptions -> SubscriptionsContent(
             ui = rememberShownState(subsUi, subsUi.open),
@@ -232,7 +238,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             rememberShownState(trendUi, trendUi.open), CategoryTrendActions(trendViewModel::acceptSuggestion, trendViewModel::close), modifier,
         )
         MoneyDestination.Period ->
-            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close, trendViewModel::open), modifier)
+            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close, trendViewModel::open, transactionsViewModel::openRange), modifier)
         MoneyDestination.Root -> MoneyContent(
             state = state,
             selectedTab = selectedTab,
@@ -241,6 +247,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onSelectTab = { selectedTab = it },
                 onPreviousMonth = viewModel::showPreviousMonth,
                 onNextMonth = viewModel::showNextMonth,
+                onShowMonth = viewModel::showMonth,
                 onToggleRow = { kind -> expanded = if (kind in expanded) expanded - kind else expanded + kind },
                 onAdd = { picking = true },
                 onStart = { viewModel.startAdding(EditKind.INCOME) },
@@ -249,13 +256,14 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.from(TodayProvider.today()), filter) },
                 onGoals = goalsViewModel::open,
                 onTithe = titheViewModel::open,
-                onCloseMonth = closeViewModel::open,
+                onCloseMonth = { closeViewModel.open(state.money?.month) },
                 onCar = carViewModel::open,
                 onPension = pensionViewModel::open,
                 onSubscriptions = subsViewModel::open,
                 onPeriod = periodViewModel::open,
                 onMonthSummary = summaryViewModel::open,
                 onImport = { picker.launch(importMimeTypes) },
+                onSearch = { transactionsViewModel.openSearch() },
             ),
             modifier = modifier,
         )
@@ -279,10 +287,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 viewModel.startAdding(kind)
             },
             onDismiss = { picking = false },
-            onImport = {
-                picking = false
-                picker.launch(importMimeTypes)
-            },
+            onImport = { picking = false; picker.launch(importMimeTypes) },
         )
     }
 
