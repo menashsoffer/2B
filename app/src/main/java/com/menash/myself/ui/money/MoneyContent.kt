@@ -77,6 +77,7 @@ data class MoneyActions(
     val onPeriod: () -> Unit = {},
     val onMonthSummary: (YearMonth) -> Unit = {},
     val onImport: () -> Unit = {},
+    val onCategory: (String) -> Unit = {},
 )
 
 @Composable
@@ -179,6 +180,7 @@ private fun MonthContent(
                     if (view.usdRateMissing) UsdMissingChip()
                 }
             }
+            MonthCharts(view, actions)
             MoneySurface(testTag = "money_rows") {
                 view.rows.forEach { row ->
                     PlanRow(row, row.kind in expanded, actions)

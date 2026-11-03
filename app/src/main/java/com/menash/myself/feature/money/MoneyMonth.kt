@@ -55,6 +55,10 @@ sealed interface MonthView {
         val importedLines: Int = 0,
         /** The headline; null only before [buildMoneyMonth] fills it. */
         val status: MonthStatus? = null,
+        /** Plan vs actual per category once lines are imported (planVsActual), for the month's charts. */
+        val categoryActuals: List<com.menash.myself.feature.money.domain.CategoryActual> = emptyList(),
+        /** The month's largest categories by actual spending, for the chart. */
+        val top: TopCategories = TopCategories(emptyList(), 0),
     ) : MonthView
 }
 
@@ -80,6 +84,10 @@ data class BigPicture(
     val pension: PensionSnapshot? = null,
     /** [netWorth] plus the funds' value; null while neither exists. */
     val totalWorth: Money? = netWorth,
+    /** Income and spending of the last 6 months, for the chart; closed, so far, or missing. */
+    val flows: List<MonthFlowPoint> = emptyList(),
+    /** Net worth after each closed month with balances, then today. */
+    val worth: List<WorthPoint> = emptyList(),
 )
 
 /** [month] is the month shown; [current] is today's month. The big picture is always today's. */
@@ -122,6 +130,7 @@ fun buildMoneyMonth(
             bar = bar(plan),
             usdRateMissing = missingUsd.isNotEmpty(),
         ).let { withActuals(it, data.copy(items = items), month, rate, transactions, memory) }
+            .let { it.copy(top = topCategories(it.categoryActuals, data.categories)) }
             .let { it.copy(status = monthStatus(it, data.closedMonths.lastOrNull { c -> c.month == month }, transactions, month)) }
     }
     val planned = (view as? MonthView.Planned)?.plan
@@ -144,6 +153,8 @@ fun buildMoneyMonth(
             cushionFromClosed = closedCushion != null,
             pension = pension,
             totalWorth = totalWorth(liquidWorth, pension),
+            flows = monthFlows(data.closedMonths, transactions, memory, data.categories, YearMonth.from(today)),
+            worth = worthHistory(data.closedMonths, liquidWorth, YearMonth.from(today)),
         ),
     )
 }

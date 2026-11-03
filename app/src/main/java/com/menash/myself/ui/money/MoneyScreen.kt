@@ -258,6 +258,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onPeriod = periodViewModel::open,
                 onMonthSummary = summaryViewModel::open,
                 onImport = { picker.launch(importMimeTypes) },
+                onCategory = trendViewModel::open,
             ),
             modifier = modifier,
         )
