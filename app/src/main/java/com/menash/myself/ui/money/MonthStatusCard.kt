@@ -29,6 +29,7 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.MoneyMonth
 import com.menash.myself.feature.money.MonthStatus
+import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.feature.money.UsageLevel
 import java.time.format.DateTimeFormatter
 
@@ -67,7 +68,7 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
 
 /** The headline: "נשאר לשוטפות" for an open month, the plan's surplus before any import, the frozen result once closed. */
 @Composable
-internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit = {}) {
+internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit = {}, onTransactions: (LineFilter) -> Unit = {}) {
     val colors = MaterialTheme.appColors
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.testTag("money_status")) {
         when (status) {
@@ -77,6 +78,7 @@ internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit =
                     BigAmount(status.leftForCurrent)
                     Caption(stringResource(R.string.status_of_budget, formatMoney(status.currentBudget)))
                 }
+                UnassignedLine(status.unassigned, onTransactions)
                 val budget = status.currentBudget.agorot
                 val progress = if (budget > 0) status.currentSpent.agorot.toFloat() / budget else 0f
                 ProgressBar(
@@ -95,6 +97,7 @@ internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit =
             is MonthStatus.NoCurrentBudget -> {
                 Caption(stringResource(R.string.status_spent_so_far))
                 BigAmount(status.spentSoFar)
+                UnassignedLine(status.unassigned, onTransactions)
                 Caption(stringResource(R.string.status_no_current_budget))
                 TextButton(onClick = onAddCurrent, modifier = Modifier.testTag("money_set_current_budget")) {
                     Text(stringResource(R.string.status_set_current_budget))
@@ -151,3 +154,14 @@ private fun SmallFigure(label: String, amount: Money) {
 
 @Composable
 private fun arrowTint(enabled: Boolean) = MaterialTheme.appColors.textSecondary.copy(alpha = if (enabled) 1f else 0.3f)
+
+@Composable
+private fun UnassignedLine(amount: Money?, onTransactions: (LineFilter) -> Unit) {
+    if (amount == null || !amount.isPositive()) return
+    Column {
+        TextButton(onClick = { onTransactions(LineFilter.UNASSIGNED) }, modifier = Modifier.testTag("money_status_unassigned")) {
+            Text(stringResource(R.string.status_unassigned, formatMoney(amount)))
+        }
+        Caption(stringResource(R.string.status_unassigned_hint))
+    }
+}

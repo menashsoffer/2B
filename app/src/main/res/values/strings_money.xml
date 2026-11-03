@@ -126,4 +126,6 @@
     <string name="money_load_retry">לנסות שוב</string>
     <string name="status_no_current_budget">אין עדיין תקציב לשוטפות, אז אי אפשר לדעת כמה נשאר</string>
     <string name="status_set_current_budget">להגדיר תקציב שוטפות</string>
+    <string name="status_unassigned">%1$s עוד בלי קטגוריה</string>
+    <string name="status_unassigned_hint">חלק מזה כנראה שוטפות</string>
 </resources>
