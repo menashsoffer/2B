@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
@@ -60,6 +61,12 @@ class FirestoreTransactionRepository(
                 awaitClose { listener.remove() }
             }
         }
+
+    override fun observeTransactionsForImport(): Flow<List<StoredTransaction>> =
+        householdSession.currentHouseholdId.filter { !it.isNullOrBlank() }.flatMapLatest { observeTransactionsForScreen() }
+
+    override fun observeMemoryForImport(): Flow<ImportMemory> =
+        householdSession.currentHouseholdId.filter { !it.isNullOrBlank() }.flatMapLatest { observeMemoryForScreen() }
 
     override fun observeTransactions(): Flow<List<StoredTransaction>> = observeTransactions(false)
 
