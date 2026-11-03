@@ -142,7 +142,7 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                             placeholder = stringResource(R.string.search_in_month_placeholder),
                             testTag = "tx_search",
                         )
-                        val shown = ui.shown.orEmpty()
+                        val shown = ui.shown ?: lines.filtered(ui.query.filter)
                         if (shown.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.tx_empty_filter),
