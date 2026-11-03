@@ -42,6 +42,8 @@ sealed interface ImportUi {
         val categories: List<Category>,
         val decisions: Map<String, MerchantDecision> = emptyMap(),
         val picking: String? = null,
+        val recentCategories: List<String> = emptyList(),
+        val frequentCategories: List<String> = emptyList(),
     ) : ImportUi {
         /** The decision shown for a merchant: the user's, else the suggested category. */
         fun decisionFor(key: String): MerchantDecision? = decisions[key]
@@ -83,7 +85,7 @@ class ImportViewModel(
                 val review = withContext(io) { reviewImport(files, existing.associateBy { it.id }, memory, categories) }
                 loadedMemory = memory
                 loadedCategories = categories
-                _ui.value = ImportUi.Review(review, categories)
+                _ui.value = ImportUi.Review(review, categories, frequentCategories = existing.mapNotNull { it.categoryId }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key })
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -105,7 +107,10 @@ class ImportViewModel(
 
     fun decide(merchantKey: String, decision: MerchantDecision) {
         _ui.update { state ->
-            (state as? ImportUi.Review)?.copy(decisions = state.decisions + (merchantKey to decision), picking = null) ?: state
+            (state as? ImportUi.Review)?.copy(
+                decisions = state.decisions + (merchantKey to decision), picking = null,
+                recentCategories = (decision as? MerchantDecision.Categorise)?.let { listOf(it.categoryId) + state.recentCategories.filterNot { id -> id == it.categoryId } } ?: state.recentCategories,
+            ) ?: state
         }
     }
 

@@ -48,4 +48,5 @@
     <string name="import_file_counts">%1$d חדשות · %2$d כבר קיימות</string>
     <string name="import_merchants_remaining">נשארו %1$d בתי עסק לשיוך</string>
     <string name="import_read_failed">לא הצלחנו לקרוא את הקובץ</string>
+    <string name="import_other">אחר…</string>
 </resources>

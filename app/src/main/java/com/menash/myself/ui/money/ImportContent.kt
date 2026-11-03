@@ -3,6 +3,8 @@ package com.menash.myself.ui.money
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,6 +47,7 @@ import java.time.format.DateTimeFormatter
 
 data class ImportActions(
     val onPick: (String) -> Unit = {},
+    val onDecide: (String, MerchantDecision) -> Unit = { _, _ -> },
     val onConfirm: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onClose: () -> Unit = {},
@@ -106,7 +109,7 @@ private fun ReviewBody(ui: ImportUi.Review, actions: ImportActions) {
             modifier = Modifier.padding(horizontal = Spacing.s8),
         )
         MoneySurface(testTag = "import_merchants") {
-            ui.review.merchants.forEach { merchant -> MerchantRow(merchant, ui, actions) }
+            ui.review.merchants.sortedBy { ui.decisionFor(it.key) != null }.forEach { merchant -> MerchantRow(merchant, ui, actions) }
         }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.fillMaxWidth()) {
@@ -202,6 +205,7 @@ private fun FileRow(file: FileSummary) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MerchantRow(merchant: MerchantChoice, ui: ImportUi.Review, actions: ImportActions) {
     val decision = ui.decisionFor(merchant.key)
@@ -219,11 +223,18 @@ private fun MerchantRow(merchant: MerchantChoice, ui: ImportUi.Review, actions: 
             onClick = { actions.onPick(merchant.key) },
             testTag = "import_merchant_${merchant.key.hashCode()}",
         )
-        Chip(
-            text = label,
-            variant = if (decision == null) ChipVariant.Warning else ChipVariant.Default,
-            onClick = { actions.onPick(merchant.key) },
-            modifier = Modifier.padding(start = Spacing.s16),
-        )
+        if (decision == null) {
+            val ids = (listOfNotNull(merchant.suggested) + ui.recentCategories + ui.frequentCategories).distinct().take(3)
+            FlowRow(modifier = Modifier.padding(start = Spacing.s16), horizontalArrangement = Arrangement.spacedBy(Spacing.s4)) {
+                ids.forEach { id ->
+                    ui.categories.firstOrNull { it.id == id }?.let { category ->
+                        Chip(text = category.name, onClick = { actions.onDecide(merchant.key, MerchantDecision.Categorise(id)) })
+                    }
+                }
+                Chip(text = stringResource(R.string.import_other), onClick = { actions.onPick(merchant.key) })
+            }
+        } else {
+            Chip(text = label, onClick = { actions.onPick(merchant.key) }, modifier = Modifier.padding(start = Spacing.s16))
+        }
     }
 }
