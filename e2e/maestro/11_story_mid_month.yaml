@@ -38,10 +38,10 @@ tags: [smoke]
     centerElement: true
 - tapOn: {id: tx_line_story-2026-10-card-0}
 - scrollUntilVisible:
-    element: {id: import_category_story-rent}
+    element: "שכר דירה"
     direction: DOWN
     centerElement: true
-- tapOn: {id: import_category_story-rent}
+- tapOn: "שכר דירה"
 - back
 - extendedWaitUntil:
     visible: {id: money_content}

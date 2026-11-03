@@ -27,8 +27,9 @@ tags: [smoke]
     direction: DOWN
     centerElement: true
 - tapOn: {id: close_button}
-- extendedWaitUntil:
-    visible: {id: close_done}
+- scrollUntilVisible:
+    element: {id: close_done}
+    direction: UP
     timeout: 30000
 - takeScreenshot: story12_closed
 - back
@@ -48,5 +49,8 @@ tags: [smoke]
 - extendedWaitUntil:
     visible: {id: summary_overruns}
     timeout: 30000
+- scrollUntilVisible:
+    element: "מזון"
+    direction: DOWN
 - assertVisible: "מזון"
 - takeScreenshot: story12_summary

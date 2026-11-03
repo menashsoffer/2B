@@ -33,8 +33,9 @@ tags: [stories]
     direction: DOWN
     centerElement: true
 - tapOn: {id: close_button}
-- extendedWaitUntil:
-    visible: {id: close_done}
+- scrollUntilVisible:
+    element: {id: close_done}
+    direction: UP
     timeout: 30000
 - back
 - scrollUntilVisible:
@@ -46,6 +47,9 @@ tags: [stories]
     visible: {id: period_content}
     timeout: 30000
 - tapOn: "3 ח׳"
+- scrollUntilVisible:
+    element: {id: period_missing}
+    direction: DOWN
 - assertVisible: {id: period_missing}
 - scrollUntilVisible:
     element: {id: period_chart}
