@@ -69,13 +69,13 @@ private fun PlanActualRow(item: PlanActualItem, scale: Long, format: (Long) -> S
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
+            .testTag(tag)
             .then(if (click != null) Modifier.clickable(onClick = click) else Modifier)
             .clearAndSetSemantics {
                 contentDescription = description
                 if (click != null) role = Role.Button
             }
-            .padding(vertical = Spacing.s4)
-            .testTag(tag),
+            .padding(vertical = Spacing.s4),
         verticalArrangement = Arrangement.spacedBy(Spacing.s4),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

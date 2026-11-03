@@ -78,14 +78,14 @@ fun ColumnChart(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
+                        .testTag("${testTag}_${group.key}")
                         .clip(RoundedCornerShape(8.dp))
                         .background(if (group.key == selected) colors.accentSoft.copy(alpha = 0.35f) else Color.Transparent)
                         .clickable { selected = if (selected == group.key) null else group.key }
                         .clearAndSetSemantics {
                             contentDescription = description
                             role = Role.Button
-                        }
-                        .testTag("${testTag}_${group.key}"),
+                        },
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     if (group.state == DataState.MISSING) {
