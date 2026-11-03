@@ -1,5 +1,6 @@
 package com.menash.myself.ui.money
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -28,6 +33,8 @@ import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.MoneyMonth
+import com.menash.myself.feature.money.MonthPickerCell
+import java.time.YearMonth
 import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.feature.money.UsageLevel
@@ -38,7 +45,9 @@ private val closedFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.y
 
 /** Previous / next month, with whether the shown month is still open or already closed. Start = older months. */
 @Composable
-internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
+internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () -> Unit, onNext: () -> Unit, months: List<MonthPickerCell> = emptyList(), onShowMonth: (YearMonth) -> Unit = {}) {
+    var picking by remember { mutableStateOf(false) }
+    if (picking) MonthPickerSheet(months, onDismiss = { picking = false }, onSelect = { onShowMonth(it); picking = false })
     val colors = MaterialTheme.appColors
     Row(
         modifier = Modifier.fillMaxWidth().testTag("money_month_switcher"),
@@ -53,8 +62,13 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
                 text = stringResource(R.string.status_month_title, hebrewMonthName(money.month.month), money.month.year),
                 style = AppType.body.copy(fontWeight = FontWeight.Medium),
                 color = colors.textPrimary,
-                modifier = Modifier.testTag("money_month_title"),
+                modifier = Modifier.clickable { picking = true }.testTag("money_month_title"),
             )
+            if (money.month != money.current) {
+                TextButton(onClick = { onShowMonth(money.current) }, modifier = Modifier.testTag("money_return_today")) {
+                    Text(stringResource(R.string.status_return_today))
+                }
+            }
             Chip(
                 text = stringResource(if (closed) R.string.status_closed else R.string.status_open),
                 variant = if (closed) ChipVariant.Default else ChipVariant.Success,

@@ -20,6 +20,8 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.EditorState
 import com.menash.myself.feature.money.MoneySamples
+import com.menash.myself.feature.money.MonthCellState
+import com.menash.myself.feature.money.MonthPickerCell
 import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.MoneyScreenState
 import com.menash.myself.feature.money.buildMoneyMonth
@@ -48,6 +50,15 @@ class MoneyScreenshotTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
+    fun monthPicker_dark() {
+        val months = (0L..36L).map { MonthPickerCell(MoneySamples.month.minusMonths(it),
+            if (it == 1L) MonthCellState.CLOSED else if (it == 0L) MonthCellState.IMPORTED else MonthCellState.EMPTY, it == 0L) }
+        composeRule.captureR2Screen(darkTheme = true, fontScale = 1.0f) {
+            Rtl { MonthPickerGrid(months, onSelect = {}) }
+        }
+    }
 
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun noCurrentBudget_dark() {

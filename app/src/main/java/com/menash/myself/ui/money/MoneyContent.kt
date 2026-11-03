@@ -62,6 +62,7 @@ data class MoneyActions(
     val onSelectTab: (Int) -> Unit = {},
     val onPreviousMonth: () -> Unit = {},
     val onNextMonth: () -> Unit = {},
+    val onShowMonth: (YearMonth) -> Unit = {},
     val onToggleRow: (MonthRowKind) -> Unit = {},
     val onAdd: () -> Unit = {},
     val onStart: () -> Unit = {},
@@ -122,7 +123,7 @@ fun MoneyContent(
                 ) { tab ->
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                         if (tab == MoneyTabBigPicture) BigPictureContent(money.bigPicture, actions)
-                        else MonthContent(money, expanded, actions)
+                        else MonthContent(money, state.months, expanded, actions)
                     }
                 }
             }
@@ -133,13 +134,14 @@ fun MoneyContent(
 @Composable
 private fun MonthContent(
     money: MoneyMonth,
+    months: List<com.menash.myself.feature.money.MonthPickerCell>,
     expanded: Set<MonthRowKind>,
     actions: MoneyActions,
 ) {
     val view = money.view
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
-    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth)
+    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
             title = stringResource(R.string.import_entry),
