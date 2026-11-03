@@ -4,8 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +18,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
@@ -54,6 +54,7 @@ fun PlanActualBars(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlanActualRow(item: PlanActualItem, scale: Long, format: (Long) -> String, onClick: ((PlanActualItem) -> Unit)?, tag: String) {
     val colors = MaterialTheme.appColors
@@ -78,9 +79,10 @@ private fun PlanActualRow(item: PlanActualItem, scale: Long, format: (Long) -> S
             .padding(vertical = Spacing.s4),
         verticalArrangement = Arrangement.spacedBy(Spacing.s4),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(item.label, style = AppType.caption, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            Text(figure, style = AppType.caption, color = if (item.over) colors.danger else colors.textSecondary, maxLines = 1)
+        // The name always shows; the figure moves under it when both do not fit (large fonts, long names).
+        FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(item.label, style = AppType.caption, color = colors.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(figure, style = AppType.caption, color = if (item.over) colors.danger else colors.textSecondary)
         }
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth().height(Spacing.s8 + Spacing.s4).clip(AppShapes.pill).background(colors.accentSoft.copy(alpha = 0.45f)),
