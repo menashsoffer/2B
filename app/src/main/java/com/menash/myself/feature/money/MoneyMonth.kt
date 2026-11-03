@@ -36,7 +36,7 @@ enum class MonthRowKind { INCOME, FIXED, CURRENT, PERIODIC, INSTALLMENTS, DEBTS,
  */
 data class MonthRowItem(val entry: MoneyEntry, val name: String, val monthly: Money?, val actual: Money? = null)
 
-data class MonthRow(val kind: MonthRowKind, val total: Money, val items: List<MonthRowItem>, val actual: Money? = null)
+data class MonthRow(val kind: MonthRowKind, val total: Money, val items: List<MonthRowItem>, val actual: Money? = null, val actualKnown: Boolean = true)
 
 /** One stacked-bar segment; the bar draws segments in proportion to [amount]. */
 data class BarSegment(val kind: MonthRowKind?, val amount: Money)

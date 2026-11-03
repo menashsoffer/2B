@@ -62,6 +62,7 @@ data class MoneyActions(
     val onSelectTab: (Int) -> Unit = {},
     val onPreviousMonth: () -> Unit = {},
     val onNextMonth: () -> Unit = {},
+    val onShowMonth: (YearMonth) -> Unit = {},
     val onToggleRow: (MonthRowKind) -> Unit = {},
     val onAdd: () -> Unit = {},
     val onStart: () -> Unit = {},
@@ -123,7 +124,7 @@ fun MoneyContent(
                 ) { tab ->
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                         if (tab == MoneyTabBigPicture) BigPictureContent(money.bigPicture, actions)
-                        else MonthContent(money, expanded, actions)
+                        else MonthContent(money, state.months, expanded, actions)
                     }
                 }
             }
@@ -134,13 +135,14 @@ fun MoneyContent(
 @Composable
 private fun MonthContent(
     money: MoneyMonth,
+    months: List<com.menash.myself.feature.money.MonthPickerCell>,
     expanded: Set<MonthRowKind>,
     actions: MoneyActions,
 ) {
     val view = money.view
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
-    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth)
+    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
             title = stringResource(R.string.import_entry),
@@ -169,7 +171,7 @@ private fun MonthContent(
                     modifier = Modifier.padding(horizontal = Spacing.s16, vertical = Spacing.s8),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s8),
                 ) {
-                    if (status != null) MonthStatusHeadline(status) else Text(
+                    if (status != null) MonthStatusHeadline(status, onAddCurrent = { actions.onAddKind(com.menash.myself.feature.money.EditKind.VARIABLE) }, onTransactions = actions.onTransactions) else Text(
                         text = formatMoney(surplus),
                         style = AppType.number,
                         color = if (surplus.isNegative()) colors.danger else colors.textPrimary,
@@ -265,7 +267,7 @@ private fun PlanRow(row: MonthRow, isExpanded: Boolean, actions: MoneyActions) {
         modifier = Modifier.semantics { stateDescription = state },
         trailing = { Icon(Icons.Outlined.ExpandMore, contentDescription = null, modifier = Modifier.rotate(rotation.value), tint = colors.textSecondary) },
         amount = formatMoney(row.total),
-        detail = actual?.let { stringResource(R.string.money_actual, formatMoney(it)) },
+        detail = if (!row.actualKnown) stringResource(R.string.status_income_not_imported) else actual?.let { stringResource(R.string.money_actual, formatMoney(it)) },
         titleStyle = AppType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
         onClick = { actions.onToggleRow(row.kind) },
         testTag = "money_row_${row.kind.name.lowercase()}",

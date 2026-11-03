@@ -8,6 +8,9 @@ import com.menash.myself.feature.money.domain.planVsActual
 import com.menash.myself.feature.money.domain.sumMoney
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
+import com.menash.myself.feature.money.importer.RowStatus
+import com.menash.myself.feature.money.importer.RowKind
+import com.menash.myself.feature.money.importer.classify
 import com.menash.myself.feature.money.importer.actualIncome
 import com.menash.myself.feature.money.importer.toTransactions
 import java.math.BigDecimal
@@ -44,7 +47,12 @@ internal fun withActuals(
     val lines = stored.count { it.row.billingMonth == month }
     val transactions = toTransactions(stored, memory).filter { it.billingMonth == month }
     val income = actualIncome(stored, month, memory)
-    if (transactions.isEmpty() && income.isZero()) return view.copy(importedLines = lines)
+    val incomeKnown = stored.any { it.row.billingMonth == month && it.row.status == RowStatus.COUNTED &&
+        (it.row.charge?.agorot ?: 0L) < 0L && classify(it.row, memory) in setOf(RowKind.INCOME, RowKind.TRANSFER) }
+    if (transactions.isEmpty() && income.isZero()) return view.copy(
+        rows = view.rows.map { if (it.kind == MonthRowKind.INCOME && lines > 0) it.copy(actualKnown = incomeKnown) else it },
+        importedLines = lines,
+    )
     val result = planVsActual(month, data.items, transactions, rate)
     val classOf = data.categories.associate { it.id to it.klass }
     val byCategory = result.categories.associate { it.categoryId to it.actual }
@@ -55,7 +63,7 @@ internal fun withActuals(
     val rows = view.rows.map { row ->
         val klass = classOfRow[row.kind]
         when {
-            row.kind == MonthRowKind.INCOME -> row.copy(actual = income)
+            row.kind == MonthRowKind.INCOME -> row.copy(actual = income.takeIf { incomeKnown }, actualKnown = incomeKnown)
             klass != null -> row.copy(
                 actual = sumMoney(result.categories.filter { it.categoryId != null && classOf[it.categoryId] == klass }.map { it.actual }),
                 items = row.items.map { item ->
