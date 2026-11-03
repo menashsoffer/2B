@@ -79,7 +79,7 @@ fun LineSearchContent(ui: TransactionsUi, actions: TransactionsActions, modifier
                 retryLabel = stringResource(R.string.money_load_retry),
             )
             results == null -> LoadingState(testTag = "search_loading")
-            ui.query.text.isBlank() && scope.categoryId == null && !scope.onlyUnassigned -> EmptyState(
+            ui.query.text.isBlank() && scope.categoryId == null && !scope.onlyUnassigned && scope.period != SearchPeriod.CUSTOM -> EmptyState(
                 title = stringResource(R.string.search_hint_title),
                 description = stringResource(R.string.search_hint_detail),
                 icon = Icons.Outlined.Search,

@@ -74,6 +74,17 @@ class TransactionsSearchTest {
     }
 
     @Test
+    fun aRangeFromThePeriodScreen_listsOnlyThoseMonths() {
+        val vm = viewModel()
+        vm.openRange(october, october)
+        val search = vm.ui.value.query.search!!
+        assertEquals(SearchPeriod.CUSTOM, search.period)
+        val results = vm.ui.value.results!!
+        assertTrue(results.count > 0)
+        assertTrue(results.months.all { it.month == october })
+    }
+
+    @Test
     fun aMonthFromResults_returnsToTheSameSearchOnBack() {
         val vm = viewModel()
         vm.openSearch(LineSearchScope(onlyUnassigned = true), text = "קפה")

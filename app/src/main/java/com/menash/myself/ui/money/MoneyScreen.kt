@@ -234,7 +234,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             rememberShownState(trendUi, trendUi.open), CategoryTrendActions(trendViewModel::acceptSuggestion, trendViewModel::close), modifier,
         )
         MoneyDestination.Period ->
-            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close, trendViewModel::open), modifier)
+            PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close, trendViewModel::open, transactionsViewModel::openRange), modifier)
         MoneyDestination.Root -> MoneyContent(
             state = state,
             selectedTab = selectedTab,

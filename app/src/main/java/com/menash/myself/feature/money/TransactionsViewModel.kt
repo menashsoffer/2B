@@ -139,6 +139,11 @@ class TransactionsViewModel(
         query.value = TransactionsQuery(search = scope, text = text)
     }
 
+    /** All lines of a month range (the period screen); the text box narrows them further. */
+    fun openRange(from: YearMonth, to: YearMonth) {
+        openSearch(LineSearchScope(SearchPeriod.CUSTOM, from, to))
+    }
+
     fun setText(text: String) {
         query.update { it.copy(text = text) }
     }
