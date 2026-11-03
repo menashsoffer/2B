@@ -12,8 +12,20 @@ import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.importer.monthLines
 import java.time.YearMonth
 
+/** The quick periods of the search screen; CUSTOM is a range handed in by another screen. */
+enum class SearchPeriod { ALL, THIS_MONTH, LAST_3, THIS_YEAR, CUSTOM }
+
+/** The months a quick period covers, ending with today's month; null ends mean open-ended. */
+fun searchBounds(period: SearchPeriod, today: YearMonth): Pair<YearMonth?, YearMonth?> = when (period) {
+    SearchPeriod.ALL, SearchPeriod.CUSTOM -> null to null
+    SearchPeriod.THIS_MONTH -> today to today
+    SearchPeriod.LAST_3 -> today.minusMonths(2) to today
+    SearchPeriod.THIS_YEAR -> YearMonth.of(today.year, 1) to today
+}
+
 /** Which lines a search looks at. Null ends mean open-ended; [categoryId] narrows to one category. */
 data class LineSearchScope(
+    val period: SearchPeriod = SearchPeriod.ALL,
     val from: YearMonth? = null,
     val to: YearMonth? = null,
     val categoryId: String? = null,

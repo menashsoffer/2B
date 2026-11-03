@@ -1,5 +1,9 @@
 package com.menash.myself.ui.money
 
+import com.menash.myself.core.designsystem.component.SearchField
+import com.menash.myself.feature.money.search.LineSearchScope
+import com.menash.myself.feature.money.search.SearchPeriod
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.key
@@ -50,6 +54,10 @@ data class TransactionsActions(
     val onLine: (MonthLine) -> Unit = {},
     val onClose: () -> Unit = {},
     val onRetry: () -> Unit = {},
+    val onText: (String) -> Unit = {},
+    val onPeriod: (SearchPeriod) -> Unit = {},
+    val onScope: (LineSearchScope) -> Unit = {},
+    val onOpenMonth: (YearMonth) -> Unit = {},
 )
 
 private val filters = listOf(LineFilter.ALL, LineFilter.UNASSIGNED, LineFilter.PENDING)
@@ -57,6 +65,10 @@ private val filters = listOf(LineFilter.ALL, LineFilter.UNASSIGNED, LineFilter.P
 /** One month's imported lines, full screen inside the money tab. Every number comes from [TransactionsUi]. */
 @Composable
 fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifier: Modifier = Modifier) {
+    if (ui.searching) {
+        LineSearchContent(ui, actions, modifier)
+        return
+    }
     val month = ui.query.month ?: return
     val lines = ui.lines
     Column(
@@ -124,7 +136,13 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                             onSelect = { actions.onFilter(filters[it]) },
                             modifier = Modifier.testTag("tx_filters"),
                         )
-                        val shown = lines.filtered(ui.query.filter)
+                        SearchField(
+                            value = ui.query.text,
+                            onValueChange = actions.onText,
+                            placeholder = stringResource(R.string.search_in_month_placeholder),
+                            testTag = "tx_search",
+                        )
+                        val shown = ui.shown.orEmpty()
                         if (shown.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.tx_empty_filter),
@@ -144,10 +162,10 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
     }
 }
 
-private val dayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M")
+internal val dayFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M")
 
 @Composable
-private fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsActions) {
+internal fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsActions) {
     val colors = MaterialTheme.appColors
     val row = line.row
     val state = when {

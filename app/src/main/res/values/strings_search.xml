@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic search box (core/designsystem/component/SearchField.kt) -->
+    <string name="search_clear">ניקוי החיפוש</string>
+    <!-- Money search across months (ui/money/LineSearchContent.kt) -->
+    <string name="search_title">חיפוש</string>
+    <string name="search_open">חיפוש תנועות</string>
+    <string name="search_placeholder">בית עסק, סכום או קטגוריה</string>
+    <string name="search_in_month_placeholder">חיפוש בחודש הזה</string>
+    <string name="search_period_all">הכל</string>
+    <string name="search_period_this_month">החודש</string>
+    <string name="search_period_last_3">3 חודשים</string>
+    <string name="search_period_this_year">השנה</string>
+    <string name="search_period_custom">%1$s – %2$s</string>
+    <string name="search_all_lines">כל התנועות</string>
+    <string name="search_only_unassigned">בלי קטגוריה</string>
+    <string name="search_category_chip">%1$s ✕</string>
+    <string name="search_summary">%1$d תנועות · %2$s</string>
+    <string name="search_hint_title">מה מחפשים?</string>
+    <string name="search_hint_detail">אפשר לחפש לפי שם בית עסק, כינוי, קטגוריה או סכום, בכל החודשים</string>
+    <string name="search_no_results_title">לא נמצא</string>
+    <string name="search_no_results_detail">נסו מילה אחרת, או הרחיבו את התקופה</string>
+    <string name="search_clear_filters">לנקות את הסינון</string>
+    <string name="search_open_month">לחודש</string>
+    <string name="search_more">מוצגות %1$d התנועות הראשונות. כדאי לצמצם את החיפוש</string>
+</resources>

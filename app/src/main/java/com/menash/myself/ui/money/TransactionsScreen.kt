@@ -31,6 +31,10 @@ fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, mod
             onLine = { line -> if (line.removable) viewModel.askRemove(line.id) else viewModel.pick(line.id) },
             onClose = viewModel::close,
             onRetry = viewModel::retry,
+            onText = viewModel::setText,
+            onPeriod = viewModel::selectPeriod,
+            onScope = viewModel::setSearchScope,
+            onOpenMonth = viewModel::openMonthFromSearch,
         ),
         modifier = modifier,
     )
@@ -39,7 +43,7 @@ fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, mod
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsOverlays(ui: TransactionsUi, viewModel: TransactionsViewModel) {
-    val lines = ui.lines?.lines.orEmpty()
+    val lines = ui.allLines
     lines.firstOrNull { it.id == ui.query.picking && it.income }?.let { line ->
         IncomeSourceSheet(
             line = line,
