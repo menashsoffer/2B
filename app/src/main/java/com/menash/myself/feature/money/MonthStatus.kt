@@ -13,7 +13,7 @@ import java.time.YearMonth
  */
 sealed interface MonthStatus {
     /** Open month with nothing imported for it yet: only the plan is known. */
-    data class PlanOnly(val expectedSurplus: Money) : MonthStatus
+    data class PlanOnly(val expectedSurplus: Money, val planHasGaps: Boolean = false) : MonthStatus
 
     /** Open month with imported lines. [dataUntil] is the latest counted line's date, so the screen says how fresh it is. */
     data class Open(
@@ -59,7 +59,8 @@ internal fun monthStatus(
         return MonthStatus.Closed(Money(Math.subtractExact(income.agorot, expenses.agorot)), income, expenses, closed.closedOn)
     }
     val imported = view.importedLines > 0
-    if (!imported) return MonthStatus.PlanOnly(view.plan.expectedSurplus)
+    val planHasGaps = view.rows.none { it.kind in setOf(MonthRowKind.CURRENT, MonthRowKind.PERIODIC) && it.items.isNotEmpty() }
+    if (!imported) return MonthStatus.PlanOnly(view.plan.expectedSurplus, planHasGaps)
     val current = view.rows.firstOrNull { it.kind == MonthRowKind.CURRENT }
     val budget = current?.total ?: Money.ZERO
     val spent = current?.actual ?: Money.ZERO

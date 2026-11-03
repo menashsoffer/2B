@@ -128,4 +128,6 @@
     <string name="status_set_current_budget">להגדיר תקציב שוטפות</string>
     <string name="status_unassigned">%1$s עוד בלי קטגוריה</string>
     <string name="status_unassigned_hint">חלק מזה כנראה שוטפות</string>
+    <string name="status_income_not_imported">עוד לא יובאו הכנסות</string>
+    <string name="status_expected_surplus_gaps">צפוי להישאר לפי התוכנית (התוכנית בלי שוטפות ותקופתיות)</string>
 </resources>
