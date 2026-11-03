@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.appColors
+import java.time.YearMonth
 import com.menash.myself.feature.money.TransactionsUi
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.importer.ImportIds
@@ -22,11 +23,11 @@ import com.menash.myself.feature.money.importer.choiceFor
 
 /** The transactions screen with its category sheet and the "remove a cancelled pending line" question. */
 @Composable
-fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, modifier: Modifier = Modifier) {
+fun TransactionsScreen(ui: TransactionsUi, viewModel: TransactionsViewModel, modifier: Modifier = Modifier, onMonth: (YearMonth) -> Boolean = { true }) {
     TransactionsContent(
         ui = ui,
         actions = TransactionsActions(
-            onMonth = viewModel::showMonth,
+            onMonth = { if (onMonth(it)) viewModel.showMonth(it) },
             onFilter = viewModel::setFilter,
             onLine = { line -> if (line.removable) viewModel.askRemove(line.id) else viewModel.pick(line.id) },
             onClose = viewModel::close,

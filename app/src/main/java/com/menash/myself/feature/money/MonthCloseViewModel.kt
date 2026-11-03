@@ -99,8 +99,9 @@ class MonthCloseViewModel(
 
     fun retry() { retry.update { it + 1 } }
 
-    fun open() {
-        query.value = CloseQuery(open = true, saving = closing)
+    fun open(month: YearMonth? = null) {
+        val target = month?.takeIf { it < YearMonth.from(today()) }
+        query.value = CloseQuery(open = true, month = target, saving = closing)
     }
 
     fun close() {
