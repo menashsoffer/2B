@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import com.menash.myself.R
 import com.menash.myself.feature.money.MonthCellState
@@ -33,7 +34,8 @@ internal fun MonthPickerSheet(months: List<MonthPickerCell>, onDismiss: () -> Un
 @Composable
 internal fun MonthPickerGrid(months: List<MonthPickerCell>, onSelect: (YearMonth) -> Unit) {
     val groups = months.groupBy { it.month.year }.entries.toList()
-    LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp).padding(horizontal = 16.dp).testTag("money_month_picker")) {
+    LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 560.dp).padding(horizontal = 16.dp)
+        .semantics { testTagsAsResourceId = true }.testTag("money_month_picker")) {
         item { Text(stringResource(R.string.status_choose_month), style = MaterialTheme.typography.titleLarge) }
         items(groups, key = { it.key }) { (year, cells) ->
             Text(year.toString(), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(vertical = 8.dp))
