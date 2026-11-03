@@ -6,7 +6,7 @@ name: E2E (Maestro)
 
 on:
   push:
-    branches: ["claude/e2e-**"]
+    branches: ["claude/e2e-**", "codex/e2e-**"]
   pull_request:
     branches: [main]
     paths:
