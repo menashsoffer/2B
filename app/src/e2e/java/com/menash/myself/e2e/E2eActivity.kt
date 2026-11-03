@@ -10,6 +10,12 @@ import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.menash.myself.MainActivity
+import com.menash.myself.MyselfApp
+import com.menash.myself.e2e.stories.Stories
+import com.menash.myself.feature.money.importer.ImportPlan
+import java.time.LocalDate
+import java.time.ZoneId
+import kotlinx.coroutines.flow.first
 import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -33,6 +39,11 @@ class E2eActivity : ComponentActivity() {
         lifecycleScope.launch {
             val next = runCatching {
                 signIn(email)
+                link?.getQueryParameter("seed")?.let { seed ->
+                    val today = link.getQueryParameter("today")?.let(LocalDate::parse)
+                        ?: LocalDate.now(ZoneId.of("Asia/Jerusalem"))
+                    seedStory(seed, today)
+                }
                 Intent(this@E2eActivity, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     if (share != null) {
@@ -64,6 +75,18 @@ class E2eActivity : ComponentActivity() {
         } catch (e: FirebaseAuthUserCollisionException) {
             auth.signInWithEmailAndPassword(user, PASSWORD).await()
         }
+    }
+
+    private suspend fun seedStory(name: String, today: LocalDate) {
+        val container = (application as MyselfApp).appContainer
+        container.householdRepository.ensureHouseholdExists()
+        val existing = container.moneyRepository.observeForScreen().first { it.householdReady }
+        if (existing.items.incomes.any { it.id == Stories.INCOME_ID }) return
+        val story = Stories.build(name, today)
+        val rows = story.rows
+        container.transactionRepository.apply(ImportPlan(rows, emptyList(), rows.size, 0, 0, 0, 0, emptyList()))
+        // Save the stable income marker last, after the rest of the story is durable.
+        container.moneyRepository.saveAll(story.entries)
     }
 
     private fun copyAsset(name: String): File {

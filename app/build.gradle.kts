@@ -108,6 +108,7 @@ android {
     compose = true
     buildConfig = true
   }
+  sourceSets.getByName("test").java.srcDir("src/e2e/java/com/menash/myself/e2e/stories")
   testOptions {
     unitTests {
       isIncludeAndroidResources = true
