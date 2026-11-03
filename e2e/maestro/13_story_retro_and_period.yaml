@@ -42,9 +42,9 @@ tags: [stories]
     visible: {id: period_content}
     timeout: 30000
 - tapOn: "3 ח׳"
+- assertVisible: {id: period_missing}
 - scrollUntilVisible:
     element: {id: period_chart}
     direction: DOWN
 - assertVisible: {id: period_chart}
-- assertVisible: {id: period_missing}
 - takeScreenshot: story13_period

@@ -30,6 +30,9 @@ tags: [smoke]
     timeout: 30000
 - takeScreenshot: story12_closed
 - back
+- scrollUntilVisible:
+    element: {id: money_month_previous}
+    direction: UP
 - tapOn: {id: money_month_previous}
 - assertVisible: "סגור"
 - assertVisible: "₪13,000"

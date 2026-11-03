@@ -18,6 +18,10 @@ tags: [smoke]
 - assertVisible: ".*₪5,000.*"
 - takeScreenshot: story11_before
 - scrollUntilVisible:
+    element: {id: money_row_income}
+    direction: DOWN
+- assertVisible: ".*₪20,000.*"
+- scrollUntilVisible:
     element: {id: money_transactions}
     direction: DOWN
 - tapOn: {id: money_transactions}
@@ -28,10 +32,16 @@ tags: [smoke]
     element: {id: tx_line_story-2026-10-card-0}
     direction: DOWN
 - tapOn: {id: tx_line_story-2026-10-card-0}
+- scrollUntilVisible:
+    element: {id: import_category_story-rent}
+    direction: DOWN
 - tapOn: {id: import_category_story-rent}
 - back
 - extendedWaitUntil:
-    visible: {id: money_status_value}
+    visible: {id: money_content}
     timeout: 30000
+- scrollUntilVisible:
+    element: {id: money_status_value}
+    direction: UP
 - assertVisible: "₪1,960"
 - takeScreenshot: story11_after
