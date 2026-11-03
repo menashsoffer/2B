@@ -23,6 +23,7 @@ sealed interface MonthStatus {
         val expectedSurplus: Money,
         val spentSoFar: Money,
         val dataUntil: LocalDate?,
+        val unassigned: Money? = null,
     ) : MonthStatus {
         val usage: UsageLevel get() = usageLevel(currentSpent, currentBudget)
     }
@@ -73,5 +74,6 @@ internal fun monthStatus(
         expectedSurplus = view.plan.expectedSurplus,
         spentSoFar = Money(spentSoFar),
         dataUntil = until,
+        unassigned = view.unassigned,
     )
 }

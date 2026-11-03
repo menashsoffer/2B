@@ -168,7 +168,7 @@ private fun MonthContent(
                     modifier = Modifier.padding(horizontal = Spacing.s16, vertical = Spacing.s8),
                     verticalArrangement = Arrangement.spacedBy(Spacing.s8),
                 ) {
-                    if (status != null) MonthStatusHeadline(status, onAddCurrent = { actions.onAddKind(com.menash.myself.feature.money.EditKind.VARIABLE) }) else Text(
+                    if (status != null) MonthStatusHeadline(status, onAddCurrent = { actions.onAddKind(com.menash.myself.feature.money.EditKind.VARIABLE) }, onTransactions = actions.onTransactions) else Text(
                         text = formatMoney(surplus),
                         style = AppType.number,
                         color = if (surplus.isNegative()) colors.danger else colors.textPrimary,
