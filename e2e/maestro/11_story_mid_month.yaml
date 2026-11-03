@@ -1,0 +1,37 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Story - mid month
+tags: [smoke]
+---
+- launchApp:
+    clearState: true
+- evalScript: ${output.email = 'story11' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=mid_month&today=2026-10-20
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_status_value}
+    timeout: 120000
+- assertVisible: "נשאר לשוטפות"
+- assertVisible: "₪1,800"
+- assertVisible: ".*₪5,000.*"
+- takeScreenshot: story11_before
+- scrollUntilVisible:
+    element: {id: money_transactions}
+    direction: DOWN
+- tapOn: {id: money_transactions}
+- extendedWaitUntil:
+    visible: {id: tx_content}
+    timeout: 30000
+- scrollUntilVisible:
+    element: {id: tx_line_story-2026-10-card-0}
+    direction: DOWN
+- tapOn: {id: tx_line_story-2026-10-card-0}
+- tapOn: {id: import_category_story-rent}
+- back
+- extendedWaitUntil:
+    visible: {id: money_status_value}
+    timeout: 30000
+- assertVisible: "₪1,960"
+- takeScreenshot: story11_after

@@ -1,0 +1,50 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Story - retroactive close and period
+tags: [stories]
+---
+- launchApp:
+    clearState: true
+- evalScript: ${output.email = 'story13' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}&seed=history&today=2026-11-03
+- extendedWaitUntil:
+    visible: {id: nav_money}
+    timeout: 120000
+- tapOn: {id: nav_money}
+- extendedWaitUntil:
+    visible: {id: money_month_title}
+    timeout: 120000
+- scrollUntilVisible:
+    element: {id: money_close_month}
+    direction: DOWN
+- tapOn: {id: money_close_month}
+- extendedWaitUntil:
+    visible: {id: close_previous}
+    timeout: 30000
+- tapOn: {id: close_previous}
+- scrollUntilVisible:
+    element: {id: close_balances}
+    direction: DOWN
+- tapOn: "לדלג, לא ידוע"
+- takeScreenshot: story13_balances_unknown
+- scrollUntilVisible:
+    element: {id: close_button}
+    direction: DOWN
+- tapOn: {id: close_button}
+- extendedWaitUntil:
+    visible: {id: close_done}
+    timeout: 30000
+- back
+- scrollUntilVisible:
+    element: {id: money_period}
+    direction: DOWN
+- tapOn: {id: money_period}
+- extendedWaitUntil:
+    visible: {id: period_content}
+    timeout: 30000
+- tapOn: "3 ח׳"
+- scrollUntilVisible:
+    element: {id: period_chart}
+    direction: DOWN
+- assertVisible: {id: period_chart}
+- assertVisible: {id: period_missing}
+- takeScreenshot: story13_period
