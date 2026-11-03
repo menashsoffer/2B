@@ -5,6 +5,7 @@ import com.menash.myself.feature.money.domain.Category
 import com.menash.myself.feature.money.domain.ExpenseClass
 import com.menash.myself.feature.money.domain.ImportCheck
 import com.menash.myself.feature.money.domain.suggestCategory
+import com.menash.myself.feature.money.domain.VEHICLE_ENERGY_CATEGORY_NAME
 import java.time.LocalDate
 
 /** One file as the user picked or shared it. The name is shown only; it never decides anything. */
@@ -127,6 +128,11 @@ internal fun newMerchants(
 internal fun categoryForHint(hint: String, categories: List<Category>): String? {
     val words = headerKey(hint).split(' ', ',', '/').filter { it.length >= 3 }
     return categories.filter { category ->
+        // Generic electricity hints also cover electronics stores. Require fuel or charging wording.
+        if (category.name == VEHICLE_ENERGY_CATEGORY_NAME) {
+            return@filter category.klass == ExpenseClass.CURRENT &&
+                words.any { it == "דלק" || it == "טעינה" || it == "טעינת" }
+        }
         val name = headerKey(category.name)
         category.klass == ExpenseClass.CURRENT &&
             words.any { word -> name.contains(word) || name.split(' ').any { it.length >= 3 && word.contains(it) } }
