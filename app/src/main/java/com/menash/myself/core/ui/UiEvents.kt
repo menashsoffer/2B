@@ -11,6 +11,7 @@ sealed interface UiEvent {
     data object DONATION_SAVED : UiEvent
     data object DELETED : UiEvent
     data class ImportDone(val written: Int, val unassignedMonth: java.time.YearMonth?) : UiEvent
+    data class ImportDecision(val name: String?, val label: Int?, val undo: () -> Unit) : UiEvent
     data class CategoryAssigned(val name: String) : UiEvent
     data class SaveError(val message: String, val retry: () -> Unit) : UiEvent
     data class MonthClosed(val month: java.time.YearMonth) : UiEvent

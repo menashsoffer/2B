@@ -1,5 +1,6 @@
 package com.menash.myself.feature.money
 
+import com.menash.myself.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -21,19 +22,20 @@ import com.menash.myself.feature.money.importer.reviewImport
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /** The import flow: nothing is written before [ImportUi.Review] is confirmed. */
 sealed interface ImportUi {
     object Idle : ImportUi
     object Reading : ImportUi
+    object Error : ImportUi
 
     /** [picking] is the merchant whose category sheet is open. A merchant with no decision is left for later. */
     data class Review(
@@ -41,6 +43,8 @@ sealed interface ImportUi {
         val categories: List<Category>,
         val decisions: Map<String, MerchantDecision> = emptyMap(),
         val picking: String? = null,
+        val recentCategories: List<String> = emptyList(),
+        val frequentCategories: List<String> = emptyList(),
     ) : ImportUi {
         /** The decision shown for a merchant: the user's, else the suggested category. */
         fun decisionFor(key: String): MerchantDecision? = decisions[key]
@@ -48,7 +52,7 @@ sealed interface ImportUi {
     }
 
     object Saving : ImportUi
-    data class Done(val written: Int, val removed: Int) : ImportUi
+    data class Done(val written: Int, val removed: Int, val remembered: Int = 0, val unassignedByMonth: Map<java.time.YearMonth, Int> = emptyMap()) : ImportUi
 }
 
 class ImportViewModel(
@@ -60,26 +64,42 @@ class ImportViewModel(
     private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
 ) : BaseViewModel(errorReporter) {
 
-    private val stored: StateFlow<List<StoredTransaction>> =
-        transactions.observeTransactions().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    private val memory: StateFlow<ImportMemory> =
-        transactions.observeMemory().stateIn(viewModelScope, SharingStarted.Eagerly, ImportMemory())
-    private val categories: StateFlow<List<Category>> =
-        money.observe().map { it.categories }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    private var loadedMemory = ImportMemory()
+    private var loadedCategories: List<Category> = emptyList()
+    private var pickedFiles: List<ImportFile> = emptyList()
+    private var loadJob: Job? = null
 
     private val _ui = MutableStateFlow<ImportUi>(ImportUi.Idle)
     val ui: StateFlow<ImportUi> = _ui.asStateFlow()
+    private val _open = MutableStateFlow(false)
+    val open: StateFlow<Boolean> = _open.asStateFlow()
 
     /** Reads and compares the files with what is stored. Parsing runs off the main thread. */
     fun load(files: List<ImportFile>) {
         if (files.isEmpty()) return
+        _open.value = true
+        pickedFiles = files.toList()
+        loadJob?.cancel()
         _ui.value = ImportUi.Reading
-        viewModelScope.launch {
-            val existing = stored.value.associateBy { it.id }
-            val review = withContext(io) { reviewImport(files, existing, memory.value, categories.value) }
-            _ui.value = ImportUi.Review(review, categories.value)
+        loadJob = viewModelScope.launch {
+            try {
+                val (existing, memory, categories) = combine(
+                    transactions.observeTransactionsForImport(), transactions.observeMemoryForImport(), money.observeForImport(),
+                ) { lines, memory, data -> Triple(lines, memory, data.categories) }.first()
+                val review = withContext(io) { reviewImport(files, existing.associateBy { it.id }, memory, categories) }
+                loadedMemory = memory
+                loadedCategories = categories
+                _ui.value = ImportUi.Review(review, categories, frequentCategories = existing.mapNotNull { it.categoryId }.groupingBy { it }.eachCount().entries.sortedByDescending { it.value }.map { it.key })
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                handleException("loadImport", e)
+                _ui.value = ImportUi.Error
+            }
         }
     }
+
+    fun retry() = load(pickedFiles)
 
     fun openPicker(merchantKey: String) {
         _ui.update { (it as? ImportUi.Review)?.copy(picking = merchantKey) ?: it }
@@ -90,9 +110,26 @@ class ImportViewModel(
     }
 
     fun decide(merchantKey: String, decision: MerchantDecision) {
+        val before = _ui.value as? ImportUi.Review ?: return
+        val previous = before.decisions[merchantKey]
         _ui.update { state ->
-            (state as? ImportUi.Review)?.copy(decisions = state.decisions + (merchantKey to decision), picking = null) ?: state
+            (state as? ImportUi.Review)?.copy(
+                decisions = state.decisions + (merchantKey to decision), picking = null,
+                recentCategories = (decision as? MerchantDecision.Categorise)?.let { listOf(it.categoryId) + state.recentCategories.filterNot { id -> id == it.categoryId } } ?: state.recentCategories,
+            ) ?: state
         }
+        val name = (decision as? MerchantDecision.Categorise)?.let { d -> before.categories.firstOrNull { it.id == d.categoryId }?.name }
+        val label = when (decision) {
+            MerchantDecision.OwnTransfer -> R.string.import_own_transfer
+            MerchantDecision.Later -> R.string.import_later
+            is MerchantDecision.Categorise -> null
+        }
+        events?.send(UiEvent.ImportDecision(name, label) {
+            _ui.update { state ->
+                if (state !is ImportUi.Review || state.decisions[merchantKey] != decision) state
+                else state.copy(decisions = if (previous == null) state.decisions - merchantKey else state.decisions + (merchantKey to previous))
+            }
+        })
     }
 
     /** Adds a category from the merchant's sheet, shows it in the review, and picks it for the merchant. */
@@ -105,10 +142,10 @@ class ImportViewModel(
             _ui.update { state ->
                 (state as? ImportUi.Review)?.copy(
                     categories = if (isNew) state.categories + category else state.categories,
-                    decisions = state.decisions + (merchantKey to MerchantDecision.Categorise(category.id)),
-                    picking = null,
                 ) ?: state
             }
+            loadedCategories = if (isNew) loadedCategories + category else loadedCategories
+            decide(merchantKey, MerchantDecision.Categorise(category.id))
         }
     }
 
@@ -121,18 +158,30 @@ class ImportViewModel(
         safeLaunch("applyImport", onError = { _ui.value = review }) {
             transactions.apply(plan)
             // A merchant that asks each time keeps this batch's category on its lines only.
-            updates.filter { it.ownTransfer || it.merchantKey !in memory.value.askEachTime }
-                .forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
-            _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size)
-            val month = plan.toWrite.map { it.row.billingMonth }.distinct().sortedDescending().firstOrNull { month ->
-                com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, memory.value, categories.value).unassignedCount > 0
+            val remembered = updates.filter { it.ownTransfer || it.merchantKey !in loadedMemory.askEachTime }
+            remembered.forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
+            val effectiveMemory = loadedMemory.copy(ownTransfers = loadedMemory.ownTransfers + remembered.filter { it.ownTransfer }.map { it.merchantKey })
+            val counts = plan.toWrite.map { it.row.billingMonth }.distinct().associateWith { month ->
+                com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, effectiveMemory, loadedCategories).unassignedCount
             }
-            events?.send(UiEvent.ImportDone(plan.toWrite.size, month))
+            val unassignedByMonth = counts.filterValues { it > 0 }.toSortedMap()
+            pickedFiles = emptyList()
+            _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size, remembered.size, unassignedByMonth)
+
         }
     }
 
     fun close() {
+        if (_ui.value is ImportUi.Done) cancel() else _open.value = false
+    }
+
+    fun resume() { if (_ui.value != ImportUi.Idle) _open.value = true }
+
+    fun cancel() {
+        loadJob?.cancel()
+        pickedFiles = emptyList()
         _ui.value = ImportUi.Idle
+        _open.value = false
     }
 
     companion object {

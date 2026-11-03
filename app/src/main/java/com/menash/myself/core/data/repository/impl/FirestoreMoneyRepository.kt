@@ -19,6 +19,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,9 @@ class FirestoreMoneyRepository(
     }
 
     private data class RawDoc(val id: String, val data: Map<String, Any?>)
+
+    override fun observeForImport(): Flow<MoneyData> =
+        householdSession.currentHouseholdId.filter { !it.isNullOrBlank() }.flatMapLatest { observeForScreen() }
 
     override fun observe(): Flow<MoneyData> = observeMoney(false)
 
