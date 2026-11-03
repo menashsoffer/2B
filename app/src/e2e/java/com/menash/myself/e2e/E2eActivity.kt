@@ -14,7 +14,6 @@ import com.menash.myself.MyselfApp
 import com.menash.myself.e2e.stories.Stories
 import com.menash.myself.feature.money.importer.ImportPlan
 import java.time.LocalDate
-import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import java.io.File
 import kotlinx.coroutines.Dispatchers
@@ -39,10 +38,9 @@ class E2eActivity : ComponentActivity() {
         lifecycleScope.launch {
             val next = runCatching {
                 signIn(email)
+                link?.getQueryParameter("today")?.let { com.menash.myself.core.time.TodayProvider.setForE2e(LocalDate.parse(it)) }
                 link?.getQueryParameter("seed")?.let { seed ->
-                    val today = link.getQueryParameter("today")?.let(LocalDate::parse)
-                        ?: LocalDate.now(ZoneId.of("Asia/Jerusalem"))
-                    seedStory(seed, today)
+                    seedStory(seed, com.menash.myself.core.time.TodayProvider.today())
                 }
                 Intent(this@E2eActivity, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

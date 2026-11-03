@@ -31,7 +31,7 @@ fun HomeScreen(
             errorReporter = appContainer.errorReporter,
             moneyRepository = appContainer.moneyRepository,
             usdRates = appContainer.usdRateFlow,
-            today = { java.time.LocalDate.now(java.time.ZoneId.of("Asia/Jerusalem")) },
+            today = appContainer::today,
         )
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()

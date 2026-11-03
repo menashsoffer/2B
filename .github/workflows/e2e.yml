@@ -106,7 +106,7 @@ jobs:
       - name: Release build has no e2e code
         run: |
           set -euo pipefail
-          ./gradlew processReleaseMainManifest generateReleaseBuildConfig --no-daemon
+          ./gradlew processReleaseMainManifest generateReleaseBuildConfig compileReleaseKotlin --no-daemon
           python3 - <<'PY'
           import glob
           manifests = glob.glob("app/build/intermediates/merged_manifest*/release/**/AndroidManifest.xml", recursive=True)
@@ -120,7 +120,11 @@ jobs:
           for path in configs:
               text = open(path).read()
               assert 'FIREBASE_EMULATOR_HOST = ""' in text, f"release must use the real Firebase project: {path}"
-          print("release is clean:", manifests, configs)
+          classes = glob.glob("app/build/tmp/kotlin-classes/release/**/TodayProvider.class", recursive=True)
+          assert classes, "release clock provider missing"
+          for path in classes:
+              assert b"setForE2e" not in open(path, "rb").read(), f"e2e clock override found in {path}"
+          print("release is clean:", manifests, configs, classes)
           PY
 
       - name: Build the e2e app

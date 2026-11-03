@@ -61,6 +61,8 @@ val LocalAppContainer = compositionLocalWithComputedDefaultOf<AppContainer> {
  * Features and ViewModels depend only on repository interfaces from core/data/repository.
  */
 class AppContainer(private val context: Context) {
+    fun today(): java.time.LocalDate = com.menash.myself.core.time.TodayProvider.today()
+
     val accountDeletionPending = com.menash.myself.core.data.account.AccountDeletionPending(context)
 
     fun accountDeletionPort() = com.menash.myself.core.data.account.FirebaseAccountDeletionPort(
