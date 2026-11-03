@@ -9,6 +9,7 @@
     <string name="period_last_6">6 ח׳</string>
     <string name="period_this_year">השנה</string>
     <string name="period_range">%1$s עד %2$s</string>
+    <string name="period_lines">לכל התנועות בתקופה</string>
     <string name="period_empty">אין עדיין חודש סגור בתקופה הזו</string>
     <string name="period_empty_detail">סוגרים חודש ממסך החודש, והוא יופיע כאן</string>
     <string name="period_income">הכנסה</string>
