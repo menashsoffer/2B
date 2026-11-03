@@ -204,6 +204,21 @@ class ImportViewModelTest {
     }
 
     @Test
+    fun rememberedMerchantStartsDecidedAndCanBeChanged() {
+        val repo = FakeTransactionRepository()
+        val key = ImportIds.merchantKey("שופרסל דיל 123")
+        repo.memory.value = ImportMemory(merchants = MerchantMemory(mapOf(key to "current-9")))
+        val vm = viewModel(repo)
+        vm.load(listOf(file("max_nov.xlsx")))
+        val review = vm.ui.value as ImportUi.Review
+        assertEquals(MerchantDecision.Categorise("current-9"), review.decisionFor(key))
+        vm.decide(key, MerchantDecision.Categorise("current-1"))
+        vm.confirm()
+        assertTrue(repo.lines.value.filter { ImportIds.merchantKey(it.row.description) == key }.all { it.categoryId == "current-1" })
+        assertEquals("current-1", repo.memory.value.merchants.categories[key])
+    }
+
+    @Test
     fun newCategoryFromTheSheet_isSavedShownAndPicked() {
         val money = FakeMoneyRepository(MoneySamples.filled)
         val vm = ImportViewModel(FakeTransactionRepository(), money, DefaultErrorReporter(), io = dispatcher, newId = { "cat-new" })

@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Warning
@@ -34,6 +36,7 @@ import com.menash.myself.core.designsystem.component.LoadingState
 import com.menash.myself.core.designsystem.component.PrimaryButton
 import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.money.ImportUi
@@ -58,24 +61,24 @@ data class ImportActions(
 /** The import flow, full screen inside the money tab. Every count comes from the [ImportUi] state. */
 @Composable
 fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Modifier) {
-    Column(
+    val duration = Motion.duration(Motion.medium)
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.appColors.background)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .verticalScroll(rememberScrollState())
             .padding(FloatingNavBarDefaults.contentPadding())
             .padding(start = Spacing.s16, end = Spacing.s16, top = Spacing.s8)
             .testTag("import_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        MoneySubScreen(title = stringResource(R.string.import_title), onBack = actions.onClose)
+        item(key = "header") { MoneySubScreen(title = stringResource(R.string.import_title), onBack = actions.onClose) }
         when (ui) {
             ImportUi.Idle -> Unit
-            ImportUi.Error -> ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry))
-            ImportUi.Reading -> LoadingState(message = stringResource(R.string.import_reading))
-            ImportUi.Saving -> LoadingState(message = stringResource(R.string.import_saving))
-            is ImportUi.Done -> Column(modifier = Modifier.fillMaxWidth().testTag("import_done"), verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+            ImportUi.Error -> item(key = "error") { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
+            ImportUi.Reading -> item(key = "reading") { LoadingState(message = stringResource(R.string.import_reading)) }
+            ImportUi.Saving -> item(key = "saving") { LoadingState(message = stringResource(R.string.import_saving)) }
+            is ImportUi.Done -> item(key = "done") { Column(modifier = Modifier.fillMaxWidth().testTag("import_done"), verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                 Text(text = stringResource(R.string.import_saved_count, ui.written), style = AppType.title, color = MaterialTheme.appColors.textPrimary)
                 Text(text = stringResource(R.string.import_remembered_count, ui.remembered), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
                 val months = ui.unassignedByMonth.filterValues { it > 0 }.toSortedMap()
@@ -92,51 +95,48 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
                     }
                 }
                 PrimaryButton(text = stringResource(R.string.import_to_month), onClick = actions.onClose, modifier = Modifier.fillMaxWidth())
-            }
-            is ImportUi.Review -> ReviewBody(ui, actions)
+            } }
+            is ImportUi.Review -> reviewBody(ui, actions, duration)
         }
     }
 }
 
-@Composable
-private fun ReviewBody(ui: ImportUi.Review, actions: ImportActions) {
-    SectionTitle(stringResource(R.string.import_files))
-    Column(modifier = Modifier.testTag("import_files"), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
-        ui.review.files.forEach { file -> MoneySurface { FileRow(file) } }
+private fun LazyListScope.reviewBody(ui: ImportUi.Review, actions: ImportActions, duration: Int) {
+    item(key = "file_title") { SectionTitle(stringResource(R.string.import_files)) }
+    item(key = "files") {
+        Column(modifier = Modifier.testTag("import_files"), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
+            ui.review.files.forEach { file -> MoneySurface { FileRow(file) } }
+        }
     }
     if (ui.review.nothingToSave) {
-        Text(
-            text = stringResource(R.string.import_nothing_new),
-            style = AppType.body,
-            color = MaterialTheme.appColors.textSecondary,
-            modifier = Modifier.padding(horizontal = Spacing.s8).testTag("import_nothing_new"),
-        )
-    }
-
-    Text(
-            text = stringResource(R.string.import_merchants_remaining, ui.review.merchants.count { ui.decisionFor(it.key) == null }),
-            style = AppType.caption,
-            color = MaterialTheme.appColors.textSecondary,
-            modifier = Modifier.padding(horizontal = Spacing.s8),
-        )
-    if (ui.review.merchants.isNotEmpty()) {
-        MoneySurface(testTag = "import_merchants") {
-            ui.review.merchants.sortedBy { ui.decisionFor(it.key) != null }.forEach { merchant -> MerchantRow(merchant, ui, actions) }
+        item(key = "nothing_new") {
+            Text(text = stringResource(R.string.import_nothing_new), style = AppType.body,
+                color = MaterialTheme.appColors.textSecondary,
+                modifier = Modifier.padding(horizontal = Spacing.s8).testTag("import_nothing_new"))
         }
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.fillMaxWidth()) {
-        if (!ui.review.nothingToSave) {
-            PrimaryButton(
-                text = stringResource(R.string.import_confirm),
-                onClick = actions.onConfirm,
-                modifier = Modifier.weight(1f).testTag("import_confirm"),
-            )
-        }
-        TextButton(onClick = actions.onCancel, modifier = Modifier.testTag("import_cancel")) {
-            Text(
-                text = stringResource(if (ui.review.nothingToSave) R.string.import_close else R.string.import_cancel),
-                style = AppType.body,
-            )
+    item(key = "remaining") {
+        Text(text = stringResource(R.string.import_merchants_remaining, ui.review.merchants.count { ui.decisionFor(it.key) == null }),
+            style = AppType.caption, color = MaterialTheme.appColors.textSecondary,
+            modifier = Modifier.padding(horizontal = Spacing.s8))
+    }
+    val sorted = ui.review.merchants.sortedBy { ui.decisionFor(it.key) != null }
+    items(sorted, key = { "merchant_${it.key}" }) { merchant ->
+        MoneySurface(modifier = Modifier.animateItem(
+            fadeInSpec = tween(duration, easing = Motion.easing),
+            placementSpec = tween(duration, easing = Motion.easing),
+            fadeOutSpec = tween(duration, easing = Motion.easing),
+        )) { MerchantRow(merchant, ui, actions) }
+    }
+    item(key = "confirm") {
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.fillMaxWidth()) {
+            if (!ui.review.nothingToSave) {
+                PrimaryButton(text = stringResource(R.string.import_confirm), onClick = actions.onConfirm,
+                    modifier = Modifier.weight(1f).testTag("import_confirm"))
+            }
+            TextButton(onClick = actions.onCancel, modifier = Modifier.testTag("import_cancel")) {
+                Text(text = stringResource(if (ui.review.nothingToSave) R.string.import_close else R.string.import_cancel), style = AppType.body)
+            }
         }
     }
 }
@@ -236,7 +236,7 @@ private fun MerchantRow(merchant: MerchantChoice, ui: ImportUi.Review, actions: 
             testTag = "import_merchant_${merchant.key.hashCode()}",
         )
         if (decision == null) {
-            val ids = (listOfNotNull(merchant.suggested) + ui.recentCategories + ui.frequentCategories).distinct().take(3)
+            val ids = (listOfNotNull(merchant.suggested) + ui.recentCategories + ui.frequentCategories).distinct().filter { id -> ui.categories.any { it.id == id } }.take(3)
             FlowRow(modifier = Modifier.padding(start = Spacing.s16), horizontalArrangement = Arrangement.spacedBy(Spacing.s4)) {
                 ids.forEach { id ->
                     ui.categories.firstOrNull { it.id == id }?.let { category ->

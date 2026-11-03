@@ -28,7 +28,7 @@ data class FileSummary(
     val readError: Boolean = false,
 )
 
-/** A merchant seen for the first time; the user gives it a category once and the memory learns it. */
+/** A merchant on new lines; a remembered or hinted category can be changed during review. */
 data class MerchantChoice(
     val key: String,
     val name: String,
@@ -36,7 +36,7 @@ data class MerchantChoice(
     val count: Int,
     /** Max's own category name, shown as a hint. */
     val hint: String?,
-    /** Category offered first: the one whose name matches the hint. */
+    /** Remembered category first, otherwise one matching the card-company hint. */
     val suggested: String?,
     /** A transfer can instead be marked as the household's own account. */
     val transfer: Boolean,
@@ -88,7 +88,7 @@ fun reviewImport(
 
 private val askedKinds = setOf(RowKind.EXPENSE, RowKind.STANDING_ORDER, RowKind.TRANSFER)
 
-/** Only lines new to the household, of a kind that needs a category, whose merchant the memory does not know. */
+/** Merchants on new lines of a kind that can be categorised, including remembered merchants. */
 internal fun newMerchants(
     plan: ImportPlan,
     existing: Map<String, StoredTransaction>,
@@ -99,8 +99,7 @@ internal fun newMerchants(
     .map { it.row }
     .filter { row ->
         val kind = classify(row, memory)
-        kind in askedKinds && (kind != RowKind.TRANSFER || (row.charge ?: Money.ZERO).isPositive()) &&
-            suggestCategory(row.description, memory.merchants) == null
+        kind in askedKinds && (kind != RowKind.TRANSFER || (row.charge ?: Money.ZERO).isPositive())
     }
     .groupBy { ImportIds.merchantKey(it.description) }
     .filterKeys { it.isNotEmpty() }
@@ -112,7 +111,9 @@ internal fun newMerchants(
             total = Money(rows.sumOf { (it.charge ?: it.originalAmount ?: Money.ZERO).agorot }),
             count = rows.size,
             hint = hint,
-            suggested = hint?.let { categoryForHint(it, categories) },
+            suggested = rows.firstNotNullOfOrNull { row ->
+                if (memory.asksEachTime(row.description)) null else suggestCategory(row.description, memory.merchants)
+            }?.takeIf { id -> categories.any { it.id == id } } ?: hint?.let { categoryForHint(it, categories) },
             transfer = rows.any { classify(it, memory) == RowKind.TRANSFER },
         )
     }

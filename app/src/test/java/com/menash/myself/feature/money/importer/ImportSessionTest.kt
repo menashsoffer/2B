@@ -42,14 +42,14 @@ class ImportSessionTest {
     }
 
     @Test
-    fun knownMerchantsAreNotAskedAgain() {
+    fun rememberedMerchantsAppearWithMemoryBeforeTheHint() {
         val memory = ImportMemory(
-            MerchantMemory(mapOf(ImportIds.merchantKey("שופרסל דיל 123") to "current-1")),
+            MerchantMemory(mapOf(ImportIds.merchantKey("שופרסל דיל 123") to "current-9")),
             ownTransfers = setOf(ImportIds.merchantKey("העברה ב-bit דנה לוי")),
         )
-        val names = reviewImport(listOf(file("hapoalim_oct.xlsx"), file("max_nov.xlsx")), emptyMap(), memory, categories)
-            .merchants.map { it.name }
-        assertTrue("שופרסל דיל 123" !in names && "העברה ב-bit דנה לוי" !in names)
+        val merchants = reviewImport(listOf(file("hapoalim_oct.xlsx"), file("max_nov.xlsx")), emptyMap(), memory, categories).merchants
+        assertEquals("current-9", merchants.single { it.name == "שופרסל דיל 123" }.suggested)
+        assertTrue(merchants.none { it.name == "העברה ב-bit דנה לוי" })
     }
 
     @Test
