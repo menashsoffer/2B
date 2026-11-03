@@ -104,13 +104,13 @@ private fun ReviewBody(ui: ImportUi.Review, actions: ImportActions) {
         )
     }
 
-    if (ui.review.merchants.isNotEmpty()) {
-        Text(
+    Text(
             text = stringResource(R.string.import_merchants_remaining, ui.review.merchants.count { ui.decisionFor(it.key) == null }),
             style = AppType.caption,
             color = MaterialTheme.appColors.textSecondary,
             modifier = Modifier.padding(horizontal = Spacing.s8),
         )
+    if (ui.review.merchants.isNotEmpty()) {
         MoneySurface(testTag = "import_merchants") {
             ui.review.merchants.sortedBy { ui.decisionFor(it.key) != null }.forEach { merchant -> MerchantRow(merchant, ui, actions) }
         }

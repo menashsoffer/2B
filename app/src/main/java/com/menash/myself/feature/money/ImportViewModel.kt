@@ -84,7 +84,7 @@ class ImportViewModel(
         loadJob = viewModelScope.launch {
             try {
                 val (existing, memory, categories) = combine(
-                    transactions.observeTransactions(), transactions.observeMemory(), money.observe(),
+                    transactions.observeTransactionsForScreen(), transactions.observeMemoryForScreen(), money.observeForScreen(),
                 ) { lines, memory, data -> Triple(lines, memory, data.categories) }.first()
                 val review = withContext(io) { reviewImport(files, existing.associateBy { it.id }, memory, categories) }
                 loadedMemory = memory

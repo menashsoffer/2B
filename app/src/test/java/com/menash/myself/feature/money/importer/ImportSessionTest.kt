@@ -53,6 +53,14 @@ class ImportSessionTest {
     }
 
     @Test
+    fun hapoalimFixtureNeedsFourDecisionsThenNone() {
+        val first = reviewImport(listOf(file("hapoalim_oct.xlsx")), emptyMap(), ImportMemory(), categories)
+        assertEquals(4, first.merchants.count { it.suggested == null })
+        val again = reviewImport(listOf(file("hapoalim_oct.xlsx")), first.plan.toWrite.associateBy { it.id }, ImportMemory(), categories)
+        assertEquals(0, again.merchants.size)
+    }
+
+    @Test
     fun reimportAsksNothing() {
         val first = reviewImport(listOf(file("max_nov.xlsx")), emptyMap(), ImportMemory(), categories)
         val stored = first.plan.toWrite.associateBy { it.id }
