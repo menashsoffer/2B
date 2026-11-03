@@ -42,6 +42,7 @@ fun usdRateOf(rate: BoiRate?): BigDecimal? =
 data class MoneyScreenState(
     val money: MoneyMonth? = null,
     val data: MoneyData = MoneyData(),
+    val months: List<MonthPickerCell> = emptyList(),
 )
 
 /** The open add/edit sheet. [askScope] shows the one "from now on / this month only" question. */
@@ -86,7 +87,7 @@ class MoneyViewModel(
         val now = buildMoneyMonth(data, current, day, rate, lines, learnt)
         val money = if (picked == null || picked == current) now else
             buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current)
-        MoneyScreenState(money = money, data = data)
+        MoneyScreenState(money = money, data = data, months = pickerMonths(current, data.closedMonths.map { it.month }.toSet(), lines))
     }
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
@@ -99,6 +100,11 @@ class MoneyViewModel(
 
     /** Items added or edited from the month tab belong to the month it shows. */
     private val month: YearMonth get() = shown.value ?: YearMonth.from(today())
+
+    fun showMonth(month: YearMonth) {
+        val current = YearMonth.from(today())
+        if (month in current.minusMonths(MonthsBack)..current) shown.value = month.takeUnless { it == current }
+    }
 
     fun showPreviousMonth() {
         val current = YearMonth.from(today())

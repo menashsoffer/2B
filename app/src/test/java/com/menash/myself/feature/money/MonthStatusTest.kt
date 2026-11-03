@@ -54,6 +54,30 @@ class MonthStatusTest {
     }
 
     @Test
+    fun planWithoutCurrentAndPeriodicItemsIsMarkedIncomplete() {
+        val base = view(november)
+        val planned = base.copy(rows = base.rows.filter { it.kind != MonthRowKind.CURRENT && it.kind != MonthRowKind.PERIODIC })
+        assertEquals(MonthStatus.PlanOnly(base.plan.expectedSurplus, planHasGaps = true), monthStatus(planned, null, emptyList(), november))
+    }
+
+    @Test
+    fun importedWithoutCurrentBudget_showsAllSpending() {
+        val base = view(november)
+        val planned = base.copy(
+            plan = base.plan.copy(income = Money(2_640_000), fixed = Money(15_700)),
+            rows = listOf(
+                MonthRow(MonthRowKind.INCOME, Money(2_640_000), emptyList()),
+                MonthRow(MonthRowKind.FIXED, Money(15_700), emptyList(), Money(101_200)),
+            ),
+            unassigned = Money(612_000), importedLines = 104,
+        )
+        assertEquals(
+            MonthStatus.NoCurrentBudget(Money(713_200), Money(612_000), null),
+            monthStatus(planned, null, emptyList(), november),
+        )
+    }
+
+    @Test
     fun closedMonth_showsTheFrozenResult() {
         val close = ClosedMonth(
             october, MonthSnapshot(october, Money(1_000_000), Money(870_000)), emptyMap(), emptyMap(), emptyMap(), emptyMap(),

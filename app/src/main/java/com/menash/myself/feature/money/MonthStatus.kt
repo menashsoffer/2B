@@ -13,7 +13,7 @@ import java.time.YearMonth
  */
 sealed interface MonthStatus {
     /** Open month with nothing imported for it yet: only the plan is known. */
-    data class PlanOnly(val expectedSurplus: Money) : MonthStatus
+    data class PlanOnly(val expectedSurplus: Money, val planHasGaps: Boolean = false) : MonthStatus
 
     /** Open month with imported lines. [dataUntil] is the latest counted line's date, so the screen says how fresh it is. */
     data class Open(
@@ -23,9 +23,12 @@ sealed interface MonthStatus {
         val expectedSurplus: Money,
         val spentSoFar: Money,
         val dataUntil: LocalDate?,
+        val unassigned: Money? = null,
     ) : MonthStatus {
         val usage: UsageLevel get() = usageLevel(currentSpent, currentBudget)
     }
+
+    data class NoCurrentBudget(val spentSoFar: Money, val unassigned: Money?, val dataUntil: LocalDate?) : MonthStatus
 
     /** A closed month: income minus expenses as frozen at the close. */
     data class Closed(val left: Money, val income: Money, val expenses: Money, val closedOn: LocalDate) : MonthStatus
@@ -55,14 +58,16 @@ internal fun monthStatus(
         val expenses = closed.snapshot.actualExpenses
         return MonthStatus.Closed(Money(Math.subtractExact(income.agorot, expenses.agorot)), income, expenses, closed.closedOn)
     }
-    val imported = view.rows.any { it.kind != MonthRowKind.INCOME && it.actual != null } || view.unassigned != null
-    if (!imported) return MonthStatus.PlanOnly(view.plan.expectedSurplus)
+    val imported = view.importedLines > 0
+    val planHasGaps = view.rows.none { it.kind in setOf(MonthRowKind.CURRENT, MonthRowKind.PERIODIC) && it.items.isNotEmpty() }
+    if (!imported) return MonthStatus.PlanOnly(view.plan.expectedSurplus, planHasGaps)
     val current = view.rows.firstOrNull { it.kind == MonthRowKind.CURRENT }
     val budget = current?.total ?: Money.ZERO
     val spent = current?.actual ?: Money.ZERO
     val spentSoFar = (view.rows.filter { it.kind in spendingRows }.mapNotNull { it.actual } + listOfNotNull(view.unassigned))
         .fold(0L) { sum, it -> Math.addExact(sum, it.agorot) }
     val until = stored.filter { it.row.billingMonth == month && it.row.status == RowStatus.COUNTED }.maxOfOrNull { it.row.date }
+    if (!budget.isPositive()) return MonthStatus.NoCurrentBudget(Money(spentSoFar), view.unassigned, until)
     return MonthStatus.Open(
         leftForCurrent = Money(Math.subtractExact(budget.agorot, spent.agorot)),
         currentBudget = budget,
@@ -70,5 +75,6 @@ internal fun monthStatus(
         expectedSurplus = view.plan.expectedSurplus,
         spentSoFar = Money(spentSoFar),
         dataUntil = until,
+        unassigned = view.unassigned,
     )
 }

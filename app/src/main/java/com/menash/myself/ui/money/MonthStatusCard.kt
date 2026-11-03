@@ -1,10 +1,13 @@
 package com.menash.myself.ui.money
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
@@ -12,12 +15,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.Chip
 import com.menash.myself.core.designsystem.component.ChipVariant
@@ -27,7 +36,10 @@ import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.MoneyMonth
+import com.menash.myself.feature.money.MonthPickerCell
+import java.time.YearMonth
 import com.menash.myself.feature.money.MonthStatus
+import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.feature.money.UsageLevel
 import java.time.format.DateTimeFormatter
 
@@ -36,7 +48,9 @@ private val closedFormat: DateTimeFormatter = DateTimeFormatter.ofPattern("d.M.y
 
 /** Previous / next month, with whether the shown month is still open or already closed. Start = older months. */
 @Composable
-internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () -> Unit, onNext: () -> Unit) {
+internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () -> Unit, onNext: () -> Unit, months: List<MonthPickerCell> = emptyList(), onShowMonth: (YearMonth) -> Unit = {}) {
+    var picking by remember { mutableStateOf(false) }
+    if (picking) MonthPickerSheet(months, onDismiss = { picking = false }, onSelect = { onShowMonth(it); picking = false })
     val colors = MaterialTheme.appColors
     Row(
         modifier = Modifier.fillMaxWidth().testTag("money_month_switcher"),
@@ -51,8 +65,13 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
                 text = stringResource(R.string.status_month_title, hebrewMonthName(money.month.month), money.month.year),
                 style = AppType.body.copy(fontWeight = FontWeight.Medium),
                 color = colors.textPrimary,
-                modifier = Modifier.testTag("money_month_title"),
+                modifier = Modifier.heightIn(min = 48.dp).clickable { picking = true }.wrapContentHeight(Alignment.CenterVertically).testTag("money_month_title"),
             )
+            if (money.month != money.current) {
+                TextButton(onClick = { onShowMonth(money.current) }, modifier = Modifier.testTag("money_return_today")) {
+                    Text(stringResource(R.string.status_return_today))
+                }
+            }
             Chip(
                 text = stringResource(if (closed) R.string.status_closed else R.string.status_open),
                 variant = if (closed) ChipVariant.Default else ChipVariant.Success,
@@ -66,7 +85,7 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
 
 /** The headline: "נשאר לשוטפות" for an open month, the plan's surplus before any import, the frozen result once closed. */
 @Composable
-internal fun MonthStatusHeadline(status: MonthStatus) {
+internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit = {}, onTransactions: (LineFilter) -> Unit = {}) {
     val colors = MaterialTheme.appColors
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.testTag("money_status")) {
         when (status) {
@@ -76,8 +95,9 @@ internal fun MonthStatusHeadline(status: MonthStatus) {
                     BigAmount(status.leftForCurrent)
                     Caption(stringResource(R.string.status_of_budget, formatMoney(status.currentBudget)))
                 }
+                UnassignedLine(status.unassigned, onTransactions)
                 val budget = status.currentBudget.agorot
-                val progress = if (budget > 0) status.currentSpent.agorot.toFloat() / budget else 1f
+                val progress = if (budget > 0) status.currentSpent.agorot.toFloat() / budget else 0f
                 ProgressBar(
                     progress = progress,
                     color = when (status.usage) {
@@ -91,8 +111,18 @@ internal fun MonthStatusHeadline(status: MonthStatus) {
                 SmallFigure(stringResource(R.string.status_expected_surplus), status.expectedSurplus)
                 SmallFigure(stringResource(R.string.status_spent_so_far), status.spentSoFar)
             }
+            is MonthStatus.NoCurrentBudget -> {
+                Caption(stringResource(R.string.status_spent_so_far))
+                BigAmount(status.spentSoFar)
+                UnassignedLine(status.unassigned, onTransactions)
+                Caption(stringResource(R.string.status_no_current_budget))
+                TextButton(onClick = onAddCurrent, modifier = Modifier.testTag("money_set_current_budget")) {
+                    Text(stringResource(R.string.status_set_current_budget))
+                }
+                status.dataUntil?.let { Caption(stringResource(R.string.status_data_until, it.format(untilFormat))) }
+            }
             is MonthStatus.PlanOnly -> {
-                Caption(stringResource(R.string.status_expected_surplus))
+                Caption(stringResource(if (status.planHasGaps) R.string.status_expected_surplus_gaps else R.string.status_expected_surplus))
                 BigAmount(status.expectedSurplus)
                 Caption(stringResource(R.string.status_no_import))
             }
@@ -141,3 +171,14 @@ private fun SmallFigure(label: String, amount: Money) {
 
 @Composable
 private fun arrowTint(enabled: Boolean) = MaterialTheme.appColors.textSecondary.copy(alpha = if (enabled) 1f else 0.3f)
+
+@Composable
+private fun UnassignedLine(amount: Money?, onTransactions: (LineFilter) -> Unit) {
+    if (amount == null || !amount.isPositive()) return
+    Column {
+        TextButton(onClick = { onTransactions(LineFilter.UNASSIGNED) }, modifier = Modifier.testTag("money_status_unassigned")) {
+            Text(stringResource(R.string.status_unassigned, formatMoney(amount)))
+        }
+        Caption(stringResource(R.string.status_unassigned_hint))
+    }
+}

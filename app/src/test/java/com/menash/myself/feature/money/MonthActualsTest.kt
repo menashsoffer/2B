@@ -9,6 +9,8 @@ import com.menash.myself.feature.money.importer.monthLines
 import com.menash.myself.feature.money.domain.sumMoney
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.YearMonth
 
@@ -43,11 +45,19 @@ class MonthActualsTest {
     }
 
     @Test
+    fun cardOnlyHasUnknownIncome() {
+        val income = planned(november, lines("max_nov.xlsx")).rows.single { it.kind == MonthRowKind.INCOME }
+        assertFalse(income.actualKnown)
+        assertNull(income.actual)
+    }
+
+    @Test
     fun incomeRowShowsImportedIncome() {
         val stored = lines("hapoalim_oct.xlsx")
         val view = planned(october, stored)
         assertEquals(actualIncome(stored, october, ImportMemory()), view.rows.single { it.kind == MonthRowKind.INCOME }.actual)
         assertEquals(Money(1_517_300), view.rows.single { it.kind == MonthRowKind.INCOME }.actual)
+        assertTrue(view.rows.single { it.kind == MonthRowKind.INCOME }.actualKnown)
     }
 
     @Test

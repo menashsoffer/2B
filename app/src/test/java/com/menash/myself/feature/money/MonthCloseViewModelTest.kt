@@ -57,6 +57,17 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun opensSelectedPastMonthAndUsesDefaultForCurrentOrFuture() {
+        val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
+        vm.open(october.minusMonths(2))
+        assertEquals(october.minusMonths(2), vm.ui.value.view!!.month)
+        vm.open(YearMonth.from(today))
+        assertEquals(october, vm.ui.value.view!!.month)
+        vm.open(YearMonth.from(today).plusMonths(1))
+        assertEquals(october, vm.ui.value.view!!.month)
+    }
+
+    @Test
     fun opensOnLastMonth_closes_andStaysOnIt() {
         val repo = FakeMoneyRepository(data)
         val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 10, 5))))
