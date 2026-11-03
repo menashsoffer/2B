@@ -289,10 +289,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 viewModel.startAdding(kind)
             },
             onDismiss = { picking = false },
-            onImport = {
-                picking = false
-                picker.launch(importMimeTypes)
-            },
+            onImport = { picking = false; picker.launch(importMimeTypes) },
         )
     }
 
