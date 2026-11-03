@@ -52,7 +52,7 @@ sealed interface ImportUi {
     }
 
     object Saving : ImportUi
-    data class Done(val written: Int, val removed: Int, val remembered: Int = 0, val unassigned: Int = 0, val month: java.time.YearMonth? = null) : ImportUi
+    data class Done(val written: Int, val removed: Int, val remembered: Int = 0, val unassignedByMonth: Map<java.time.YearMonth, Int> = emptyMap()) : ImportUi
 }
 
 class ImportViewModel(
@@ -164,9 +164,9 @@ class ImportViewModel(
             val counts = plan.toWrite.map { it.row.billingMonth }.distinct().associateWith { month ->
                 com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, effectiveMemory, loadedCategories).unassignedCount
             }
-            val month = counts.keys.sortedDescending().firstOrNull { (counts[it] ?: 0) > 0 }
+            val unassignedByMonth = counts.filterValues { it > 0 }.toSortedMap()
             pickedFiles = emptyList()
-            _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size, remembered.size, counts.values.sum(), month)
+            _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size, remembered.size, unassignedByMonth)
 
         }
     }

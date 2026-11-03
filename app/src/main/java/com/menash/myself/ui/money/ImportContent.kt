@@ -78,9 +78,18 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
             is ImportUi.Done -> Column(modifier = Modifier.fillMaxWidth().testTag("import_done"), verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                 Text(text = stringResource(R.string.import_saved_count, ui.written), style = AppType.title, color = MaterialTheme.appColors.textPrimary)
                 Text(text = stringResource(R.string.import_remembered_count, ui.remembered), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
-                if (ui.unassigned > 0 && ui.month != null) {
-                    Text(text = stringResource(R.string.import_unassigned_count, ui.unassigned), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
-                    TextButton(onClick = { actions.onAssign(ui.month) }) { Text(stringResource(R.string.import_assign_now)) }
+                val months = ui.unassignedByMonth.filterValues { it > 0 }.toSortedMap()
+                if (months.size == 1) {
+                    val (month, count) = months.entries.single()
+                    Text(text = stringResource(R.string.import_unassigned_count, count), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
+                    TextButton(onClick = { actions.onAssign(month) }) { Text(stringResource(R.string.import_assign_now)) }
+                } else if (months.size > 1) {
+                    MoneySurface {
+                        months.forEach { (month, count) ->
+                            AmountRow(title = stringResource(R.string.import_unassigned_month, hebrewMonthYear(month), count), amount = null,
+                                onClick = { actions.onAssign(month) }, testTag = "import_unassigned_$month")
+                        }
+                    }
                 }
                 PrimaryButton(text = stringResource(R.string.import_to_month), onClick = actions.onClose, modifier = Modifier.fillMaxWidth())
             }
