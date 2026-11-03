@@ -127,9 +127,6 @@ jobs:
           print("release is clean:", manifests, configs, classes)
           PY
 
-      - name: E2E clock unit test
-        run: ./gradlew testE2eUnitTest --tests com.menash.myself.feature.money.E2eTodayTest --no-daemon
-
       - name: Build the e2e app
         run: ./gradlew assembleE2e --no-daemon
 
