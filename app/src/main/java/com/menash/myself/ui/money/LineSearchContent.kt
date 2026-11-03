@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.Chip
@@ -98,7 +99,7 @@ fun LineSearchContent(ui: TransactionsUi, actions: TransactionsActions, modifier
             )
             else -> {
                 Text(
-                    text = stringResource(R.string.search_summary, results.count, formatMoney(results.spent)),
+                    text = pluralStringResource(R.plurals.search_summary, results.count, results.count, formatMoney(results.spent)),
                     style = AppType.body,
                     color = colors.textPrimary,
                     modifier = Modifier.padding(horizontal = Spacing.s8).testTag("search_summary"),

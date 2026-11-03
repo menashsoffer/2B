@@ -15,7 +15,6 @@
     <string name="search_all_lines">כל התנועות</string>
     <string name="search_only_unassigned">בלי קטגוריה</string>
     <string name="search_category_chip">%1$s ✕</string>
-    <string name="search_summary">%1$d תנועות · %2$s</string>
     <string name="search_hint_title">מה מחפשים?</string>
     <string name="search_hint_detail">אפשר לחפש לפי שם בית עסק, כינוי, קטגוריה או סכום, בכל החודשים</string>
     <string name="search_no_results_title">לא נמצא</string>
@@ -23,4 +22,8 @@
     <string name="search_clear_filters">לנקות את הסינון</string>
     <string name="search_open_month">לחודש</string>
     <string name="search_more">מוצגות %1$d התנועות הראשונות. כדאי לצמצם את החיפוש</string>
+    <plurals name="search_summary">
+        <item quantity="one">תנועה אחת · %2$s</item>
+        <item quantity="other">%1$d תנועות · %2$s</item>
+    </plurals>
 </resources>
