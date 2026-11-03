@@ -13,6 +13,8 @@ import com.menash.myself.feature.money.domain.MerchantMemory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -85,6 +87,62 @@ class ImportViewModelTest {
 
     private fun viewModel(repo: FakeTransactionRepository) =
         ImportViewModel(repo, FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher)
+
+    @Test
+    fun waitsForAllSourcesBeforeReviewing() {
+        val lines = MutableSharedFlow<List<StoredTransaction>>(replay = 1)
+        val memory = MutableSharedFlow<ImportMemory>(replay = 1)
+        val data = MutableSharedFlow<com.menash.myself.feature.money.data.MoneyData>(replay = 1)
+        val repo = object : TransactionRepository by FakeTransactionRepository() {
+            override fun observeTransactions(): Flow<List<StoredTransaction>> = lines
+            override fun observeMemory(): Flow<ImportMemory> = memory
+        }
+        val money = object : com.menash.myself.feature.money.data.MoneyRepository by FakeMoneyRepository() {
+            override fun observe(): Flow<com.menash.myself.feature.money.data.MoneyData> = data
+        }
+        val vm = ImportViewModel(repo, money, DefaultErrorReporter(), io = dispatcher)
+        vm.load(listOf(file("max_nov.xlsx")))
+        assertEquals(ImportUi.Reading, vm.ui.value)
+        lines.tryEmit(emptyList())
+        memory.tryEmit(ImportMemory())
+        assertEquals(ImportUi.Reading, vm.ui.value)
+        data.tryEmit(MoneySamples.filled)
+        assertEquals(7, (vm.ui.value as ImportUi.Review).review.plan.newCount)
+    }
+
+    @Test
+    fun delayedStoredLinesDetectDuplicate() {
+        val seed = viewModel(FakeTransactionRepository())
+        seed.load(listOf(file("max_nov.xlsx")))
+        val stored = (seed.ui.value as ImportUi.Review).review.plan.toWrite
+        val lines = MutableSharedFlow<List<StoredTransaction>>(replay = 1)
+        val repo = object : TransactionRepository by FakeTransactionRepository() {
+            override fun observeTransactions(): Flow<List<StoredTransaction>> = lines
+        }
+        val vm = ImportViewModel(repo, FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher)
+        vm.load(listOf(file("max_nov.xlsx")))
+        assertEquals(ImportUi.Reading, vm.ui.value)
+        lines.tryEmit(stored)
+        assertTrue((vm.ui.value as ImportUi.Review).review.nothingToSave)
+    }
+
+    @Test
+    fun failedSourceCanRetryTheSameFiles() {
+        var fail = true
+        val delegate = FakeTransactionRepository()
+        val repo = object : TransactionRepository by delegate {
+            override fun observeTransactions(): Flow<List<StoredTransaction>> = flow {
+                if (fail) throw IllegalStateException("offline")
+                emit(emptyList())
+            }
+        }
+        val vm = ImportViewModel(repo, FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher)
+        vm.load(listOf(file("max_nov.xlsx")))
+        assertEquals(ImportUi.Error, vm.ui.value)
+        fail = false
+        vm.retry()
+        assertEquals(7, (vm.ui.value as ImportUi.Review).review.plan.newCount)
+    }
 
     @Test
     fun nothingIsWrittenBeforeConfirm() {

@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.Chip
 import com.menash.myself.core.designsystem.component.ChipVariant
+import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.EmptyState
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.LoadingState
@@ -45,6 +46,7 @@ import java.time.format.DateTimeFormatter
 data class ImportActions(
     val onPick: (String) -> Unit = {},
     val onConfirm: () -> Unit = {},
+    val onRetry: () -> Unit = {},
     val onClose: () -> Unit = {},
 )
 
@@ -65,6 +67,7 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
         MoneySubScreen(title = stringResource(R.string.import_title), onBack = actions.onClose)
         when (ui) {
             ImportUi.Idle -> Unit
+            ImportUi.Error -> ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry))
             ImportUi.Reading -> LoadingState(message = stringResource(R.string.import_reading))
             ImportUi.Saving -> LoadingState(message = stringResource(R.string.import_saving))
             is ImportUi.Done -> EmptyState(
