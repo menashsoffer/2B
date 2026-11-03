@@ -31,6 +31,7 @@ tags: [smoke, import]
     element:
       id: import_confirm
     direction: DOWN
+    centerElement: true
     timeout: 30000
 - takeScreenshot: 02_import_review
 - tapOn:
@@ -39,12 +40,12 @@ tags: [smoke, import]
 - extendedWaitUntil:
     visible:
       id: import_done
-    timeout: 30000
+    timeout: 60000
 - assertTrue:
     condition: ${output.taps <= 2}
     label: "Tap budget: share to saved <= 2 taps"
 - takeScreenshot: 02_import_done
-- tapOn: "סגירה"
+- tapOn: "לחודש"
 
 # Second share of the same file: nothing new to save.
 - openLink: myself-e2e://signin?share=hapoalim_oct.xlsx

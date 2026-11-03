@@ -117,6 +117,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val transactionsUi by transactionsViewModel.ui.collectAsStateWithLifecycle()
     val importUi by importViewModel.ui.collectAsStateWithLifecycle()
+    val importOpen by importViewModel.open.collectAsStateWithLifecycle()
     val resolver = LocalContext.current.contentResolver
     val scope = rememberCoroutineScope()
     fun importUris(uris: List<Uri>) {
@@ -169,7 +170,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     var picking by remember { mutableStateOf(false) }
 
     val destination = moneyDestination(MoneyOpenFlags(
-        importing = importUi != ImportUi.Idle,
+        importing = importOpen,
         transactions = transactionsUi.open,
         goals = goalsUi.open,
         tithe = titheUi.open,
@@ -191,8 +192,8 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         CompositionLocalProvider(LocalMoneyBackActive provides (displayed == destination)) {
     when (displayed) {
         MoneyDestination.Import -> ImportContent(
-            ui = rememberShownState(importUi, importUi != ImportUi.Idle),
-            actions = ImportActions(onPick = importViewModel::openPicker, onConfirm = importViewModel::confirm, onClose = importViewModel::close),
+            ui = rememberShownState(importUi, importOpen),
+            actions = ImportActions(onPick = importViewModel::openPicker, onDecide = importViewModel::decide, onConfirm = importViewModel::confirm, onRetry = importViewModel::retry, onClose = importViewModel::close, onCancel = importViewModel::cancel, onAssign = { month -> importViewModel.cancel(); transactionsViewModel.open(month, LineFilter.UNASSIGNED) }),
             modifier = modifier,
         )
         // The transactions screen comes first: the maaser screen opens it to link a month's income.
@@ -263,6 +264,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onPeriod = periodViewModel::open,
                 onMonthSummary = summaryViewModel::open,
                 onImport = { picker.launch(importMimeTypes) },
+                onResumeImport = if (importUi != ImportUi.Idle && importUi !is ImportUi.Done) importViewModel::resume else null,
                 onSearch = { transactionsViewModel.openSearch() },
             ),
             modifier = modifier,

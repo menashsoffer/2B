@@ -11,11 +11,12 @@ tags: [stories]
     timeout: 120000
 - tapOn: {id: nav_money}
 - extendedWaitUntil:
-    visible: {id: money_month_title}
+    visible: {id: money_status_value}
     timeout: 120000
 - scrollUntilVisible:
     element: {id: money_close_month}
     direction: DOWN
+    centerElement: true
 - tapOn: {id: money_close_month}
 - extendedWaitUntil:
     visible: {id: close_previous}
@@ -24,11 +25,13 @@ tags: [stories]
 - scrollUntilVisible:
     element: {id: close_balances}
     direction: DOWN
+    centerElement: true
 - tapOn: "לדלג, לא ידוע"
 - takeScreenshot: story13_balances_unknown
 - scrollUntilVisible:
     element: {id: close_button}
     direction: DOWN
+    centerElement: true
 - tapOn: {id: close_button}
 - extendedWaitUntil:
     visible: {id: close_done}
@@ -37,6 +40,7 @@ tags: [stories]
 - scrollUntilVisible:
     element: {id: money_period}
     direction: DOWN
+    centerElement: true
 - tapOn: {id: money_period}
 - extendedWaitUntil:
     visible: {id: period_content}
@@ -46,5 +50,6 @@ tags: [stories]
 - scrollUntilVisible:
     element: {id: period_chart}
     direction: DOWN
+    centerElement: true
 - assertVisible: {id: period_chart}
 - takeScreenshot: story13_period

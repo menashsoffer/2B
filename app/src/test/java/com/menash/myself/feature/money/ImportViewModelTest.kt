@@ -13,10 +13,17 @@ import com.menash.myself.feature.money.domain.MerchantMemory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -87,6 +94,62 @@ class ImportViewModelTest {
         ImportViewModel(repo, FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher)
 
     @Test
+    fun waitsForAllSourcesBeforeReviewing() {
+        val lines = MutableSharedFlow<List<StoredTransaction>>(replay = 1)
+        val memory = MutableSharedFlow<ImportMemory>(replay = 1)
+        val data = MutableSharedFlow<com.menash.myself.feature.money.data.MoneyData>(replay = 1)
+        val repo = object : TransactionRepository by FakeTransactionRepository() {
+            override fun observeTransactionsForImport(): Flow<List<StoredTransaction>> = lines
+            override fun observeMemoryForImport(): Flow<ImportMemory> = memory
+        }
+        val money = object : com.menash.myself.feature.money.data.MoneyRepository by FakeMoneyRepository() {
+            override fun observeForImport(): Flow<com.menash.myself.feature.money.data.MoneyData> = data
+        }
+        val vm = ImportViewModel(repo, money, DefaultErrorReporter(), io = dispatcher)
+        vm.load(listOf(file("max_nov.xlsx")))
+        assertEquals(ImportUi.Reading, vm.ui.value)
+        lines.tryEmit(emptyList())
+        memory.tryEmit(ImportMemory())
+        assertEquals(ImportUi.Reading, vm.ui.value)
+        data.tryEmit(MoneySamples.filled)
+        assertEquals(7, (vm.ui.value as ImportUi.Review).review.plan.newCount)
+    }
+
+    @Test
+    fun delayedStoredLinesDetectDuplicate() {
+        val seed = viewModel(FakeTransactionRepository())
+        seed.load(listOf(file("max_nov.xlsx")))
+        val stored = (seed.ui.value as ImportUi.Review).review.plan.toWrite
+        val lines = MutableSharedFlow<List<StoredTransaction>>(replay = 1)
+        val repo = object : TransactionRepository by FakeTransactionRepository() {
+            override fun observeTransactionsForImport(): Flow<List<StoredTransaction>> = lines
+        }
+        val vm = ImportViewModel(repo, FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher)
+        vm.load(listOf(file("max_nov.xlsx")))
+        assertEquals(ImportUi.Reading, vm.ui.value)
+        lines.tryEmit(stored)
+        assertTrue((vm.ui.value as ImportUi.Review).review.nothingToSave)
+    }
+
+    @Test
+    fun failedSourceCanRetryTheSameFiles() {
+        var fail = true
+        val delegate = FakeTransactionRepository()
+        val repo = object : TransactionRepository by delegate {
+            override fun observeTransactionsForImport(): Flow<List<StoredTransaction>> = flow {
+                if (fail) throw IllegalStateException("offline")
+                emit(emptyList())
+            }
+        }
+        val vm = ImportViewModel(repo, FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher)
+        vm.load(listOf(file("max_nov.xlsx")))
+        assertEquals(ImportUi.Error, vm.ui.value)
+        fail = false
+        vm.retry()
+        assertEquals(7, (vm.ui.value as ImportUi.Review).review.plan.newCount)
+    }
+
+    @Test
     fun nothingIsWrittenBeforeConfirm() {
         val repo = FakeTransactionRepository()
         val vm = viewModel(repo)
@@ -95,8 +158,29 @@ class ImportViewModelTest {
         assertEquals(7, review.review.plan.newCount)
         assertTrue(repo.applied.isEmpty())
         vm.close()
+        assertTrue(vm.ui.value is ImportUi.Review)
+        vm.resume()
+        assertTrue(vm.open.value)
+        vm.cancel()
         assertEquals(ImportUi.Idle, vm.ui.value)
         assertTrue(repo.applied.isEmpty())
+    }
+
+    @Test
+    fun undoRestoresPreviousDecisionAndReviewSurvivesLeaving() = runTest {
+        val events = UiEvents()
+        val vm = ImportViewModel(FakeTransactionRepository(), FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher, events = events)
+        vm.load(listOf(file("max_nov.xlsx")))
+        val coffee = (vm.ui.value as ImportUi.Review).review.merchants.single { it.name == "קפה גרג" }.key
+        vm.decide(coffee, MerchantDecision.Categorise("current-1"))
+        var event: UiEvent.ImportDecision? = null
+        val collector = launch(UnconfinedTestDispatcher(testScheduler)) { event = events.events.first() as UiEvent.ImportDecision }
+        vm.decide(coffee, MerchantDecision.Categorise("current-9"))
+        event!!.undo()
+        vm.close()
+        vm.resume()
+        assertEquals(MerchantDecision.Categorise("current-1"), (vm.ui.value as ImportUi.Review).decisionFor(coffee))
+        collector.cancel()
     }
 
     @Test
@@ -110,12 +194,28 @@ class ImportViewModelTest {
         vm.decide(coffee, MerchantDecision.Categorise("current-9"))
         assertEquals(null, (vm.ui.value as ImportUi.Review).picking)
         vm.confirm()
-        assertEquals(ImportUi.Done(7, 0), vm.ui.value)
+        assertEquals(7, (vm.ui.value as ImportUi.Done).written)
+        assertTrue((vm.ui.value as ImportUi.Done).remembered >= 2)
         assertEquals(7, repo.lines.value.size)
         assertEquals(2, repo.lines.value.count { it.categoryId == "current-9" })
         // The suggested category counts as chosen: Shufersal is learnt as "מזון".
         assertEquals("current-1", repo.memory.value.merchants.categories[ImportIds.merchantKey("שופרסל דיל 123")])
         assertEquals("current-9", repo.memory.value.merchants.categories[coffee])
+    }
+
+    @Test
+    fun rememberedMerchantStartsDecidedAndCanBeChanged() {
+        val repo = FakeTransactionRepository()
+        val key = ImportIds.merchantKey("שופרסל דיל 123")
+        repo.memory.value = ImportMemory(merchants = MerchantMemory(mapOf(key to "current-9")))
+        val vm = viewModel(repo)
+        vm.load(listOf(file("max_nov.xlsx")))
+        val review = vm.ui.value as ImportUi.Review
+        assertEquals(MerchantDecision.Categorise("current-9"), review.decisionFor(key))
+        vm.decide(key, MerchantDecision.Categorise("current-1"))
+        vm.confirm()
+        assertTrue(repo.lines.value.filter { ImportIds.merchantKey(it.row.description) == key }.all { it.categoryId == "current-1" })
+        assertEquals("current-1", repo.memory.value.merchants.categories[key])
     }
 
     @Test

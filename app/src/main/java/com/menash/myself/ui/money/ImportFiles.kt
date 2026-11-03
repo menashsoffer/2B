@@ -26,21 +26,25 @@ fun sharedFileUris(intent: Intent?): List<Uri> = when (intent?.action) {
 }.filter { it.scheme == ContentResolver.SCHEME_CONTENT }
 
 /** Reads one picked or shared file. Files over the size limit are cut there, and the reader refuses them. */
-fun readImportFile(resolver: ContentResolver, uri: Uri): ImportFile? = runCatching {
-    val name = resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
-        if (cursor.moveToFirst()) cursor.getString(0) else null
-    } ?: uri.lastPathSegment.orEmpty()
-    val bytes = resolver.openInputStream(uri)?.use { input ->
-        val out = java.io.ByteArrayOutputStream()
-        val buffer = ByteArray(64 * 1024)
-        var total = 0
-        while (total <= MAX_FILE_BYTES) {
-            val n = input.read(buffer)
-            if (n < 0) break
-            out.write(buffer, 0, n)
-            total += n
+fun readImportFile(resolver: ContentResolver, uri: Uri): ImportFile {
+    val name = runCatching {
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0) else null
         }
-        out.toByteArray()
-    } ?: return@runCatching null
-    ImportFile(name, bytes)
-}.getOrNull()
+    }.getOrNull() ?: uri.lastPathSegment.orEmpty()
+    return runCatching {
+        val bytes = requireNotNull(resolver.openInputStream(uri)).use { input ->
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(64 * 1024)
+            var total = 0
+            while (total <= MAX_FILE_BYTES) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                out.write(buffer, 0, n)
+                total += n
+            }
+            out.toByteArray()
+        }
+        ImportFile(name, bytes)
+    }.getOrElse { ImportFile(name, byteArrayOf(), readError = true) }
+}

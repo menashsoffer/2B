@@ -14,7 +14,9 @@ tags: [smoke]
     visible: {id: money_status_value}
     timeout: 120000
 # The fixture amounts yield 8,900; the task's requested 7,700 does not match them.
-- assertVisible: "₪8,900"
+- assertVisible:
+    id: money_status_value
+    text: "\u2066?₪8,900\u2069?"
 - assertVisible: "עוד לא יובאו תנועות לחודש הזה"
 - takeScreenshot: story10_month
 - tapOn: "התמונה הגדולה"

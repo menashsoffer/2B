@@ -8,6 +8,7 @@ interface MoneyRepository {
     /** Emits the whole household money state on every change; [MoneyData] () when no household is active. */
     fun observe(): Flow<MoneyData>
     fun observeForScreen(): Flow<MoneyData> = observe()
+    fun observeForImport(): Flow<MoneyData> = observeForScreen()
 
     /** Creates or replaces the document with the entry's id. */
     suspend fun save(entry: MoneyEntry)

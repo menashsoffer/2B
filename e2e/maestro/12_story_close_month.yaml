@@ -16,6 +16,7 @@ tags: [smoke]
 - scrollUntilVisible:
     element: {id: money_close_month}
     direction: DOWN
+    centerElement: true
 - tapOn: {id: money_close_month}
 - extendedWaitUntil:
     visible: {id: close_ready}
@@ -24,6 +25,7 @@ tags: [smoke]
 - scrollUntilVisible:
     element: {id: close_button}
     direction: DOWN
+    centerElement: true
 - tapOn: {id: close_button}
 - extendedWaitUntil:
     visible: {id: close_done}
@@ -35,10 +37,13 @@ tags: [smoke]
     direction: UP
 - tapOn: {id: money_month_previous}
 - assertVisible: "סגור"
-- assertVisible: "₪13,000"
+- assertVisible:
+    id: money_status_value
+    text: "\u2066?₪13,000\u2069?"
 - scrollUntilVisible:
     element: {id: money_month_summary}
     direction: DOWN
+    centerElement: true
 - tapOn: {id: money_month_summary}
 - extendedWaitUntil:
     visible: {id: summary_overruns}

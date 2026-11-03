@@ -5,14 +5,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -37,13 +44,14 @@ fun ImportCategorySheet(
     onDismiss: () -> Unit,
     header: @Composable () -> Unit = {},
     onCreate: ((String, ExpenseClass) -> Unit)? = null,
+    recentCategories: List<String> = emptyList(),
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.appColors.card,
     ) {
-        ImportCategoryList(merchant, categories, onDecide, header = header, onCreate = onCreate)
+        ImportCategoryList(merchant, categories, onDecide, header = header, onCreate = onCreate, recentCategories = recentCategories)
     }
 }
 
@@ -62,7 +70,11 @@ fun ImportCategoryList(
     modifier: Modifier = Modifier,
     header: @Composable () -> Unit = {},
     onCreate: ((String, ExpenseClass) -> Unit)? = null,
+    recentCategories: List<String> = emptyList(),
 ) {
+    var query by rememberSaveable { mutableStateOf("") }
+    fun displayName(category: Category): String = categories.firstOrNull { it.id == category.parentId }?.let { "${it.name} › ${category.name}" } ?: category.name
+    val matching = categories.filter { displayName(it).contains(query.trim(), ignoreCase = true) }
     val colors = MaterialTheme.appColors
     Column(
         modifier = modifier
@@ -79,14 +91,18 @@ fun ImportCategoryList(
             style = AppType.title,
             color = colors.textPrimary,
         )
+        OutlinedTextField(value = query, onValueChange = { query = it }, label = { Text(stringResource(R.string.import_search_categories)) },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), singleLine = true, modifier = Modifier.fillMaxWidth())
         merchant.hint?.let {
             Text(text = stringResource(R.string.import_hint, it), style = AppType.caption, color = colors.textSecondary)
         }
         header()
-        val suggested = categories.firstOrNull { it.id == merchant.suggested }
-        if (suggested != null) {
+        val first = (recentCategories + listOfNotNull(merchant.suggested)).distinct().mapNotNull { id -> matching.firstOrNull { it.id == id } }
+        if (first.isNotEmpty()) {
             MoneySurface(testTag = "import_suggested") {
-                AmountRow(title = suggested.name, amount = null, onClick = { onDecide(MerchantDecision.Categorise(suggested.id)) })
+                first.forEach { category ->
+                    AmountRow(title = displayName(category), amount = null, onClick = { onDecide(MerchantDecision.Categorise(category.id)) })
+                }
             }
         }
         if (merchant.transfer) {
@@ -100,13 +116,13 @@ fun ImportCategoryList(
             }
         }
         classRows.forEach { (klass, row) ->
-            val inClass = categories.filter { it.klass == klass && it.id != suggested?.id }
+            val inClass = matching.filter { it.klass == klass && first.none { item -> item.id == it.id } }
             if (inClass.isNotEmpty()) {
                 SectionTitle(rowLabel(row))
                 MoneySurface {
                     inClass.forEach { category ->
                         AmountRow(
-                            title = category.name,
+                            title = displayName(category),
                             amount = null,
                             onClick = { onDecide(MerchantDecision.Categorise(category.id)) },
                             testTag = "import_category_${category.id}",
@@ -135,6 +151,7 @@ fun ImportOverlays(importUi: ImportUi, importViewModel: ImportViewModel) {
     ImportCategorySheet(
         merchant = merchant,
         categories = review.categories,
+        recentCategories = review.recentCategories,
         onDecide = { importViewModel.decide(merchant.key, it) },
         onDismiss = importViewModel::closePicker,
         onCreate = { name, klass -> importViewModel.createCategory(merchant.key, name, klass) },
