@@ -99,6 +99,7 @@ fun AppShell(
                 UiEvent.DONATION_SAVED -> context.getString(R.string.feedback_donation_saved)
                 UiEvent.DELETED -> context.getString(R.string.feedback_deleted)
                 is UiEvent.ImportDone -> context.getString(R.string.feedback_import_done, event.written)
+                is UiEvent.ImportDecision -> context.getString(R.string.feedback_category_assigned, event.name ?: context.getString(event.label ?: R.string.import_later))
                 is UiEvent.CategoryAssigned -> context.getString(R.string.feedback_category_assigned, event.name)
                 is UiEvent.SaveError -> event.message
                 is UiEvent.MonthClosed -> context.getString(R.string.feedback_month_closed, hebrewMonthYear(event.month))
@@ -111,12 +112,15 @@ fun AppShell(
                 val action = when {
                     month != null -> context.getString(R.string.feedback_assign)
                     event is UiEvent.SaveError -> context.getString(R.string.money_retry)
+                    event is UiEvent.ImportDecision -> context.getString(R.string.import_undo)
                     else -> null
                 }
                 val result = snackbarHost.showSnackbar(text, actionLabel = action, duration = SnackbarDuration.Short)
                 if (result == SnackbarResult.ActionPerformed && month != null) {
                     openRoute(ShellRoute.Money)
                     appContainer.uiEvents.openUnassigned(month)
+                } else if (result == SnackbarResult.ActionPerformed && event is UiEvent.ImportDecision) {
+                    event.undo()
                 } else if (result == SnackbarResult.ActionPerformed && event is UiEvent.SaveError) {
                     event.retry()
                 }

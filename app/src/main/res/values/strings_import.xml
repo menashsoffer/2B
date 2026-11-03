@@ -45,4 +45,17 @@
     <string name="import_new_category">+ קטגוריה חדשה</string>
     <string name="import_new_category_name">שם הקטגוריה</string>
     <string name="import_new_category_add">להוסיף ולבחור</string>
+    <string name="import_file_counts">%1$d חדשות · %2$d כבר קיימות</string>
+    <string name="import_merchants_remaining">נשארו %1$d בתי עסק לשיוך</string>
+    <string name="import_read_failed">לא הצלחנו לקרוא את הקובץ</string>
+    <string name="import_other">אחר…</string>
+    <string name="import_search_categories">חיפוש קטגוריה</string>
+    <string name="import_pending">ייבוא ממתין</string>
+    <string name="import_undo">ביטול</string>
+    <string name="import_saved_count">נשמרו %1$d תנועות</string>
+    <string name="import_remembered_count">%1$d בתי עסק נזכרו לפעם הבאה</string>
+    <string name="import_unassigned_count">%1$d נשארו בלי קטגוריה</string>
+    <string name="import_assign_now">לשייך עכשיו</string>
+    <string name="import_to_month">לחודש</string>
+    <string name="import_unassigned_month">%1$s · %2$d בלי קטגוריה</string>
 </resources>

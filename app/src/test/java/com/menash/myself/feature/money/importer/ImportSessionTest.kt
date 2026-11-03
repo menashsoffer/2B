@@ -42,14 +42,22 @@ class ImportSessionTest {
     }
 
     @Test
-    fun knownMerchantsAreNotAskedAgain() {
+    fun rememberedMerchantsAppearWithMemoryBeforeTheHint() {
         val memory = ImportMemory(
-            MerchantMemory(mapOf(ImportIds.merchantKey("שופרסל דיל 123") to "current-1")),
+            MerchantMemory(mapOf(ImportIds.merchantKey("שופרסל דיל 123") to "current-9")),
             ownTransfers = setOf(ImportIds.merchantKey("העברה ב-bit דנה לוי")),
         )
-        val names = reviewImport(listOf(file("hapoalim_oct.xlsx"), file("max_nov.xlsx")), emptyMap(), memory, categories)
-            .merchants.map { it.name }
-        assertTrue("שופרסל דיל 123" !in names && "העברה ב-bit דנה לוי" !in names)
+        val merchants = reviewImport(listOf(file("hapoalim_oct.xlsx"), file("max_nov.xlsx")), emptyMap(), memory, categories).merchants
+        assertEquals("current-9", merchants.single { it.name == "שופרסל דיל 123" }.suggested)
+        assertTrue(merchants.none { it.name == "העברה ב-bit דנה לוי" })
+    }
+
+    @Test
+    fun hapoalimFixtureNeedsFourDecisionsThenNone() {
+        val first = reviewImport(listOf(file("hapoalim_oct.xlsx")), emptyMap(), ImportMemory(), categories)
+        assertEquals(4, first.merchants.count { it.suggested == null })
+        val again = reviewImport(listOf(file("hapoalim_oct.xlsx")), first.plan.toWrite.associateBy { it.id }, ImportMemory(), categories)
+        assertEquals(0, again.merchants.size)
     }
 
     @Test
