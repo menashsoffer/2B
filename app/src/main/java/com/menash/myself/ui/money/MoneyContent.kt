@@ -39,7 +39,6 @@ import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.LoadingState
 import com.menash.myself.core.designsystem.component.PillTabs
 import com.menash.myself.core.designsystem.component.PrimaryButton
-import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
@@ -79,6 +78,7 @@ data class MoneyActions(
     val onMonthSummary: (YearMonth) -> Unit = {},
     val onImport: () -> Unit = {},
     val onCategory: (String) -> Unit = {},
+    val onSearch: () -> Unit = {},
 )
 
 @Composable
@@ -101,7 +101,7 @@ fun MoneyContent(
             .testTag("money_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        ScreenHeader(title = stringResource(R.string.nav_money))
+        MoneyHeader(onSearch = actions.onSearch)
         PillTabs(
             options = listOf(stringResource(R.string.money_tab_month), stringResource(R.string.money_tab_big_picture)),
             selectedIndex = selectedTab,
