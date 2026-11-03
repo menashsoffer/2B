@@ -124,4 +124,6 @@
     <string name="home_money_planned">פנוי החודש, צפי</string>
     <string name="money_load_error">לא הצלחנו לטעון את הנתונים.</string>
     <string name="money_load_retry">לנסות שוב</string>
+    <string name="status_no_current_budget">אין עדיין תקציב לשוטפות, אז אי אפשר לדעת כמה נשאר</string>
+    <string name="status_set_current_budget">להגדיר תקציב שוטפות</string>
 </resources>

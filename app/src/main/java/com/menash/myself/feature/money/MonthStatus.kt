@@ -27,6 +27,8 @@ sealed interface MonthStatus {
         val usage: UsageLevel get() = usageLevel(currentSpent, currentBudget)
     }
 
+    data class NoCurrentBudget(val spentSoFar: Money, val unassigned: Money?, val dataUntil: LocalDate?) : MonthStatus
+
     /** A closed month: income minus expenses as frozen at the close. */
     data class Closed(val left: Money, val income: Money, val expenses: Money, val closedOn: LocalDate) : MonthStatus
 }
@@ -55,7 +57,7 @@ internal fun monthStatus(
         val expenses = closed.snapshot.actualExpenses
         return MonthStatus.Closed(Money(Math.subtractExact(income.agorot, expenses.agorot)), income, expenses, closed.closedOn)
     }
-    val imported = view.rows.any { it.kind != MonthRowKind.INCOME && it.actual != null } || view.unassigned != null
+    val imported = view.importedLines > 0
     if (!imported) return MonthStatus.PlanOnly(view.plan.expectedSurplus)
     val current = view.rows.firstOrNull { it.kind == MonthRowKind.CURRENT }
     val budget = current?.total ?: Money.ZERO
@@ -63,6 +65,7 @@ internal fun monthStatus(
     val spentSoFar = (view.rows.filter { it.kind in spendingRows }.mapNotNull { it.actual } + listOfNotNull(view.unassigned))
         .fold(0L) { sum, it -> Math.addExact(sum, it.agorot) }
     val until = stored.filter { it.row.billingMonth == month && it.row.status == RowStatus.COUNTED }.maxOfOrNull { it.row.date }
+    if (!budget.isPositive()) return MonthStatus.NoCurrentBudget(Money(spentSoFar), view.unassigned, until)
     return MonthStatus.Open(
         leftForCurrent = Money(Math.subtractExact(budget.agorot, spent.agorot)),
         currentBudget = budget,

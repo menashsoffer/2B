@@ -20,6 +20,7 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.money.EditKind
 import com.menash.myself.feature.money.EditorState
 import com.menash.myself.feature.money.MoneySamples
+import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.MoneyScreenState
 import com.menash.myself.feature.money.buildMoneyMonth
 import com.menash.myself.feature.money.data.MoneyData
@@ -47,6 +48,13 @@ class MoneyScreenshotTest {
 
     @get:Rule
     val composeRule = createComposeRule()
+
+    @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
+    fun noCurrentBudget_dark() {
+        composeRule.captureR2Screen(darkTheme = true, fontScale = 1.0f) {
+            Rtl { MonthStatusHeadline(MonthStatus.NoCurrentBudget(Money(713_200), Money(612_000), null)) }
+        }
+    }
 
     @Test fun moneyMonthEmpty_light_font10() = month(MoneySamples.empty, dark = false, font = 1.0f)
     @Test fun moneyMonthEmpty_light_font13() = month(MoneySamples.empty, dark = false, font = 1.3f)
