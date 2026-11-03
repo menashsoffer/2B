@@ -85,10 +85,9 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
 
 @Composable
 private fun ReviewBody(ui: ImportUi.Review, actions: ImportActions) {
-    val plan = ui.review.plan
     SectionTitle(stringResource(R.string.import_files))
-    MoneySurface(testTag = "import_files") {
-        ui.review.files.forEach { FileRow(it) }
+    Column(modifier = Modifier.testTag("import_files"), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
+        ui.review.files.forEach { file -> MoneySurface { FileRow(file) } }
     }
     if (ui.review.nothingToSave) {
         Text(
@@ -97,21 +96,11 @@ private fun ReviewBody(ui: ImportUi.Review, actions: ImportActions) {
             color = MaterialTheme.appColors.textSecondary,
             modifier = Modifier.padding(horizontal = Spacing.s8).testTag("import_nothing_new"),
         )
-    } else {
-        SectionTitle(stringResource(R.string.import_counts))
-        MoneySurface(testTag = "import_counts") {
-            CountRow(R.string.import_new, plan.newCount)
-            CountRow(R.string.import_updated, plan.updatedCount)
-            CountRow(R.string.import_already, plan.alreadyImported)
-            CountRow(R.string.import_duplicates, plan.duplicatesInBatch)
-            CountRow(R.string.import_waiting, plan.waiting)
-            CountRow(R.string.import_replaced, plan.toDelete.size)
-        }
     }
+
     if (ui.review.merchants.isNotEmpty()) {
-        SectionTitle(stringResource(R.string.import_merchants))
         Text(
-            text = stringResource(R.string.import_merchants_hint),
+            text = stringResource(R.string.import_merchants_remaining, ui.review.merchants.count { ui.decisionFor(it.key) == null }),
             style = AppType.caption,
             color = MaterialTheme.appColors.textSecondary,
             modifier = Modifier.padding(horizontal = Spacing.s8),
@@ -176,6 +165,7 @@ private fun FileRow(file: FileSummary) {
         val problem = file.problem
         when {
             // Plain text, not a chip: the reason says what to do and must not be cut off at large fonts.
+            file.readError -> Text(text = stringResource(R.string.import_read_failed), style = AppType.body, color = MaterialTheme.appColors.warning)
             problem != null -> Text(text = problemText(problem), style = AppType.body, color = MaterialTheme.appColors.warning)
             source != null && file.firstDate != null && file.lastDate != null -> Text(
                 text = stringResource(
@@ -190,6 +180,9 @@ private fun FileRow(file: FileSummary) {
                 style = AppType.caption,
                 color = MaterialTheme.appColors.textSecondary,
             )
+        }
+        if (problem == null && !file.readError) {
+            Text(text = stringResource(R.string.import_file_counts, file.newCount, file.existingCount), style = AppType.caption, color = MaterialTheme.appColors.textSecondary)
         }
         when (val total = file.total) {
             ImportCheck.Ok -> Chip(text = stringResource(R.string.import_total_ok), variant = ChipVariant.Success)

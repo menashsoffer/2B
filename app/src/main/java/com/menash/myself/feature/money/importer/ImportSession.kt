@@ -8,7 +8,7 @@ import com.menash.myself.feature.money.domain.suggestCategory
 import java.time.LocalDate
 
 /** One file as the user picked or shared it. The name is shown only; it never decides anything. */
-class ImportFile(val name: String, val bytes: ByteArray)
+class ImportFile(val name: String, val bytes: ByteArray, val readError: Boolean = false)
 
 /** What the summary shows for one file. A refused file has [problem] and nothing else. */
 data class FileSummary(
@@ -23,6 +23,9 @@ data class FileSummary(
     val skippedRows: List<Int> = emptyList(),
     /** Bank files: the row where the running balance stops adding up, if any. */
     val balanceBreakRow: Int? = null,
+    val newCount: Int = 0,
+    val existingCount: Int = 0,
+    val readError: Boolean = false,
 )
 
 /** A merchant seen for the first time; the user gives it a category once and the memory learns it. */
@@ -60,7 +63,7 @@ fun reviewImport(
 ): ImportReview {
     val read = files.map { file ->
         try {
-            file.name to parseStatement(file.bytes)
+            file.name to if (file.readError) null else parseStatement(file.bytes)
         } catch (e: ImportException) {
             file.name to e.problem
         }
@@ -73,7 +76,10 @@ fun reviewImport(
                 name, result.source, null, result.rows.size, result.firstDate, result.lastDate, totalCheck(result),
                 result.warnings.filterIsInstance<ImportWarning.SkippedRow>().map { it.rowNumber },
                 result.warnings.filterIsInstance<ImportWarning.BalanceBreak>().firstOrNull()?.rowNumber,
+                newCount = planImport(existing, listOf(result)).newCount,
+                existingCount = result.rows.count { it.id in existing },
             )
+            null -> FileSummary(name, readError = true)
             else -> FileSummary(name, problem = result as FileProblem)
         }
     }
