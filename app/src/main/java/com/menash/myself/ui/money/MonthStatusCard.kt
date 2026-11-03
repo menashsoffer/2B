@@ -12,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +67,7 @@ internal fun MonthSwitcher(money: MoneyMonth, closed: Boolean, onPrevious: () ->
 
 /** The headline: "נשאר לשוטפות" for an open month, the plan's surplus before any import, the frozen result once closed. */
 @Composable
-internal fun MonthStatusHeadline(status: MonthStatus) {
+internal fun MonthStatusHeadline(status: MonthStatus, onAddCurrent: () -> Unit = {}) {
     val colors = MaterialTheme.appColors
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.testTag("money_status")) {
         when (status) {
@@ -77,7 +78,7 @@ internal fun MonthStatusHeadline(status: MonthStatus) {
                     Caption(stringResource(R.string.status_of_budget, formatMoney(status.currentBudget)))
                 }
                 val budget = status.currentBudget.agorot
-                val progress = if (budget > 0) status.currentSpent.agorot.toFloat() / budget else 1f
+                val progress = if (budget > 0) status.currentSpent.agorot.toFloat() / budget else 0f
                 ProgressBar(
                     progress = progress,
                     color = when (status.usage) {
@@ -90,6 +91,15 @@ internal fun MonthStatusHeadline(status: MonthStatus) {
                 status.dataUntil?.let { Caption(stringResource(R.string.status_data_until, it.format(untilFormat))) }
                 SmallFigure(stringResource(R.string.status_expected_surplus), status.expectedSurplus)
                 SmallFigure(stringResource(R.string.status_spent_so_far), status.spentSoFar)
+            }
+            is MonthStatus.NoCurrentBudget -> {
+                Caption(stringResource(R.string.status_spent_so_far))
+                BigAmount(status.spentSoFar)
+                Caption(stringResource(R.string.status_no_current_budget))
+                TextButton(onClick = onAddCurrent, modifier = Modifier.testTag("money_set_current_budget")) {
+                    Text(stringResource(R.string.status_set_current_budget))
+                }
+                status.dataUntil?.let { Caption(stringResource(R.string.status_data_until, it.format(untilFormat))) }
             }
             is MonthStatus.PlanOnly -> {
                 Caption(stringResource(R.string.status_expected_surplus))
