@@ -120,7 +120,7 @@ jobs:
           for path in configs:
               text = open(path).read()
               assert 'FIREBASE_EMULATOR_HOST = ""' in text, f"release must use the real Firebase project: {path}"
-          classes = glob.glob("app/build/tmp/kotlin-classes/release/**/TodayProvider.class", recursive=True)
+          classes = glob.glob("app/build/**/release/**/TodayProvider.class", recursive=True)
           assert classes, "release clock provider missing"
           for path in classes:
               assert b"setForE2e" not in open(path, "rb").read(), f"e2e clock override found in {path}"
