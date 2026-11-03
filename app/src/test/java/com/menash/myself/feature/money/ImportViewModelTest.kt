@@ -194,7 +194,8 @@ class ImportViewModelTest {
         vm.decide(coffee, MerchantDecision.Categorise("current-9"))
         assertEquals(null, (vm.ui.value as ImportUi.Review).picking)
         vm.confirm()
-        assertEquals(ImportUi.Done(7, 0), vm.ui.value)
+        assertEquals(7, (vm.ui.value as ImportUi.Done).written)
+        assertEquals(2, (vm.ui.value as ImportUi.Done).remembered)
         assertEquals(7, repo.lines.value.size)
         assertEquals(2, repo.lines.value.count { it.categoryId == "current-9" })
         // The suggested category counts as chosen: Shufersal is learnt as "מזון".

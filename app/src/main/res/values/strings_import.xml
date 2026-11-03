@@ -52,4 +52,9 @@
     <string name="import_search_categories">חיפוש קטגוריה</string>
     <string name="import_pending">ייבוא ממתין</string>
     <string name="import_undo">ביטול</string>
+    <string name="import_saved_count">נשמרו %1$d תנועות</string>
+    <string name="import_remembered_count">%1$d בתי עסק נזכרו לפעם הבאה</string>
+    <string name="import_unassigned_count">%1$d נשארו בלי קטגוריה</string>
+    <string name="import_assign_now">לשייך עכשיו</string>
+    <string name="import_to_month">לחודש</string>
 </resources>

@@ -196,7 +196,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     when (displayed) {
         MoneyDestination.Import -> ImportContent(
             ui = rememberShownState(importUi, importOpen),
-            actions = ImportActions(onPick = importViewModel::openPicker, onDecide = importViewModel::decide, onConfirm = importViewModel::confirm, onRetry = importViewModel::retry, onClose = importViewModel::close, onCancel = importViewModel::cancel),
+            actions = ImportActions(onPick = importViewModel::openPicker, onDecide = importViewModel::decide, onConfirm = importViewModel::confirm, onRetry = importViewModel::retry, onClose = importViewModel::close, onCancel = importViewModel::cancel, onAssign = { month -> importViewModel.cancel(); transactionsViewModel.open(month, LineFilter.UNASSIGNED) }),
             modifier = modifier,
         )
         // The transactions screen comes first: the maaser screen opens it to link a month's income.

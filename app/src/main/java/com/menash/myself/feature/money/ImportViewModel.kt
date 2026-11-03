@@ -52,7 +52,7 @@ sealed interface ImportUi {
     }
 
     object Saving : ImportUi
-    data class Done(val written: Int, val removed: Int) : ImportUi
+    data class Done(val written: Int, val removed: Int, val remembered: Int = 0, val unassigned: Int = 0, val month: java.time.YearMonth? = null) : ImportUi
 }
 
 class ImportViewModel(
@@ -158,13 +158,16 @@ class ImportViewModel(
         safeLaunch("applyImport", onError = { _ui.value = review }) {
             transactions.apply(plan)
             // A merchant that asks each time keeps this batch's category on its lines only.
-            updates.filter { it.ownTransfer || it.merchantKey !in loadedMemory.askEachTime }
-                .forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
-            _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size)
-            val month = plan.toWrite.map { it.row.billingMonth }.distinct().sortedDescending().firstOrNull { month ->
-                com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, loadedMemory, loadedCategories).unassignedCount > 0
+            val remembered = updates.filter { it.ownTransfer || it.merchantKey !in loadedMemory.askEachTime }
+            remembered.forEach { transactions.remember(it.merchantKey, it.categoryId, it.ownTransfer) }
+            val effectiveMemory = loadedMemory.copy(ownTransfers = loadedMemory.ownTransfers + remembered.filter { it.ownTransfer }.map { it.merchantKey })
+            val counts = plan.toWrite.map { it.row.billingMonth }.distinct().associateWith { month ->
+                com.menash.myself.feature.money.importer.monthLines(plan.toWrite, month, effectiveMemory, loadedCategories).unassignedCount
             }
-            events?.send(UiEvent.ImportDone(plan.toWrite.size, month))
+            val month = counts.keys.sortedDescending().firstOrNull { (counts[it] ?: 0) > 0 }
+            pickedFiles = emptyList()
+            _ui.value = ImportUi.Done(plan.toWrite.size, plan.toDelete.size, remembered.size, counts.values.sum(), month)
+
         }
     }
 

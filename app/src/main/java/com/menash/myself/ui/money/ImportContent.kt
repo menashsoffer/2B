@@ -52,6 +52,7 @@ data class ImportActions(
     val onRetry: () -> Unit = {},
     val onClose: () -> Unit = {},
     val onCancel: () -> Unit = {},
+    val onAssign: (java.time.YearMonth) -> Unit = {},
 )
 
 /** The import flow, full screen inside the money tab. Every count comes from the [ImportUi] state. */
@@ -74,14 +75,15 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
             ImportUi.Error -> ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry))
             ImportUi.Reading -> LoadingState(message = stringResource(R.string.import_reading))
             ImportUi.Saving -> LoadingState(message = stringResource(R.string.import_saving))
-            is ImportUi.Done -> EmptyState(
-                title = stringResource(R.string.import_done_title),
-                description = stringResource(R.string.import_done_detail, ui.written),
-                icon = Icons.Outlined.CheckCircle,
-                actionLabel = stringResource(R.string.import_close),
-                onActionClick = actions.onClose,
-                testTag = "import_done",
-            )
+            is ImportUi.Done -> Column(modifier = Modifier.fillMaxWidth().testTag("import_done"), verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+                Text(text = stringResource(R.string.import_saved_count, ui.written), style = AppType.title, color = MaterialTheme.appColors.textPrimary)
+                Text(text = stringResource(R.string.import_remembered_count, ui.remembered), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
+                if (ui.unassigned > 0 && ui.month != null) {
+                    Text(text = stringResource(R.string.import_unassigned_count, ui.unassigned), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
+                    TextButton(onClick = { actions.onAssign(ui.month) }) { Text(stringResource(R.string.import_assign_now)) }
+                }
+                PrimaryButton(text = stringResource(R.string.import_to_month), onClick = actions.onClose, modifier = Modifier.fillMaxWidth())
+            }
             is ImportUi.Review -> ReviewBody(ui, actions)
         }
     }
