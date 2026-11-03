@@ -75,7 +75,7 @@ class ImportSessionTest {
         assertNull(categoryForHint("אופנה", categories))
         // An electronics shop is not the electricity bill, and a fixed bill is never suggested.
         assertNull(categoryForHint("חשמל ומחשבים", categories))
-        assertEquals(categories.single { it.name == "דלק" }.id, categoryForHint("דלק, חשמל וגז", categories))
+        assertEquals(categories.single { it.name == "דלק / חשמל" }.id, categoryForHint("דלק, חשמל וגז", categories))
         val review = reviewImport(listOf(file("max_nov.xlsx")), emptyMap(), ImportMemory(), categories)
         assertEquals("current-1", review.merchants.single { it.name == "שופרסל דיל 123" }.suggested)
     }

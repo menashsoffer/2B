@@ -13,6 +13,8 @@ data class Category(val id: String, val name: String, val klass: ExpenseClass, v
     init { requireId(id) }
 }
 
+const val VEHICLE_ENERGY_CATEGORY_NAME = "דלק / חשמל"
+
 const val MAX_CATEGORY_NAME = 40
 
 /**
@@ -58,7 +60,7 @@ fun defaultCategories(): List<Category> {
     val periodic = listOf("ארנונה / שמירה", "מים וביוב", "חשמל", "גז", "חימום - סולר, נפט", "חינוך", "חוגים, קייטנות ובריכה",
         "ביטוח רכב + טסט", "תיקוני רכב", "ביגוד והנעלה", "בריאות", "עמלות וריביות בנקים", "טיפולי שיניים", "אופטיקה",
         "חופשה / טיול", "יהדות / חגים", "מתנות לאירועים ושמחות", "רכישות ושירותים", "תספורת וקוסמטיקה", "ביטוח לאומי (למי שלא עובד)")
-    val current = listOf("מזון", "תחבורה ציבורית", "דלק", "טלפון נייח", "טלפון נייד", "אחזקת בית", "עוזרת / שמרטף", "סיגריות",
+    val current = listOf("מזון", "תחבורה ציבורית", VEHICLE_ENERGY_CATEGORY_NAME, "טלפון נייח", "טלפון נייד", "אחזקת בית", "עוזרת / שמרטף", "סיגריות",
         "אוכל בחוץ", "פארם", "נוחות ומכונות אוטומטיות", "חניה - כביש 6")
     val subscriptionsId = "fixed-" + (fixed.indexOf("מנויים") + 1)
     return fixed.mapIndexed { i, n -> cat("fixed-${i + 1}", n, ExpenseClass.FIXED) } +

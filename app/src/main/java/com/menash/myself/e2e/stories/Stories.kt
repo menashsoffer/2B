@@ -24,7 +24,7 @@ object Stories {
             Category("story-rent", "שכר דירה", ExpenseClass.FIXED),
             Category("story-electricity", "חשמל", ExpenseClass.FIXED),
             Category("story-food", "מזון", ExpenseClass.CURRENT),
-            Category("story-fuel", "דלק", ExpenseClass.CURRENT),
+            Category("story-fuel", VEHICLE_ENERGY_CATEGORY_NAME, ExpenseClass.CURRENT),
             Category("story-insurance", "ביטוח רכב", ExpenseClass.PERIODIC),
         )
         val noBudget = name == "no_current_budget"
@@ -35,7 +35,7 @@ object Stories {
         )
         val variable = if (noBudget) emptyList() else listOf(
             VariableBudget("story-food-item", "מזון", amount(3000), categoryId = "story-food"),
-            VariableBudget("story-fuel-item", "דלק", amount(2000), categoryId = "story-fuel"),
+            VariableBudget("story-fuel-item", VEHICLE_ENERGY_CATEGORY_NAME, amount(2000), categoryId = "story-fuel"),
         )
         val periodic = if (noBudget) emptyList() else listOf(PeriodicBudget("story-insurance-item", "story-insurance", "ביטוח רכב", ils(1200), start))
         val items = MoneyItems(incomes = listOf(income), fixedExpenses = fixed, variableBudgets = variable, periodicBudgets = periodic)
