@@ -1,0 +1,27 @@
+appId: com.aistudio.mycalculators.qvxmzt.e2e
+name: Navigate months
+tags: [smoke, navigation]
+---
+- launchApp:
+    clearState: true
+- evalScript: ${output.email = 'smoke' + Date.now() + '@example.test'}
+- openLink: myself-e2e://signin?email=${output.email}
+- extendedWaitUntil:
+    visible:
+      id: nav_money
+    timeout: 120000
+- tapOn:
+    id: nav_money
+- extendedWaitUntil:
+    visible:
+      id: money_month_title
+    timeout: 120000
+- evalScript: ${output.today = new Date(); output.year = output.today.getFullYear(); output.month = output.today.getMonth(); output.past = new Date(output.year, output.month - 3, 1); output.pastId = output.past.getFullYear() + '-' + String(output.past.getMonth() + 1).padStart(2, '0'); output.names = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר']; output.pastTitle = output.names[output.past.getMonth()] + ' ' + output.past.getFullYear(); output.todayTitle = output.names[output.month] + ' ' + output.year}
+- tapOn:
+    id: money_month_title
+- tapOn:
+    id: ${'money_pick_' + output.pastId}
+- assertVisible: ${output.pastTitle}
+- tapOn:
+    id: money_return_today
+- assertVisible: ${output.todayTitle}
