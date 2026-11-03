@@ -24,6 +24,8 @@
     <string name="search_more">מוצגות %1$d התנועות הראשונות. כדאי לצמצם את החיפוש</string>
     <plurals name="search_summary">
         <item quantity="one">תנועה אחת · %2$s</item>
+        <item quantity="two">שתי תנועות · %2$s</item>
+        <item quantity="many">%1$d תנועות · %2$s</item>
         <item quantity="other">%1$d תנועות · %2$s</item>
     </plurals>
 </resources>
