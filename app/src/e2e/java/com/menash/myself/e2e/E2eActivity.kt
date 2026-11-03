@@ -9,7 +9,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.google.firebase.firestore.FirebaseFirestore
+import com.menash.myself.data.firestore.FirestoreManager
 import com.google.firebase.firestore.Source
 import com.menash.myself.MainActivity
 import com.menash.myself.MyselfApp
@@ -83,7 +83,7 @@ class E2eActivity : ComponentActivity() {
         val uid = requireNotNull(FirebaseAuth.getInstance().currentUser).uid
         // Private user documents are permitted by the existing rules. Only this marker is raw;
         // all household data below goes through the app's own writers.
-        val marker = FirebaseFirestore.getInstance().collection("users").document(uid)
+        val marker = FirestoreManager.get(this@E2eActivity).collection("users").document(uid)
             .collection("private").document("e2e-story-$name")
         if (marker.get(Source.SERVER).await().exists()) return
         val rows = story.rows
