@@ -1,5 +1,6 @@
 package com.menash.myself.feature.money
 
+import com.menash.myself.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -70,10 +71,13 @@ class ImportViewModel(
 
     private val _ui = MutableStateFlow<ImportUi>(ImportUi.Idle)
     val ui: StateFlow<ImportUi> = _ui.asStateFlow()
+    private val _open = MutableStateFlow(false)
+    val open: StateFlow<Boolean> = _open.asStateFlow()
 
     /** Reads and compares the files with what is stored. Parsing runs off the main thread. */
     fun load(files: List<ImportFile>) {
         if (files.isEmpty()) return
+        _open.value = true
         pickedFiles = files.toList()
         loadJob?.cancel()
         _ui.value = ImportUi.Reading
@@ -106,12 +110,26 @@ class ImportViewModel(
     }
 
     fun decide(merchantKey: String, decision: MerchantDecision) {
+        val before = _ui.value as? ImportUi.Review ?: return
+        val previous = before.decisions[merchantKey]
         _ui.update { state ->
             (state as? ImportUi.Review)?.copy(
                 decisions = state.decisions + (merchantKey to decision), picking = null,
                 recentCategories = (decision as? MerchantDecision.Categorise)?.let { listOf(it.categoryId) + state.recentCategories.filterNot { id -> id == it.categoryId } } ?: state.recentCategories,
             ) ?: state
         }
+        val name = (decision as? MerchantDecision.Categorise)?.let { d -> before.categories.firstOrNull { it.id == d.categoryId }?.name }
+        val label = when (decision) {
+            MerchantDecision.OwnTransfer -> R.string.import_own_transfer
+            MerchantDecision.Later -> R.string.import_later
+            is MerchantDecision.Categorise -> null
+        }
+        events?.send(UiEvent.ImportDecision(name, label) {
+            _ui.update { state ->
+                if (state !is ImportUi.Review || state.decisions[merchantKey] != decision) state
+                else state.copy(decisions = if (previous == null) state.decisions - merchantKey else state.decisions + (merchantKey to previous))
+            }
+        })
     }
 
     /** Adds a category from the merchant's sheet, shows it in the review, and picks it for the merchant. */
@@ -124,10 +142,10 @@ class ImportViewModel(
             _ui.update { state ->
                 (state as? ImportUi.Review)?.copy(
                     categories = if (isNew) state.categories + category else state.categories,
-                    decisions = state.decisions + (merchantKey to MerchantDecision.Categorise(category.id)),
-                    picking = null,
                 ) ?: state
             }
+            loadedCategories = if (isNew) loadedCategories + category else loadedCategories
+            decide(merchantKey, MerchantDecision.Categorise(category.id))
         }
     }
 
@@ -151,9 +169,16 @@ class ImportViewModel(
     }
 
     fun close() {
+        if (_ui.value is ImportUi.Done) cancel() else _open.value = false
+    }
+
+    fun resume() { if (_ui.value != ImportUi.Idle) _open.value = true }
+
+    fun cancel() {
         loadJob?.cancel()
         pickedFiles = emptyList()
         _ui.value = ImportUi.Idle
+        _open.value = false
     }
 
     companion object {

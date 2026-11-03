@@ -77,6 +77,7 @@ data class MoneyActions(
     val onPeriod: () -> Unit = {},
     val onMonthSummary: (YearMonth) -> Unit = {},
     val onImport: () -> Unit = {},
+    val onResumeImport: (() -> Unit)? = null,
 )
 
 @Composable
@@ -140,6 +141,9 @@ private fun MonthContent(
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
     MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth)
+    actions.onResumeImport?.let { resume ->
+        MoneySurface { AmountRow(title = stringResource(R.string.import_pending), amount = null, onClick = resume, testTag = "money_import_pending") }
+    }
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
             title = stringResource(R.string.import_entry),

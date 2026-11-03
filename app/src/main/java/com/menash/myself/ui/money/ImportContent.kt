@@ -51,6 +51,7 @@ data class ImportActions(
     val onConfirm: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onClose: () -> Unit = {},
+    val onCancel: () -> Unit = {},
 )
 
 /** The import flow, full screen inside the money tab. Every count comes from the [ImportUi] state. */
@@ -120,7 +121,7 @@ private fun ReviewBody(ui: ImportUi.Review, actions: ImportActions) {
                 modifier = Modifier.weight(1f).testTag("import_confirm"),
             )
         }
-        TextButton(onClick = actions.onClose, modifier = Modifier.testTag("import_cancel")) {
+        TextButton(onClick = actions.onCancel, modifier = Modifier.testTag("import_cancel")) {
             Text(
                 text = stringResource(if (ui.review.nothingToSave) R.string.import_close else R.string.import_cancel),
                 style = AppType.body,

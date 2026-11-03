@@ -19,6 +19,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import com.menash.myself.core.ui.UiEvent
+import com.menash.myself.core.ui.UiEvents
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -153,8 +158,29 @@ class ImportViewModelTest {
         assertEquals(7, review.review.plan.newCount)
         assertTrue(repo.applied.isEmpty())
         vm.close()
+        assertTrue(vm.ui.value is ImportUi.Review)
+        vm.resume()
+        assertTrue(vm.open.value)
+        vm.cancel()
         assertEquals(ImportUi.Idle, vm.ui.value)
         assertTrue(repo.applied.isEmpty())
+    }
+
+    @Test
+    fun undoRestoresPreviousDecisionAndReviewSurvivesLeaving() = runTest {
+        val events = UiEvents()
+        val vm = ImportViewModel(FakeTransactionRepository(), FakeMoneyRepository(MoneySamples.filled), DefaultErrorReporter(), io = dispatcher, events = events)
+        vm.load(listOf(file("max_nov.xlsx")))
+        val coffee = (vm.ui.value as ImportUi.Review).review.merchants.single { it.name == "קפה גרג" }.key
+        vm.decide(coffee, MerchantDecision.Categorise("current-1"))
+        var event: UiEvent.ImportDecision? = null
+        val collector = launch(UnconfinedTestDispatcher(testScheduler)) { event = events.events.first() as UiEvent.ImportDecision }
+        vm.decide(coffee, MerchantDecision.Categorise("current-9"))
+        event!!.undo()
+        vm.close()
+        vm.resume()
+        assertEquals(MerchantDecision.Categorise("current-1"), (vm.ui.value as ImportUi.Review).decisionFor(coffee))
+        collector.cancel()
     }
 
     @Test
