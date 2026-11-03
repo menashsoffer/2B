@@ -21,7 +21,7 @@ data class ClassBar(val kind: MonthRowKind?, val plan: Money?, val actual: Money
 /** A category among the month's largest spends; [plan] is null when the category has no plan. */
 data class TopCategory(val categoryId: String, val name: String, val plan: Money?, val actual: Money)
 
-data class TopCategories(val shown: List<TopCategory>, val more: Int)
+data class CategoryTop(val shown: List<TopCategory>, val more: Int)
 
 /** How complete one month's numbers are: closed, open with imported lines so far, or nothing at all. */
 enum class FlowState { CLOSED, SO_FAR, MISSING }
@@ -45,12 +45,12 @@ fun classBars(view: MonthView.Planned): List<ClassBar> {
     return bars + listOfNotNull(unassigned)
 }
 
-/** The month's largest categories by actual spending, at most [limit]; [TopCategories.more] counts the rest. */
-fun topCategories(actuals: List<CategoryActual>, categories: List<Category>, limit: Int = 5): TopCategories {
+/** The month's largest categories by actual spending, at most [limit]; [CategoryTop.more] counts the rest. */
+fun topCategories(actuals: List<CategoryActual>, categories: List<Category>, limit: Int = 5): CategoryTop {
     val names = categories.associate { it.id to it.name }
     val spent = actuals.filter { it.categoryId != null && it.categoryId in names && it.actual.isPositive() }
         .sortedByDescending { it.actual.agorot }
-    return TopCategories(
+    return CategoryTop(
         shown = spent.take(limit).map { TopCategory(it.categoryId!!, names.getValue(it.categoryId), it.planned.takeIf { p -> p.isPositive() }, it.actual) },
         more = (spent.size - limit).coerceAtLeast(0),
     )

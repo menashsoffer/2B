@@ -58,7 +58,7 @@ sealed interface MonthView {
         /** Plan vs actual per category once lines are imported (planVsActual), for the month's charts. */
         val categoryActuals: List<com.menash.myself.feature.money.domain.CategoryActual> = emptyList(),
         /** The month's largest categories by actual spending, for the chart. */
-        val top: TopCategories = TopCategories(emptyList(), 0),
+        val top: CategoryTop = CategoryTop(emptyList(), 0),
     ) : MonthView
 }
 
