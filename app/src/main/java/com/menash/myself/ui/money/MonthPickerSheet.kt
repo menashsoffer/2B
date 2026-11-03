@@ -14,6 +14,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.menash.myself.R
 import com.menash.myself.feature.money.MonthCellState
@@ -45,7 +47,10 @@ internal fun MonthPickerGrid(months: List<MonthPickerCell>, onSelect: (YearMonth
                             Text(hebrewMonthName(cell.month.month))
                             when (cell.state) {
                                 MonthCellState.CLOSED -> Icon(Icons.Outlined.Check, stringResource(R.string.status_closed), Modifier.size(18.dp))
-                                MonthCellState.IMPORTED -> Text(" •", color = MaterialTheme.colorScheme.primary)
+                                MonthCellState.IMPORTED -> {
+                                    val description = stringResource(R.string.status_month_imported)
+                                    Text(" •", color = MaterialTheme.colorScheme.primary, modifier = Modifier.semantics { contentDescription = description })
+                                }
                                 MonthCellState.EMPTY -> Unit
                             }
                         }
