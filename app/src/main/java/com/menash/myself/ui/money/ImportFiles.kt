@@ -1,5 +1,7 @@
 package com.menash.myself.ui.money
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
@@ -48,3 +50,6 @@ fun readImportFile(resolver: ContentResolver, uri: Uri): ImportFile {
         ImportFile(name, bytes)
     }.getOrElse { ImportFile(name, byteArrayOf(), readError = true) }
 }
+
+internal suspend fun readImportFiles(resolver: ContentResolver, uris: List<Uri>): List<ImportFile> =
+    withContext(Dispatchers.IO) { uris.map { readImportFile(resolver, it) } }

@@ -79,5 +79,5 @@ internal fun withActuals(
         }
     }
     val unassigned = sumMoney(result.categories.filter { it.categoryId == null || it.categoryId !in classOf }.map { it.actual })
-    return view.copy(rows = rows, unassigned = unassigned.takeUnless { it.isZero() }, importedLines = lines)
+    return view.copy(rows = rows, unassigned = unassigned.takeUnless { it.isZero() }, importedLines = lines, categoryActuals = result.categories)
 }

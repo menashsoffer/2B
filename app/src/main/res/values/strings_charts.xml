@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Generic charts (core/designsystem/component/charts) -->
+    <string name="chart_missing">חסר</string>
+    <string name="chart_partial">עד עכשיו</string>
+    <string name="chart_of_plan">%1$s מתוך %2$s</string>
+    <string name="chart_over_plan">%1$s · חריגה של %2$s</string>
+    <string name="chart_no_plan">%1$s · בלי תוכנית</string>
+    <string name="chart_item_description">%1$s: %2$s</string>
+    <string name="chart_missing_description">%1$s: חסר</string>
+    <string name="chart_partial_description">%1$s, עד עכשיו: %2$s</string>
+    <!-- Money charts (ui/money/MoneyChartsContent.kt) -->
+    <string name="chart_month_classes">איפה אנחנו מול התוכנית</string>
+    <string name="chart_unassigned">בלי קטגוריה</string>
+    <string name="chart_top_categories">על מה הלך הכי הרבה</string>
+    <string name="chart_more_categories">עוד %1$d קטגוריות</string>
+    <string name="chart_flows">הכנסה מול הוצאה, חצי שנה</string>
+    <string name="chart_income">הכנסה</string>
+    <string name="chart_expenses">הוצאה</string>
+    <string name="chart_flows_note">חודש פתוח מוצג בהיר: הנתונים עד עכשיו</string>
+    <string name="chart_average_saving">חיסכון ממוצע בחודש סגור: %1$s</string>
+    <string name="chart_worth">השווי הנקי לאורך זמן</string>
+    <string name="chart_worth_empty">יופיע אחרי שתסגרו חודשיים עם יתרות</string>
+    <string name="chart_assets">ממה מורכבים הנכסים</string>
+    <string name="chart_assets_other">שאר הנכסים</string>
+</resources>

@@ -60,6 +60,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
             )
         }
     }
+    BigPictureCharts(picture)
 
     SectionHeader(stringResource(R.string.money_assets)) { actions.onAddKind(EditKind.ASSET) }
     MoneySurface(testTag = "money_assets") {
