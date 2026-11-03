@@ -12,9 +12,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import com.menash.myself.feature.money.ImportUi
 import com.menash.myself.feature.money.ImportViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -125,8 +123,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     fun importUris(uris: List<Uri>) {
         if (uris.isEmpty()) return
         scope.launch {
-            val files = withContext(Dispatchers.IO) { uris.mapNotNull { readImportFile(resolver, it) } }
-            importViewModel.load(files)
+            importViewModel.load(readImportFiles(resolver, uris))
         }
     }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { importUris(it) }
