@@ -2,6 +2,7 @@ package com.menash.myself.ui.money
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -90,10 +91,15 @@ class MoneyChartsScreenshotTest {
         monthlySaving = shekels(1_850),
     )
 
-    @Test fun moneyCharts_light_font10() = shoot(dark = false, font = 1.0f)
+    @Test fun monthCharts_light_font10() = shoot(dark = false, font = 1.0f) { MonthCharts(planned, MoneyActions()) }
 
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
-    fun moneyCharts_dark_font13() = shoot(dark = true, font = 1.3f)
+    fun monthCharts_dark_font13() = shoot(dark = true, font = 1.3f) { MonthCharts(planned, MoneyActions()) }
+
+    @Test fun bigPictureCharts_light_font10() = shoot(dark = false, font = 1.0f) { BigPictureCharts(picture) }
+
+    @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
+    fun bigPictureCharts_dark_font13() = shoot(dark = true, font = 1.3f) { BigPictureCharts(picture) }
 
     @Test
     fun tappingBars_opensTheRightPlaces() {
@@ -115,14 +121,13 @@ class MoneyChartsScreenshotTest {
         assertEquals(listOf(LineFilter.ALL), filters)
     }
 
-    private fun shoot(dark: Boolean, font: Float) {
+    private fun shoot(dark: Boolean, font: Float, content: @Composable ColumnScope.() -> Unit) {
         composeRule.captureR2Screen(darkTheme = dark, fontScale = font) {
             Rtl {
                 Column(
                     Modifier.background(MaterialTheme.appColors.background).verticalScroll(rememberScrollState()).padding(16.dp),
                 ) {
-                    MonthCharts(planned, MoneyActions())
-                    BigPictureCharts(picture)
+                    content()
                 }
             }
         }
