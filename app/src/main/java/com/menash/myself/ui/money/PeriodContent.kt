@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,8 @@ data class PeriodActions(
     val onBack: () -> Unit = {},
     /** Opens the category's trend. */
     val onCategory: (String) -> Unit = {},
+    /** Opens search on the range's lines. */
+    val onLines: (YearMonth, YearMonth) -> Unit = { _, _ -> },
 )
 
 private val presets = PeriodPreset.entries
@@ -90,6 +93,9 @@ fun PeriodContent(ui: PeriodUi, actions: PeriodActions, modifier: Modifier = Mod
             color = MaterialTheme.appColors.textSecondary,
             modifier = Modifier.testTag("period_range"),
         )
+        TextButton(onClick = { actions.onLines(view.range.from, view.range.to) }, modifier = Modifier.testTag("period_lines")) {
+            Text(stringResource(R.string.period_lines), style = AppType.body, color = MaterialTheme.appColors.accent)
+        }
         val summary = view.summary
         if (summary == null) {
             EmptyState(
