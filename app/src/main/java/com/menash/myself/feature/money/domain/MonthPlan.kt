@@ -95,7 +95,7 @@ fun monthPlan(month: YearMonth, items: MoneyItems, usdToIls: BigDecimal?): Month
     val variable = sumMoney(items.variableBudgets.mapNotNull { item ->
         amountFor(item, month)?.also { charge(item.card, it); classify(item.klass, it) }
     })
-    val periodic = sumMoney(items.periodicBudgets.map { monthlyReserve(it).also { m -> classify(ExpenseClass.PERIODIC, m) } })
+    val periodic = sumMoney(items.periodicBudgets.filter { it.yearStartMonth <= month }.map { monthlyReserve(it).also { m -> classify(ExpenseClass.PERIODIC, m) } })
     val debtPayments = sumMoney(items.debts.filter { debtActive(it, month) }.map { it.monthlyPayment })
     val savingDeposits = sumMoney(items.savings.filter { (it.startMonth == null || month >= it.startMonth) && (it.maturity == null || month <= it.maturity) }.map { it.monthlyDeposit })
     val installments = sumMoney(items.installments.mapNotNull { item ->
@@ -118,3 +118,21 @@ private fun debtActive(debt: Debt, month: YearMonth): Boolean {
     val index = ChronoUnit.MONTHS.between(YearMonth.from(debt.asOf), month)
     return index in 1..debt.remainingPayments.toLong()
 }
+
+/** Only items active in [month] belong in a month's plan, actuals or close snapshot. */
+fun MoneyItems.forMonth(
+    month: YearMonth,
+    today: LocalDate? = null,
+): MoneyItems = copy(
+    incomes = incomes.filter { amountFor(it, month) != null },
+    fixedExpenses = fixedExpenses.filter { amountFor(it, month) != null },
+    subscriptions = subscriptions.filter { amountFor(it, month) != null },
+    variableBudgets = variableBudgets.filter { amountFor(it, month) != null },
+    installments = installments.filter { month >= it.firstMonth && month < it.firstMonth.plusMonths(it.numberOfPayments.toLong()) },
+    periodicBudgets = periodicBudgets.filter { it.yearStartMonth <= month },
+    debts = debts.filter { debtActive(it, month) },
+    savings = savings.filter {
+        (it.startMonth?.let { start -> month >= start } ?: (today == null || month >= YearMonth.from(today))) &&
+            (it.maturity == null || month <= it.maturity)
+    },
+)

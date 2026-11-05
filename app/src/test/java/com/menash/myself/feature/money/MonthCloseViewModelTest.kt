@@ -196,16 +196,52 @@ class MonthCloseViewModelTest {
     }
 
     @Test
-    fun arrows_stopAtThisMonth() {
+    fun arrows_stopAtThisMonthAndAtHistoryBoundary() {
         val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
         vm.open()
+        assertEquals(YearMonth.of(2025, 11), vm.ui.value.earliestMonth)
         vm.nextMonth()
         assertEquals(october, vm.ui.value.view!!.month)
         vm.nextMonth()
         assertEquals(october, vm.ui.value.view!!.month)
         vm.previousMonth()
         assertEquals(YearMonth.of(2026, 9), vm.ui.value.view!!.month)
+        repeat(20) { vm.previousMonth() }
+        assertEquals(YearMonth.of(2025, 11), vm.ui.value.view!!.month)
+        vm.open(YearMonth.of(2025, 10))
+        assertEquals(october, vm.ui.value.view!!.month)
         vm.close()
         assertFalse(vm.ui.value.open)
+    }
+
+    @Test
+    fun closingHistoricalMonth_excludesFutureItemsAndPeriodicBudgetsFromSavedCloseSummary() {
+        val historical = YearMonth.of(2024, 2)
+        val futureItems = com.menash.myself.feature.money.domain.MoneyItems(
+            incomes = listOf(MoneySamples.salary),
+            fixedExpenses = listOf(MoneySamples.rent),
+            subscriptions = listOf(MoneySamples.chatGpt),
+            variableBudgets = listOf(MoneySamples.fuel),
+            periodicBudgets = listOf(MoneySamples.holidays),
+        )
+        val repo = FakeMoneyRepository(data.copy(items = futureItems))
+        val vm = viewModel(repo, listOf(line("hist", historical.atDay(5))))
+        vm.open(historical)
+        assertEquals(historical, vm.ui.value.earliestMonth)
+        assertEquals(historical, vm.ui.value.view!!.month)
+        vm.previousMonth()
+        assertEquals(historical, vm.ui.value.view!!.month)
+
+        vm.closeMonth()
+        val saved = (repo.saved.single() as MoneyEntry.ClosedMonthEntry).value
+        assertEquals(historical, saved.month)
+        assertEquals(Money(25_000), saved.snapshot.actualExpenses)
+        assertEquals(mapOf<String?, Money>("current-1" to Money(25_000)), saved.byCategory)
+        assertTrue(saved.periodic.isEmpty())
+
+        val summary = monthSummary(data.copy(items = futureItems, closedMonths = listOf(saved)), historical, null)!!
+        assertTrue(summary.periodic.isEmpty())
+        assertTrue(summary.overruns.isEmpty())
+        assertEquals(listOf(SummaryClassRow(com.menash.myself.feature.money.domain.ExpenseClass.CURRENT, null, Money(25_000))), summary.classes)
     }
 }

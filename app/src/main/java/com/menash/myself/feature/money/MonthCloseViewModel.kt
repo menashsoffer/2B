@@ -48,6 +48,8 @@ data class MonthCloseUi(
     val confirmReclose: Boolean = false,
     /** The latest month that can be shown: this month. */
     val currentMonth: YearMonth? = null,
+    /** The earliest month that can be shown, matching the money screen's history boundary. */
+    val earliestMonth: YearMonth? = currentMonth?.minusMonths(12),
     val showBalancesStep: Boolean = false,
     val assets: List<Asset> = emptyList(),
     val balanceDraft: CloseBalanceDraft = CloseBalanceDraft(),
@@ -81,10 +83,12 @@ class MonthCloseViewModel(
 
     val ui: StateFlow<MonthCloseUi> = combine(query, inputs) { q, input ->
         val day = today()
-        if (input !is ScreenLoad.Ready) return@combine MonthCloseUi(open = q.open, currentMonth = YearMonth.from(day), loadError = input is ScreenLoad.Error)
+        val current = YearMonth.from(day)
+        if (input !is ScreenLoad.Ready) return@combine MonthCloseUi(open = q.open, currentMonth = current, loadError = input is ScreenLoad.Error)
         val input = input.value
-        if (!q.open || !input.data.householdReady) return@combine MonthCloseUi(q.open, currentMonth = YearMonth.from(day), noHousehold = !input.data.householdReady)
-        val month = q.month ?: closeTarget(day, input.stored, input.data.closedMonths)
+        val earliest = earliestMonth(current, input.stored, input.data.closedMonths.map { it.month }.toSet())
+        if (!q.open || !input.data.householdReady) return@combine MonthCloseUi(q.open, currentMonth = current, earliestMonth = earliest, noHousehold = !input.data.householdReady)
+        val month = q.month?.takeIf { it in earliest..<current } ?: closeTarget(day, input.stored, input.data.closedMonths)
         MonthCloseUi(
             open = true,
             view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines, q.balanceDraft.balances(input.data.assets), input.sourceClosures),
@@ -93,7 +97,8 @@ class MonthCloseViewModel(
             balanceDraft = q.balanceDraft,
             balancesValid = q.balanceDraft.valid(input.data.assets),
             confirmReclose = q.confirming,
-            currentMonth = YearMonth.from(day),
+            currentMonth = current,
+            earliestMonth = earliest,
             saving = q.saving,
             saveError = q.saveError,
             nextPending = if (q.successfullyClosed == month) monthsAwaitingClose(day, input.stored, input.data.closedMonths).firstOrNull { it != month } else null,
@@ -103,7 +108,9 @@ class MonthCloseViewModel(
     fun retry() { retry.update { it + 1 } }
 
     fun open(month: YearMonth? = null) {
-        val target = month?.takeIf { it < YearMonth.from(today()) }
+        val current = YearMonth.from(today())
+        val earliest = ui.value.earliestMonth ?: current.minusMonths(12)
+        val target = month?.takeIf { it in earliest..<current }
         query.value = CloseQuery(open = true, month = target, saving = closing)
     }
 
@@ -116,9 +123,11 @@ class MonthCloseViewModel(
     fun nextMonth() = shift(1)
 
     private fun shift(by: Long) {
+        val current = YearMonth.from(today())
+        val earliest = ui.value.earliestMonth ?: current.minusMonths(12)
         val shown = ui.value.view?.month ?: return
         val target = shown.plusMonths(by)
-        if (target >= YearMonth.from(today())) return
+        if (target !in earliest..<current) return
         query.update { it.copy(month = target, noLines = emptySet(), confirming = false, balanceDraft = CloseBalanceDraft(), successfullyClosed = null) }
     }
 

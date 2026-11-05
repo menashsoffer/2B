@@ -10,6 +10,7 @@ import com.menash.myself.feature.money.domain.YearComparison
 import com.menash.myself.feature.money.domain.compareYears
 import com.menash.myself.feature.money.domain.categoryPeriod
 import com.menash.myself.feature.money.domain.classYear
+import com.menash.myself.feature.money.domain.forMonth
 import com.menash.myself.feature.money.domain.netWorthChange
 import com.menash.myself.feature.money.domain.periodSummary
 import com.menash.myself.feature.money.domain.planVsActual
@@ -69,7 +70,7 @@ private const val TopCategories = 6
  */
 internal fun plansFor(data: MoneyData, months: List<YearMonth>, rate: BigDecimal?): Map<YearMonth, Map<String?, Money>> =
     months.mapNotNull { month ->
-        runCatching { planVsActual(month, data.items, emptyList(), rate) }.getOrNull()
+        runCatching { planVsActual(month, data.items.forMonth(month), emptyList(), rate) }.getOrNull()
             ?.let { result -> month to result.categories.associate { it.categoryId to it.planned } }
     }.toMap()
 
