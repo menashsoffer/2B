@@ -44,7 +44,7 @@ import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.ui.MainViewModel
 import com.menash.myself.core.ui.UiEvent
-import com.menash.myself.ui.money.hebrewMonthYear
+import com.menash.myself.feature.money.ui.hebrewMonthYear
 import kotlinx.coroutines.launch
 
 @Composable

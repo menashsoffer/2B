@@ -176,6 +176,7 @@ kover {
           classes("com.menash.myself.feature.money.domain.*")
           classes("com.menash.myself.feature.money.importer.*")
           classes("com.menash.myself.feature.money.data.*")
+          classes("com.menash.myself.feature.money.ui.*")
         }
       }
       verify { rule { minBound(96) } }
