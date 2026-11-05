@@ -121,7 +121,19 @@ fun buildMoneyMonth(
         emptyList()
     }
     val missingIds = missingUsd.map { it.id }.toSet()
-    val items = data.items.copy(subscriptions = data.items.subscriptions.filter { it.id !in missingIds })
+    // Only items with a known plan for this month belong in the month screen. In particular,
+    // a recurring amount created later must not turn an older imported month into a zero plan.
+    val all = data.items
+    val items = all.copy(
+        incomes = all.incomes.filter { amountFor(it, month) != null },
+        fixedExpenses = all.fixedExpenses.filter { amountFor(it, month) != null },
+        subscriptions = all.subscriptions.filter { it.id !in missingIds && amountFor(it, month) != null },
+        variableBudgets = all.variableBudgets.filter { amountFor(it, month) != null },
+        installments = all.installments.filter { month >= it.firstMonth && month < it.firstMonth.plusMonths(it.numberOfPayments.toLong()) },
+        periodicBudgets = all.periodicBudgets.filter { it.yearStartMonth <= month },
+        debts = all.debts.filter { val index = java.time.temporal.ChronoUnit.MONTHS.between(YearMonth.from(it.asOf), month); index in 1..it.remainingPayments.toLong() },
+        savings = all.savings.filter { it.maturity == null || month <= it.maturity },
+    )
     val plan = monthPlan(month, items, rate)
     val view = when (plan) {
         // A month whose only items are USD subscriptions without a rate stays a set-up month, with the chip.
@@ -139,7 +151,7 @@ fun buildMoneyMonth(
         }
         is MonthPlan.Planned -> MonthView.Planned(
             plan = plan,
-            rows = rows(data.items, plan, month, rate, missingIds),
+            rows = rows(items, plan, month, rate, missingIds),
             cardCharges = plan.cardCharges,
             bar = bar(plan),
             usdRateMissing = missingUsd.isNotEmpty(),

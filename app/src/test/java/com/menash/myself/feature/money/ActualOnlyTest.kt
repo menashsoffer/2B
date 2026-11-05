@@ -12,6 +12,16 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 class ActualOnlyTest {
+    @Test fun recurringPlanCreatedLaterDoesNotMaskImportedHistory() {
+        val month = YearMonth.of(2024, 2)
+        val line = StoredTransaction(StatementRow("old", Source.HAPOALIM, "1234", month.atDay(5), null,
+            "shop", charge = Money(500)), "current-1")
+        val data = MoneyData(items = com.menash.myself.feature.money.domain.MoneyItems(incomes = listOf(MoneySamples.salary)),
+            categories = defaultCategories())
+        val actual = buildMoneyMonth(data, month, LocalDate.of(2026, 11, 3), null, listOf(line)).view as MonthView.ActualOnly
+        assertEquals(Money(500), actual.spent)
+    }
+
     @Test fun historicalMonthUsesOnlyImportedAmounts() {
         val month = YearMonth.of(2024, 2)
         fun line(id: String, amount: Long, category: String? = null, operation: String? = null) = StoredTransaction(
