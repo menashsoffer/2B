@@ -1,4 +1,4 @@
-package com.menash.myself.ui.tasks
+package com.menash.myself.feature.tasks.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

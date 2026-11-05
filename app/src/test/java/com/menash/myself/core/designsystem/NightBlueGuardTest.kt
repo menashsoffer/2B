@@ -165,8 +165,8 @@ class NightBlueGuardTest {
         "java/com/menash/myself/feature/home/ui/LifeHomeSections.kt",
         "java/com/menash/myself/ui/household/HouseholdCardComponents.kt",
         "java/com/menash/myself/ui/inbox/InboxTriageScreen.kt",
-        "java/com/menash/myself/ui/tasks/TaskCardComponents.kt",
-        "java/com/menash/myself/ui/tasks/TaskDialogs.kt",
+        "java/com/menash/myself/feature/tasks/ui/TaskCardComponents.kt",
+        "java/com/menash/myself/feature/tasks/ui/TaskDialogs.kt",
     )
 
     private val legacyChromeAllowList = setOf(
@@ -187,8 +187,8 @@ class NightBlueGuardTest {
         "java/com/menash/myself/feature/more/ui/MoreScreen.kt",
         "java/com/menash/myself/feature/settings/ui/CityPickerDialog.kt",
         "java/com/menash/myself/feature/settings/ui/SettingsDialog.kt",
-        "java/com/menash/myself/ui/tasks/TaskCardComponents.kt",
-        "java/com/menash/myself/ui/tasks/TasksScreen.kt",
+        "java/com/menash/myself/feature/tasks/ui/TaskCardComponents.kt",
+        "java/com/menash/myself/feature/tasks/ui/TasksScreen.kt",
     )
 
     private val fontSizeAllowList = setOf(
@@ -209,8 +209,8 @@ class NightBlueGuardTest {
         "java/com/menash/myself/feature/more/ui/MoreScreen.kt",
         "java/com/menash/myself/feature/settings/ui/CityPickerDialog.kt",
         "java/com/menash/myself/feature/settings/ui/SettingsDialog.kt",
-        "java/com/menash/myself/ui/tasks/TaskCardComponents.kt",
-        "java/com/menash/myself/ui/tasks/TaskDialogs.kt",
-        "java/com/menash/myself/ui/tasks/TasksScreen.kt",
+        "java/com/menash/myself/feature/tasks/ui/TaskCardComponents.kt",
+        "java/com/menash/myself/feature/tasks/ui/TaskDialogs.kt",
+        "java/com/menash/myself/feature/tasks/ui/TasksScreen.kt",
     )
 }
