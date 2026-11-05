@@ -1,4 +1,4 @@
-package com.menash.myself.ui.fitness
+package com.menash.myself.feature.fitness.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
