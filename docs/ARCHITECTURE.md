@@ -78,5 +78,5 @@ Screen (Compose) ──> ViewModel (BaseViewModel.safeLaunch) ──> Repository
 | Workflow | מתי | מה |
 |---|---|---|
 | `branch-tests.yml` | push ל-`claude/**`, או ידני | בדיקות יחידה. ידני עם `record=true` מקליט goldens חדשים בלבד ועושה commit "test: record new goldens" (הריצה עצמה תמיד מסומנת failure) |
-| `distribute.yml` | ידני | בדיקות, APK חתום, Firebase App Distribution לקבוצה `family` |
+| `distribute.yml` | ידני, או הרצה מתוזמנת יומית כשיש שינויים | בדיקות, APK חתום, Firebase App Distribution לקבוצה `family` |
 | `firestore-rules.yml` | נקרא על ידי Distribute, או ידני | בדיקות אמולטור ו-deploy לחוקים ולאינדקסים |
