@@ -13,6 +13,8 @@ data class Category(val id: String, val name: String, val klass: ExpenseClass, v
     init { requireId(id) }
 }
 
+const val MISC_CATEGORY_NAME = "שונות"
+
 const val VEHICLE_ENERGY_CATEGORY_NAME = "דלק / חשמל"
 
 const val MAX_CATEGORY_NAME = 40

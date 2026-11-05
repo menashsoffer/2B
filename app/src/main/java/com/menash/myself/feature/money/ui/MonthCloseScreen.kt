@@ -27,6 +27,7 @@ fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: 
             onNoLines = viewModel::markNoLines,
             onSourceClosed = viewModel::setSourceClosed,
             onClose = viewModel::closeMonth,
+            onClassifyRest = viewModel::askClassifyRest,
             onBack = viewModel::close,
             onEnterBalances = viewModel::enterBalances,
             onBalance = viewModel::setBalance,
@@ -41,6 +42,16 @@ fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: 
 @Composable
 fun MonthCloseOverlays(ui: MonthCloseUi, viewModel: MonthCloseViewModel) {
     val month = ui.view?.month ?: return
+    if (ui.confirmMisc) {
+        val count = ui.view?.checks.orEmpty().firstOrNull { it.kind == com.menash.myself.feature.money.domain.CloseCheckKind.UNASSIGNED }?.detail?.toIntOrNull() ?: 0
+        AlertDialog(
+            onDismissRequest = viewModel::cancelClassifyRest,
+            title = { Text(stringResource(R.string.close_classify_rest), style = AppType.title) },
+            text = { Text(stringResource(R.string.close_classify_rest_confirm_detail, count), style = AppType.body) },
+            confirmButton = { TextButton(onClick = viewModel::classifyRest) { Text(stringResource(R.string.close_classify_rest_confirm)) } },
+            dismissButton = { TextButton(onClick = viewModel::cancelClassifyRest) { Text(stringResource(R.string.close_keep)) } },
+        )
+    }
     if (ui.confirmReclose) {
         AlertDialog(
             onDismissRequest = viewModel::cancelReclose,
