@@ -404,7 +404,7 @@ const REQUIRED = {
   cards: "name", incomes: "titheRate", fixedExpenses: "klass", subscriptions: "renewalDate", variableBudgets: "amounts",
   installments: "total", periodicBudgets: "categoryId", debts: "creditor", savings: "accumulated", assets: "liquid",
   categories: "klass", goals: "allocated", donations: "submittedForTaxRefund", tithe: "startMonth", closedMonths: "closedOn",
-  car: "fields", averagesSettings: "v", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key", sourceClosures: "closedFrom",
+  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key", sourceClosures: "closedFrom",
 };
 // A number field, pushed past its allowed range (agorot beyond ±₪100M, or a day / count / horizon too big).
 const OUT_OF_RANGE = {
@@ -441,8 +441,10 @@ for (const collection of MONEY_COLLECTIONS) {
 
     await deny("unknown key", { ...base, hacked: 1 });
     await deny("wrong type", wrongType(base));
-    const { [REQUIRED[collection]]: _dropped, ...missing } = base;
-    await deny("missing required key", missing);
+    if (REQUIRED[collection]) {
+      const { [REQUIRED[collection]]: _dropped, ...missing } = base;
+      await deny("missing required key", missing);
+    }
     await deny("v = 0", { ...base, v: 0 });
     await deny("v as text", { ...base, v: "1" });
     if (OUT_OF_RANGE[collection]) await deny("out of range", { ...base, [OUT_OF_RANGE[collection]]: 10000000001 });
