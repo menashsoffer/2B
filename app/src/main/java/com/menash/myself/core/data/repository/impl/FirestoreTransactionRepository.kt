@@ -5,7 +5,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.menash.myself.core.data.session.HouseholdSession
-import com.menash.myself.data.firestore.FirestoreErrors
+import com.menash.myself.core.data.legacy.firestore.FirestoreErrors
 import com.menash.myself.feature.money.data.ImportDocuments
 import com.menash.myself.feature.money.data.NewerSchemaException
 import com.menash.myself.feature.money.data.SchemaVersion

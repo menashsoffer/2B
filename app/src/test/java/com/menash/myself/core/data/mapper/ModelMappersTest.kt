@@ -8,9 +8,9 @@ import com.menash.myself.core.domain.model.Household
 import com.menash.myself.core.domain.model.InboxItem
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.core.domain.model.Task
-import com.menash.myself.data.models.DreamItem
-import com.menash.myself.data.models.FitnessLog
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.models.DreamItem
+import com.menash.myself.core.data.legacy.models.FitnessLog
+import com.menash.myself.core.data.legacy.models.TaskItem
 import org.junit.Assert.*
 import org.junit.Test
 import java.time.Instant
@@ -125,7 +125,7 @@ class ModelMappersTest {
 
     @Test
     fun household_roundTrip() {
-        val data = com.menash.myself.data.models.Household(
+        val data = com.menash.myself.core.data.legacy.models.Household(
             id = "h1",
             name = "בית משפחת כהן",
             ownerUid = "alice",

@@ -18,7 +18,7 @@
 - **המבנה בפועל** (חבילות, זרימת נתונים, עמוד הכסף, בדיקות, CI): [ARCHITECTURE.md](ARCHITECTURE.md).
 - **גבולות תלויות (Dependency Boundaries):**
   - `domain/` הוא Kotlin טהור: אין `import android.*`, `androidx.*` או Firebase.
-  - קוד ב-`feature/` וב-`ui/` לא מייבא `com.menash.myself.data.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
+  - קוד ב-`feature/` וב-`ui/` לא מייבא `com.menash.myself.core.data.legacy.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
   - ViewModels תלויים בממשקי Repository (`core/data/repository`, `feature/money/data`), לא במימושים.
   - הזרקת תלויות ידנית ב-`AppContainer`, בלי פריימוורק.
 

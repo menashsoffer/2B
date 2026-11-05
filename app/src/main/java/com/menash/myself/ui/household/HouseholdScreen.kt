@@ -19,8 +19,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.menash.myself.auth.AuthManager
-import com.menash.myself.auth.SignOutConfirmDialog
+import com.menash.myself.core.auth.AuthManager
+import com.menash.myself.core.auth.SignOutConfirmDialog
 import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.LoadingState
 import com.menash.myself.core.designsystem.component.OfflineIndicator

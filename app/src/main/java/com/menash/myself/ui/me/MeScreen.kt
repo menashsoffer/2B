@@ -14,8 +14,8 @@ import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.firebase.auth.FirebaseUser
 import com.menash.myself.BuildConfig
-import com.menash.myself.auth.AuthManager
-import com.menash.myself.auth.SignOutConfirmDialog
+import com.menash.myself.core.auth.AuthManager
+import com.menash.myself.core.auth.SignOutConfirmDialog
 import com.menash.myself.core.data.repository.ExchangeRateRepository
 import com.menash.myself.core.data.repository.HebcalRepository
 import com.menash.myself.core.di.LocalAppContainer

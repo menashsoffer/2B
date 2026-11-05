@@ -1,13 +1,13 @@
-package com.menash.myself.data.firestore
+package com.menash.myself.core.data.legacy.firestore
 
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.menash.myself.core.data.model.ItemLocation
-import com.menash.myself.data.models.Household
-import com.menash.myself.data.models.SpaceType
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.models.Household
+import com.menash.myself.core.data.legacy.models.SpaceType
+import com.menash.myself.core.data.legacy.models.TaskItem
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

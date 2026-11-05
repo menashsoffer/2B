@@ -1,16 +1,16 @@
-package com.menash.myself.data.firestore
+package com.menash.myself.core.data.legacy.firestore
 
 import android.content.Context
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.menash.myself.core.data.model.ItemLocation
-import com.menash.myself.data.models.DreamItem
-import com.menash.myself.data.models.FitnessLog
-import com.menash.myself.data.models.Household
-import com.menash.myself.data.models.InboxItem
-import com.menash.myself.data.models.SpaceType
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.models.DreamItem
+import com.menash.myself.core.data.legacy.models.FitnessLog
+import com.menash.myself.core.data.legacy.models.Household
+import com.menash.myself.core.data.legacy.models.InboxItem
+import com.menash.myself.core.data.legacy.models.SpaceType
+import com.menash.myself.core.data.legacy.models.TaskItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

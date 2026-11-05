@@ -4,7 +4,7 @@ import com.menash.myself.core.domain.model.Household
 
 object HouseholdMappers {
 
-    fun householdToDomain(data: com.menash.myself.data.models.Household): Household {
+    fun householdToDomain(data: com.menash.myself.core.data.legacy.models.Household): Household {
         return Household(
             id = data.id,
             name = data.name,
@@ -15,8 +15,8 @@ object HouseholdMappers {
         )
     }
 
-    fun householdToData(domain: Household): com.menash.myself.data.models.Household {
-        return com.menash.myself.data.models.Household(
+    fun householdToData(domain: Household): com.menash.myself.core.data.legacy.models.Household {
+        return com.menash.myself.core.data.legacy.models.Household(
             id = domain.id,
             name = domain.name,
             ownerUid = domain.ownerUid,

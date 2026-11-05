@@ -1,8 +1,8 @@
-package com.menash.myself.data.firestore
+package com.menash.myself.core.data.legacy.firestore
 
 import android.content.Context
 import android.util.Log
-import com.menash.myself.data.models.Household
+import com.menash.myself.core.data.legacy.models.Household
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue

@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
-import com.menash.myself.data.firestore.FirestoreErrors
+import com.menash.myself.core.data.legacy.firestore.FirestoreErrors
 
 /** households/{hid}/{collection}/{id}, one listener per collection. */
 @OptIn(ExperimentalCoroutinesApi::class)

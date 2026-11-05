@@ -1,7 +1,7 @@
 package com.menash.myself.core.data.mapper
 
 import com.menash.myself.core.domain.model.FitnessEntry
-import com.menash.myself.data.models.FitnessLog
+import com.menash.myself.core.data.legacy.models.FitnessLog
 import java.time.LocalDate
 
 object FitnessMappers {

@@ -9,11 +9,12 @@
 ```
 com.menash.myself
 ├── MainActivity, MyselfApp      כניסה; MyselfApp מחזיק את AppContainer
-├── auth/                        כניסה עם Google (Credential Manager + Firebase Auth)
-├── calendar/                    קריאת יומן המכשיר
 ├── core/
+│   ├── auth/                    כניסה עם Google (Credential Manager + Firebase Auth)
+│   ├── calendar/                קריאת יומן המכשיר
 │   ├── crash/                   Crashlytics: non-fatals ו-handler שמנקה הודעות
 │   ├── data/
+│   │   ├── legacy/              Firestore ו-Room של העמודים הישנים: firestore/, models/, entities/, dao/
 │   │   ├── mapper/              המרות בין מסמכי Firestore הישנים למודל ה-domain
 │   │   ├── model/               ItemLocation (פריט בבית או פרטי)
 │   │   ├── repository/          ממשקי Repository שהמסכים תלויים בהם
@@ -24,9 +25,6 @@ com.menash.myself
 │   ├── domain/                  מודלים משותפים (Money באגורות, ForWhom, Task, Dream…) ו-util/
 │   ├── external/                בנק ישראל (boi/) ו-Hebcal (hebcal/), עם מטמון DataStore
 │   └── ui/                      BaseViewModel (safeLaunch), ErrorMapper
-├── data/                        שכבת Firestore של העמודים הישנים, ו-Room להגדרות
-│   ├── firestore/               DataSources לכל אוסף + LifeHubRepository + HouseholdRepository
-│   └── models/, entities/, dao/ מסמכי Firestore ו-Room כפי שהם נשמרים
 ├── feature/
 │   ├── money/                   עמוד הכסף (ראו למטה)
 │   └── home, tasks, dreams, inbox, fitness, household, importcatalog

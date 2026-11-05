@@ -1,4 +1,4 @@
-package com.menash.myself.calendar
+package com.menash.myself.core.calendar
 
 import android.content.ContentUris
 import android.content.Context

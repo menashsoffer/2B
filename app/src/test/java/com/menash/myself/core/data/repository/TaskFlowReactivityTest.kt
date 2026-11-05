@@ -1,12 +1,12 @@
-package com.menash.myself.data.repository
+package com.menash.myself.core.data.repository
 
 import com.menash.myself.core.data.repository.impl.FirestoreTaskRepository
 import com.menash.myself.core.data.session.DefaultHouseholdSession
 import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.model.VisibilityFilter
-import com.menash.myself.data.firestore.LifeHubRepository
-import com.menash.myself.data.models.Household
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.models.Household
+import com.menash.myself.core.data.legacy.models.TaskItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

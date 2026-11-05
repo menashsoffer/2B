@@ -19,7 +19,7 @@ import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.core.ui.BaseViewModel
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.models.TaskItem
 import com.menash.myself.feature.dreams.DreamsViewModel
 import com.menash.myself.feature.fitness.FitnessViewModel
 import com.menash.myself.feature.home.LifeHomeViewModel

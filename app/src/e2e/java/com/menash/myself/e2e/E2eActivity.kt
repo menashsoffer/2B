@@ -9,7 +9,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import com.menash.myself.data.firestore.FirestoreManager
+import com.menash.myself.core.data.legacy.firestore.FirestoreManager
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
 import com.menash.myself.MainActivity

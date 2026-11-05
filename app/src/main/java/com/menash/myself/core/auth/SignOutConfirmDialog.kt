@@ -1,4 +1,4 @@
-package com.menash.myself.auth
+package com.menash.myself.core.auth
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button

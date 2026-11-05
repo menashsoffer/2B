@@ -4,7 +4,7 @@ import com.menash.myself.core.data.mapper.HouseholdMappers
 import com.menash.myself.core.data.repository.HouseholdRepositoryInterface
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.Household
-import com.menash.myself.data.firestore.HouseholdRepository
+import com.menash.myself.core.data.legacy.firestore.HouseholdRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map

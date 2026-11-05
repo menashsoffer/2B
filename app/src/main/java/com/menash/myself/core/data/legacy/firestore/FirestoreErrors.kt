@@ -1,4 +1,4 @@
-package com.menash.myself.data.firestore
+package com.menash.myself.core.data.legacy.firestore
 
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestoreException

@@ -1,4 +1,4 @@
-package com.menash.myself.auth
+package com.menash.myself.core.auth
 
 import android.app.PendingIntent
 import android.content.Context

@@ -170,7 +170,7 @@ class NightBlueGuardTest {
     )
 
     private val legacyChromeAllowList = setOf(
-        "java/com/menash/myself/auth/SignInScreen.kt",
+        "java/com/menash/myself/core/auth/SignInScreen.kt",
         "java/com/menash/myself/ui/calendar/CalendarScreen.kt",
         "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
         "java/com/menash/myself/ui/common/CsvMappingDialog.kt",
@@ -192,7 +192,7 @@ class NightBlueGuardTest {
     )
 
     private val fontSizeAllowList = setOf(
-        "java/com/menash/myself/auth/SignInScreen.kt",
+        "java/com/menash/myself/core/auth/SignInScreen.kt",
         "java/com/menash/myself/ui/calendar/CalendarScreen.kt",
         "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
         "java/com/menash/myself/ui/common/CsvMappingDialog.kt",
