@@ -29,10 +29,8 @@ permissions:
   contents: read
 
 jobs:
-  distribute:
+  guard:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_HOME: /home/runner/android-sdk
     steps:
       - name: Require main for releases
         if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
@@ -40,6 +38,20 @@ jobs:
           echo "Releases run from main only; use dry_run on other branches"
           exit 1
 
+  # Deploy rules first so the new APK never reaches phones before its rules are live.
+  rules:
+    needs: guard
+    if: ${{ inputs.deploy_rules && !inputs.dry_run }}
+    uses: ./.github/workflows/firestore-rules.yml
+    secrets: inherit
+
+  distribute:
+    needs: [guard, rules]
+    if: ${{ !cancelled() && needs.guard.result == 'success' && (needs.rules.result == 'success' || needs.rules.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /home/runner/android-sdk
+    steps:
       - name: Fail if a required secret is missing
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
