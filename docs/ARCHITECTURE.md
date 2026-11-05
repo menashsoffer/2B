@@ -26,13 +26,12 @@ com.menash.myself
 │   ├── external/                בנק ישראל (boi/) ו-Hebcal (hebcal/), עם מטמון DataStore
 │   └── ui/                      BaseViewModel (safeLaunch), ErrorMapper
 ├── feature/
-│   ├── money/                   עמוד הכסף (ראו למטה)
-│   └── home, tasks, dreams, inbox, fitness, household, importcatalog
-│                                ViewModels של העמודים הישנים
+│   ├── money/                   עמוד הכסף, כולל ui/ למסכים (ראו למטה)
+│   └── account, home, me, life, more, settings, tasks, dreams, inbox,
+│       fitness, household, calendar, importcatalog
+│                                ViewModels ומסכים בתיקיית ui/ של כל פיצ׳ר
 └── ui/
-    ├── shell/                   AppShell, ניווט, 5 הלשוניות
-    ├── money/                   מסכי הכסף (Content טהור + Screen שמחבר ViewModel)
-    └── home, tasks, dreams, …   מסכי העמודים הישנים
+    └── shell/                   AppShell, ניווט, 5 הלשוניות
 ```
 
 ## הלשוניות והניווט

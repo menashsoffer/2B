@@ -13,19 +13,19 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
 import com.menash.myself.BuildConfig
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
-import com.menash.myself.ui.calendar.CalendarScreen
-import com.menash.myself.ui.catalog.FileCatalogScreen
-import com.menash.myself.ui.dreams.DreamsScreen
-import com.menash.myself.ui.fitness.FitnessScreen
-import com.menash.myself.ui.home.HomeScreen
-import com.menash.myself.ui.home.LifeHomeScreen
-import com.menash.myself.ui.household.HouseholdScreen
-import com.menash.myself.ui.inbox.InboxTriageScreen
-import com.menash.myself.ui.life.LifeContent
-import com.menash.myself.ui.me.MeScreen
+import com.menash.myself.feature.calendar.ui.CalendarScreen
+import com.menash.myself.feature.importcatalog.ui.FileCatalogScreen
+import com.menash.myself.feature.dreams.ui.DreamsScreen
+import com.menash.myself.feature.fitness.ui.FitnessScreen
+import com.menash.myself.feature.home.ui.HomeScreen
+import com.menash.myself.feature.home.ui.LifeHomeScreen
+import com.menash.myself.feature.household.ui.HouseholdScreen
+import com.menash.myself.feature.inbox.ui.InboxTriageScreen
+import com.menash.myself.feature.life.ui.LifeContent
+import com.menash.myself.feature.me.ui.MeScreen
 import com.menash.myself.feature.money.ui.MoneyScreen
-import com.menash.myself.ui.more.MoreScreen
-import com.menash.myself.ui.tasks.TasksScreen
+import com.menash.myself.feature.more.ui.MoreScreen
+import com.menash.myself.feature.tasks.ui.TasksScreen
 
 @Composable
 fun AppNavHost(

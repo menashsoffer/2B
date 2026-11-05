@@ -204,7 +204,7 @@ class ShellAndViewModelGuardsTest {
         }
         assertTrue("Per-screen FABs found in UI files: $fabViolations", fabViolations.isEmpty())
 
-        val tasksScreenText = File(srcRoot, "ui/tasks/TasksScreen.kt").readText()
+        val tasksScreenText = File(srcRoot, "feature/tasks/ui/TasksScreen.kt").readText()
         assertTrue("TasksScreen must have top-bar add action", tasksScreenText.contains("add_task_top_action"))
     }
 

@@ -7,7 +7,7 @@
 ## 1. כללי יסוד
 1. **כשלא בטוחים — שואלים:** לעולם אין לנחש כוונת משתמש, התנהגות עסקית או נוסחאות חישוב.
 2. **איסור מוחלט על מחיקת נתוני משתמש:** אף פעולה, מיגרציה או שחזור אינם מוחקים נתונים ללא גיבוי מקומי מקדים ואישור מפורש מהמשתמש.
-3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`ui/<x>/` מחולקים ל-`*Content` ו-`*Screen`. המבנה המלא ב-[ARCHITECTURE.md](ARCHITECTURE.md).
+3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`feature/<x>/ui/` מחולקים ל-`*Content` ו-`*Screen`. המבנה המלא ב-[ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -243,5 +243,5 @@ Explicit, confirmed account/household deletion is the approved exception to the 
 | G6 | יתר הקוד | מדידה בלבד | מדידה בלבד |
 
 - פונקציות Compose מוחרגות ממדידת האחוזים. מסכים שיש להם תמונות ייחוס של Roborazzi נבדקים מולן. לוגיקה בתוך `LaunchedEffect` או `remember` בפונקציית Composable אינה נמדדת; לוגיקה עסקית צריכה להיות ב־ViewModel או בשכבת domain.
-- לפי קובצי `ui/**/*Screen.kt` ותמונות הייחוס הקיימות, למסכים הבאים אין golden ייעודי: FileCatalog, InboxTriage, Dreams, Fitness, Household, Calendar, More, LifeHome, Tasks ו־MoneySubScreen. תמונות הרכיבים ו־HomeContent אינן הוכחה לכיסוי מלא של המסך.
+- לפי קובצי `feature/*/ui/**/*Screen.kt` ותמונות הייחוס הקיימות, למסכים הבאים אין golden ייעודי: FileCatalog, InboxTriage, Dreams, Fitness, Household, Calendar, More, LifeHome, Tasks ו־MoneySubScreen. תמונות הרכיבים ו־HomeContent אינן הוכחה לכיסוי מלא של המסך.
 - להרצה מקומית: `./gradlew testDebugUnitTest koverHtmlReportDebug`. הדוח נפתח מ־`app/build/reports/kover/htmlDebug/index.html`.
