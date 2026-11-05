@@ -43,9 +43,10 @@ data class Debt(
     init { requireId(id); require(balance >= Money.ZERO && monthlyPayment >= Money.ZERO && remainingPayments >= 0) }
 }
 
-/** monthlyDeposit is deposited every month up to and including maturity (or forever when null). */
+/** monthlyDeposit applies from startMonth, when known, through maturity. Null startMonth is legacy/unknown. */
 data class Saving(
     val id: String, val name: String, val monthlyDeposit: Money, val accumulated: Money, val maturity: YearMonth? = null,
+    val startMonth: YearMonth? = null,
 ) {
     init { requireId(id); require(monthlyDeposit >= Money.ZERO && accumulated >= Money.ZERO) }
 }

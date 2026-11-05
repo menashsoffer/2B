@@ -132,7 +132,10 @@ fun buildMoneyMonth(
         installments = all.installments.filter { month >= it.firstMonth && month < it.firstMonth.plusMonths(it.numberOfPayments.toLong()) },
         periodicBudgets = all.periodicBudgets.filter { it.yearStartMonth <= month },
         debts = all.debts.filter { val index = java.time.temporal.ChronoUnit.MONTHS.between(YearMonth.from(it.asOf), month); index in 1..it.remainingPayments.toLong() },
-        savings = all.savings.filter { it.maturity == null || month <= it.maturity },
+        savings = all.savings.filter {
+            (it.startMonth?.let { start -> month >= start } ?: (month >= YearMonth.from(today))) &&
+                (it.maturity == null || month <= it.maturity)
+        },
     )
     val plan = monthPlan(month, items, rate)
     val view = when (plan) {

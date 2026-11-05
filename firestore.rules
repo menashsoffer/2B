@@ -200,10 +200,11 @@ service cloud.firestore {
     }
 
     function isValidSaving(d) {
-      return d.keys().hasOnly(['name', 'monthlyDeposit', 'accumulated', 'maturity', 'v']) &&
+      return d.keys().hasOnly(['name', 'monthlyDeposit', 'accumulated', 'maturity', 'startMonth', 'v']) &&
              d.keys().hasAll(['name', 'monthlyDeposit', 'accumulated']) &&
              isName(d.name) && isAgorot(d.monthlyDeposit) && isAgorot(d.accumulated) &&
-             (!('maturity' in d) || isMonth(d.maturity));
+             (!('maturity' in d) || isMonth(d.maturity)) &&
+             (!('startMonth' in d) || isMonth(d.startMonth));
     }
 
     function isValidAsset(d) {

@@ -79,6 +79,7 @@ object MoneyFixtures {
         ),
 
         "with-maturity" to MoneyEntry.SavingEntry(MoneySamples.pension),
+        "with-start" to MoneyEntry.SavingEntry(MoneySamples.pension.copy(startMonth = YearMonth.of(2026, 1))),
         "no-maturity" to MoneyEntry.SavingEntry(MoneySamples.pension.copy(id = "save-2", maturity = null)),
 
         "liquid-asset" to MoneyEntry.AssetEntry(MoneySamples.checking),

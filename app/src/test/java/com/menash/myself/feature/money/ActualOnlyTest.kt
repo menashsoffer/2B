@@ -22,6 +22,21 @@ class ActualOnlyTest {
         assertEquals(Money(500), actual.spent)
     }
 
+    @Test fun legacyAndFutureSavingsDoNotInventAPlanInHistory() {
+        val history = YearMonth.of(2024, 2)
+        val current = YearMonth.of(2026, 11)
+        val line = StoredTransaction(StatementRow("expense", Source.HAPOALIM, "1234", history.atDay(5), null,
+            "shop", charge = Money(500)), "current-1")
+        val legacy = com.menash.myself.feature.money.domain.Saving("old", "legacy", Money(100), Money(0))
+        val future = legacy.copy(id = "new", startMonth = current)
+        val data = MoneyData(items = com.menash.myself.feature.money.domain.MoneyItems(savings = listOf(legacy, future)),
+            categories = defaultCategories())
+        val actual = buildMoneyMonth(data, history, current.atDay(5), null, listOf(line)).view as MonthView.ActualOnly
+        assertEquals(Money(500), actual.spent)
+        val now = buildMoneyMonth(data, current, current.atDay(5), null).view as MonthView.Planned
+        assertEquals(Money(200), now.plan.savingDeposits)
+    }
+
     @Test fun historicalMonthUsesOnlyImportedAmounts() {
         val month = YearMonth.of(2024, 2)
         fun line(id: String, amount: Long, category: String? = null, operation: String? = null) = StoredTransaction(

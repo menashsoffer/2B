@@ -679,3 +679,15 @@ test("Source closures: validate dates, required fields and household access", as
   await assertFails(moneyDb(CHARLIE_UID, CHARLIE_EMAIL).collection("sourceClosures").doc("s-123").set(valid));
   await assertSucceeds(doc.delete());
 });
+
+
+test("Savings: optional startMonth must be a valid month on create and update", async () => {
+  await setupHousehold();
+  const doc = moneyDb().collection("savings").doc("saving-start");
+  const valid = {v: 1, name: "חיסכון", monthlyDeposit: 100, accumulated: 200};
+  await assertSucceeds(doc.set(valid));
+  await assertSucceeds(doc.update({startMonth: "2026-01"}));
+  await assertFails(doc.update({startMonth: "2026-13"}));
+  await assertFails(doc.set({...valid, startMonth: 202601}));
+  await assertSucceeds(doc.update({startMonth: FieldValue.delete()}));
+});

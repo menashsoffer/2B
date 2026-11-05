@@ -93,6 +93,7 @@ class MoneyDocumentsTest {
     fun saving_withAndWithoutMaturity() {
         assertRoundTrip(MoneyEntry.SavingEntry(MoneySamples.pension))
         assertRoundTrip(MoneyEntry.SavingEntry(MoneySamples.pension.copy(maturity = null)))
+        assertRoundTrip(MoneyEntry.SavingEntry(MoneySamples.pension.copy(startMonth = java.time.YearMonth.of(2026, 1))))
     }
 
     @Test

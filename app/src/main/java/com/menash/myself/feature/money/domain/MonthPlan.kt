@@ -97,7 +97,7 @@ fun monthPlan(month: YearMonth, items: MoneyItems, usdToIls: BigDecimal?): Month
     })
     val periodic = sumMoney(items.periodicBudgets.map { monthlyReserve(it).also { m -> classify(ExpenseClass.PERIODIC, m) } })
     val debtPayments = sumMoney(items.debts.filter { debtActive(it, month) }.map { it.monthlyPayment })
-    val savingDeposits = sumMoney(items.savings.filter { it.maturity == null || month <= it.maturity }.map { it.monthlyDeposit })
+    val savingDeposits = sumMoney(items.savings.filter { (it.startMonth == null || month >= it.startMonth) && (it.maturity == null || month <= it.maturity) }.map { it.monthlyDeposit })
     val installments = sumMoney(items.installments.mapNotNull { item ->
         val index = ChronoUnit.MONTHS.between(item.firstMonth, month)
         if (index < 0 || index >= item.numberOfPayments) null else {

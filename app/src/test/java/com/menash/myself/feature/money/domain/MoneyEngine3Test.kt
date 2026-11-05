@@ -137,6 +137,12 @@ class MoneyEngine3Test {
         assertEquals(Money.ZERO, plan(items, feb.plusMonths(1)).debtPayments)
         assertEquals(Money.ZERO, plan(items, YearMonth.of(2025, 12)).debtPayments)
     }
+    @Test fun savingDepositsRespectTheKnownStartMonth() {
+        val saving = Saving("s", "kids", ils(500), ils(10_000), startMonth = feb)
+        val items = MoneyItems(savings = listOf(saving))
+        assertEquals(Money.ZERO, plan(items, jan).savingDeposits)
+        assertEquals(ils(500), plan(items, feb).savingDeposits)
+    }
     @Test fun savingDepositsReduceSurplusUntilMaturityButAreNotExpenses() {
         val saving = Saving("s", "kids", ils(500), ils(10_000), maturity = feb)
         val items = MoneyItems(incomes = listOf(Income("i", "salary", history(5000))), savings = listOf(saving))
