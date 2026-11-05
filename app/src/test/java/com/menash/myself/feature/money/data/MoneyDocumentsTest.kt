@@ -21,6 +21,15 @@ import java.time.YearMonth
 class MoneyDocumentsTest {
 
     @Test
+    fun averagesSettingsRoundTripAndDefault() {
+        val month = java.time.YearMonth.of(2025, 6)
+        listOf(null, month).forEach { from ->
+            val entry = MoneyEntry.AveragesSettingsEntry(from)
+            assertEquals(entry, MoneyDocuments.decode(MoneyCollection.AVERAGES_SETTINGS, "settings", MoneyDocuments.encode(entry)))
+        }
+    }
+
+    @Test
     fun legacyFuelCategoryKeepsItsIdAndCustomNames() {
         fun decoded(id: String, name: String): Category {
             val entry = MoneyEntry.CategoryEntry(Category(id, name, ExpenseClass.CURRENT))

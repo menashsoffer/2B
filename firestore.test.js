@@ -333,7 +333,7 @@ const FIXTURES_DIR = path.join(__dirname, "firestore-fixtures", "money");
 const MONEY_COLLECTIONS = [
   "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
   "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
-  "transactions", "merchantMemory", "sourceClosures", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
+  "transactions", "merchantMemory", "sourceClosures", "goals", "donations", "tithe", "averagesSettings", "closedMonths", "pensionFunds", "car",
 ];
 
 function fixtures(collection) {
@@ -344,7 +344,7 @@ function fixtures(collection) {
 
 // The document id the app would use: settings documents are fixed, closed months are "yyyy-MM".
 function docIdFor(collection, index) {
-  if (collection === "tithe" || collection === "car") return "settings";
+  if (collection === "tithe" || collection === "car" || collection === "averagesSettings") return "settings";
   if (collection === "closedMonths") return `2025-${String(index + 1).padStart(2, "0")}`;
   return `0b7c5f3e-money-${index + 1}`;
 }
@@ -404,7 +404,7 @@ const REQUIRED = {
   cards: "name", incomes: "titheRate", fixedExpenses: "klass", subscriptions: "renewalDate", variableBudgets: "amounts",
   installments: "total", periodicBudgets: "categoryId", debts: "creditor", savings: "accumulated", assets: "liquid",
   categories: "klass", goals: "allocated", donations: "submittedForTaxRefund", tithe: "startMonth", closedMonths: "closedOn",
-  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key", sourceClosures: "closedFrom",
+  car: "fields", averagesSettings: "v", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key", sourceClosures: "closedFrom",
 };
 // A number field, pushed past its allowed range (agorot beyond ±₪100M, or a day / count / horizon too big).
 const OUT_OF_RANGE = {
@@ -416,7 +416,7 @@ const OUT_OF_RANGE = {
 const MONTH_OR_DATE = {
   installments: "firstMonth", periodicBudgets: "yearStartMonth", savings: "maturity", goals: "targetMonth", tithe: "startMonth",
   subscriptions: "renewalDate", debts: "asOf", assets: "lastUpdated", donations: "date", closedMonths: "closedOn",
-  pensionFunds: "lastUpdated", transactions: "date", sourceClosures: "closedFrom",
+  averagesSettings: "averagesFrom", pensionFunds: "lastUpdated", transactions: "date", sourceClosures: "closedFrom",
 };
 // An enum field and a value the app never writes.
 const ENUM = {
@@ -459,6 +459,7 @@ test("Money: settings documents and closed months only under their own ids", asy
   const house = moneyDb();
   await assertFails(house.collection("tithe").doc("other").set(fixtures("tithe")[0].doc));
   await assertFails(house.collection("car").doc("other").set(fixtures("car")[0].doc));
+  await assertFails(house.collection("averagesSettings").doc("other").set(fixtures("averagesSettings")[0].doc));
   await assertFails(house.collection("closedMonths").doc("2026-13").set(fixtures("closedMonths")[0].doc));
   await assertFails(house.collection("closedMonths").doc("sept").set(fixtures("closedMonths")[0].doc));
 });

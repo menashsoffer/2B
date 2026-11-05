@@ -1,6 +1,7 @@
 package com.menash.myself.feature.money.data
 
 import com.menash.myself.feature.money.CarPlan
+import java.time.YearMonth
 import com.menash.myself.feature.money.domain.Asset
 import com.menash.myself.feature.money.domain.Card
 import com.menash.myself.feature.money.domain.Category
@@ -35,6 +36,7 @@ enum class MoneyCollection(val path: String) {
     GOALS("goals"),
     DONATIONS("donations"),
     TITHE("tithe"),
+    AVERAGES_SETTINGS("averagesSettings"),
     /** One document per closed month, id "yyyy-MM". */
     CLOSED_MONTHS("closedMonths"),
     /** One document, "settings": the car categories and the new-car comparison. */
@@ -54,6 +56,7 @@ data class MoneyData(
     val donations: List<Donation> = emptyList(),
     /** Null until the household sets where its maaser count starts. */
     val tithe: TitheSettings? = null,
+    val averagesFrom: YearMonth? = null,
     /** Frozen months, oldest first. */
     val closedMonths: List<ClosedMonth> = emptyList(),
     /** Null until the car screen saves its settings; the defaults apply until then. */
@@ -118,6 +121,10 @@ sealed interface MoneyEntry {
     data class TitheEntry(val value: TitheSettings) : MoneyEntry {
         override val id get() = TitheSettings.ID
         override val collection get() = MoneyCollection.TITHE
+    }
+    data class AveragesSettingsEntry(val averagesFrom: YearMonth?) : MoneyEntry {
+        override val id get() = "settings"
+        override val collection get() = MoneyCollection.AVERAGES_SETTINGS
     }
     data class ClosedMonthEntry(val value: ClosedMonth) : MoneyEntry {
         override val id get() = value.month.toString()

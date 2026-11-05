@@ -99,6 +99,9 @@ object MoneyFixtures {
         "matched" to MoneyEntry.DonationEntry(Donation("don-match", LocalDate.of(2026, 10, 2), Money(1_000), "", matchedLineId = "line-1")),
         "no-organisation" to MoneyEntry.DonationEntry(Donation("don-x", LocalDate.of(2026, 10, 2), Money(1_000), "")),
 
+        "default" to MoneyEntry.AveragesSettingsEntry(null),
+        "from-month" to MoneyEntry.AveragesSettingsEntry(YearMonth.of(2025, 6)),
+
         "full" to MoneyEntry.TitheEntry(MoneySamples.tithe),
         "negative-opening" to MoneyEntry.TitheEntry(TitheSettings(YearMonth.of(2026, 1), opening = Money(-5_000))),
 
