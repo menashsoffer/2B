@@ -202,14 +202,6 @@ jobs:
           print("Release manifest: READ_CALENDAR absent")
           PYTHON
 
-      - name: Upload release bundle artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: myself-${{ env.VERSION_CODE }}.aab
-          path: app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Lint debug
         # lint.xml: NewApi is fatal, every other id is a warning.
         # abortOnError fails this step only on NewApi, before the upload.
@@ -268,13 +260,9 @@ jobs:
         run: |
           set -euo pipefail
           tag="v${VERSION_NAME}"
-          apk="${RUNNER_TEMP}/2b-${VERSION_NAME}.apk"
-          aab="${RUNNER_TEMP}/2b-${VERSION_NAME}.aab"
-          cp app/build/outputs/apk/release/app-release.apk "$apk"
-          cp app/build/outputs/bundle/release/app-release.aab "$aab"
           git tag "$tag" "${GITHUB_SHA}"
           git push origin "$tag"
-          gh release create "$tag" "$apk" "$aab" \
+          gh release create "$tag" \
             --target "${GITHUB_SHA}" \
             --title "$tag" \
             --notes-file "${RUNNER_TEMP}/release-notes.txt"
