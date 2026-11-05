@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Read-only check: which money documents in the LIVE database would the rules in ./firestore.rules refuse?
-// Run it BEFORE merging a firestore.rules change (merging to main deploys the rules).
+// Run it BEFORE merging a firestore.rules change (the next release deploys the rules by default).
 //
 // It never writes to the live database. It reads every money document of every household (or one, with
 // --household <id>), then replays each one as a household member against a local Firestore emulator that

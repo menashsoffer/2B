@@ -1,6 +1,6 @@
 # Read-only: lists live money documents that the firestore.rules on the chosen branch would refuse.
 # Run it (Actions -> "Check money docs" -> Run workflow, pick the PR branch) BEFORE merging a rules change,
-# because the push to main deploys the rules. Prints collection and id only, never values.
+# because the next release deploys the rules. Prints collection and id only, never values.
 # The service account needs read access to Firestore (for example the "Cloud Datastore Viewer" role).
 name: Check money docs
 
