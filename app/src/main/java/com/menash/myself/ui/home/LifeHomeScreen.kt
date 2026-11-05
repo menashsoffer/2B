@@ -27,7 +27,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.menash.myself.calendar.CalendarHelper
+import com.menash.myself.core.calendar.CalendarHelper
 import com.menash.myself.core.designsystem.component.ErrorState
 import com.menash.myself.core.designsystem.component.LoadingState
 import com.menash.myself.core.designsystem.component.OfflineIndicator
