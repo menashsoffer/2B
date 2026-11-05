@@ -24,7 +24,7 @@ import com.menash.myself.ui.inbox.InboxTriageScreen
 import com.menash.myself.feature.life.ui.LifeContent
 import com.menash.myself.feature.me.ui.MeScreen
 import com.menash.myself.feature.money.ui.MoneyScreen
-import com.menash.myself.ui.more.MoreScreen
+import com.menash.myself.feature.more.ui.MoreScreen
 import com.menash.myself.ui.tasks.TasksScreen
 
 @Composable
