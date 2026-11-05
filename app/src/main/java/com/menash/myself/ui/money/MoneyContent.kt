@@ -133,7 +133,7 @@ private fun MonthContent(
                 hebrewMonthName(money.current.month), hebrewMonthName(money.current.plusMonths(1).month)), amount = null)
             money.pendingClose.firstOrNull()?.let { pending ->
                 AmountRow(title = if (money.pendingClose.size == 1)
-                    stringResource(R.string.history_close_pending, hebrewMonthName(pending.month))
+                    stringResource(R.string.history_close_pending, hebrewMonthYear(pending))
                 else stringResource(R.string.history_close_pending_count, money.pendingClose.size),
                     amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
             }

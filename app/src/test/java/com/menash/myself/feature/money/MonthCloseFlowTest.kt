@@ -62,6 +62,16 @@ class MonthCloseFlowTest {
     }
 
     @Test
+    fun awaitingMonthsAreDistinctOrderedAndExcludeClosedAndCurrent() {
+        val jan = YearMonth.of(2024, 1)
+        val mar = YearMonth.of(2024, 3)
+        val rows = listOf(line(mar.atDay(5), 1), line(jan.atDay(2), 1), line(jan.atDay(3), 1), line(afterOctober, 1))
+        assertEquals(listOf(jan, mar), monthsAwaitingClose(afterOctober, rows, emptyList()))
+        val closed = ClosedMonth(jan, MonthSnapshot(jan, Money.ZERO, Money.ZERO), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
+        assertEquals(listOf(mar), monthsAwaitingClose(afterOctober, rows, listOf(closed)))
+    }
+
+    @Test
     fun closedSourceIsNotExpectedFromMarkedMonthAndCanBeUndone() {
         val source = StatementSource(Source.MAX, "1234")
         val previous = listOf(line(LocalDate.of(2024, 5, 10), 500))

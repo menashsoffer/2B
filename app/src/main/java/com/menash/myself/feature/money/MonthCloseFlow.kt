@@ -33,7 +33,7 @@ data class StatementSource(val source: Source, val sourceId: String) {
 private fun StatementRow.statementSource() = StatementSource(source, sourceId)
 
 /** Ended months with imported lines that have not been closed, in chronological order. */
-fun pendingCloseMonths(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): List<YearMonth> {
+fun monthsAwaitingClose(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): List<YearMonth> {
     val current = YearMonth.from(today)
     val closedMonths = closed.map { it.month }.toSet()
     return stored.map { it.row.billingMonth }.filter { it < current && it !in closedMonths }.distinct().sorted()
@@ -41,7 +41,7 @@ fun pendingCloseMonths(today: LocalDate, stored: List<StoredTransaction>, closed
 
 /** Open the oldest pending month, or the previous month when there is nothing pending. */
 fun closeTarget(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): YearMonth =
-    pendingCloseMonths(today, stored, closed).firstOrNull() ?: YearMonth.from(today).minusMonths(1)
+    monthsAwaitingClose(today, stored, closed).firstOrNull() ?: YearMonth.from(today).minusMonths(1)
 
 /**
  * The close screen for [month]. [checks] come from the engine's closeChecks; [preview] is what closing now

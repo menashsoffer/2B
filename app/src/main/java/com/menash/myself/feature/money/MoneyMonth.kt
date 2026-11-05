@@ -145,8 +145,9 @@ fun buildMoneyMonth(
     val pension = data.pensionFunds.takeIf { it.isNotEmpty() }?.let { pensionSnapshot(it, today) }
     return MoneyMonth(
         month = month,
+        current = YearMonth.from(today),
         view = view,
-        pendingClose = pendingCloseMonths(today, transactions, data.closedMonths),
+        pendingClose = monthsAwaitingClose(today, transactions, data.closedMonths),
         bigPicture = BigPicture(
             netWorth = liquidWorth,
             assets = data.assets.map { AssetRow(it, isStale(it, today)) },

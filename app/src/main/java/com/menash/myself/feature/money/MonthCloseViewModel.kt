@@ -96,7 +96,7 @@ class MonthCloseViewModel(
             currentMonth = YearMonth.from(day),
             saving = q.saving,
             saveError = q.saveError,
-            nextPending = if (q.successfullyClosed == month) pendingCloseMonths(day, input.stored, input.data.closedMonths).firstOrNull { it != month } else null,
+            nextPending = if (q.successfullyClosed == month) monthsAwaitingClose(day, input.stored, input.data.closedMonths).firstOrNull { it != month } else null,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MonthCloseUi())
 
