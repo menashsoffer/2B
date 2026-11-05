@@ -29,8 +29,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
-import com.menash.myself.auth.AuthManager
-import com.menash.myself.auth.SignInScreen
+import com.menash.myself.core.auth.AuthManager
+import com.menash.myself.core.auth.SignInScreen
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer

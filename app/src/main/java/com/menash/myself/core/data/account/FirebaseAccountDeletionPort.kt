@@ -96,7 +96,7 @@ class FirebaseAccountDeletionPort(
     override suspend fun deleteUnsentReports() { FirebaseCrashlytics.getInstance().deleteUnsentReports() }
     override suspend fun deleteAuthAccount() { user.delete().await() }
     override suspend fun signOut() {
-        com.menash.myself.auth.AuthManager.signOutAndClear(credentials) { auth.signOut() }
+        com.menash.myself.core.auth.AuthManager.signOutAndClear(credentials) { auth.signOut() }
         session.setHouseholdId(null)
     }
     override fun setAccountDeletionPending(pending: Boolean) { this.pending.set(uid, pending) }
