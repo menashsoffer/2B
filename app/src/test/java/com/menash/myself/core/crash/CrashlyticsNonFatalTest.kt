@@ -1,4 +1,4 @@
-package com.menash.myself
+package com.menash.myself.core.crash
 
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.menash.myself.BuildConfig
