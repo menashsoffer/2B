@@ -6,6 +6,9 @@
 name: Distribute
 
 on:
+  # 04:00 UTC = 06:00 Israel winter / 07:00 summer; GitHub may run late and disables schedules after 60 days of repository inactivity.
+  schedule:
+    - cron: "0 4 * * *" # Change this UTC time or remove this line and the schedule key to disable.
   workflow_dispatch:
     inputs:
       release_notes:
@@ -31,6 +34,8 @@ permissions:
 jobs:
   guard:
     runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.changes.outputs.changes }}
     steps:
       - name: Require main for releases
         if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
@@ -38,16 +43,35 @@ jobs:
           echo "Releases run from main only; use dry_run on other branches"
           exit 1
 
+      - uses: actions/checkout@v5
+        if: ${{ github.event_name == 'schedule' }}
+        with:
+          fetch-depth: 0
+
+      - name: Check for new changes
+        id: changes
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = schedule ]; then
+            tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)
+            if [ -n "$tag" ]; then
+              echo "No changes since $tag, nothing to release"
+              echo "changes=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "changes=true" >> "$GITHUB_OUTPUT"
+
   # Deploy rules first so the new APK never reaches phones before its rules are live.
   rules:
     needs: guard
-    if: ${{ inputs.deploy_rules && !inputs.dry_run }}
+    if: ${{ needs.guard.outputs.changes == 'true' && (github.event_name == 'schedule' || inputs.deploy_rules) && !inputs.dry_run }}
     uses: ./.github/workflows/firestore-rules.yml
     secrets: inherit
 
   distribute:
     needs: [guard, rules]
-    if: ${{ !cancelled() && needs.guard.result == 'success' && (needs.rules.result == 'success' || needs.rules.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.guard.result == 'success' && needs.guard.outputs.changes == 'true' && (needs.rules.result == 'success' || needs.rules.result == 'skipped') }}
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: /home/runner/android-sdk
