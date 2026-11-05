@@ -1,4 +1,4 @@
-package com.menash.myself.ui.calendar
+package com.menash.myself.feature.calendar.ui
 
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
