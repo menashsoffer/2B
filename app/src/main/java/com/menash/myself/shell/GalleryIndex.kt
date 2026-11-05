@@ -1,4 +1,4 @@
-package com.menash.myself.ui.shell
+package com.menash.myself.shell
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column

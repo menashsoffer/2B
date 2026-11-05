@@ -14,11 +14,11 @@ import com.menash.myself.feature.home.ui.HomeContent
 import com.menash.myself.feature.home.ui.HomeUiState
 import com.menash.myself.feature.home.ui.greetingFor
 import com.menash.myself.feature.home.ui.hebrewDateLine
-import com.menash.myself.ui.shell.PlaceholderTab
-import com.menash.myself.ui.shell.ShellRoute
-import com.menash.myself.ui.shell.ShellTab
-import com.menash.myself.ui.shell.placeholderTabs
-import com.menash.myself.ui.shell.shellTabs
+import com.menash.myself.shell.PlaceholderTab
+import com.menash.myself.shell.ShellRoute
+import com.menash.myself.shell.ShellTab
+import com.menash.myself.shell.placeholderTabs
+import com.menash.myself.shell.shellTabs
 
 /** The only sample name used by R2 tests and screenshots. */
 const val SampleName = "דנה"

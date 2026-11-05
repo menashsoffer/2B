@@ -8,7 +8,7 @@ import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.r2.DarkQualifiers
 import com.menash.myself.r2.LightQualifiers
 import com.menash.myself.r2.captureR2Screen
-import com.menash.myself.ui.shell.ShellRoute
+import com.menash.myself.shell.ShellRoute
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

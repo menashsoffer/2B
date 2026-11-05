@@ -27,7 +27,7 @@ import com.menash.myself.BuildConfig
 import com.menash.myself.R
 import com.menash.myself.core.data.repository.ExchangeRateRepository
 import com.menash.myself.core.data.repository.HebcalRepository
-import com.menash.myself.ui.shell.GalleryIndex
+import com.menash.myself.shell.GalleryIndex
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer

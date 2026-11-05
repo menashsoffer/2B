@@ -36,7 +36,7 @@ import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
-import com.menash.myself.ui.shell.ShellRoute
+import com.menash.myself.shell.ShellRoute
 
 @Composable
 fun HomeContent(

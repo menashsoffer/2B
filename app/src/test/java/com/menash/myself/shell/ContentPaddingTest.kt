@@ -1,4 +1,4 @@
-package com.menash.myself.ui.shell
+package com.menash.myself.shell
 
 import android.view.View
 import androidx.compose.foundation.layout.WindowInsets

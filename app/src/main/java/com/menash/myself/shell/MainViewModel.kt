@@ -1,4 +1,4 @@
-package com.menash.myself.ui
+package com.menash.myself.shell
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

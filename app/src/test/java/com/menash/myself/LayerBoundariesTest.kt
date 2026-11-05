@@ -198,7 +198,7 @@ class LayerBoundariesTest {
             File(projectRoot, "app/src/main/java/com/menash/myself")
         }
 
-        val targetDirs = listOf(File(srcRoot, "feature"), File(srcRoot, "ui"))
+        val targetDirs = listOf(File(srcRoot, "feature"), File(srcRoot, "shell"))
         val violations = mutableListOf<String>()
 
         targetDirs.forEach { dir ->

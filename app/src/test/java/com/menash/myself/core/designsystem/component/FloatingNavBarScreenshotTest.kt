@@ -5,7 +5,7 @@ import com.menash.myself.r2.DarkQualifiers
 import com.menash.myself.r2.LightQualifiers
 import com.menash.myself.r2.captureR2FullWidth
 import com.menash.myself.r2.r2NavBar
-import com.menash.myself.ui.shell.ShellRoute
+import com.menash.myself.shell.ShellRoute
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

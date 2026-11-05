@@ -27,7 +27,7 @@ import com.menash.myself.feature.household.HouseholdViewModel
 import com.menash.myself.feature.importcatalog.FileCatalogViewModel
 import com.menash.myself.feature.inbox.InboxViewModel
 import com.menash.myself.feature.tasks.TasksViewModel
-import com.menash.myself.ui.MainViewModel
+import com.menash.myself.shell.MainViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -194,7 +194,7 @@ class ShellAndViewModelGuardsTest {
             mainActivityText.contains("selectedTab != \"home\"")
         )
 
-        val uiFiles = File(srcRoot, "ui").walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
+        val uiFiles = File(srcRoot, "shell").walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
         val fabViolations = mutableListOf<String>()
         uiFiles.forEach { file ->
             val content = file.readText()

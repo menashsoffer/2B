@@ -62,7 +62,7 @@ class HomeContentScreenshotTest {
     @Test
     fun homeRelease_light_font10() {
         org.junit.Assert.assertEquals(listOf("home", "money", "me"),
-            com.menash.myself.ui.shell.shellTabsFor(false).map { it.route })
+            com.menash.myself.shell.shellTabsFor(false).map { it.route })
         composeRule.captureR2Screen(darkTheme = false, fontScale = 1.0f) {
             HomeContent(
                 state = HomeUiState(firstName = com.menash.myself.r2.SampleName),

@@ -31,7 +31,7 @@ import com.menash.myself.core.designsystem.theme.AppShapes
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.me.ui.MeRow
-import com.menash.myself.ui.shell.ShellRoute
+import com.menash.myself.shell.ShellRoute
 
 /** One entry in «חיים»: the label, its icon and the route it opens. */
 data class LifeEntry(val labelRes: Int, val icon: ImageVector, val route: String, val testTag: String)

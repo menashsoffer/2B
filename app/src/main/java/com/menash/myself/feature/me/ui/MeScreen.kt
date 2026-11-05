@@ -21,7 +21,7 @@ import com.menash.myself.core.data.repository.HebcalRepository
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.account.ui.AccountManagementRoute
 import com.menash.myself.feature.settings.ui.SettingsDialog
-import com.menash.myself.ui.shell.GalleryIndex
+import com.menash.myself.shell.GalleryIndex
 
 /** Wires [MeContent]: sign in and out, household, preferences, account management, debug gallery. */
 @Composable

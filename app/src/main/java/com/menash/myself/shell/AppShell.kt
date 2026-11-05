@@ -1,4 +1,4 @@
-package com.menash.myself.ui.shell
+package com.menash.myself.shell
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,7 +42,7 @@ import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
-import com.menash.myself.ui.MainViewModel
+import com.menash.myself.shell.MainViewModel
 import com.menash.myself.core.ui.UiEvent
 import com.menash.myself.feature.money.ui.hebrewMonthYear
 import kotlinx.coroutines.launch

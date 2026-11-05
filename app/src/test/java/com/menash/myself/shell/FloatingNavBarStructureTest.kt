@@ -1,4 +1,4 @@
-package com.menash.myself.ui.shell
+package com.menash.myself.shell
 
 import android.content.Context
 import androidx.compose.ui.semantics.Role
@@ -68,7 +68,7 @@ class FloatingNavBarStructureTest {
     fun releaseBar_isHomeMoneyMe() {
         assertEquals(
             listOf(ShellRoute.Home, ShellRoute.Money, ShellRoute.Me),
-            com.menash.myself.ui.shell.shellTabsFor(false).map { tab -> tab.route },
+            com.menash.myself.shell.shellTabsFor(false).map { tab -> tab.route },
         )
     }
 }

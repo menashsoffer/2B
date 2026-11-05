@@ -1,4 +1,4 @@
-package com.menash.myself.ui.shell
+package com.menash.myself.shell
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet

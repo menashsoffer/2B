@@ -1,4 +1,4 @@
-package com.menash.myself.ui.shell
+package com.menash.myself.shell
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.menash.myself.r2.DarkQualifiers
