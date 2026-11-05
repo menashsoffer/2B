@@ -268,13 +268,9 @@ jobs:
         run: |
           set -euo pipefail
           tag="v${VERSION_NAME}"
-          apk="${RUNNER_TEMP}/2b-${VERSION_NAME}.apk"
-          aab="${RUNNER_TEMP}/2b-${VERSION_NAME}.aab"
-          cp app/build/outputs/apk/release/app-release.apk "$apk"
-          cp app/build/outputs/bundle/release/app-release.aab "$aab"
           git tag "$tag" "${GITHUB_SHA}"
           git push origin "$tag"
-          gh release create "$tag" "$apk" "$aab" \
+          gh release create "$tag" \
             --target "${GITHUB_SHA}" \
             --title "$tag" \
             --notes-file "${RUNNER_TEMP}/release-notes.txt"
