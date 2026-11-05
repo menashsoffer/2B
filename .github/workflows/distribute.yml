@@ -1,3 +1,4 @@
+# Never rename or move this workflow: its run number drives versionCode and must not reset.
 # Signed APK to Firebase App Distribution.
 # CLI: https://firebase.google.com/docs/app-distribution/android/distribute-cli
 # Auth: https://firebase.google.com/docs/app-distribution/authenticate-service-account
@@ -5,9 +6,24 @@
 name: Distribute
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      release_notes:
+        description: Hebrew release notes for the family (empty generates notes)
+        type: string
+        required: false
+      deploy_rules:
+        description: Deploy Firestore rules before release
+        type: boolean
+        default: true
+      dry_run:
+        description: Build and verify without deploying or releasing
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -18,6 +34,12 @@ jobs:
     env:
       ANDROID_HOME: /home/runner/android-sdk
     steps:
+      - name: Require main for releases
+        if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Releases run from main only; use dry_run on other branches"
+          exit 1
+
       - name: Fail if a required secret is missing
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -153,7 +175,7 @@ jobs:
         run: ./gradlew lintDebug --no-daemon
 
       - name: Upload to Firebase App Distribution
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ !inputs.dry_run }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
