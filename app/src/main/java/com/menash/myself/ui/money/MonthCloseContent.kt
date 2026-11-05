@@ -94,7 +94,9 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                 else if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
                 else if (state == 1 || view == null) { LoadingState(testTag = "close_loading") }
                 else {
-                    MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it.minusMonths(1) } == true, actions)
+                    val canGoBack = (ui.earliestMonth ?: ui.currentMonth?.minusMonths(12))?.let { view.month > it } != false
+                    val canGoNext = ui.currentMonth?.let { view.month < it.minusMonths(1) } == true
+                    MonthArrows(view.month, canGoBack = canGoBack, canGoNext = canGoNext, actions)
                     view.existing?.let {
                         Chip(
                             text = stringResource(R.string.close_done_on, it.closedOn.format(dateFormat)),
@@ -149,9 +151,9 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
 }
 
 @Composable
-private fun MonthArrows(month: YearMonth, canGoNext: Boolean, actions: MonthCloseActions) {
+private fun MonthArrows(month: YearMonth, canGoBack: Boolean, canGoNext: Boolean, actions: MonthCloseActions) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        TextButton(onClick = actions.onPrevious, modifier = Modifier.testTag("close_previous")) {
+        TextButton(onClick = actions.onPrevious, enabled = canGoBack, modifier = Modifier.testTag("close_previous")) {
             Text(stringResource(R.string.close_previous, hebrewMonthName(month.minusMonths(1).month)), style = AppType.body)
         }
         if (canGoNext) {

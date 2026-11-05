@@ -51,4 +51,16 @@ class ActualOnlyTest {
         assertEquals(3, actual.importedLines)
         assertEquals(Money(20_000), actual.top.shown.single().actual)
     }
+
+    @Test fun periodicBudgetStartingLaterDoesNotCreatePlanInHistoricalMonth() {
+        val history = YearMonth.of(2024, 2)
+        val line = StoredTransaction(StatementRow("expense", Source.HAPOALIM, "1234", history.atDay(5), null,
+            "shop", charge = Money(500)), "current-1")
+        val data = MoneyData(
+            items = com.menash.myself.feature.money.domain.MoneyItems(periodicBudgets = listOf(MoneySamples.holidays)),
+            categories = defaultCategories(),
+        )
+        val actual = buildMoneyMonth(data, history, LocalDate.of(2026, 11, 3), null, listOf(line)).view as MonthView.ActualOnly
+        assertEquals(Money(500), actual.spent)
+    }
 }

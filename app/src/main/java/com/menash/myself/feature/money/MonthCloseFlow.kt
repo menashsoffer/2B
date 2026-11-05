@@ -13,6 +13,7 @@ import com.menash.myself.feature.money.domain.averageMonthlyExpenses
 import com.menash.myself.feature.money.domain.canClose
 import com.menash.myself.feature.money.domain.closeChecks
 import com.menash.myself.feature.money.domain.closeMonth
+import com.menash.myself.feature.money.domain.forMonth
 import com.menash.myself.feature.money.domain.monthlySaving
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.Source
@@ -100,7 +101,7 @@ fun closeView(
         closedSources = sourceClosures.filterValues { it <= month },
         staleAssets = checks.filter { it.kind == CloseCheckKind.STALE_BALANCE }.mapNotNull { assets[it.detail] },
         preview = closeMonth(
-            month, data.items, toTransactions(stored, memory), actualIncome(stored, month, memory),
+            month, data.items.forMonth(month, today), toTransactions(stored, memory), actualIncome(stored, month, memory),
             if (needsHistoricalBalances(month, today)) pastBalances else BalancesAtClose.Current(data.assets), usdToIls, today,
         ),
         existing = data.closedMonths.firstOrNull { it.month == month },
