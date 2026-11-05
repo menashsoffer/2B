@@ -154,7 +154,7 @@ fun buildMoneyMonth(
         }
         is MonthPlan.Planned -> MonthView.Planned(
             plan = plan,
-            rows = rows(items, plan, month, rate, missingIds),
+            rows = rows(items.copy(subscriptions = all.subscriptions.filter { amountFor(it, month) != null }), plan, month, rate, missingIds),
             cardCharges = plan.cardCharges,
             bar = bar(plan),
             usdRateMissing = missingUsd.isNotEmpty(),
