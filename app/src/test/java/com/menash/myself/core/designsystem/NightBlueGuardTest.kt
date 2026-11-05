@@ -157,7 +157,7 @@ class NightBlueGuardTest {
 
     private val colorAllowList = setOf(
         "java/com/menash/myself/feature/calendar/ui/CalendarScreen.kt",
-        "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
+        "java/com/menash/myself/feature/importcatalog/ui/FileCatalogScreen.kt",
         "java/com/menash/myself/feature/dreams/ui/DreamCardComponents.kt",
         "java/com/menash/myself/feature/fitness/ui/FitnessScreen.kt",
         "java/com/menash/myself/feature/home/ui/LifeHomeCards.kt",
@@ -172,8 +172,8 @@ class NightBlueGuardTest {
     private val legacyChromeAllowList = setOf(
         "java/com/menash/myself/core/auth/SignInScreen.kt",
         "java/com/menash/myself/feature/calendar/ui/CalendarScreen.kt",
-        "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
-        "java/com/menash/myself/ui/common/CsvMappingDialog.kt",
+        "java/com/menash/myself/feature/importcatalog/ui/FileCatalogScreen.kt",
+        "java/com/menash/myself/feature/importcatalog/ui/CsvMappingDialog.kt",
         "java/com/menash/myself/feature/dreams/ui/DreamCardComponents.kt",
         "java/com/menash/myself/feature/dreams/ui/DreamsScreen.kt",
         "java/com/menash/myself/feature/fitness/ui/FitnessScreen.kt",
@@ -194,8 +194,8 @@ class NightBlueGuardTest {
     private val fontSizeAllowList = setOf(
         "java/com/menash/myself/core/auth/SignInScreen.kt",
         "java/com/menash/myself/feature/calendar/ui/CalendarScreen.kt",
-        "java/com/menash/myself/ui/catalog/FileCatalogScreen.kt",
-        "java/com/menash/myself/ui/common/CsvMappingDialog.kt",
+        "java/com/menash/myself/feature/importcatalog/ui/FileCatalogScreen.kt",
+        "java/com/menash/myself/feature/importcatalog/ui/CsvMappingDialog.kt",
         "java/com/menash/myself/feature/dreams/ui/DreamCardComponents.kt",
         "java/com/menash/myself/feature/dreams/ui/DreamDialogs.kt",
         "java/com/menash/myself/feature/dreams/ui/DreamsScreen.kt",

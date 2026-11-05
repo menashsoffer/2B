@@ -1,4 +1,4 @@
-package com.menash.myself.ui.catalog
+package com.menash.myself.feature.importcatalog.ui
 
 import android.content.Intent
 import android.widget.Toast
@@ -29,7 +29,7 @@ import com.menash.myself.core.designsystem.component.OfflineIndicator
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.core.domain.util.CsvParser
 import com.menash.myself.feature.importcatalog.FileCatalogViewModel
-import com.menash.myself.ui.common.CsvMappingDialog
+import com.menash.myself.feature.importcatalog.ui.CsvMappingDialog
 
 import com.menash.myself.R
 import androidx.compose.ui.res.stringResource

@@ -14,7 +14,7 @@ import androidx.navigation.compose.navigation
 import com.menash.myself.BuildConfig
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.feature.calendar.ui.CalendarScreen
-import com.menash.myself.ui.catalog.FileCatalogScreen
+import com.menash.myself.feature.importcatalog.ui.FileCatalogScreen
 import com.menash.myself.feature.dreams.ui.DreamsScreen
 import com.menash.myself.feature.fitness.ui.FitnessScreen
 import com.menash.myself.feature.home.ui.HomeScreen

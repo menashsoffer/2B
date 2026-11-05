@@ -1,4 +1,4 @@
-package com.menash.myself.ui.common
+package com.menash.myself.feature.importcatalog.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
