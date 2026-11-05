@@ -22,7 +22,7 @@ import com.menash.myself.feature.home.ui.LifeHomeScreen
 import com.menash.myself.ui.household.HouseholdScreen
 import com.menash.myself.ui.inbox.InboxTriageScreen
 import com.menash.myself.ui.life.LifeContent
-import com.menash.myself.ui.me.MeScreen
+import com.menash.myself.feature.me.ui.MeScreen
 import com.menash.myself.feature.money.ui.MoneyScreen
 import com.menash.myself.ui.more.MoreScreen
 import com.menash.myself.ui.tasks.TasksScreen

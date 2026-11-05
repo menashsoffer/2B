@@ -1,4 +1,4 @@
-package com.menash.myself.ui.me
+package com.menash.myself.feature.me.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures

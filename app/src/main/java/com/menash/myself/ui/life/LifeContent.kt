@@ -30,7 +30,7 @@ import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppShapes
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
-import com.menash.myself.ui.me.MeRow
+import com.menash.myself.feature.me.ui.MeRow
 import com.menash.myself.ui.shell.ShellRoute
 
 /** One entry in «חיים»: the label, its icon and the route it opens. */
