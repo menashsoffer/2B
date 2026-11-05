@@ -1,4 +1,4 @@
-package com.menash.myself.ui.household
+package com.menash.myself.feature.household.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*

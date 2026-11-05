@@ -19,7 +19,7 @@ import com.menash.myself.feature.dreams.ui.DreamsScreen
 import com.menash.myself.feature.fitness.ui.FitnessScreen
 import com.menash.myself.feature.home.ui.HomeScreen
 import com.menash.myself.feature.home.ui.LifeHomeScreen
-import com.menash.myself.ui.household.HouseholdScreen
+import com.menash.myself.feature.household.ui.HouseholdScreen
 import com.menash.myself.feature.inbox.ui.InboxTriageScreen
 import com.menash.myself.feature.life.ui.LifeContent
 import com.menash.myself.feature.me.ui.MeScreen
