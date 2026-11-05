@@ -1,4 +1,4 @@
-package com.menash.myself.domain
+package com.menash.myself.core.domain.model
 
 import com.menash.myself.core.domain.model.ForWhom
 import org.junit.Assert.*
