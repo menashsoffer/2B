@@ -202,14 +202,6 @@ jobs:
           print("Release manifest: READ_CALENDAR absent")
           PYTHON
 
-      - name: Upload release bundle artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: myself-${{ env.VERSION_CODE }}.aab
-          path: app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Lint debug
         # lint.xml: NewApi is fatal, every other id is a warning.
         # abortOnError fails this step only on NewApi, before the upload.
