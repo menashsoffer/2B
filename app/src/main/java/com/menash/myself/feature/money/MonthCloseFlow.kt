@@ -109,7 +109,7 @@ fun closeView(
 }
 
 /** What the big picture and "האם אפשר?" take from closed months; both null until a month is closed. */
-data class ClosedFigures(val monthlySaving: Money?, val averageExpenses: Money?)
+data class ClosedFigures(val monthlySaving: Money?, val averageExpenses: Money?, val averagesFrom: YearMonth? = null)
 
-fun closedFigures(closed: List<ClosedMonth>): ClosedFigures =
-    ClosedFigures(monthlySaving(closed), averageMonthlyExpenses(closed))
+fun closedFigures(closed: List<ClosedMonth>, averagesFrom: YearMonth? = null): ClosedFigures =
+    ClosedFigures(monthlySaving(closed, averagesFrom), averageMonthlyExpenses(closed, averagesFrom), averagesFrom)

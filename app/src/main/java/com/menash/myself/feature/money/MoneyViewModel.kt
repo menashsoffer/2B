@@ -120,6 +120,10 @@ class MoneyViewModel(
         shown.value = if (next >= current) null else next
     }
 
+    fun setAveragesFrom(from: YearMonth?) {
+        safeLaunch("saveAverages") { repository.save(MoneyEntry.AveragesSettingsEntry(from)) }
+    }
+
     private fun seedCategoriesOnce(data: MoneyData) {
         if (seeded || !data.householdReady) return
         seeded = true

@@ -95,6 +95,8 @@ data class BigPicture(
     val flows: List<MonthFlowPoint> = emptyList(),
     /** Net worth after each closed month with balances, then today. */
     val worth: List<WorthPoint> = emptyList(),
+    val averagesFrom: YearMonth? = null,
+    val averagesCurrentMonth: YearMonth? = null,
 )
 
 /** [month] is the month shown; [current] is today's month. The big picture is always today's. */
@@ -148,7 +150,7 @@ fun buildMoneyMonth(
             .let { it.copy(status = monthStatus(it, data.closedMonths.lastOrNull { c -> c.month == month }, transactions, month)) }
     }
     val planned = (view as? MonthView.Planned)?.plan
-    val closed = closedFigures(data.closedMonths)
+    val closed = closedFigures(data.closedMonths, data.averagesFrom)
     val closedCushion = closed.averageExpenses?.let { cushionMonths(data.assets, it) }
     val liquidWorth = data.assets.takeIf { it.isNotEmpty() }?.let { netWorth(it) }
     val pension = data.pensionFunds.takeIf { it.isNotEmpty() }?.let { pensionSnapshot(it, today) }
@@ -167,6 +169,8 @@ fun buildMoneyMonth(
             titheBalance = titheFromImports(data, month, transactions, memory)?.balance,
             monthlySaving = closed.monthlySaving,
             cushionFromClosed = closedCushion != null,
+            averagesFrom = data.averagesFrom,
+            averagesCurrentMonth = YearMonth.from(today),
             pension = pension,
             totalWorth = totalWorth(liquidWorth, pension),
             flows = monthFlows(data.closedMonths, transactions, memory, data.categories, YearMonth.from(today)),
