@@ -9,6 +9,7 @@ import com.menash.myself.feature.money.domain.Donation
 import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.domain.TitheRate
 import com.menash.myself.feature.money.domain.TitheSettings
+import com.menash.myself.feature.money.domain.Transaction
 import com.menash.myself.feature.money.domain.UnsubmittedDonations
 import com.menash.myself.feature.money.domain.amountFor
 import com.menash.myself.feature.money.domain.charityBalance
@@ -19,6 +20,8 @@ import com.menash.myself.feature.money.importer.ImportedIncome
 import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.importer.importedIncome
 import com.menash.myself.feature.money.importer.portfolioDeposits
+import com.menash.myself.feature.money.importer.toTransactions
+import java.time.temporal.ChronoUnit
 import java.time.YearMonth
 
 /** The portfolio's part: 20% of value minus deposits. Negative while the portfolio is at a loss. */
@@ -41,6 +44,8 @@ data class TitheMonth(
  * The maaser and chomesh balance. [balance] is signed: positive is still owed, negative is donated ahead.
  * Each source counts what came in that month when an imported line is linked to it, else its planned net.
  */
+data class DonationMatch(val donation: Donation, val line: Transaction)
+
 data class TitheView(
     val settings: TitheSettings,
     val month: YearMonth,
@@ -56,6 +61,7 @@ data class TitheView(
     val donations: List<Donation>,
     val unsubmitted: UnsubmittedDonations,
     val effectiveStart: YearMonth = settings.startMonth,
+    val possibleDuplicates: List<DonationMatch> = emptyList(),
 )
 
 private fun signed(balance: CharityBalance): Money = when (balance) {
@@ -84,19 +90,22 @@ fun titheView(
     imported: ImportedIncome = ImportedIncome(emptyList(), emptyMap()),
     importedDeposits: Money = Money.ZERO,
     effectiveStart: YearMonth? = null,
+    importedDonations: List<Transaction> = emptyList(),
 ): TitheView? {
     val settings = data.tithe ?: return null
     val start = effectiveStart ?: settings.startMonth
     val rated = data.items.incomes.filter { it.titheRate != TitheRate.NONE }
     val counted = data.donations.filter { !it.date.isBefore(start.atDay(1)) }.sortedByDescending { it.date }
+    val manualCounted = counted.filter { it.matchedLineId == null }
+    val importedCounted = importedDonations.filter { it.billingMonth in start..month }
     val months = generateSequence(start) { it.plusMonths(1) }.takeWhile { it <= month }
-        .map { titheMonth(it, rated, imported, counted) }.toList().reversed()
+        .map { m -> titheMonth(m, rated, imported, manualCounted).let { it.copy(donated = it.donated + sumMoney(importedCounted.filter { line -> line.billingMonth == m }.map { line -> line.amount })) } }.toList().reversed()
     val fromIncome = sumMoney(months.map { it.owed })
     val portfolio = data.assets.firstOrNull { it.id == settings.portfolioAssetId && it.kind == AssetKind.ASSET }?.let { asset ->
         val deposits = settings.depositsBefore + importedDeposits
         PortfolioPart(asset.balance, deposits, signed(charityBalance(emptyList(), emptyList(), asset.balance, deposits, emptyList())))
     }
-    val donated = sumMoney(counted.map { it.amount })
+    val donated = sumMoney(manualCounted.map { it.amount }) + sumMoney(importedCounted.map { it.amount })
     return TitheView(
         settings = settings,
         month = month,
@@ -109,6 +118,9 @@ fun titheView(
         donations = counted,
         unsubmitted = unsubmittedThisYear(data.donations, month.year),
         effectiveStart = start,
+        possibleDuplicates = manualCounted.flatMap { donation -> importedCounted.filter { line ->
+            line.amount == donation.amount && kotlin.math.abs(ChronoUnit.DAYS.between(line.date, donation.date)) <= 3
+        }.map { DonationMatch(donation, it) } },
     )
 }
 
@@ -117,7 +129,9 @@ fun titheFromImports(data: MoneyData, month: YearMonth, stored: List<StoredTrans
     val settings = data.tithe ?: return null
     val start = effectiveTitheStart(settings, month, stored)
     val incomeIds = data.items.incomes.map { it.id }.toSet()
-    return titheView(data, month, importedIncome(stored, memory, incomeIds), portfolioDeposits(stored, start, memory), start)
+    val donationIds = data.categories.filter { it.isDonation }.map { it.id }.toSet()
+    val donations = toTransactions(stored, memory).filter { it.categoryId in donationIds }
+    return titheView(data, month, importedIncome(stored, memory, incomeIds), portfolioDeposits(stored, start, memory), start, donations)
 }
 
 /** The earliest import can move the start back; without imports a new count begins this month. */

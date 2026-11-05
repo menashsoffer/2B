@@ -96,6 +96,7 @@ object MoneyFixtures {
         "with-monthly-cost" to MoneyEntry.GoalEntry(MoneySamples.car),
 
         "for-tax-refund" to MoneyEntry.DonationEntry(MoneySamples.donations.first()),
+        "matched" to MoneyEntry.DonationEntry(Donation("don-match", LocalDate.of(2026, 10, 2), Money(1_000), "", matchedLineId = "line-1")),
         "no-organisation" to MoneyEntry.DonationEntry(Donation("don-x", LocalDate.of(2026, 10, 2), Money(1_000), "")),
 
         "full" to MoneyEntry.TitheEntry(MoneySamples.tithe),

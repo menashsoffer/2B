@@ -196,6 +196,6 @@ class MoneyDocumentsTest {
     @Test
     fun seedOnlyWhenTheHouseholdHasNoCategories() {
         assertEquals(defaultCategories(), categoriesToSeed(emptyList(), defaultCategories()))
-        assertEquals(emptyList<Category>(), categoriesToSeed(listOf(defaultCategories().first()), defaultCategories()))
+        assertEquals(defaultCategories().filter { it.id == com.menash.myself.feature.money.domain.DONATION_CATEGORY_ID }, categoriesToSeed(listOf(defaultCategories().first()), defaultCategories()))
     }
 }

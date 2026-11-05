@@ -72,6 +72,10 @@ class TitheViewModel(
         sheets.value = TitheSheets()
     }
 
+    fun matchDonation(match: DonationMatch) {
+        safeLaunch("matchDonation") { money.save(MoneyEntry.DonationEntry(match.donation.copy(matchedLineId = match.line.id))) }
+    }
+
     fun startDonation() {
         sheets.value = TitheSheets(donation = DonationEditor(DonationDraft(date = today()), isNew = true))
     }

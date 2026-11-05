@@ -39,6 +39,27 @@ class TitheTest {
     }
 
     @Test
+    fun importedDonationAndMatchingManualDonationCountOnceAfterConfirmation() {
+        val may = YearMonth.of(2024, 5)
+        val line = StoredTransaction(com.menash.myself.feature.money.importer.StatementRow(
+            "imported-donation", com.menash.myself.feature.money.importer.Source.MAX, "1234",
+            may.atDay(5), may.atDay(5), "charity", charge = shekels(500)),
+            categoryId = com.menash.myself.feature.money.domain.DONATION_CATEGORY_ID)
+        val manual = com.menash.myself.feature.money.domain.Donation("manual", may.atDay(7), shekels(500), "")
+        val d = data.copy(tithe = tithe.copy(startMonth = may, fromFirstData = false), donations = emptyList())
+        val memory = com.menash.myself.feature.money.importer.ImportMemory()
+        assertEquals(shekels(500), titheFromImports(d, may, listOf(line), memory)!!.months.single().donated)
+        val both = titheFromImports(d.copy(donations = listOf(manual)), may, listOf(line), memory)!!
+        assertEquals(shekels(1000), both.donated)
+        assertEquals(1, both.possibleDuplicates.size)
+        val matched = manual.copy(matchedLineId = line.id)
+        val result = titheFromImports(d.copy(donations = listOf(matched)), may, listOf(line), memory)!!
+        assertEquals(shekels(500), result.donated)
+        assertEquals(shekels(500), result.months.single().donated)
+        assertEquals(0, result.possibleDuplicates.size)
+    }
+
+    @Test
     fun noStartMonth_noBalance() {
         assertNull(titheView(filled, october))
     }

@@ -13,16 +13,17 @@ data class DonationDraft(
     val organisation: String = "",
     val date: LocalDate,
     val submitted: Boolean = false,
+    val matchedLineId: String? = null,
 )
 
 fun donationDraftOf(donation: Donation) = DonationDraft(
-    donation.id, amountText(donation.amount), donation.organisation, donation.date, donation.submittedForTaxRefund,
+    donation.id, amountText(donation.amount), donation.organisation, donation.date, donation.submittedForTaxRefund, donation.matchedLineId,
 )
 
 /** Null when the amount is missing or not above zero; the organisation may stay empty. */
 fun buildDonation(draft: DonationDraft, newId: () -> String): Donation? {
     val amount = parseAmount(draft.amount)?.takeIf { it > Money.ZERO } ?: return null
-    return Donation(draft.id ?: newId(), draft.date, amount, draft.organisation.trim(), draft.submitted)
+    return Donation(draft.id ?: newId(), draft.date, amount, draft.organisation.trim(), draft.submitted, draft.matchedLineId)
 }
 
 /** The settings sheet. [ahead] means the opening amount was donated ahead rather than still owed. */

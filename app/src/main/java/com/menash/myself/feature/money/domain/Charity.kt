@@ -14,6 +14,7 @@ data class ActualIncome(val incomeId: String, val month: YearMonth, val net: Mon
 data class Donation(
     val id: String, val date: LocalDate, val amount: Money, val organisation: String,
     val submittedForTaxRefund: Boolean = false,
+    val matchedLineId: String? = null,
 ) {
     init { requireId(id); require(amount >= Money.ZERO) }
 }

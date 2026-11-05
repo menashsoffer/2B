@@ -227,9 +227,9 @@ service cloud.firestore {
     }
 
     function isValidDonation(d) {
-      return d.keys().hasOnly(['date', 'amount', 'organisation', 'submittedForTaxRefund', 'v']) &&
+      return d.keys().hasOnly(['date', 'amount', 'organisation', 'submittedForTaxRefund', 'matchedLineId', 'v']) &&
              d.keys().hasAll(['date', 'amount', 'organisation', 'submittedForTaxRefund']) &&
-             isDate(d.date) && isAgorot(d.amount) && isText(d.organisation, 200) && d.submittedForTaxRefund is bool;
+             isDate(d.date) && isAgorot(d.amount) && isText(d.organisation, 200) && d.submittedForTaxRefund is bool && optRef(d, 'matchedLineId');
     }
 
     function isValidTithe(docId, d) {

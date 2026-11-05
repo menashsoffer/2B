@@ -9,12 +9,15 @@ import java.time.YearMonth
 /** Donations and the maaser settings document, in the same conventions as [MoneyDocuments]. */
 internal object TitheDocuments {
 
-    fun encode(donation: Donation): Map<String, Any> = mapOf(
+    fun encode(donation: Donation): Map<String, Any> = buildMap {
+        putAll(mapOf(
         "date" to donation.date.toString(),
         "amount" to donation.amount.agorot,
         "organisation" to donation.organisation,
         "submittedForTaxRefund" to donation.submittedForTaxRefund,
-    )
+        ))
+        donation.matchedLineId?.let { put("matchedLineId", it) }
+    }
 
     fun encode(settings: TitheSettings): Map<String, Any> = buildMap {
         put("startMonth", settings.startMonth.toString())
@@ -30,6 +33,7 @@ internal object TitheDocuments {
         amount = doc.money("amount"),
         organisation = doc.stringOrNull("organisation").orEmpty(),
         submittedForTaxRefund = doc.boolean("submittedForTaxRefund"),
+        matchedLineId = doc.stringOrNull("matchedLineId"),
     )
 
     fun settings(id: String, doc: MoneyDoc): TitheSettings {

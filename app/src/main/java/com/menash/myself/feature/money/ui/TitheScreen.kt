@@ -29,6 +29,7 @@ fun TitheScreen(ui: TitheUi, viewModel: TitheViewModel, onLink: (YearMonth) -> U
             onSettings = viewModel::startSettings,
             onAddDonation = viewModel::startDonation,
             onDonation = viewModel::editDonation,
+            onMatch = viewModel::matchDonation,
             onLink = onLink,
             onClose = viewModel::close,
         ),

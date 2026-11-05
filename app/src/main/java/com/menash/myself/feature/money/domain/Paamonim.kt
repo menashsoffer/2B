@@ -11,7 +11,11 @@ enum class ExpenseClass { FIXED, CURRENT, PERIODIC }
 /** parentId links a sub-item (e.g. עיתון under מנויים) to its category. */
 data class Category(val id: String, val name: String, val klass: ExpenseClass, val parentId: String? = null) {
     init { requireId(id) }
+    val isDonation: Boolean get() = id == DONATION_CATEGORY_ID || id == STANDING_DONATION_CATEGORY_ID
 }
+
+const val DONATION_CATEGORY_ID = "current-donations"
+const val STANDING_DONATION_CATEGORY_ID = "fixed-8"
 
 const val MISC_CATEGORY_NAME = "שונות"
 
@@ -69,5 +73,6 @@ fun defaultCategories(): List<Category> {
     return fixed.mapIndexed { i, n -> cat("fixed-${i + 1}", n, ExpenseClass.FIXED) } +
         subscriptions.mapIndexed { i, n -> cat("sub-${i + 1}", n, ExpenseClass.FIXED, subscriptionsId) } +
         periodic.mapIndexed { i, n -> cat("periodic-${i + 1}", n, ExpenseClass.PERIODIC) } +
-        current.mapIndexed { i, n -> cat("current-${i + 1}", n, ExpenseClass.CURRENT) }
+        current.mapIndexed { i, n -> cat("current-${i + 1}", n, ExpenseClass.CURRENT) } +
+        cat(DONATION_CATEGORY_ID, "תרומות", ExpenseClass.CURRENT)
 }

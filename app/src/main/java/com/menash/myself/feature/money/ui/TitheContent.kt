@@ -28,6 +28,7 @@ import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.domain.model.Money
+import com.menash.myself.feature.money.DonationMatch
 import com.menash.myself.feature.money.TitheUi
 import com.menash.myself.feature.money.TitheView
 import com.menash.myself.feature.money.domain.Donation
@@ -39,6 +40,7 @@ data class TitheActions(
     val onSettings: () -> Unit = {},
     val onAddDonation: () -> Unit = {},
     val onDonation: (Donation) -> Unit = {},
+    val onMatch: (DonationMatch) -> Unit = {},
     /** Opens the month's imported lines to link income to its source. */
     val onLink: (YearMonth) -> Unit = {},
     val onClose: () -> Unit = {},
@@ -82,6 +84,14 @@ fun TitheContent(ui: TitheUi, actions: TitheActions, modifier: Modifier = Modifi
             Breakdown(view)
             SectionTitle(stringResource(R.string.tithe_months))
             view.months.forEach { TitheMonthCard(it, actions.onLink) }
+            view.possibleDuplicates.forEach { match ->
+                MoneySurface {
+                    AmountRow(title = stringResource(R.string.tithe_possible_duplicate),
+                        detail = stringResource(R.string.tithe_duplicate_detail, match.donation.date.format(dateFormat), match.line.date.format(dateFormat)),
+                        amount = formatMoney(match.donation.amount))
+                    TextButton(onClick = { actions.onMatch(match) }) { Text(stringResource(R.string.tithe_same_donation)) }
+                }
+            }
             Donations(view, actions)
             TextButton(onClick = actions.onSettings, modifier = Modifier.testTag("tithe_settings")) {
                 Text(stringResource(R.string.tithe_settings), style = AppType.body)
