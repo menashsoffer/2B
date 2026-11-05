@@ -16,11 +16,12 @@ import com.google.firebase.auth.FirebaseUser
 import com.menash.myself.BuildConfig
 import com.menash.myself.auth.AuthManager
 import com.menash.myself.auth.SignOutConfirmDialog
+import com.menash.myself.core.data.repository.ExchangeRateRepository
+import com.menash.myself.core.data.repository.HebcalRepository
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.ui.account.AccountManagementRoute
 import com.menash.myself.ui.settings.SettingsDialog
 import com.menash.myself.ui.shell.GalleryIndex
-import kotlinx.coroutines.launch
 
 /** Wires [MeContent]: sign in and out, household, preferences, account management, debug gallery. */
 @Composable
@@ -30,14 +31,16 @@ fun MeScreen(
     onSignedOut: () -> Unit,
     onOpenHousehold: () -> Unit,
     onOpenRoute: (String) -> Unit,
+    exchangeRateRepository: ExchangeRateRepository = LocalAppContainer.current.exchangeRateRepository,
+    hebcalRepository: HebcalRepository = LocalAppContainer.current.hebcalRepository,
+    dialogsInWindow: Boolean = true,
 ) {
-    val appContainer = LocalAppContainer.current
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var showPreferences by remember { mutableStateOf(false) }
+    var showPreferences by rememberSaveable { mutableStateOf(false) }
     var showManagement by rememberSaveable { mutableStateOf(false) }
     var managementKey by rememberSaveable { mutableStateOf("") }
-    var confirmSignOut by remember { mutableStateOf(false) }
+    var confirmSignOut by rememberSaveable { mutableStateOf(false) }
     var showGallery by remember { mutableStateOf(false) }
 
     MeContent(
@@ -62,18 +65,17 @@ fun MeScreen(
     )
 
     if (showPreferences) {
-        val rate by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
+        val rate by exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
         SettingsDialog(
             currentRate = rate?.rate ?: 0.0,
             onDismiss = { showPreferences = false },
-            onSaveRate = { newRate ->
-                scope.launch { appContainer.exchangeRateRepository.setManualRate(newRate) }
-                showPreferences = false
-            },
             onOpenLegacyScreen = { route ->
                 showPreferences = false
                 onOpenRoute(route)
             },
+            exchangeRateRepository = exchangeRateRepository,
+            hebcalRepository = hebcalRepository,
+            inDialogWindow = dialogsInWindow,
         )
     }
 
