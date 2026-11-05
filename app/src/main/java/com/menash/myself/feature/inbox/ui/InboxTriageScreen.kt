@@ -1,4 +1,4 @@
-package com.menash.myself.ui.inbox
+package com.menash.myself.feature.inbox.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
