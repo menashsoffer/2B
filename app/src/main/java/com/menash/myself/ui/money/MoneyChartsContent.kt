@@ -75,7 +75,11 @@ internal fun MonthCharts(view: MonthView.Planned, actions: MoneyActions) {
             testTag = "chart_classes",
         )
     }
-    val top = view.top
+    TopCategoriesChart(view.top, actions)
+}
+
+@Composable
+internal fun TopCategoriesChart(top: com.menash.myself.feature.money.CategoryTop, actions: MoneyActions) {
     if (top.shown.isEmpty()) return
     SectionTitle(stringResource(R.string.chart_top_categories))
     MoneySurface(testTag = "money_chart_top") {

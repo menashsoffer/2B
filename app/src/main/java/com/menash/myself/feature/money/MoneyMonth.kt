@@ -42,7 +42,12 @@ data class MonthRow(val kind: MonthRowKind, val total: Money, val items: List<Mo
 data class BarSegment(val kind: MonthRowKind?, val amount: Money)
 
 sealed interface MonthView {
-    data class Actual(val income: Money, val spent: Money, val importedLines: Int) : MonthView
+    data class ActualOnly(
+        val income: Money, val spent: Money, val unassigned: Money?, val importedLines: Int,
+        val top: CategoryTop, val closed: Boolean,
+    ) : MonthView {
+        val saving: Money get() = income - spent
+    }
     data class Empty(val usdRateMissing: Boolean = false) : MonthView
     data class Planned(
         val plan: MonthPlan.Planned,
@@ -126,7 +131,14 @@ fun buildMoneyMonth(
         MonthPlan.Empty -> {
             val lines = com.menash.myself.feature.money.importer.monthLines(transactions, month, memory, data.categories)
             if (lines.lines.isEmpty()) MonthView.Empty(usdRateMissing = missingUsd.isNotEmpty())
-            else MonthView.Actual(lines.income, lines.spent, lines.lines.size)
+            else {
+                val actuals = com.menash.myself.feature.money.domain.planVsActual(month,
+                    com.menash.myself.feature.money.domain.MoneyItems(),
+                    com.menash.myself.feature.money.importer.toTransactions(transactions, memory), rate).categories
+                val unassigned = com.menash.myself.feature.money.domain.sumMoney(lines.lines.filter { it.unassigned }.mapNotNull { it.row.charge })
+                MonthView.ActualOnly(lines.income, lines.spent, unassigned.takeUnless { it.isZero() }, lines.lines.size,
+                    topCategories(actuals, data.categories), data.closedMonths.any { it.month == month })
+            }
         }
         is MonthPlan.Planned -> MonthView.Planned(
             plan = plan,

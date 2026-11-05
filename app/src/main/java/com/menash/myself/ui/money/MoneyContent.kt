@@ -116,7 +116,7 @@ private fun MonthContent(
     val view = money.view
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
-    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
+    MonthSwitcher(money, closed = status is MonthStatus.Closed || (view as? MonthView.ActualOnly)?.closed == true, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
     actions.onResumeImport?.let { MoneySurface { AmountRow(stringResource(R.string.import_pending), null, onClick = it, testTag = "money_import_pending") } }
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
@@ -154,13 +154,21 @@ private fun MonthContent(
                 AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth)
             }
         }
-        is MonthView.Actual -> {
+        is MonthView.ActualOnly -> {
+            TopCategoriesChart(view.top, actions)
             MoneySurface(testTag = "money_actual_only") {
                 AmountRow(title = stringResource(R.string.history_actual_income), amount = formatMoney(view.income))
                 AmountRow(title = stringResource(R.string.history_actual_spending), amount = formatMoney(view.spent))
+                AmountRow(title = stringResource(R.string.close_saving), amount = formatMoney(view.saving))
+                view.unassigned?.let { amount ->
+                    AmountRow(title = stringResource(R.string.import_unassigned), amount = formatMoney(amount),
+                        onClick = { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
+                }
                 AmountRow(title = stringResource(R.string.tx_entry), amount = null,
                     detail = stringResource(R.string.tx_entry_detail, view.importedLines),
                     onClick = { actions.onTransactions(LineFilter.ALL) })
+                if (view.closed) AmountRow(title = stringResource(R.string.summary_entry), amount = null,
+                    detail = stringResource(R.string.summary_entry_detail), onClick = { actions.onMonthSummary(money.month) })
                 if (money.month < money.current) {
                     AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth)
                 }
