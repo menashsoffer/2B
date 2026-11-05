@@ -105,7 +105,7 @@ fun HomeContent(
                 label = stringResource(R.string.nav_dreams),
                 value = dreamsValue,
                 detail = dreamsDetail,
-                onClick = { onOpenRoute(ShellRoute.Dreams) },
+                onClick = { onOpenRoute(ShellRoute.DreamsLegacy) },
                 valueStyle = MetricValueStyle.Compact,
                 modifier = Modifier
                     .weight(1f)
