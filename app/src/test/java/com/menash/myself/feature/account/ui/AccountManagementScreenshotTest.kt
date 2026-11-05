@@ -1,4 +1,4 @@
-package com.menash.myself.ui.account
+package com.menash.myself.feature.account.ui
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalLayoutDirection

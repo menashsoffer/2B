@@ -1,4 +1,4 @@
-package com.menash.myself.ui.account
+package com.menash.myself.feature.account.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*

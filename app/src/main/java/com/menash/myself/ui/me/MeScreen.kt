@@ -19,7 +19,7 @@ import com.menash.myself.core.auth.SignOutConfirmDialog
 import com.menash.myself.core.data.repository.ExchangeRateRepository
 import com.menash.myself.core.data.repository.HebcalRepository
 import com.menash.myself.core.di.LocalAppContainer
-import com.menash.myself.ui.account.AccountManagementRoute
+import com.menash.myself.feature.account.ui.AccountManagementRoute
 import com.menash.myself.ui.settings.SettingsDialog
 import com.menash.myself.ui.shell.GalleryIndex
 
