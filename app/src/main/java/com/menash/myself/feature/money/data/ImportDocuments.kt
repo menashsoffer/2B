@@ -74,6 +74,24 @@ object ImportDocuments {
         put("ownTransfer", ownTransfer)
     }
 
+    const val SOURCE_CLOSURES = "sourceClosures"
+
+    fun sourceClosureId(source: com.menash.myself.feature.money.StatementSource): String =
+        "s-" + ImportIds.hash(listOf(source.source.key, source.sourceId))
+
+    fun encodeSourceClosure(source: com.menash.myself.feature.money.StatementSource, month: java.time.YearMonth): Map<String, Any> =
+        mapOf(SchemaVersion.KEY to SchemaVersion.CURRENT, "source" to source.source.name,
+            "sourceId" to source.sourceId, "closedFrom" to month.toString())
+
+    fun decodeSourceClosure(id: String, data: Map<String, Any?>): Pair<com.menash.myself.feature.money.StatementSource, java.time.YearMonth>? = try {
+        if (SchemaVersion.of(data) > SchemaVersion.CURRENT) null else {
+            val source = com.menash.myself.feature.money.StatementSource(
+                com.menash.myself.feature.money.importer.Source.valueOf(data["source"] as String), data["sourceId"] as String)
+            val month = java.time.YearMonth.parse(data["closedFrom"] as String)
+            if (id == sourceClosureId(source)) source to month else null
+        }
+    } catch (_: Exception) { null }
+
     fun memoryId(merchantKey: String): String = ImportIds.memoryDocId(merchantKey)
 
     /** Merge fields for the merchant's display name; a blank alias is removed by the caller. */

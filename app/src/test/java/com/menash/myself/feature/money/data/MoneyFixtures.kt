@@ -164,6 +164,9 @@ object MoneyFixtures {
                 "bank-minimal" to ImportDocuments.encode(StoredTransaction(bank)),
                 "waiting-fx" to ImportDocuments.encode(StoredTransaction(waiting.copy(source = Source.ONE_ZERO))),
             ),
+            ImportDocuments.SOURCE_CLOSURES to mapOf(
+                "closed" to ImportDocuments.encodeSourceClosure(com.menash.myself.feature.money.StatementSource(Source.MAX, "max-1234"), YearMonth.of(2024, 6)),
+            ),
             ImportDocuments.MERCHANT_MEMORY to mapOf(
                 "learnt" to ImportDocuments.encodeMemory(key, "current-1", false),
                 "own-transfer" to ImportDocuments.encodeMemory("העברה לחשבון", null, true),

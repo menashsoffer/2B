@@ -25,6 +25,7 @@ fun MonthCloseScreen(ui: MonthCloseUi, viewModel: MonthCloseViewModel, actions: 
             onNext = { ui.view?.month?.plusMonths(1)?.let { if (onMonth(it)) viewModel.nextMonth() } },
             onNextPending = { ui.nextPending?.let { if (onMonth(it)) viewModel.openNextPending() } },
             onNoLines = viewModel::markNoLines,
+            onSourceClosed = viewModel::setSourceClosed,
             onClose = viewModel::closeMonth,
             onBack = viewModel::close,
             onEnterBalances = viewModel::enterBalances,

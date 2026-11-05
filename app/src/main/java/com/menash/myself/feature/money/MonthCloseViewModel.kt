@@ -62,7 +62,7 @@ data class MonthCloseUi(
 /** "לסגור את החודש": what is still missing, what closing would store, and the close itself. */
 class MonthCloseViewModel(
     private val money: MoneyRepository,
-    transactions: TransactionRepository,
+    private val transactions: TransactionRepository,
     usdRates: Flow<BigDecimal?>,
     private val today: () -> LocalDate,
     errorReporter: ErrorReporter,
@@ -74,8 +74,8 @@ class MonthCloseViewModel(
 
     private val retry = MutableStateFlow(0)
     private val inputs = screenLoad(retry) {
-        combine(money.observeForScreen(), transactions.observeTransactionsForScreen(), transactions.observeMemoryForScreen(), usdRates) {
-            data, stored, memory, rate -> CloseInputs(data, stored, memory, rate)
+        combine(money.observeForScreen(), transactions.observeTransactionsForScreen(), transactions.observeMemoryForScreen(), usdRates, transactions.observeSourceClosures()) {
+            data, stored, memory, rate, sourceClosures -> CloseInputs(data, stored, memory, rate, sourceClosures)
         }
     }
 
@@ -87,7 +87,7 @@ class MonthCloseViewModel(
         val month = q.month ?: closeTarget(day, input.stored, input.data.closedMonths)
         MonthCloseUi(
             open = true,
-            view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines, q.balanceDraft.balances(input.data.assets)),
+            view = closeView(input.data, month, day, input.rate, input.stored, input.memory, q.noLines, q.balanceDraft.balances(input.data.assets), input.sourceClosures),
             showBalancesStep = needsHistoricalBalances(month, day),
             assets = input.data.assets,
             balanceDraft = q.balanceDraft,
@@ -131,6 +131,13 @@ class MonthCloseViewModel(
     /** "אין חיובים החודש" on a missing card or account. */
     fun markNoLines(source: StatementSource) {
         query.update { it.copy(noLines = it.noLines + source.key) }
+    }
+
+    fun setSourceClosed(source: StatementSource, closed: Boolean) {
+        val month = ui.value.view?.month ?: return
+        safeLaunch("setSourceClosed", onError = { error ->
+            query.update { it.copy(saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error)) }
+        }) { transactions.setSourceClosedFrom(source, if (closed) month else null) }
     }
 
     /** Saves the preview. A month already closed asks once before it is replaced. */
@@ -190,6 +197,7 @@ class MonthCloseViewModel(
         val stored: List<StoredTransaction>,
         val memory: ImportMemory,
         val rate: BigDecimal?,
+        val sourceClosures: Map<StatementSource, YearMonth>,
     )
 
     companion object {

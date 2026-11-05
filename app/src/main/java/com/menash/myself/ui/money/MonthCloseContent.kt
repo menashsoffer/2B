@@ -50,6 +50,7 @@ data class MonthCloseActions(
     /** Opens the file picker to import the missing statement. */
     val onImport: () -> Unit = {},
     val onNoLines: (StatementSource) -> Unit = {},
+    val onSourceClosed: (StatementSource, Boolean) -> Unit = { _, _ -> },
     val onLines: (YearMonth, LineFilter) -> Unit = { _, _ -> },
     val onAsset: (Asset) -> Unit = {},
     val onClose: () -> Unit = {},
@@ -207,6 +208,14 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
         ) {
             Text(stringResource(R.string.close_no_lines), style = AppType.caption, color = colors.textSecondary)
         }
+        TextButton(onClick = { actions.onSourceClosed(source, true) },
+            modifier = Modifier.padding(horizontal = Spacing.s8).testTag("close_source_closed_${source.key}")) {
+            Text(stringResource(R.string.close_source_closed), style = AppType.caption, color = colors.textSecondary)
+        }
+    }
+    view.closedSources.forEach { (source, from) ->
+        AmountRow(title = stringResource(R.string.close_source_closed_from, sourceLabel(source.source), source.sourceId, monthTitle(from)),
+            amount = null, onClick = { actions.onSourceClosed(source, false) }, testTag = "close_source_undo_${source.key}")
     }
     view.staleAssets.forEach { asset ->
         AmountRow(

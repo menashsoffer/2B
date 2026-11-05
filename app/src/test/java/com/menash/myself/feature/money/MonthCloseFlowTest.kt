@@ -62,6 +62,24 @@ class MonthCloseFlowTest {
     }
 
     @Test
+    fun closedSourceIsNotExpectedFromMarkedMonthAndCanBeUndone() {
+        val source = StatementSource(Source.MAX, "1234")
+        val previous = listOf(line(LocalDate.of(2024, 5, 10), 500))
+        val june = YearMonth.of(2024, 6)
+        val before = closeView(data, june, today = afterOctober, usdToIls = null, stored = previous, memory = ImportMemory())
+        assertTrue(before.missingSources.contains(source))
+        val closed = closeView(data, june, afterOctober, null, previous, ImportMemory(), sourceClosures = mapOf(source to june))
+        assertFalse(closed.missingSources.contains(source))
+        assertEquals(june, closed.closedSources[source])
+        for (offset in 1L..6L) {
+            val month = june.plusMonths(offset)
+            val recent = listOf(line(month.minusMonths(1).atDay(5), 500))
+            assertFalse(closeView(data, month, afterOctober, null, recent, ImportMemory(), sourceClosures = mapOf(source to june)).missingSources.contains(source))
+            assertTrue(closeView(data, month, afterOctober, null, recent, ImportMemory()).missingSources.contains(source))
+        }
+    }
+
+    @Test
     fun allClear_canCloseAndPreviewSumsTheMonth() {
         val v = view(listOf(line(LocalDate.of(2026, 10, 5), 25_000), line(LocalDate.of(2026, 10, 20), 15_000)))
         assertTrue(v.checks.toString(), v.canClose)

@@ -333,7 +333,7 @@ const FIXTURES_DIR = path.join(__dirname, "firestore-fixtures", "money");
 const MONEY_COLLECTIONS = [
   "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
   "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
-  "transactions", "merchantMemory", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
+  "transactions", "merchantMemory", "sourceClosures", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
 ];
 
 function fixtures(collection) {
@@ -367,7 +367,8 @@ for (const collection of MONEY_COLLECTIONS) {
       const ref = house.collection(collection).doc(docIdFor(collection, i));
       await assertSucceeds(ref.set(doc)).catch((e) => { throw new Error(`${collection}/${name}: ${e.message}`); });
       const { v, ...withoutVersion } = doc;
-      await assertSucceeds(ref.set(withoutVersion)).catch((e) => { throw new Error(`${collection}/${name} without v: ${e.message}`); });
+      if (collection === "sourceClosures") await assertFails(ref.set(withoutVersion));
+      else await assertSucceeds(ref.set(withoutVersion)).catch((e) => { throw new Error(`${collection}/${name} without v: ${e.message}`); });
     }
   });
 
@@ -403,7 +404,7 @@ const REQUIRED = {
   cards: "name", incomes: "titheRate", fixedExpenses: "klass", subscriptions: "renewalDate", variableBudgets: "amounts",
   installments: "total", periodicBudgets: "categoryId", debts: "creditor", savings: "accumulated", assets: "liquid",
   categories: "klass", goals: "allocated", donations: "submittedForTaxRefund", tithe: "startMonth", closedMonths: "closedOn",
-  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key",
+  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key", sourceClosures: "closedFrom",
 };
 // A number field, pushed past its allowed range (agorot beyond ±₪100M, or a day / count / horizon too big).
 const OUT_OF_RANGE = {
@@ -415,7 +416,7 @@ const OUT_OF_RANGE = {
 const MONTH_OR_DATE = {
   installments: "firstMonth", periodicBudgets: "yearStartMonth", savings: "maturity", goals: "targetMonth", tithe: "startMonth",
   subscriptions: "renewalDate", debts: "asOf", assets: "lastUpdated", donations: "date", closedMonths: "closedOn",
-  pensionFunds: "lastUpdated", transactions: "date",
+  pensionFunds: "lastUpdated", transactions: "date", sourceClosures: "closedFrom",
 };
 // An enum field and a value the app never writes.
 const ENUM = {
@@ -661,4 +662,20 @@ test('Removed partner observes an empty membership query and can create a replac
     await assertSucceeds(partner.doc('households/replacement').set({ownerUid:BOB_UID,memberUids:[BOB_UID],partnerUid:'',partnerEmail:''}));
     await testEnv.clearFirestore();
   }
+});
+
+
+test("Source closures: validate dates, required fields and household access", async () => {
+  await setupHousehold();
+  const doc = moneyDb().collection("sourceClosures").doc("s-123");
+  const valid = {v: 1, source: "MAX", sourceId: "max-1234", closedFrom: "2024-06"};
+  await assertSucceeds(doc.set(valid));
+  await assertFails(doc.set({...valid, closedFrom: "2024-13"}));
+  await assertFails(doc.set({...valid, source: "OTHER"}));
+  await assertFails(doc.set({...valid, sourceId: "x".repeat(201)}));
+  await assertFails(doc.set({...valid, extra: true}));
+  await assertFails(doc.update({closedFrom: FieldValue.delete()}));
+  await assertFails(moneyDb(CHARLIE_UID, CHARLIE_EMAIL).collection("sourceClosures").doc("s-123").get());
+  await assertFails(moneyDb(CHARLIE_UID, CHARLIE_EMAIL).collection("sourceClosures").doc("s-123").set(valid));
+  await assertSucceeds(doc.delete());
 });

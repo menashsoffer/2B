@@ -52,6 +52,7 @@ data class CloseView(
     val checks: List<CloseCheck>,
     val missingSources: List<StatementSource>,
     val staleAssets: List<Asset>,
+    val closedSources: Map<StatementSource, YearMonth> = emptyMap(),
     val preview: ClosedMonth,
     val existing: ClosedMonth?,
 ) {
@@ -72,12 +73,13 @@ fun closeView(
     memory: ImportMemory,
     noLines: Set<String> = emptySet(),
     pastBalances: BalancesAtClose = BalancesAtClose.Unknown,
+    sourceClosures: Map<StatementSource, YearMonth> = emptyMap(),
 ): CloseView {
     val lines = monthLines(stored, month, memory, data.categories)
     val thisMonth = stored.filter { it.row.billingMonth == month }.map { it.row.statementSource() }.toSet()
     val window = month.minusMonths(3)..month.minusMonths(1)
     val expected = stored.filter { it.row.billingMonth in window }.map { it.row.statementSource() }
-        .filter { it.key !in noLines }.toSet()
+        .filter { it.key !in noLines && (sourceClosures[it]?.let { closed -> closed > month } ?: true) }.toSet()
     val checks = closeChecks(
         CloseInput(
             month = month,
@@ -95,6 +97,7 @@ fun closeView(
         month = month,
         checks = checks,
         missingSources = checks.filter { it.kind == CloseCheckKind.MISSING_SOURCE }.mapNotNull { byKey[it.detail] },
+        closedSources = sourceClosures.filterValues { it <= month },
         staleAssets = checks.filter { it.kind == CloseCheckKind.STALE_BALANCE }.mapNotNull { assets[it.detail] },
         preview = closeMonth(
             month, data.items, toTransactions(stored, memory), actualIncome(stored, month, memory),

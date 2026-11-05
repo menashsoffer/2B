@@ -80,7 +80,7 @@ service cloud.firestore {
     function isMoneyCollection(name) {
       return name in ['cards', 'incomes', 'fixedExpenses', 'subscriptions', 'variableBudgets',
                       'installments', 'periodicBudgets', 'debts', 'savings', 'assets', 'categories',
-                      'transactions', 'merchantMemory', 'goals', 'donations', 'tithe', 'closedMonths', 'pensionFunds', 'car'];
+                      'transactions', 'merchantMemory', 'sourceClosures', 'goals', 'donations', 'tithe', 'closedMonths', 'pensionFunds', 'car'];
     }
 
     // One validator per money collection, generated from and tested against the app's own writers:
@@ -292,6 +292,14 @@ service cloud.firestore {
              (!('askEachTime' in d) || d.askEachTime is bool);
     }
 
+    // A source closure is shared by household members. It changes only the missing-source check.
+    function isValidSourceClosure(d) {
+      return d.keys().hasOnly(['v', 'source', 'sourceId', 'closedFrom']) &&
+             d.keys().hasAll(['v', 'source', 'sourceId', 'closedFrom']) && d.v == 1 &&
+             d.source in ['HAPOALIM', 'ONE_ZERO', 'MAX', 'CAL'] &&
+             d.sourceId is string && d.sourceId.size() > 0 && d.sourceId.size() <= 200 && isMonth(d.closedFrom);
+    }
+
     function isValidMoneyDoc(collection, docId, d) {
       return hasValidVersion(d) && (
         (collection == 'cards' && isValidCard(d)) ||
@@ -312,7 +320,8 @@ service cloud.firestore {
         (collection == 'car' && isValidCar(docId, d)) ||
         (collection == 'pensionFunds' && isValidPensionFund(d)) ||
         (collection == 'transactions' && isValidTransaction(d)) ||
-        (collection == 'merchantMemory' && isValidMerchantMemory(d))
+        (collection == 'merchantMemory' && isValidMerchantMemory(d)) ||
+        (collection == 'sourceClosures' && isValidSourceClosure(d))
       );
     }
 
