@@ -59,7 +59,7 @@ Screen (Compose) ──> ViewModel (BaseViewModel.safeLaunch) ──> Repository
 | `feature/money/importer` | קריאת קבצי בנק ואשראי (XLS/XLSX/CFB משלנו, בלי POI), זיהוי, מיזוג, סיווג. פירוט ב-[money/IMPORT.md](money/IMPORT.md) | לא |
 | `feature/money/data` | המרה בין מודל ה-domain למסמכי Firestore (`*Documents`, `MoneyDoc`), וממשקי `MoneyRepository`/`TransactionRepository` | לא |
 | `feature/money/*.kt` | מצב מסכים (drafts, views) ו-ViewModels | רק ה-ViewModels |
-| `ui/money` | המסכים. כל מסך מחולק ל-`*Content` (טהור, נבדק ב-screenshot) ו-`*Screen` (מחבר ViewModel) | כן |
+| `feature/money/ui` | המסכים. כל מסך מחולק ל-`*Content` (טהור, נבדק ב-screenshot) ו-`*Screen` (מחבר ViewModel) | כן |
 | `core/data/repository/impl/FirestoreMoneyRepository`, `FirestoreTransactionRepository` | הגישה ל-Firestore | כן |
 
 כסף הוא תמיד `Money` (אגורות ב-`Long`), לעולם לא `Double`.

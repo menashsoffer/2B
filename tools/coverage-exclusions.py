@@ -47,7 +47,7 @@ for cls, method, desc, filename in sorted(removed):
     money = 'com/menash/myself/feature/money/'
     if cls.startswith(money):
         tail = cls[len(money):]
-        group = 1 if tail.startswith('domain/') else 2 if tail.startswith('importer/') else 4 if not tail.startswith('data/') else None
+        group = 1 if tail.startswith('domain/') else 2 if tail.startswith('importer/') else 4 if not tail.startswith(('data/', 'ui/')) else None
         if group:
             groups[group].append(label)
 print(f'Total removed JVM methods: {len(removed)}')
