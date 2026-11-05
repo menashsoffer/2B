@@ -127,6 +127,18 @@ private fun MonthContent(
             testTag = "money_import_top",
         )
     }
+    if (money.month == money.current) {
+        MoneySurface {
+            AmountRow(title = stringResource(R.string.history_close_available,
+                hebrewMonthName(money.current.month), hebrewMonthName(money.current.plusMonths(1).month)), amount = null)
+            money.pendingClose.firstOrNull()?.let { pending ->
+                AmountRow(title = if (money.pendingClose.size == 1)
+                    stringResource(R.string.history_close_pending, hebrewMonthName(pending.month))
+                else stringResource(R.string.history_close_pending_count, money.pendingClose.size),
+                    amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+            }
+        }
+    }
     when (view) {
         is MonthView.Empty -> {
             if (view.usdRateMissing) UsdMissingChip()
@@ -138,6 +150,21 @@ private fun MonthContent(
                 onActionClick = actions.onStart,
                 testTag = "money_empty",
             )
+            if (money.month < money.current) MoneySurface {
+                AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth)
+            }
+        }
+        is MonthView.Actual -> {
+            MoneySurface(testTag = "money_actual_only") {
+                AmountRow(title = stringResource(R.string.history_actual_income), amount = formatMoney(view.income))
+                AmountRow(title = stringResource(R.string.history_actual_spending), amount = formatMoney(view.spent))
+                AmountRow(title = stringResource(R.string.tx_entry), amount = null,
+                    detail = stringResource(R.string.tx_entry_detail, view.importedLines),
+                    onClick = { actions.onTransactions(LineFilter.ALL) })
+                if (money.month < money.current) {
+                    AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth)
+                }
+            }
         }
         is MonthView.Planned -> {
             val surplus = view.plan.expectedSurplus
@@ -189,13 +216,11 @@ private fun MonthContent(
                         testTag = "money_month_summary",
                     )
                 }
-                AmountRow(
-                    title = stringResource(R.string.close_entry),
-                    amount = null,
-                    detail = stringResource(R.string.close_entry_detail),
-                    onClick = actions.onCloseMonth,
-                    testTag = "money_close_month",
-                )
+                if (money.month < money.current) {
+                    AmountRow(title = stringResource(R.string.close_entry), amount = null,
+                        detail = stringResource(R.string.close_entry_detail), onClick = actions.onCloseMonth,
+                        testTag = "money_close_month")
+                }
                 AmountRow(
                     title = if (money.current.monthValue == 1) stringResource(R.string.period_year_entry, money.current.year - 1)
                         else stringResource(R.string.period_entry),

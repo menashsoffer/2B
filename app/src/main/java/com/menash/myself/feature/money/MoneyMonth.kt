@@ -42,6 +42,7 @@ data class MonthRow(val kind: MonthRowKind, val total: Money, val items: List<Mo
 data class BarSegment(val kind: MonthRowKind?, val amount: Money)
 
 sealed interface MonthView {
+    data class Actual(val income: Money, val spent: Money, val importedLines: Int) : MonthView
     data class Empty(val usdRateMissing: Boolean = false) : MonthView
     data class Planned(
         val plan: MonthPlan.Planned,
@@ -91,9 +92,9 @@ data class BigPicture(
 )
 
 /** [month] is the month shown; [current] is today's month. The big picture is always today's. */
-data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month) {
+data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month, val earliest: YearMonth = current.minusMonths(MonthsBack), val pendingClose: List<YearMonth> = emptyList()) {
     val canGoNext: Boolean get() = month < current
-    val canGoBack: Boolean get() = month > current.minusMonths(MonthsBack)
+    val canGoBack: Boolean get() = month > earliest
 }
 
 /** How far back the month screen goes (three years). */
@@ -122,7 +123,11 @@ fun buildMoneyMonth(
     val plan = monthPlan(month, items, rate)
     val view = when (plan) {
         // A month whose only items are USD subscriptions without a rate stays a set-up month, with the chip.
-        MonthPlan.Empty -> MonthView.Empty(usdRateMissing = missingUsd.isNotEmpty())
+        MonthPlan.Empty -> {
+            val lines = com.menash.myself.feature.money.importer.monthLines(transactions, month, memory, data.categories)
+            if (lines.lines.isEmpty()) MonthView.Empty(usdRateMissing = missingUsd.isNotEmpty())
+            else MonthView.Actual(lines.income, lines.spent, lines.lines.size)
+        }
         is MonthPlan.Planned -> MonthView.Planned(
             plan = plan,
             rows = rows(data.items, plan, month, rate, missingIds),
@@ -141,6 +146,7 @@ fun buildMoneyMonth(
     return MoneyMonth(
         month = month,
         view = view,
+        pendingClose = pendingCloseMonths(today, transactions, data.closedMonths),
         bigPicture = BigPicture(
             netWorth = liquidWorth,
             assets = data.assets.map { AssetRow(it, isStale(it, today)) },

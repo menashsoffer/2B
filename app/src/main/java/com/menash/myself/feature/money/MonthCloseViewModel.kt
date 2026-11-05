@@ -55,6 +55,7 @@ data class MonthCloseUi(
     val saveError: String? = null,
     val loadError: Boolean = false,
     val noHousehold: Boolean = false,
+    val nextPending: YearMonth? = null,
 )
 
 /** "לסגור את החודש": what is still missing, what closing would store, and the close itself. */
@@ -94,6 +95,7 @@ class MonthCloseViewModel(
             currentMonth = YearMonth.from(day),
             saving = q.saving,
             saveError = q.saveError,
+            nextPending = pendingCloseMonths(day, input.stored, input.data.closedMonths).firstOrNull { it != month },
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MonthCloseUi())
 
@@ -115,7 +117,7 @@ class MonthCloseViewModel(
     private fun shift(by: Long) {
         val shown = ui.value.view?.month ?: return
         val target = shown.plusMonths(by)
-        if (target > YearMonth.from(today())) return
+        if (target >= YearMonth.from(today())) return
         query.update { it.copy(month = target, noLines = emptySet(), confirming = false, balanceDraft = CloseBalanceDraft()) }
     }
 
@@ -139,7 +141,11 @@ class MonthCloseViewModel(
         safeLaunch("closeMonth", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); closing = false; query.update { it.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (ui.value.open && ui.value.view?.month == view.month) closeMonth() }) }, reportError = false) {
             val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.ClosedMonthEntry(view.preview)); true } == true
             closing = false
-            query.update { it.copy(saving = false) }
+            val next = if (acknowledged) ui.value.nextPending else null
+            query.update {
+                if (next != null) it.copy(saving = false, month = next, noLines = emptySet(), balanceDraft = CloseBalanceDraft())
+                else it.copy(saving = false)
+            }
             events?.send(if (acknowledged) UiEvent.MonthClosed(view.month) else UiEvent.SavedOffline)
         }
     }

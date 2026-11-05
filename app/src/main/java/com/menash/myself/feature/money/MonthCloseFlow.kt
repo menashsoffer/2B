@@ -32,13 +32,16 @@ data class StatementSource(val source: Source, val sourceId: String) {
 
 private fun StatementRow.statementSource() = StatementSource(source, sourceId)
 
-/** The month the close screen opens on: last month while it has lines and is not closed, else this month. */
-fun closeTarget(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): YearMonth {
+/** Ended months with imported lines that have not been closed, in chronological order. */
+fun pendingCloseMonths(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): List<YearMonth> {
     val current = YearMonth.from(today)
-    val previous = current.minusMonths(1)
-    val pending = closed.none { it.month == previous } && stored.any { it.row.billingMonth == previous }
-    return if (pending) previous else current
+    val closedMonths = closed.map { it.month }.toSet()
+    return stored.map { it.row.billingMonth }.filter { it < current && it !in closedMonths }.distinct().sorted()
 }
+
+/** Open the oldest pending month, or the previous month when there is nothing pending. */
+fun closeTarget(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): YearMonth =
+    pendingCloseMonths(today, stored, closed).firstOrNull() ?: YearMonth.from(today).minusMonths(1)
 
 /**
  * The close screen for [month]. [checks] come from the engine's closeChecks; [preview] is what closing now

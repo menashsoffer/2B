@@ -92,7 +92,7 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                 else if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
                 else if (state == 1 || view == null) { LoadingState(testTag = "close_loading") }
                 else {
-                    MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it } == true, actions)
+                    MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it.minusMonths(1) } == true, actions)
                     view.existing?.let {
                         Chip(
                             text = stringResource(R.string.close_done_on, it.closedOn.format(dateFormat)),

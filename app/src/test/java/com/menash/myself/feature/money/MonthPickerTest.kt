@@ -33,6 +33,13 @@ class MonthPickerTest {
         assertEquals(current, vm.state.value.money!!.month)
     }
 
+    @Test fun pickerIncludesOldImportedMonths() {
+        val current = YearMonth.of(2031, 1)
+        val lines = ImportFixtures.parse("max_nov.xlsx").rows.map { StoredTransaction(it) }
+        val cells = pickerMonths(current, emptySet(), lines)
+        assertEquals(lines.minOf { it.row.billingMonth }, cells.last().month)
+    }
+
     @Test fun pickerShowsClosedImportedAndEmpty() {
         val current = YearMonth.of(2026, 11)
         val lines = ImportFixtures.parse("max_nov.xlsx").rows.map { StoredTransaction(it) }

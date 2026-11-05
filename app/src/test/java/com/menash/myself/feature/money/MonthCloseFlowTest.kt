@@ -50,8 +50,15 @@ class MonthCloseFlowTest {
         val stored = listOf(line(LocalDate.of(2026, 10, 10), 10_000))
         assertEquals(october, closeTarget(LocalDate.of(2026, 11, 3), stored, emptyList()))
         val closed = ClosedMonth(october, MonthSnapshot(october, Money.ZERO, Money.ZERO), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
-        assertEquals(YearMonth.of(2026, 11), closeTarget(LocalDate.of(2026, 11, 3), stored, listOf(closed)))
-        assertEquals(YearMonth.of(2026, 11), closeTarget(LocalDate.of(2026, 11, 3), emptyList(), emptyList()))
+        assertEquals(october, closeTarget(LocalDate.of(2026, 11, 3), stored, listOf(closed)))
+        assertEquals(october, closeTarget(LocalDate.of(2026, 11, 3), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun target_selectsOldestEndedMonthWithLines() {
+        val january = YearMonth.of(2024, 1)
+        val stored = listOf(line(LocalDate.of(2026, 11, 1), 1), line(LocalDate.of(2024, 1, 10), 1), line(LocalDate.of(2026, 10, 10), 1))
+        assertEquals(january, closeTarget(afterOctober, stored, emptyList()))
     }
 
     @Test
