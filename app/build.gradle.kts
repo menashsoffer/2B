@@ -222,6 +222,7 @@ dependencies {
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
+  testImplementation(libs.mockito.kotlin)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.androidx.work.testing)
   testImplementation(libs.robolectric)
