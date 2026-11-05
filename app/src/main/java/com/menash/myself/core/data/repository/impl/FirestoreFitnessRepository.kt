@@ -3,7 +3,7 @@ package com.menash.myself.core.data.repository.impl
 import com.menash.myself.core.data.mapper.FitnessMappers
 import com.menash.myself.core.data.repository.FitnessRepository
 import com.menash.myself.core.domain.model.FitnessEntry
-import com.menash.myself.data.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.LocalDate

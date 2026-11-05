@@ -1,4 +1,4 @@
-package com.menash.myself.data.models
+package com.menash.myself.core.data.legacy.models
 
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp

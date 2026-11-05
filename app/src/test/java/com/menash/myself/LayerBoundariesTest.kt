@@ -209,7 +209,7 @@ class LayerBoundariesTest {
                 }
                 lines.forEachIndexed { idx, line ->
                     val trimmed = line.trim()
-                    if (trimmed.startsWith("import com.menash.myself.data.") ||
+                    if (trimmed.startsWith("import com.menash.myself.core.data.legacy.") ||
                         trimmed.contains("ModelMappers")
                     ) {
                         violations.add("${ktFile.name}:${idx + 1} forbidden reference: $trimmed")

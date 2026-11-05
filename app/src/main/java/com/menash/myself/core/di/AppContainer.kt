@@ -30,10 +30,10 @@ import com.menash.myself.core.external.boi.boiDataStore
 import com.menash.myself.core.external.hebcal.HebcalClient
 import com.menash.myself.core.external.hebcal.HebcalStore
 import com.menash.myself.core.external.hebcal.hebcalDataStore
-import com.menash.myself.data.AppDatabase
-import com.menash.myself.data.firestore.FirestoreManager
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.AppDatabase
+import com.menash.myself.core.data.legacy.firestore.FirestoreManager
+import com.menash.myself.core.data.legacy.firestore.HouseholdRepository
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

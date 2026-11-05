@@ -1,10 +1,10 @@
-package com.menash.myself.data.dao
+package com.menash.myself.core.data.legacy.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.menash.myself.data.entities.AppSettings
+import com.menash.myself.core.data.legacy.entities.AppSettings
 import kotlinx.coroutines.flow.Flow
 
 @Dao

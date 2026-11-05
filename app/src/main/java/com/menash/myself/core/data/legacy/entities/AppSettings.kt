@@ -1,4 +1,4 @@
-package com.menash.myself.data.entities
+package com.menash.myself.core.data.legacy.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

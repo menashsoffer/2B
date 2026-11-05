@@ -1,13 +1,13 @@
-package com.menash.myself.data
+package com.menash.myself.core.data.legacy
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.menash.myself.data.dao.AppDao
+import com.menash.myself.core.data.legacy.dao.AppDao
 import androidx.room.migration.Migration
-import com.menash.myself.data.entities.AppSettings
+import com.menash.myself.core.data.legacy.entities.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

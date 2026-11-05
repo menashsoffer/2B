@@ -8,7 +8,7 @@ import com.menash.myself.core.external.hebcal.HebcalClient
 import com.menash.myself.core.external.hebcal.IsraeliCity
 import com.menash.myself.core.ui.BaseViewModel
 import com.menash.myself.core.ui.ErrorMapper
-import com.menash.myself.data.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest

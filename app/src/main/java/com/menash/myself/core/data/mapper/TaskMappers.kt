@@ -1,7 +1,7 @@
 package com.menash.myself.core.data.mapper
 
 import com.menash.myself.core.domain.model.Task
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.models.TaskItem
 
 object TaskMappers {
 

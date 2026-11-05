@@ -1,9 +1,9 @@
-package com.menash.myself.data.firestore
+package com.menash.myself.core.data.legacy.firestore
 
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.menash.myself.data.models.FitnessLog
+import com.menash.myself.core.data.legacy.models.FitnessLog
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow

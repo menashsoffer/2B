@@ -2,7 +2,7 @@ package com.menash.myself.core.data.repository.impl
 
 import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.session.HouseholdSession
-import com.menash.myself.data.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
 
 /**
  * Where an item of the legacy pillars lives (household or private), shared by the task, dream and

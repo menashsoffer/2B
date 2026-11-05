@@ -2,7 +2,7 @@ package com.menash.myself.core.data.mapper
 
 import com.menash.myself.core.domain.model.Dream
 import com.menash.myself.core.domain.model.Money
-import com.menash.myself.data.models.DreamItem
+import com.menash.myself.core.data.legacy.models.DreamItem
 
 object DreamMappers {
 

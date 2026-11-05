@@ -7,8 +7,8 @@ import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Task
 import com.menash.myself.core.domain.model.VisibilityFilter
-import com.menash.myself.data.firestore.LifeHubRepository
-import com.menash.myself.data.models.Household
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.models.Household
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest

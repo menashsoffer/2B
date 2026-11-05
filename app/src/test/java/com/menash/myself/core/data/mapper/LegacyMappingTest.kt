@@ -2,7 +2,7 @@ package com.menash.myself.core.data.mapper
 
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.Task
-import com.menash.myself.data.models.TaskItem
+import com.menash.myself.core.data.legacy.models.TaskItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

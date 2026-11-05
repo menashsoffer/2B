@@ -86,7 +86,7 @@ class CrashlyticsNonFatalTest {
         val householdId = "hh-9f3c1a"
         val error = IllegalStateException("missing household $householdId for $email amount 10")
         val frame = StackTraceElement(
-            "com.menash.myself.data.firestore.HouseholdRepository",
+            "com.menash.myself.core.data.legacy.firestore.HouseholdRepository",
             "checkInvite",
             "HouseholdRepository.kt",
             59
@@ -249,7 +249,7 @@ class CrashlyticsNonFatalTest {
 
     private fun frame(method: String, line: Int): StackTraceElement {
         return StackTraceElement(
-            "com.menash.myself.data.firestore.HouseholdRepository",
+            "com.menash.myself.core.data.legacy.firestore.HouseholdRepository",
             method,
             "HouseholdRepository.kt",
             line

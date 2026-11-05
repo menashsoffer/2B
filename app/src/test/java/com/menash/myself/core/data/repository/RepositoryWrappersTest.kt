@@ -2,8 +2,8 @@ package com.menash.myself.core.data.repository
 
 import com.menash.myself.core.data.repository.impl.RoomSettingsRepository
 import com.menash.myself.core.domain.model.LocalSettings
-import com.menash.myself.data.dao.AppDao
-import com.menash.myself.data.entities.AppSettings
+import com.menash.myself.core.data.legacy.dao.AppDao
+import com.menash.myself.core.data.legacy.entities.AppSettings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
