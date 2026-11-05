@@ -34,14 +34,13 @@ class FloatingNavBarStructureTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun nav_hasFiveTabsInSpecOrder_andOnlyHomeIsSelected() {
+    fun nav_hasFourDebugTabsInSpecOrder_andOnlyHomeIsSelected() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val expected = listOf(
             "בית" to R.string.nav_home,
             "כסף" to R.string.nav_money,
-            "חלומות" to R.string.nav_dreams,
-            "קניות" to R.string.nav_shopping,
-            "מעקב" to R.string.nav_tracking,
+            "חיים" to R.string.nav_life,
+            "אני" to R.string.nav_me,
         )
         expected.forEach { (label, res) ->
             assertEquals(label, context.getString(res))
@@ -56,12 +55,20 @@ class FloatingNavBarStructureTest {
         val tabs = bar.children.filter { node ->
             node.config.getOrNull(SemanticsProperties.Role) == Role.Tab
         }
-        assertEquals(5, tabs.size)
+        assertEquals(4, tabs.size)
         tabs.forEachIndexed { index, tab ->
             assertEquals(expected[index].first, tab.collectTexts().single())
             val selected = tab.config.getOrNull(SemanticsProperties.Selected) == true
             assertEquals(index == 0, selected)
         }
         assertTrue(tabs[0].boundsInRoot.left > tabs[1].boundsInRoot.left)
+    }
+
+    @Test
+    fun releaseBar_isHomeMoneyMe() {
+        assertEquals(
+            listOf(ShellRoute.Home, ShellRoute.Money, ShellRoute.Me),
+            com.menash.myself.ui.shell.shellTabsFor(false).map { tab -> tab.route },
+        )
     }
 }

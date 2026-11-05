@@ -55,7 +55,7 @@ class PlaceholderTabStructureTest {
         assertFalse(root.hasClickActionDeep())
         assertFalse(root.hasButtonRole())
         routes.forEach { route ->
-            val title = context.getString(shellTabs.first { tab -> tab.route == route }.labelRes)
+            val title = context.getString(placeholderTabs.first { tab -> tab.route == route }.labelRes)
             assertTrue(root.collectTexts().contains(title))
             assertTrue(root.collectTexts().contains(building))
             assertTrue(root.collectTestTags().contains("placeholder_$route"))

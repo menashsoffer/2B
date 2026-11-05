@@ -2,20 +2,10 @@
 # Rules role: https://cloud.google.com/iam/docs/roles-permissions/firebaserules
 # Index role: https://firebase.google.com/docs/firestore/query-data/indexing
 # Named database: https://firebase.google.com/docs/rules/manage-deploy
-# This file is in `paths`, so the push that adds it starts a deploy.
 name: Firestore rules
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - firestore.rules
-      - firestore.indexes.json
-      - firestore.test.js
-      - firestore-fixtures/**
-      - tools/check-money-docs.js
-      - firebase.json
-      - .github/workflows/firestore-rules.yml
+  workflow_call:
   workflow_dispatch:
 
 permissions:

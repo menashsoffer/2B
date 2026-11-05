@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
+import com.google.firebase.auth.FirebaseUser
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
@@ -20,6 +21,8 @@ import com.menash.myself.ui.home.HomeScreen
 import com.menash.myself.ui.home.LifeHomeScreen
 import com.menash.myself.ui.household.HouseholdScreen
 import com.menash.myself.ui.inbox.InboxTriageScreen
+import com.menash.myself.ui.life.LifeContent
+import com.menash.myself.ui.me.MeScreen
 import com.menash.myself.ui.money.MoneyScreen
 import com.menash.myself.ui.more.MoreScreen
 import com.menash.myself.ui.tasks.TasksScreen
@@ -27,9 +30,9 @@ import com.menash.myself.ui.tasks.TasksScreen
 @Composable
 fun AppNavHost(
     navController: NavHostController,
-    displayName: String?,
+    currentUser: FirebaseUser?,
     onOpenRoute: (String) -> Unit,
-    onOpenAccount: () -> Unit,
+    onRequestSignIn: () -> Unit,
     onSignedOut: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -41,9 +44,9 @@ fun AppNavHost(
         navigation(startDestination = "${ShellRoute.Home}/main", route = ShellRoute.Home) {
             composable("${ShellRoute.Home}/main") {
                 HomeScreen(
-                    displayName = displayName,
+                    displayName = currentUser?.displayName,
                     onOpenRoute = onOpenRoute,
-                    onOpenAccount = onOpenAccount,
+                    onOpenAccount = { onOpenRoute(ShellRoute.Me) },
                 )
             }
         }
@@ -52,10 +55,49 @@ fun AppNavHost(
                 MoneyScreen()
             }
         }
-        val graph = this
-        shellTabs.filter { tab -> tab.route != ShellRoute.Home && tab.route != ShellRoute.Money }.forEach { tab ->
-            graph.navigation(startDestination = "${tab.route}/main", route = tab.route) {
-                composable("${tab.route}/main") {
+        navigation(startDestination = "${ShellRoute.Me}/main", route = ShellRoute.Me) {
+            composable("${ShellRoute.Me}/main") {
+                MeScreen(
+                    currentUser = currentUser,
+                    onRequestSignIn = onRequestSignIn,
+                    onSignedOut = onSignedOut,
+                    onOpenHousehold = { onOpenRoute(ShellRoute.Household) },
+                    onOpenRoute = onOpenRoute,
+                )
+            }
+            composable(ShellRoute.Household) {
+                LegacyPage {
+                    HouseholdScreen(
+                        onBack = { navController.popBackStack() },
+                        onSignOut = onSignedOut,
+                    )
+                }
+            }
+        }
+        if (BuildConfig.DEBUG) {
+            navigation(startDestination = "${ShellRoute.Life}/main", route = ShellRoute.Life) {
+                composable("${ShellRoute.Life}/main") {
+                    LifeContent(onOpenRoute = onOpenRoute)
+                }
+                composable(ShellRoute.Calendar) {
+                    LegacyPage { CalendarScreen(onBack = { navController.popBackStack() }) }
+                }
+                composable(ShellRoute.Fitness) {
+                    LegacyPage { FitnessScreen(onBack = { navController.popBackStack() }) }
+                }
+                composable(ShellRoute.Inbox) {
+                    LegacyPage { InboxTriageScreen(onBack = { navController.popBackStack() }) }
+                }
+                composable(ShellRoute.DreamsLegacy) {
+                    LegacyPage { DreamsScreen(onBack = { navController.popBackStack() }) }
+                }
+                composable(ShellRoute.Tasks) {
+                    LegacyPage { TasksScreen(onBack = { navController.popBackStack() }) }
+                }
+            }
+            val graph = this
+            placeholderTabs.forEach { tab ->
+                graph.composable(tab.route) {
                     PlaceholderTab(
                         title = stringResource(tab.labelRes),
                         icon = tab.icon,
@@ -70,35 +112,12 @@ fun AppNavHost(
                 LifeHomeScreen(onNavigate = onOpenRoute, onOpenQuickCapture = {})
             }
         }
-        composable(ShellRoute.Tasks) {
-            LegacyPage { TasksScreen(onBack = { navController.popBackStack() }) }
-        }
-        composable(ShellRoute.DreamsLegacy) {
-            LegacyPage { DreamsScreen(onBack = { navController.popBackStack() }) }
-        }
         composable(ShellRoute.More) {
             LegacyPage { MoreScreen(onNavigate = onOpenRoute) }
-        }
-        composable(ShellRoute.Inbox) {
-            LegacyPage { InboxTriageScreen(onBack = { navController.popBackStack() }) }
-        }
-        composable(ShellRoute.Fitness) {
-            LegacyPage { FitnessScreen(onBack = { navController.popBackStack() }) }
-        }
-        composable(ShellRoute.Calendar) {
-            LegacyPage { CalendarScreen(onBack = { navController.popBackStack() }) }
         }
         composable(ShellRoute.Catalog) {
             LegacyPage { FileCatalogScreen(onBack = { navController.popBackStack() }) }
         }
-        }
-        composable(ShellRoute.Household) {
-            LegacyPage {
-                HouseholdScreen(
-                    onBack = { navController.popBackStack() },
-                    onSignOut = onSignedOut,
-                )
-            }
         }
     }
 }

@@ -17,6 +17,7 @@ import com.menash.myself.ui.home.hebrewDateLine
 import com.menash.myself.ui.shell.PlaceholderTab
 import com.menash.myself.ui.shell.ShellRoute
 import com.menash.myself.ui.shell.ShellTab
+import com.menash.myself.ui.shell.placeholderTabs
 import com.menash.myself.ui.shell.shellTabs
 
 /** The only sample name used by R2 tests and screenshots. */
@@ -96,7 +97,7 @@ fun r2NavBar(
 
 @Composable
 fun r2Placeholder(route: String) {
-    val tab = shellTabs.first { item -> item.route == route }
+    val tab = placeholderTabs.first { item -> item.route == route }
     PlaceholderTab(
         title = stringResource(tab.labelRes),
         icon = tab.icon,

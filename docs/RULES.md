@@ -133,13 +133,17 @@
 
 ## 8. התקנה והפצה (Install and distribution)
 
-דחיפה ל-`main` מפעילה את `.github/workflows/distribute.yml`, וגם הפעלה ידנית (workflow_dispatch). הודעת קומיט שמכילה `[skip ci]` מדלגת על הריצה. כך מגיעה גרסה לטלפונים, בלי Android Studio ובלי כבל:
+מיזוג ל־`main` אינו מפיץ גרסה ואינו פורס חוקים. הפצה מופעלת ידנית דרך Actions → Distribute או בהרצה מתוזמנת יומית כשיש שינויים, ופורסת קודם את החוקים כברירת מחדל (בהרצה ידנית אפשר לבטל את `deploy_rules` כדי להפיץ ללא פריסת חוקים). לפרטים ראו `docs/RELEASE.md`.
+
+**חוקי Firestore חייבים להישאר תואמים לגרסת האפליקציה שכבר מותקנת בטלפונים**, משום שהחוקים נפרסים לפני שהטלפונים מתעדכנים.
+
+כך מגיעה גרסה לטלפונים, בלי Android Studio ובלי כבל:
 
 1. אם סוד חסר, הריצה נעצרת מיד ומדפיסה את **שם** הסוד. אין build ואין העלאה.
 2. `app/google-services.json` נכתב מהסוד `GOOGLE_SERVICES_JSON` — הקובץ האמיתי, לא הקובץ המזויף של בדיקות היחידה.
 3. `./gradlew testDebugUnitTest`. כישלון בדיקות עוצר את ההפצה.
-4. `./gradlew assembleRelease` בונה APK חתום. `versionCode` מגיע ממשתנה הסביבה `VERSION_CODE`; ב-CI זה `github.run_number`, כדי שכל בנייה תהיה חדשה והטלפון יקבל עדכון במקום.
-5. Firebase CLI מעלה את `app/build/outputs/apk/release/app-release.apk` לקבוצת הבודקים שה-alias שלה `family`. הערות השחרור הן הודעת הקומיט.
+4. `./gradlew assembleRelease` בונה APK חתום. `versionCode` מגיע ממשתנה הסביבה `VERSION_CODE`; ב-CI זה 1000 ועוד `github.run_number`, כדי שכל בנייה תהיה חדשה והטלפון יקבל עדכון במקום.
+5. Firebase CLI מעלה את `app/build/outputs/apk/release/app-release.apk` לקבוצת הבודקים שה-alias שלה `family`. הערות השחרור מוזנות ידנית או נוצרות מהשינויים מאז התג הקודם.
 
 **שמות הסודות** (Settings → Secrets and variables → Actions). הערכים אינם במסמך הזה ואינם ב-git:
 
