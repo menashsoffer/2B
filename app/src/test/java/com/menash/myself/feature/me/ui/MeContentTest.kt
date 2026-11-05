@@ -14,10 +14,10 @@ import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.external.boi.BoiRate
 import com.menash.myself.core.external.hebcal.HebcalData
 import com.menash.myself.core.external.hebcal.IsraeliCity
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.SampleName
-import com.menash.myself.r2.captureR2Screen
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.SampleName
+import com.menash.myself.testing.captureR2Screen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.yield

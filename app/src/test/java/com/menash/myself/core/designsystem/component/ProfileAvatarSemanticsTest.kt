@@ -7,8 +7,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.test.core.app.ApplicationProvider
 import com.menash.myself.R
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.SampleName
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.SampleName
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

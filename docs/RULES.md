@@ -7,7 +7,7 @@
 ## 1. כללי יסוד
 1. **כשלא בטוחים — שואלים:** לעולם אין לנחש כוונת משתמש, התנהגות עסקית או נוסחאות חישוב.
 2. **איסור מוחלט על מחיקת נתוני משתמש:** אף פעולה, מיגרציה או שחזור אינם מוחקים נתונים ללא גיבוי מקומי מקדים ואישור מפורש מהמשתמש.
-3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`feature/<x>/ui/` מחולקים ל-`*Content` ו-`*Screen`. המבנה המלא ב-[ARCHITECTURE.md](ARCHITECTURE.md).
+3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`feature/<x>/ui/` מחולקים ל-`*Content` ו-`*Screen`. כללי המבנה המלאים ב-[STRUCTURE.md](STRUCTURE.md).
 
 ---
 
@@ -18,7 +18,7 @@
 - **המבנה בפועל** (חבילות, זרימת נתונים, עמוד הכסף, בדיקות, CI): [ARCHITECTURE.md](ARCHITECTURE.md).
 - **גבולות תלויות (Dependency Boundaries):**
   - `domain/` הוא Kotlin טהור: אין `import android.*`, `androidx.*` או Firebase.
-  - קוד ב-`feature/` וב-`ui/` לא מייבא `com.menash.myself.core.data.legacy.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
+  - קוד ב-`feature/` וב-`shell/` לא מייבא `com.menash.myself.core.data.legacy.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
   - ViewModels תלויים בממשקי Repository (`core/data/repository`, `feature/money/data`), לא במימושים.
   - הזרקת תלויות ידנית ב-`AppContainer`, בלי פריימוורק.
 
@@ -86,7 +86,7 @@
    - ערכת הצבעים Night Blue (`theme/Palette.kt`, `ActivePalette`). צבע (`Color(0x…)`) וגודל גופן (`.sp`) רק ב-`theme/`; `NightBlueGuardTest` נכשל על שימוש חדש מחוץ ל-allow-list, וגם על רשומה מיותרת בה.
    - רכיבים משותפים (`component/`): `HeroCard`, `MetricCard`, `MoneyText` (עם פסיקי אלפים וסמל ₪ מיושר RTL), `Chip`, `PillTabs`, `ListRow`, `PrimaryButton`, `TextInput`, `SpaceBadge`, `SharedBadge`, `EmptyState`, `ErrorState`, `LoadingState`, `OfflineIndicator`, `FloatingNavBar`, `ProfileAvatar`, `ProgressBar`, `QuickAddButton`, `ScreenHeader`.
    - אף מסך אינו מגדיר סגנונות משל עצמו — הכל נגזר ממערכת העיצוב.
-2. **ניווט ב-5 לשוניות (`FloatingNavBar`, `ui/shell/ShellTab.kt`):**
+2. **ניווט ב-5 לשוניות (`FloatingNavBar`, `shell/ShellTab.kt`):**
    - בית, כסף, חלומות, קניות, מעקב. חלומות, קניות ומעקב הם עדיין מסכי placeholder.
    - אין FAB לכל מסך (`ShellAndViewModelGuardsTest`).
 3. **ניהול עומס קוגניטיבי:**

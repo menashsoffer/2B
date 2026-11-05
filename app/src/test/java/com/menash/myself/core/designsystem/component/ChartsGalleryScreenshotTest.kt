@@ -20,9 +20,9 @@ import com.menash.myself.core.designsystem.component.charts.PlanActualBars
 import com.menash.myself.core.designsystem.component.charts.PlanActualItem
 import com.menash.myself.core.designsystem.component.charts.ShareBar
 import com.menash.myself.core.designsystem.component.charts.ShareSegment
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Screen
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Screen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

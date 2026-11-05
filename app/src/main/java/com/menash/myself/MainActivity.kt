@@ -34,9 +34,9 @@ import com.menash.myself.core.auth.SignInScreen
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
-import com.menash.myself.ui.MainViewModel
+import com.menash.myself.shell.MainViewModel
 import com.menash.myself.feature.money.ui.sharedFileUris
-import com.menash.myself.ui.shell.AppShell
+import com.menash.myself.shell.AppShell
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalComposeUiApi::class)
