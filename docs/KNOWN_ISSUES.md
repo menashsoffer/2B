@@ -37,7 +37,7 @@
 
 ## 4. חוב קוד (מתוך סקירת בריאות הקוד, 31/10)
 
-- **שתי שכבות נתונים לעמודים הישנים**: `data/firestore/*` (DataSources + `LifeHubRepository`) ומעליה `core/data/repository/impl/*`. מועמד לאיחוד אחרי סקירת ה-UX.
+- **שתי שכבות נתונים לעמודים הישנים**: `core/data/legacy/firestore/*` (DataSources + `LifeHubRepository`) ומעליה `core/data/repository/impl/*`. מועמד לאיחוד אחרי סקירת ה-UX.
 - `FirestoreMoneyRepository` ו-`FirestoreTransactionRepository` יושבים ב-`core/data/repository/impl` אבל שייכים לעמוד הכסף (`feature/money/data`).
 - כ-200 מחרוזות בעמודים הישנים נקראות `ui_str_NNN` בלי שם עם משמעות.
 - `schemaVersion` (`v`) קיים רק במסמכי הכסף. המסמכים הישנים (משימות, חלומות, inbox) עדיין בלי, ועם בדיקות חוקים כלליות.
