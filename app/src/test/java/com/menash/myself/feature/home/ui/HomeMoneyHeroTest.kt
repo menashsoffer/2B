@@ -17,8 +17,8 @@ import com.menash.myself.feature.money.FakeMoneyRepository
 import com.menash.myself.feature.money.MoneySamples
 import com.menash.myself.feature.money.domain.MonthPlan
 import com.menash.myself.feature.money.domain.monthPlan
-import com.menash.myself.r2.FixedClock
-import com.menash.myself.r2.LightQualifiers
+import com.menash.myself.testing.FixedClock
+import com.menash.myself.testing.LightQualifiers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

@@ -1,4 +1,4 @@
-package com.menash.myself.r2
+package com.menash.myself.testing
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box

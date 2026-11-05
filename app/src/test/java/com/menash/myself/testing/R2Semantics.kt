@@ -1,4 +1,4 @@
-package com.menash.myself.r2
+package com.menash.myself.testing
 
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.semantics.SemanticsActions

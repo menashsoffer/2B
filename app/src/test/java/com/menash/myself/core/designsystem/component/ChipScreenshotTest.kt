@@ -4,9 +4,9 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.test.junit4.createComposeRule
 import com.menash.myself.R
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Wrap
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Wrap
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,7 +16,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * The three [ChipVariant] values shown in the gallery, not clickable.
- * Font scale: see [com.menash.myself.r2.ProvideR2FontScale].
+ * Font scale: see [com.menash.myself.testing.ProvideR2FontScale].
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)

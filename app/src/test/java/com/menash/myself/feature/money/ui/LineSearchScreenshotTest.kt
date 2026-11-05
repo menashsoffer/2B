@@ -13,9 +13,9 @@ import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
 import com.menash.myself.feature.money.search.LineSearchScope
 import com.menash.myself.feature.money.search.searchLines
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Screen
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Screen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

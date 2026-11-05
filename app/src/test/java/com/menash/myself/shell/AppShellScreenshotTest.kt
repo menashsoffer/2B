@@ -7,10 +7,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.LayoutDirection
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.HomeContentAtFixedClock
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Screen
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.HomeContentAtFixedClock
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Screen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,7 +21,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * Home tab of the shell at font scale 1.0, one golden per theme.
  * RTL is pinned with [LocalLayoutDirection]. Name, greeting, and the Hebrew date
- * come from [com.menash.myself.r2.FixedClock] via [HomeContentAtFixedClock].
+ * come from [com.menash.myself.testing.FixedClock] via [HomeContentAtFixedClock].
  *
  * The tree is [AppShellContent], the stateless shell [AppShell] renders, with the
  * home content in its slot. [AppShell] itself needs MainViewModel and Firestore.

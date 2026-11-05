@@ -12,9 +12,9 @@ import com.menash.myself.feature.money.PeriodUi
 import com.menash.myself.feature.money.periodView
 import com.menash.myself.feature.money.domain.ClosedMonth
 import com.menash.myself.feature.money.domain.MonthSnapshot
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Screen
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Screen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

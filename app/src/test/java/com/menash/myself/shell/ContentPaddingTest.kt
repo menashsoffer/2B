@@ -25,7 +25,7 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
-import com.menash.myself.r2.LightQualifiers
+import com.menash.myself.testing.LightQualifiers
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test

@@ -1,10 +1,10 @@
 package com.menash.myself.shell
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Screen
-import com.menash.myself.r2.r2Placeholder
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Screen
+import com.menash.myself.testing.r2Placeholder
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -12,7 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Dreams placeholder EmptyState. Font scale: see [com.menash.myself.r2.ProvideR2FontScale]. */
+/** Dreams placeholder EmptyState. Font scale: see [com.menash.myself.testing.ProvideR2FontScale]. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36], qualifiers = LightQualifiers)

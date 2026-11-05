@@ -1,10 +1,10 @@
 package com.menash.myself.feature.home.ui
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import com.menash.myself.r2.DarkQualifiers
-import com.menash.myself.r2.HomeContentAtFixedClock
-import com.menash.myself.r2.LightQualifiers
-import com.menash.myself.r2.captureR2Screen
+import com.menash.myself.testing.DarkQualifiers
+import com.menash.myself.testing.HomeContentAtFixedClock
+import com.menash.myself.testing.LightQualifiers
+import com.menash.myself.testing.captureR2Screen
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,8 +13,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * HomeContent goldens. Font scale is a [com.menash.myself.r2.ProvideR2FontScale] override;
- * see [com.menash.myself.r2.captureR2Screen]. Clock and name come from [com.menash.myself.r2.FixedClock].
+ * HomeContent goldens. Font scale is a [com.menash.myself.testing.ProvideR2FontScale] override;
+ * see [com.menash.myself.testing.captureR2Screen]. Clock and name come from [com.menash.myself.testing.FixedClock].
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -65,9 +65,9 @@ class HomeContentScreenshotTest {
             com.menash.myself.shell.shellTabsFor(false).map { it.route })
         composeRule.captureR2Screen(darkTheme = false, fontScale = 1.0f) {
             HomeContent(
-                state = HomeUiState(firstName = com.menash.myself.r2.SampleName),
-                hour = com.menash.myself.r2.FixedClock.HOUR,
-                epochMillis = com.menash.myself.r2.FixedClock.epochMillis,
+                state = HomeUiState(firstName = com.menash.myself.testing.SampleName),
+                hour = com.menash.myself.testing.FixedClock.HOUR,
+                epochMillis = com.menash.myself.testing.FixedClock.epochMillis,
                 onOpenRoute = {}, onOpenAccount = {}, debug = false,
             )
         }

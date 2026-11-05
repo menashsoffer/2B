@@ -1,4 +1,4 @@
-package com.menash.myself.r2
+package com.menash.myself.testing
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
