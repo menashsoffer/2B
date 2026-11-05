@@ -1,4 +1,4 @@
-package com.menash.myself.ui.life
+package com.menash.myself.feature.life.ui
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag

@@ -1,4 +1,4 @@
-package com.menash.myself.ui.life
+package com.menash.myself.feature.life.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
