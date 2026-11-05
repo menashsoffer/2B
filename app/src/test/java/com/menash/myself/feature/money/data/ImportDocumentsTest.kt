@@ -10,6 +10,18 @@ import org.junit.Test
 class ImportDocumentsTest {
 
     @Test
+    fun sourceClosureRoundTripsAndRejectsInvalidDocuments() {
+        val source = com.menash.myself.feature.money.StatementSource(com.menash.myself.feature.money.importer.Source.MAX, "1234")
+        val month = java.time.YearMonth.of(2026, 9)
+        val id = ImportDocuments.sourceClosureId(source)
+        val encoded = ImportDocuments.encodeSourceClosure(source, month)
+        assertEquals(source to month, ImportDocuments.decodeSourceClosure(id, encoded))
+        assertEquals(null, ImportDocuments.decodeSourceClosure("wrong-id", encoded))
+        assertEquals(null, ImportDocuments.decodeSourceClosure(id, encoded + ("closedFrom" to "invalid")))
+        assertEquals(null, ImportDocuments.decodeSourceClosure(id, encoded + (SchemaVersion.KEY to SchemaVersion.CURRENT + 1)))
+    }
+
+    @Test
     fun everyFixtureRowRoundTrips() {
         listOf("hapoalim_oct.xlsx", "onezero_ils.xls", "onezero_usd.xls", "max_nov.xlsx", "cal_nov.xlsm").forEach { name ->
             ImportFixtures.parse(name).rows.forEachIndexed { i, row ->

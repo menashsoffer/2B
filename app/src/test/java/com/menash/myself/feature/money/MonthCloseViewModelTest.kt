@@ -57,6 +57,18 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun sourceCanBeClosedAndReopenedFromTheSelectedMonth() {
+        val transactions = FakeTransactionRepository()
+        val source = StatementSource(Source.MAX, "1234")
+        val vm = MonthCloseViewModel(FakeMoneyRepository(data), transactions, flowOf(null), { today }, DefaultErrorReporter())
+        vm.open(october)
+        vm.setSourceClosed(source, true)
+        assertEquals(october, transactions.sourceClosures.value[source])
+        vm.setSourceClosed(source, false)
+        assertFalse(transactions.sourceClosures.value.containsKey(source))
+    }
+
+    @Test
     fun opensSelectedPastMonthAndUsesDefaultForCurrentOrFuture() {
         val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
         vm.open(october.minusMonths(2))
