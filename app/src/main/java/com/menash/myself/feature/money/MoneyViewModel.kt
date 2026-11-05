@@ -84,10 +84,12 @@ class MoneyViewModel(
         latest = data
         val day = today()
         val current = YearMonth.from(day)
-        val now = buildMoneyMonth(data, current, day, rate, lines, learnt)
+        val months = pickerMonths(current, data.closedMonths.map { it.month }.toSet(), lines)
+        val earliest = months.last().month
+        val now = buildMoneyMonth(data, current, day, rate, lines, learnt).copy(earliest = earliest)
         val money = if (picked == null || picked == current) now else
-            buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current)
-        MoneyScreenState(money = money, data = data, months = pickerMonths(current, data.closedMonths.map { it.month }.toSet(), lines))
+            buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current, earliest = earliest)
+        MoneyScreenState(money = money, data = data, months = months)
     }
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
@@ -103,13 +105,13 @@ class MoneyViewModel(
 
     fun showMonth(month: YearMonth) {
         val current = YearMonth.from(today())
-        if (month in current.minusMonths(MonthsBack)..current) shown.value = month.takeUnless { it == current }
+        if (month in (state.value.money?.earliest ?: current.minusMonths(12))..current) shown.value = month.takeUnless { it == current }
     }
 
     fun showPreviousMonth() {
         val current = YearMonth.from(today())
         val from = shown.value ?: current
-        if (from > current.minusMonths(MonthsBack)) shown.value = from.minusMonths(1)
+        if (from > (state.value.money?.earliest ?: current.minusMonths(12))) shown.value = from.minusMonths(1)
     }
 
     fun showNextMonth() {

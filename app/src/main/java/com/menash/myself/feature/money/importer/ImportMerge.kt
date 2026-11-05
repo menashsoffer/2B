@@ -25,6 +25,24 @@ data class ImportPlan(
 
 data class FileCheck(val source: Source, val rows: Int, val total: ImportCheck?, val warnings: List<ImportWarning>)
 
+/** Months with rows for one account or card. Gaps do not prove a statement is missing. */
+data class SourceCoverage(
+    val source: Source,
+    val sourceId: String,
+    val firstMonth: YearMonth,
+    val lastMonth: YearMonth,
+    val gaps: List<YearMonth>,
+)
+
+fun importCoverage(stored: List<StoredTransaction>): List<SourceCoverage> =
+    stored.map { it.row }.groupBy { it.source to it.sourceId }.map { (key, sourceRows) ->
+        val months = sourceRows.map { it.billingMonth }.distinct().sorted()
+        val present = months.toSet()
+        val count = java.time.temporal.ChronoUnit.MONTHS.between(months.first(), months.last())
+        val missing = (0L..count).map { months.first().plusMonths(it) }.filterNot { it in present }
+        SourceCoverage(key.first, key.second, months.first(), months.last(), missing)
+    }.sortedWith(compareBy({ it.source.key }, { it.sourceId }))
+
 private fun StatementRow.preferable(other: StatementRow): Boolean =
     status == RowStatus.COUNTED && other.status != RowStatus.COUNTED
 

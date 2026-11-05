@@ -27,6 +27,21 @@ class MoneyEditorTest {
     }
 
     @Test
+    fun savingCreationRecordsStartAndEditingPreservesLegacyAndKnownStarts() {
+        val draft = ItemDraft(EditKind.SAVING, name = "חיסכון", amount = "100")
+        fun save(d: ItemDraft, data: com.menash.myself.feature.money.data.MoneyData): com.menash.myself.feature.money.domain.Saving =
+            ((buildEntries(d, data, month, MoneySamples.today, null) { "new" } as EditResult.Ok).entries.single() as MoneyEntry.SavingEntry).value
+        val created = save(draft, MoneySamples.empty)
+        assertEquals(month, created.startMonth)
+        val dated = created.copy(startMonth = month.minusMonths(6))
+        val legacy = created.copy(startMonth = null)
+        fun edit(saving: com.menash.myself.feature.money.domain.Saving) = save(draft.copy(id = saving.id),
+            MoneySamples.empty.copy(items = com.menash.myself.feature.money.domain.MoneyItems(savings = listOf(saving))))
+        assertEquals(dated.startMonth, edit(dated).startMonth)
+        assertNull(edit(legacy).startMonth)
+    }
+
+    @Test
     fun amountText_isWhatTheFieldShows() {
         assertEquals("1250", amountText(Money(125_000)))
         assertEquals("1250.5", amountText(Money(125_050)))

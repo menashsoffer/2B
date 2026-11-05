@@ -46,9 +46,11 @@ import java.time.format.DateTimeFormatter
 data class MonthCloseActions(
     val onPrevious: () -> Unit = {},
     val onNext: () -> Unit = {},
+    val onNextPending: () -> Unit = {},
     /** Opens the file picker to import the missing statement. */
     val onImport: () -> Unit = {},
     val onNoLines: (StatementSource) -> Unit = {},
+    val onSourceClosed: (StatementSource, Boolean) -> Unit = { _, _ -> },
     val onLines: (YearMonth, LineFilter) -> Unit = { _, _ -> },
     val onAsset: (Asset) -> Unit = {},
     val onClose: () -> Unit = {},
@@ -92,7 +94,9 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                 else if (state == 0) { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
                 else if (state == 1 || view == null) { LoadingState(testTag = "close_loading") }
                 else {
-                    MonthArrows(view.month, canGoNext = ui.currentMonth?.let { view.month < it } == true, actions)
+                    val canGoBack = (ui.earliestMonth ?: ui.currentMonth?.minusMonths(12))?.let { view.month > it } != false
+                    val canGoNext = ui.currentMonth?.let { view.month < it.minusMonths(1) } == true
+                    MonthArrows(view.month, canGoBack = canGoBack, canGoNext = canGoNext, actions)
                     view.existing?.let {
                         Chip(
                             text = stringResource(R.string.close_done_on, it.closedOn.format(dateFormat)),
@@ -106,6 +110,12 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                                 detail = stringResource(R.string.summary_entry_detail),
                                 onClick = { actions.onSummary(view.month) },
                             )
+                        }
+                    }
+                    ui.nextPending?.let { next ->
+                        MoneySurface {
+                            AmountRow(title = stringResource(R.string.close_next_pending, monthTitle(next)), amount = null,
+                                onClick = actions.onNextPending, testTag = "close_next_pending")
                         }
                     }
                     SectionTitle(stringResource(R.string.close_checks_title))
@@ -141,9 +151,9 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
 }
 
 @Composable
-private fun MonthArrows(month: YearMonth, canGoNext: Boolean, actions: MonthCloseActions) {
+private fun MonthArrows(month: YearMonth, canGoBack: Boolean, canGoNext: Boolean, actions: MonthCloseActions) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        TextButton(onClick = actions.onPrevious, modifier = Modifier.testTag("close_previous")) {
+        TextButton(onClick = actions.onPrevious, enabled = canGoBack, modifier = Modifier.testTag("close_previous")) {
             Text(stringResource(R.string.close_previous, hebrewMonthName(month.minusMonths(1).month)), style = AppType.body)
         }
         if (canGoNext) {
@@ -200,6 +210,14 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
         ) {
             Text(stringResource(R.string.close_no_lines), style = AppType.caption, color = colors.textSecondary)
         }
+        TextButton(onClick = { actions.onSourceClosed(source, true) },
+            modifier = Modifier.padding(horizontal = Spacing.s8).testTag("close_source_closed_${source.key}")) {
+            Text(stringResource(R.string.close_source_closed), style = AppType.caption, color = colors.textSecondary)
+        }
+    }
+    view.closedSources.forEach { (source, from) ->
+        AmountRow(title = stringResource(R.string.close_source_closed_from, sourceLabel(source.source), source.sourceId, monthTitle(from)),
+            amount = null, onClick = { actions.onSourceClosed(source, false) }, testTag = "close_source_undo_${source.key}")
     }
     view.staleAssets.forEach { asset ->
         AmountRow(

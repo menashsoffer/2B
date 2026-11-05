@@ -65,6 +65,12 @@ stored lines + ImportMemory ──toTransactions──▶ engine Transaction ─
 
 `households/{hid}/transactions/{id}` has 15 fields at most. Amounts are agorot and dates are `YYYY-MM-DD`. `households/{hid}/merchantMemory/m-<hash>` holds `{key, categoryId?, ownTransfer, alias?, askEachTime?}`. `alias` (1–60 characters) is only a display name: matching and the document id always use the bank's text. `askEachTime` marks a generic merchant (ביט, העברה): it is never learnt, its stored `categoryId` is ignored, and turning it on first copies the learnt category onto the lines that followed it. A category chosen with "רק לתנועה הזו" is saved on that line only. Both are added to `isMoneyCollection` in `firestore.rules`: members read and write, everyone else is denied. `apply` writes in batches of 450.
 
+## Closed sources and historical coverage
+
+A household can mark a missing account or card closed from the month currently being closed. A `sourceClosures/s-<hash>` document stores `v: 1`, `source`, `sourceId`, and `closedFrom` (`YYYY-MM`); undo deletes the mark. `closedFrom` prevents that source from being expected for that month and later months. Existing and later imported lines still count normally. This does not change import identifiers or merging.
+
+`importCoverage(stored)` groups by source and source id, returning the first and last billing months with rows and gaps within that range. A gap means no stored rows; it does not establish whether a file is missing or a source had no activity. The coverage function has no screen in this task.
+
 ## Not verified yet
 
 - The real header strings come from `import-formats.md`, because the real files were deleted after they were checked. The fixtures are synthetic and come from `tools/import-fixtures/make_fixtures.py`. The first real import, in 1b, is the true test.

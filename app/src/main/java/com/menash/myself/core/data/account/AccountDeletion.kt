@@ -7,7 +7,7 @@ object DeletionCollections {
     val money = listOf(
         "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
         "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
-        "transactions", "merchantMemory", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
+        "transactions", "merchantMemory", "sourceClosures", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
     )
     val household = money + listOf("tasks", "dreams", "inbox")
     // LifeHubRepository.privateCollection + Task/Dream/InboxFirestoreDataSource:

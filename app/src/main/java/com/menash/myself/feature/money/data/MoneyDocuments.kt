@@ -106,6 +106,7 @@ object MoneyDocuments {
                 put("monthlyDeposit", it.monthlyDeposit.agorot)
                 put("accumulated", it.accumulated.agorot)
                 it.maturity?.let { month -> put("maturity", month.toString()) }
+                it.startMonth?.let { month -> put("startMonth", month.toString()) }
             }
         }
         is MoneyEntry.AssetEntry -> entry.value.let {
@@ -229,6 +230,7 @@ object MoneyDocuments {
                     monthlyDeposit = doc.money("monthlyDeposit"),
                     accumulated = doc.money("accumulated"),
                     maturity = doc.stringOrNull("maturity")?.let { YearMonth.parse(it) },
+                    startMonth = doc.stringOrNull("startMonth")?.let { YearMonth.parse(it) },
                 )
             )
             MoneyCollection.ASSETS -> MoneyEntry.AssetEntry(

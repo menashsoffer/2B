@@ -33,11 +33,17 @@ import org.junit.Test
 class FakeTransactionRepository : TransactionRepository {
     val lines = MutableStateFlow<List<StoredTransaction>>(emptyList())
     val memory = MutableStateFlow(ImportMemory())
+    val sourceClosures = MutableStateFlow<Map<StatementSource, java.time.YearMonth>>(emptyMap())
     val applied = mutableListOf<ImportPlan>()
     var failApply = false
 
     override fun observeTransactions(): Flow<List<StoredTransaction>> = lines
     override fun observeMemory(): Flow<ImportMemory> = memory
+
+    override fun observeSourceClosures() = sourceClosures
+    override suspend fun setSourceClosedFrom(source: StatementSource, month: java.time.YearMonth?) {
+        sourceClosures.value = if (month == null) sourceClosures.value - source else sourceClosures.value + (source to month)
+    }
 
     override suspend fun apply(plan: ImportPlan) {
         if (failApply) throw IllegalStateException("offline")

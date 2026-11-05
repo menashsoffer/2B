@@ -180,6 +180,8 @@ fun buildEntries(
                     monthlyDeposit = amount,
                     accumulated = parseAmount(draft.accumulated) ?: Money.ZERO,
                     maturity = draft.maturity,
+                    startMonth = data.items.savings.firstOrNull { it.id == id }?.let { it.startMonth }
+                        ?: if (data.items.savings.any { it.id == id }) null else month,
                 )
             )
         )

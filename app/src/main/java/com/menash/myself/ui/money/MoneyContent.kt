@@ -1,9 +1,6 @@
 package com.menash.myself.ui.money
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,15 +16,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
 import androidx.compose.material.icons.outlined.Warning
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.R
@@ -44,7 +36,6 @@ import com.menash.myself.core.designsystem.theme.Motion
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.feature.money.data.MoneyEntry
-import com.menash.myself.feature.money.MonthRow
 import com.menash.myself.feature.money.MonthRowKind
 import com.menash.myself.feature.money.MonthView
 import com.menash.myself.feature.money.MoneyMonth
@@ -116,7 +107,7 @@ private fun MonthContent(
     val view = money.view
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
-    MonthSwitcher(money, closed = status is MonthStatus.Closed, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
+    MonthSwitcher(money, closed = status is MonthStatus.Closed || (view as? MonthView.ActualOnly)?.closed == true, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
     actions.onResumeImport?.let { MoneySurface { AmountRow(stringResource(R.string.import_pending), null, onClick = it, testTag = "money_import_pending") } }
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
@@ -126,6 +117,18 @@ private fun MonthContent(
             onClick = actions.onImport,
             testTag = "money_import_top",
         )
+    }
+    if (money.month == money.current) {
+        MoneySurface {
+            AmountRow(title = stringResource(R.string.history_close_available,
+                hebrewMonthName(money.current.month), hebrewMonthName(money.current.plusMonths(1).month)), amount = null)
+            money.pendingClose.firstOrNull()?.let { pending ->
+                AmountRow(title = if (money.pendingClose.size == 1)
+                    stringResource(R.string.history_close_pending, hebrewMonthYear(pending))
+                else stringResource(R.string.history_close_pending_count, money.pendingClose.size),
+                    amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+            }
+        }
     }
     when (view) {
         is MonthView.Empty -> {
@@ -138,6 +141,30 @@ private fun MonthContent(
                 onActionClick = actions.onStart,
                 testTag = "money_empty",
             )
+            if (money.month < money.current) MoneySurface {
+                AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+            }
+        }
+        is MonthView.ActualOnly -> {
+            TopCategoriesChart(view.top, actions)
+            MoneySurface(testTag = "money_actual_only") {
+                AmountRow(title = stringResource(R.string.history_actual_income), amount = formatMoney(view.income))
+                AmountRow(title = stringResource(R.string.history_actual_spending), amount = formatMoney(view.spent))
+                AmountRow(title = stringResource(R.string.close_saving), amount = formatMoney(view.saving),
+                    amountColor = if (view.saving.isNegative()) colors.danger else null, testTag = "money_actual_saving")
+                view.unassigned?.let { amount ->
+                    AmountRow(title = stringResource(R.string.import_unassigned), amount = formatMoney(amount),
+                        onClick = { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
+                }
+                AmountRow(title = stringResource(R.string.tx_entry), amount = null,
+                    detail = stringResource(R.string.tx_entry_detail, view.importedLines),
+                    onClick = { actions.onTransactions(LineFilter.ALL) })
+                if (view.closed) AmountRow(title = stringResource(R.string.summary_entry), amount = null,
+                    detail = stringResource(R.string.summary_entry_detail), onClick = { actions.onMonthSummary(money.month) })
+                if (money.month < money.current) {
+                    AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+                }
+            }
         }
         is MonthView.Planned -> {
             val surplus = view.plan.expectedSurplus
@@ -147,8 +174,7 @@ private fun MonthContent(
                     verticalArrangement = Arrangement.spacedBy(Spacing.s8),
                 ) {
                     if (status != null) MonthStatusHeadline(status, onAddCurrent = { actions.onAddKind(com.menash.myself.feature.money.EditKind.VARIABLE) }, onTransactions = actions.onTransactions) else Text(
-                        text = formatMoney(surplus),
-                        style = AppType.number,
+                        text = formatMoney(surplus), style = AppType.number,
                         color = if (surplus.isNegative()) colors.danger else colors.textPrimary,
                         modifier = Modifier.testTag("money_surplus_value"),
                     )
@@ -159,50 +185,31 @@ private fun MonthContent(
             }
             MonthCharts(view, actions)
             MoneySurface(testTag = "money_rows") {
-                view.rows.forEach { row ->
-                    PlanRow(row, row.kind in expanded, actions)
-                }
+                view.rows.forEach { row -> PlanRow(row, row.kind in expanded, actions) }
                 view.unassigned?.let { unassigned ->
-                    AmountRow(
-                        title = stringResource(R.string.import_unassigned),
-                        amount = formatMoney(unassigned),
-                        amountColor = colors.textSecondary,
-                        onClick = { actions.onTransactions(LineFilter.UNASSIGNED) },
-                        testTag = "money_unassigned",
-                    )
+                    AmountRow(title = stringResource(R.string.import_unassigned), amount = formatMoney(unassigned),
+                        amountColor = colors.textSecondary, onClick = { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
                 }
                 if (view.importedLines > 0) {
-                    AmountRow(
-                        title = stringResource(R.string.tx_entry),
-                        amount = null,
+                    AmountRow(title = stringResource(R.string.tx_entry), amount = null,
                         detail = stringResource(R.string.tx_entry_detail, view.importedLines),
-                        onClick = { actions.onTransactions(LineFilter.ALL) },
-                        testTag = "money_transactions",
-                    )
+                        onClick = { actions.onTransactions(LineFilter.ALL) }, testTag = "money_transactions")
                 }
                 if (status is MonthStatus.Closed) {
-                    AmountRow(
-                        title = stringResource(R.string.summary_entry),
-                        amount = null,
+                    AmountRow(title = stringResource(R.string.summary_entry), amount = null,
                         detail = stringResource(R.string.summary_entry_detail),
-                        onClick = { actions.onMonthSummary(money.month) },
-                        testTag = "money_month_summary",
-                    )
+                        onClick = { actions.onMonthSummary(money.month) }, testTag = "money_month_summary")
                 }
-                AmountRow(
-                    title = stringResource(R.string.close_entry),
-                    amount = null,
-                    detail = stringResource(R.string.close_entry_detail),
-                    onClick = actions.onCloseMonth,
-                    testTag = "money_close_month",
-                )
+                if (money.month < money.current) {
+                    AmountRow(title = stringResource(R.string.close_entry), amount = null,
+                        detail = stringResource(R.string.close_entry_detail), onClick = actions.onCloseMonth,
+                        testTag = "money_close_month")
+                }
                 AmountRow(
                     title = if (money.current.monthValue == 1) stringResource(R.string.period_year_entry, money.current.year - 1)
                         else stringResource(R.string.period_entry),
-                    amount = null,
-                    detail = stringResource(R.string.period_entry_detail),
-                    onClick = actions.onPeriod,
-                    testTag = "money_period",
+                    amount = null, detail = stringResource(R.string.period_entry_detail),
+                    onClick = actions.onPeriod, testTag = "money_period",
                 )
             }
             if (view.cardCharges.isNotEmpty()) {
@@ -210,56 +217,15 @@ private fun MonthContent(
                 MoneySurface(testTag = "money_card_charges") {
                     val dayFormat = DateTimeFormatter.ofPattern("d.M")
                     view.cardCharges.forEach { charge ->
-                        AmountRow(
-                            title = charge.card.name,
+                        AmountRow(title = charge.card.name,
                             detail = stringResource(R.string.money_card_charge_date, charge.date.format(dayFormat)),
-                            amount = formatMoney(charge.amount),
-                            onClick = { actions.onEdit(MoneyEntry.CardEntry(charge.card)) },
-                        )
+                            amount = formatMoney(charge.amount), onClick = { actions.onEdit(MoneyEntry.CardEntry(charge.card)) })
                     }
                 }
             }
-            PrimaryButton(
-                text = stringResource(R.string.money_add),
-                onClick = actions.onAdd,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("money_add"),
-            )
+            PrimaryButton(text = stringResource(R.string.money_add), onClick = actions.onAdd,
+                modifier = Modifier.fillMaxWidth().testTag("money_add"))
         }
-    }
-}
-
-@Composable
-private fun PlanRow(row: MonthRow, isExpanded: Boolean, actions: MoneyActions) {
-    val colors = MaterialTheme.appColors
-    val actual = row.actual
-    val duration = Motion.duration(Motion.medium)
-    val rotation = animateFloatAsState(if (isExpanded) 180f else 0f, tween(duration, easing = Motion.easing), label = "expand")
-    val state = stringResource(if (isExpanded) R.string.money_expanded else R.string.money_collapsed)
-    AmountRow(
-        title = rowLabel(row.kind),
-        modifier = Modifier.semantics { stateDescription = state },
-        trailing = { Icon(Icons.Outlined.ExpandMore, contentDescription = null, modifier = Modifier.rotate(rotation.value), tint = colors.textSecondary) },
-        amount = formatMoney(row.total),
-        detail = if (!row.actualKnown) stringResource(R.string.status_income_not_imported) else actual?.let { stringResource(R.string.money_actual, formatMoney(it)) },
-        titleStyle = AppType.body.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Medium),
-        onClick = { actions.onToggleRow(row.kind) },
-        testTag = "money_row_${row.kind.name.lowercase()}",
-    )
-    AnimatedVisibility(visible = isExpanded, enter = Motion.expand(duration), exit = Motion.shrink(duration)) {
-        Column { row.items.forEach { item ->
-            AmountRow(
-                title = item.name,
-                amount = item.monthly?.let(::formatMoney),
-                detail = item.actual?.let { stringResource(R.string.money_actual, formatMoney(it)) }
-                    ?: if (item.monthly == null) stringResource(R.string.money_usd_missing) else null,
-                amountColor = colors.textSecondary,
-                onClick = { actions.onEdit(item.entry) },
-                modifier = Modifier.padding(start = Spacing.s16),
-                testTag = "money_item_${item.entry.id}",
-            )
-        } }
     }
 }
 

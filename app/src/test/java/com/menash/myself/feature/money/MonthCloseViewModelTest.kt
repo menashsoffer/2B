@@ -57,6 +57,18 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun sourceCanBeClosedAndReopenedFromTheSelectedMonth() {
+        val transactions = FakeTransactionRepository()
+        val source = StatementSource(Source.MAX, "1234")
+        val vm = MonthCloseViewModel(FakeMoneyRepository(data), transactions, flowOf(null), { today }, DefaultErrorReporter())
+        vm.open(october)
+        vm.setSourceClosed(source, true)
+        assertEquals(october, transactions.sourceClosures.value[source])
+        vm.setSourceClosed(source, false)
+        assertFalse(transactions.sourceClosures.value.containsKey(source))
+    }
+
+    @Test
     fun opensSelectedPastMonthAndUsesDefaultForCurrentOrFuture() {
         val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
         vm.open(october.minusMonths(2))
@@ -87,6 +99,22 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun successfulCloseOffersOldestWaitingMonthWithoutSwitching() {
+        val repo = FakeMoneyRepository(data)
+        val vm = viewModel(repo, listOf(line("jan", LocalDate.of(2024, 1, 5)), line("mar", LocalDate.of(2024, 3, 5))))
+        vm.open()
+        val january = YearMonth.of(2024, 1)
+        val march = YearMonth.of(2024, 3)
+        assertNull(vm.ui.value.nextPending)
+        vm.closeMonth()
+        assertEquals(january, vm.ui.value.view!!.month)
+        assertEquals(march, vm.ui.value.nextPending)
+        vm.openNextPending()
+        assertEquals(march, vm.ui.value.view!!.month)
+        assertNull(vm.ui.value.nextPending)
+    }
+
+    @Test
     fun lastMonth_keepsTodaysBalancesWithoutAStep() {
         val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
         vm.open()
@@ -99,9 +127,7 @@ class MonthCloseViewModelTest {
     fun historicalBalancesAreExplicitAndResetBetweenMonths() {
         val repo = FakeMoneyRepository(data)
         val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 9, 5))))
-        vm.open()
-        vm.previousMonth()
-        vm.previousMonth()
+        vm.open(YearMonth.of(2026, 9))
         assertEquals(YearMonth.of(2026, 9), vm.ui.value.view!!.month)
         assertTrue(vm.ui.value.showBalancesStep)
         assertTrue(vm.ui.value.balanceDraft.values.isEmpty())
@@ -125,9 +151,7 @@ class MonthCloseViewModelTest {
         val untouched = bank.copy(id = "untouched")
         val repo = FakeMoneyRepository(data.copy(assets = listOf(bank, loan, untouched)))
         val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 9, 5))))
-        vm.open()
-        vm.previousMonth()
-        vm.previousMonth()
+        vm.open(YearMonth.of(2026, 9))
         vm.enterBalances(true)
         vm.setBalance(bank.id, "0")
         vm.setBalance(loan.id, "100")
@@ -146,8 +170,7 @@ class MonthCloseViewModelTest {
                 balances = mapOf(bank.id to bank.balance), closedOn = LocalDate.of(2026, 12, 1))
         val repo = FakeMoneyRepository(data.copy(closedMonths = listOf(original)))
         val vm = viewModel(repo, emptyList())
-        vm.open()
-        vm.previousMonth()
+        vm.open(october)
         assertTrue(repo.saved.isEmpty())
         vm.markBalancesUnknown()
         assertEquals(original.copy(balances = emptyMap(), liabilities = emptyMap()),
@@ -176,7 +199,7 @@ class MonthCloseViewModelTest {
     fun missingCard_blocksUntilMarkedEmpty() {
         val repo = FakeMoneyRepository(data)
         val vm = viewModel(repo, listOf(line("a", LocalDate.of(2026, 9, 5), card = "9876"), line("b", LocalDate.of(2026, 10, 5))))
-        vm.open()
+        vm.open(october)
         val missing = vm.ui.value.view!!.missingSources.single()
         vm.closeMonth()
         assertTrue(repo.saved.isEmpty())
@@ -185,18 +208,52 @@ class MonthCloseViewModelTest {
     }
 
     @Test
-    fun arrows_stopAtThisMonth() {
+    fun arrows_stopAtThisMonthAndAtHistoryBoundary() {
         val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
         vm.open()
+        assertEquals(YearMonth.of(2025, 11), vm.ui.value.earliestMonth)
         vm.nextMonth()
-        assertEquals(YearMonth.of(2026, 11), vm.ui.value.view!!.month)
-        assertFalse(vm.ui.value.view!!.canClose)
+        assertEquals(october, vm.ui.value.view!!.month)
         vm.nextMonth()
-        assertEquals(YearMonth.of(2026, 11), vm.ui.value.view!!.month)
-        vm.previousMonth()
+        assertEquals(october, vm.ui.value.view!!.month)
         vm.previousMonth()
         assertEquals(YearMonth.of(2026, 9), vm.ui.value.view!!.month)
+        repeat(20) { vm.previousMonth() }
+        assertEquals(YearMonth.of(2025, 11), vm.ui.value.view!!.month)
+        vm.open(YearMonth.of(2025, 10))
+        assertEquals(october, vm.ui.value.view!!.month)
         vm.close()
         assertFalse(vm.ui.value.open)
+    }
+
+    @Test
+    fun closingHistoricalMonth_excludesFutureItemsAndPeriodicBudgetsFromSavedCloseSummary() {
+        val historical = YearMonth.of(2024, 2)
+        val futureItems = com.menash.myself.feature.money.domain.MoneyItems(
+            incomes = listOf(MoneySamples.salary),
+            fixedExpenses = listOf(MoneySamples.rent),
+            subscriptions = listOf(MoneySamples.chatGpt),
+            variableBudgets = listOf(MoneySamples.fuel),
+            periodicBudgets = listOf(MoneySamples.holidays),
+        )
+        val repo = FakeMoneyRepository(data.copy(items = futureItems))
+        val vm = viewModel(repo, listOf(line("hist", historical.atDay(5))))
+        vm.open(historical)
+        assertEquals(historical, vm.ui.value.earliestMonth)
+        assertEquals(historical, vm.ui.value.view!!.month)
+        vm.previousMonth()
+        assertEquals(historical, vm.ui.value.view!!.month)
+
+        vm.closeMonth()
+        val saved = (repo.saved.single() as MoneyEntry.ClosedMonthEntry).value
+        assertEquals(historical, saved.month)
+        assertEquals(Money(25_000), saved.snapshot.actualExpenses)
+        assertEquals(mapOf<String?, Money>("current-1" to Money(25_000)), saved.byCategory)
+        assertTrue(saved.periodic.isEmpty())
+
+        val summary = monthSummary(data.copy(items = futureItems, closedMonths = listOf(saved)), historical, null)!!
+        assertTrue(summary.periodic.isEmpty())
+        assertTrue(summary.overruns.isEmpty())
+        assertEquals(listOf(SummaryClassRow(com.menash.myself.feature.money.domain.ExpenseClass.CURRENT, null, Money(25_000))), summary.classes)
     }
 }

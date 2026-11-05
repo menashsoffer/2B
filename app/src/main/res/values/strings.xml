@@ -220,4 +220,12 @@
     <string name="ui_headerssize_412">נמצאו %1$s עמודות. התאם את העמודות בקובץ לשדות האפליקציה:</string>
     <string name="ui_str_413">— ללא מיפוי —</string>
     <string name="ui_csv_414">ייבוא נתונים מקובץ CSV</string>
+    <string name="history_actual_income">הכנסות בפועל</string>
+    <string name="history_actual_spending">הוצאות בפועל</string>
+    <string name="history_close_available">אפשר לסגור את %1$s מ־1 ב%2$s</string>
+    <string name="history_close_pending">לסגור את %1$s</string>
+    <string name="history_close_pending_count">%1$d חודשים מחכים לסגירה</string>
+    <string name="close_next_pending">הבא: %1$s</string>
+    <string name="close_source_closed">המקור נסגר</string>
+    <string name="close_source_closed_from">%1$s %2$s נסגר מ־%3$s · ביטול</string>
 </resources>

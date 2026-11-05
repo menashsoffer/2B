@@ -99,6 +99,22 @@ class FirestoreTransactionRepository(
             ImportDocuments.decodeMemory(docs.map { it.second })
         }
 
+    override fun observeSourceClosures(): Flow<Map<com.menash.myself.feature.money.StatementSource, java.time.YearMonth>> =
+        observe(ImportDocuments.SOURCE_CLOSURES, emptyMap(), true) { docs ->
+            docs.mapNotNull { (id, data) -> ImportDocuments.decodeSourceClosure(id, data) }.toMap()
+        }
+
+    override suspend fun setSourceClosedFrom(source: com.menash.myself.feature.money.StatementSource, month: java.time.YearMonth?) {
+        try {
+            val doc = collection(householdSession.requireHouseholdId(), ImportDocuments.SOURCE_CLOSURES)
+                .document(ImportDocuments.sourceClosureId(source))
+            if (month == null) doc.delete().await() else doc.set(ImportDocuments.encodeSourceClosure(source, month)).await()
+        } catch (e: Exception) {
+            reportError("setSourceClosedFrom", e)
+            throw e
+        }
+    }
+
     override suspend fun apply(plan: ImportPlan) {
         try {
             val target = collection(householdSession.requireHouseholdId(), ImportDocuments.TRANSACTIONS)

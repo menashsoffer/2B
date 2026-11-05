@@ -88,6 +88,8 @@ class MoneyScreenshotTest {
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun moneyBigPicture_dark_font13() = month(MoneySamples.filled, dark = true, font = 1.3f, tab = MoneyTabBigPicture)
 
+    @Test fun money_actual_only_light() = month(MoneySamples.empty.copy(categories = MoneySamples.filled.categories), dark = false, font = 1.0f, lines = octoberLines())
+
     @Test fun moneyMonthImported_light_font10() = month(MoneySamples.filled, dark = false, font = 1.0f, lines = octoberLines())
     @Test @Config(sdk = [36], qualifiers = DarkQualifiers)
     fun moneyMonthImported_dark_font13() = month(MoneySamples.filled, dark = true, font = 1.3f, lines = octoberLines())

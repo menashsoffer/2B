@@ -79,6 +79,7 @@ object MoneyFixtures {
         ),
 
         "with-maturity" to MoneyEntry.SavingEntry(MoneySamples.pension),
+        "with-start" to MoneyEntry.SavingEntry(MoneySamples.pension.copy(startMonth = YearMonth.of(2026, 1))),
         "no-maturity" to MoneyEntry.SavingEntry(MoneySamples.pension.copy(id = "save-2", maturity = null)),
 
         "liquid-asset" to MoneyEntry.AssetEntry(MoneySamples.checking),
@@ -163,6 +164,9 @@ object MoneyFixtures {
                 "card-full" to ImportDocuments.encode(StoredTransaction(card, "current-1")),
                 "bank-minimal" to ImportDocuments.encode(StoredTransaction(bank)),
                 "waiting-fx" to ImportDocuments.encode(StoredTransaction(waiting.copy(source = Source.ONE_ZERO))),
+            ),
+            ImportDocuments.SOURCE_CLOSURES to mapOf(
+                "closed" to ImportDocuments.encodeSourceClosure(com.menash.myself.feature.money.StatementSource(Source.MAX, "max-1234"), YearMonth.of(2024, 6)),
             ),
             ImportDocuments.MERCHANT_MEMORY to mapOf(
                 "learnt" to ImportDocuments.encodeMemory(key, "current-1", false),
