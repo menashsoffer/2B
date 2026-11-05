@@ -1,4 +1,4 @@
-package com.menash.myself
+package com.menash.myself.guards
 
 import org.junit.Assert.assertTrue
 import org.junit.Test

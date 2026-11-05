@@ -1,4 +1,4 @@
-package com.menash.myself
+package com.menash.myself.guards
 
 import com.menash.myself.core.data.mapper.DreamMappers
 import com.menash.myself.core.data.mapper.FitnessMappers

@@ -1,5 +1,6 @@
-package com.menash.myself
+package com.menash.myself.guards
 
+import com.menash.myself.R
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals

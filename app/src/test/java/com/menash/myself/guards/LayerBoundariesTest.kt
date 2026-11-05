@@ -1,5 +1,6 @@
-package com.menash.myself
+package com.menash.myself.guards
 
+import com.menash.myself.MyselfApp
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import com.menash.myself.core.data.model.ItemLocation
