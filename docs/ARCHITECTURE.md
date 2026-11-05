@@ -1,42 +1,31 @@
 # ארכיטקטורה — 2B
 
-המסמך מתאר את הקוד כפי שהוא ב-`main` (31/10/2026). כללי הפיתוח ב-[RULES.md](RULES.md), בעיות פתוחות ב-[KNOWN_ISSUES.md](KNOWN_ISSUES.md), מה הלאה ב-[ROADMAP.md](ROADMAP.md).
+המסמך מתאר את הקוד כפי שהוא ב-`main` (31/10/2026). מבנה החבילות ב-[STRUCTURE.md](STRUCTURE.md), כללי הפיתוח ב-[RULES.md](RULES.md), בעיות פתוחות ב-[KNOWN_ISSUES.md](KNOWN_ISSUES.md), מה הלאה ב-[ROADMAP.md](ROADMAP.md).
 
 ## מודול אחד, חבילה אחת
 
 אפליקציית Android אחת (`app/`), Kotlin + Jetpack Compose. Namespace: `com.menash.myself`. Application id: `com.aistudio.mycalculators.qvxmzt` (קבוע לתמיד, אחרת הטלפון לא מקבל עדכון).
 
-```
+```text
 com.menash.myself
-├── MainActivity, MyselfApp      כניסה; MyselfApp מחזיק את AppContainer
+├── MainActivity.kt, MyselfApp.kt
+├── shell/                     AppShell, AppNavHost, ShellTab, GalleryIndex, PlaceholderTab, MainViewModel
 ├── core/
-│   ├── auth/                    כניסה עם Google (Credential Manager + Firebase Auth)
-│   ├── calendar/                קריאת יומן המכשיר
-│   ├── crash/                   Crashlytics: non-fatals ו-handler שמנקה הודעות
-│   ├── data/
-│   │   ├── legacy/              Firestore ו-Room של העמודים הישנים: firestore/, models/, entities/, dao/
-│   │   ├── mapper/              המרות בין מסמכי Firestore הישנים למודל ה-domain
-│   │   ├── model/               ItemLocation (פריט בבית או פרטי)
-│   │   ├── repository/          ממשקי Repository שהמסכים תלויים בהם
-│   │   │   └── impl/            מימושים: Firestore, Room (הגדרות), BOI, Hebcal
-│   │   └── session/             HouseholdSession, ErrorReporter
-│   ├── designsystem/            Night Blue: theme/ (טוקנים), component/, gallery/
-│   ├── di/                      AppContainer: הזרקת תלויות ידנית
-│   ├── domain/                  מודלים משותפים (Money באגורות, ForWhom, Task, Dream…) ו-util/
-│   ├── external/                בנק ישראל (boi/) ו-Hebcal (hebcal/), עם מטמון DataStore
-│   └── ui/                      BaseViewModel (safeLaunch), ErrorMapper
+│   ├── auth/  calendar/  crash/  di/  time/  ui/
+│   ├── designsystem/          theme/, component/, gallery/
+│   ├── domain/                model/, search/, util/
+│   ├── external/              boi/, hebcal/
+│   └── data/                  account/, mapper/, model/, repository/(impl/), session/, legacy/
 ├── feature/
-│   ├── money/                   עמוד הכסף, כולל ui/ למסכים (ראו למטה)
-│   └── account, home, me, life, more, settings, tasks, dreams, inbox,
-│       fitness, household, calendar, importcatalog
-│                                ViewModels ומסכים בתיקיית ui/ של כל פיצ׳ר
-└── ui/
-    └── shell/                   AppShell, ניווט, 5 הלשוניות
+│   ├── money/                 state + ViewModels; ui/, domain/, importer/, data/, search/
+│   └── account, home, me, life, more, settings, tasks, dreams, inbox, fitness, household, calendar, importcatalog
+│                              ViewModel(s) at the root (when present) + ui/
+└── e2e/stories/               סיפורים בדיוניים לבניית e2e ולבדיקות
 ```
 
 ## הלשוניות והניווט
 
-`ui/shell/ShellTab.kt`: בית, כסף, חלומות, קניות, מעקב. בית וכסף בנויים; שלוש האחרות הן `PlaceholderTab`. המסכים הישנים (משימות, חלומות הישן, אינבוקס, כושר, יומן, קטלוג קבצים, משק בית) נשארו כ-routes נפרדים ב-`AppNavHost`. מגיעים אליהם רק מהגלריה הנסתרת (`GalleryIndex`): לחיצה ארוכה על שורת הגרסה בהגדרות.
+`shell/ShellTab.kt`: בית, כסף, חלומות, קניות, מעקב. בית וכסף בנויים; שלוש האחרות הן `PlaceholderTab`. המסכים הישנים (משימות, חלומות הישן, אינבוקס, כושר, יומן, קטלוג קבצים, משק בית) נשארו כ-routes נפרדים ב-`AppNavHost`. מגיעים אליהם רק מהגלריה הנסתרת (`GalleryIndex`): לחיצה ארוכה על שורת הגרסה בהגדרות.
 
 ## זרימת נתונים
 
@@ -67,7 +56,7 @@ Screen (Compose) ──> ViewModel (BaseViewModel.safeLaunch) ──> Repository
 
 - **בדיקות יחידה** (`app/src/test`): JUnit + Robolectric. המנוע וה-importer נבדקים כ-Kotlin טהור.
 - **Screenshot** (Roborazzi): goldens ב-`app/src/test/snapshots/designsystem/`. שם הקובץ הוא שם מחלקת הבדיקה, אז לא משנים שם למחלקת screenshot בלי להקליט מחדש.
-- **שומרי ארכיטקטורה**: `LayerBoundariesTest` (אין import של `data.` ב-`feature/` וב-`ui/`, כל קובץ פחות מ-300 שורות), `ShellAndViewModelGuardsTest`, `NightBlueGuardTest` (צבעים ו-sp רק מה-theme, עם allow-list שנכשלת גם על רשומה מיותרת).
+- **שומרי ארכיטקטורה**: `LayerBoundariesTest` (אין import של `data.` ב-`feature/` וב-`shell/`, כל קובץ פחות מ-300 שורות), `ShellAndViewModelGuardsTest`, `NightBlueGuardTest` (צבעים ו-sp רק מה-theme, עם allow-list שנכשלת גם על רשומה מיותרת).
 - **חוקי Firestore**: `firestore.test.js` מול האמולטור.
 
 ## CI
