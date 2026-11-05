@@ -133,7 +133,7 @@ internal fun BigPictureCharts(picture: BigPicture) {
                     Text(stringResource(R.string.chart_flows_note), style = AppType.caption, color = colors.textSecondary)
                 }
                 picture.monthlySaving?.let {
-                    Text(stringResource(R.string.chart_average_saving, formatMoney(it)), style = AppType.caption, color = colors.textPrimary)
+                    Text(stringResource(R.string.chart_average_saving, formatMoney(it)) + " · " + averagesWindowCaption(picture.averagesFrom), style = AppType.caption, color = colors.textPrimary)
                 }
             }
         }

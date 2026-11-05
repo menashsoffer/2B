@@ -22,6 +22,30 @@ class CanWeTest {
     private val plan = monthPlan(october, filled.items, rate) as MonthPlan.Planned
 
     @Test
+    fun savedWindowFeedsGoalAndCushionTogether() {
+        fun closed(month: YearMonth, spent: Long) = com.menash.myself.feature.money.domain.ClosedMonth(
+            month, com.menash.myself.feature.money.domain.MonthSnapshot(month, shekels(10_000), shekels(spent)),
+            emptyMap(), emptyMap(), emptyMap(), emptyMap(), month.atEndOfMonth().plusDays(1),
+        )
+        val goal = Goal("window-goal", "goal", shekels(4_000), october.plusMonths(1))
+        val base = MoneySamples.empty.copy(goals = listOf(goal), closedMonths = listOf(
+            closed(YearMonth.of(2025, 5), 9_000), closed(YearMonth.of(2025, 6), 1_000)))
+        val selected = base.copy(averagesFrom = YearMonth.of(2025, 6))
+        val defaultAnswer = canWe(base, october, rate)
+        val chosenAnswer = canWe(selected, october, rate)
+        assertEquals(shekels(5_000), defaultAnswer.monthlySaving)
+        assertEquals(shekels(9_000), chosenAnswer.monthlySaving)
+        assertTrue(defaultAnswer.goals.single().answer !is Feasibility.Possible)
+        assertEquals(Feasibility.Possible(shekels(4_000)), chosenAnswer.goals.single().answer)
+        assertEquals(chosenAnswer.goals.single().answer, previewAnswer(goal, selected, october, rate))
+        val withAsset = selected.copy(assets = listOf(MoneySamples.checking))
+        val picture = buildMoneyMonth(withAsset, october, october.atDay(30), rate).bigPicture
+        assertEquals(MoneySamples.checking.balance.agorot.toDouble() / shekels(1_000).agorot, picture.cushionMonths!!, 0.0001)
+        assertEquals(shekels(9_000), picture.monthlySaving)
+        assertEquals(selected.averagesFrom, picture.averagesFrom)
+    }
+
+    @Test
     fun noClosedMonth_usesThePlannedSurplusAndSaysSo() {
         val view = canWe(withGoals, october, rate)
 

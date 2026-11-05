@@ -29,6 +29,7 @@ fun TitheScreen(ui: TitheUi, viewModel: TitheViewModel, onLink: (YearMonth) -> U
             onSettings = viewModel::startSettings,
             onAddDonation = viewModel::startDonation,
             onDonation = viewModel::editDonation,
+            onMatch = viewModel::matchDonation,
             onLink = onLink,
             onClose = viewModel::close,
         ),
@@ -76,7 +77,7 @@ fun TitheOverlays(ui: TitheUi, viewModel: TitheViewModel) {
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = sheetColor,
         ) {
-            TitheSettingsForm(draft, month, ui.assets, viewModel::updateSettings, viewModel::saveSettings)
+            TitheSettingsForm(draft, month, ui.assets, viewModel::updateSettings, viewModel::saveSettings, ui.firstDataMonth ?: month)
         }
     }
 }

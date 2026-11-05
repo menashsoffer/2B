@@ -25,7 +25,7 @@ class MoneyEngine3Test {
         assertEquals(all.size, all.map { it.id }.distinct().size)
         assertEquals(16, all.count { it.klass == ExpenseClass.FIXED })
         assertEquals(20, all.count { it.klass == ExpenseClass.PERIODIC })
-        assertEquals(12, all.count { it.klass == ExpenseClass.CURRENT })
+        assertEquals(13, all.count { it.klass == ExpenseClass.CURRENT })
         val subscriptions = all.single { it.name == "מנויים" }
         assertEquals(8, all.count { it.parentId == subscriptions.id })
         assertTrue(all.any { it.name == "חניה - כביש 6" && it.klass == ExpenseClass.CURRENT })

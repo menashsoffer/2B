@@ -54,6 +54,7 @@ data class MonthCloseActions(
     val onLines: (YearMonth, LineFilter) -> Unit = { _, _ -> },
     val onAsset: (Asset) -> Unit = {},
     val onClose: () -> Unit = {},
+    val onClassifyRest: () -> Unit = {},
     val onBack: () -> Unit = {},
     val onEnterBalances: (Boolean) -> Unit = {},
     val onBalance: (String, String) -> Unit = { _, _ -> },
@@ -178,13 +179,18 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
                 amount = null,
                 testTag = "close_not_over",
             )
-            CloseCheckKind.UNASSIGNED -> AmountRow(
+            CloseCheckKind.UNASSIGNED -> {
+                AmountRow(
                 title = stringResource(R.string.close_unassigned, check.detail.toInt()),
                 detail = stringResource(R.string.close_unassigned_detail),
                 amount = null,
                 onClick = { actions.onLines(view.month, LineFilter.UNASSIGNED) },
                 testTag = "close_unassigned",
-            )
+                )
+                TextButton(onClick = actions.onClassifyRest, modifier = Modifier.testTag("close_classify_rest")) {
+                    Text(stringResource(R.string.close_classify_rest), style = AppType.caption)
+                }
+            }
             CloseCheckKind.PENDING -> AmountRow(
                 title = stringResource(R.string.close_pending, check.detail.toInt()),
                 detail = stringResource(R.string.close_pending_detail),

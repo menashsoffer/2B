@@ -19,6 +19,7 @@ data class MoneyActions(
     val onAddKind: (com.menash.myself.feature.money.EditKind) -> Unit = {},
     val onTransactions: (LineFilter) -> Unit = {},
     val onGoals: () -> Unit = {},
+    val onAveragesFrom: (YearMonth?) -> Unit = {},
     val onTithe: () -> Unit = {},
     val onCloseMonth: () -> Unit = {},
     val onCar: () -> Unit = {},

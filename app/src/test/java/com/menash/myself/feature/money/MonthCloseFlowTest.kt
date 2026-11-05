@@ -167,6 +167,17 @@ class MonthCloseFlowTest {
     }
 
     @Test
+    fun closedFiguresApplyTheChosenWindow() {
+        fun closed(month: YearMonth, income: Long, spent: Long) =
+            ClosedMonth(month, MonthSnapshot(month, Money(income), Money(spent)), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
+        val rows = listOf(closed(YearMonth.of(2025, 5), 1000, 900), closed(YearMonth.of(2025, 6), 1000, 300))
+        val figures = closedFigures(rows, YearMonth.of(2025, 6))
+        assertEquals(Money(700), figures.monthlySaving)
+        assertEquals(Money(300), figures.averageExpenses)
+        assertEquals(YearMonth.of(2025, 6), figures.averagesFrom)
+    }
+
+    @Test
     fun closedFigures_nullUntilAMonthIsClosed() {
         assertEquals(ClosedFigures(null, null), closedFigures(emptyList()))
         fun closed(month: YearMonth, income: Long, spent: Long) =

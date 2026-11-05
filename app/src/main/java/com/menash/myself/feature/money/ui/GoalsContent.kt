@@ -37,6 +37,7 @@ import com.menash.myself.feature.money.domain.Goal
 data class GoalsActions(
     val onAdd: () -> Unit = {},
     val onGoal: (Goal) -> Unit = {},
+    val onAveragesFrom: (java.time.YearMonth?) -> Unit = {},
     val onClose: () -> Unit = {},
 )
 
@@ -64,6 +65,9 @@ fun GoalsContent(ui: GoalsUi, actions: GoalsActions, modifier: Modifier = Modifi
             else -> stringResource(R.string.goals_basis_none)
         }
         Text(text = basis, style = AppType.body, color = colors.textSecondary, modifier = Modifier.testTag("goals_basis"))
+        ui.month?.let { current ->
+            AveragesWindowPicker(view.averagesFrom, current, actions.onAveragesFrom)
+        }
         if (view.goals.isEmpty()) {
             EmptyState(
                 title = stringResource(R.string.goals_empty_title),

@@ -80,7 +80,7 @@ service cloud.firestore {
     function isMoneyCollection(name) {
       return name in ['cards', 'incomes', 'fixedExpenses', 'subscriptions', 'variableBudgets',
                       'installments', 'periodicBudgets', 'debts', 'savings', 'assets', 'categories',
-                      'transactions', 'merchantMemory', 'sourceClosures', 'goals', 'donations', 'tithe', 'closedMonths', 'pensionFunds', 'car'];
+                      'transactions', 'merchantMemory', 'sourceClosures', 'goals', 'donations', 'tithe', 'averagesSettings', 'closedMonths', 'pensionFunds', 'car'];
     }
 
     // One validator per money collection, generated from and tested against the app's own writers:
@@ -227,16 +227,17 @@ service cloud.firestore {
     }
 
     function isValidDonation(d) {
-      return d.keys().hasOnly(['date', 'amount', 'organisation', 'submittedForTaxRefund', 'v']) &&
+      return d.keys().hasOnly(['date', 'amount', 'organisation', 'submittedForTaxRefund', 'matchedLineId', 'v']) &&
              d.keys().hasAll(['date', 'amount', 'organisation', 'submittedForTaxRefund']) &&
-             isDate(d.date) && isAgorot(d.amount) && isText(d.organisation, 200) && d.submittedForTaxRefund is bool;
+             isDate(d.date) && isAgorot(d.amount) && isText(d.organisation, 200) && d.submittedForTaxRefund is bool && optRef(d, 'matchedLineId');
     }
 
     function isValidTithe(docId, d) {
       return docId == 'settings' &&
-             d.keys().hasOnly(['startMonth', 'opening', 'portfolioAssetId', 'depositsBefore', 'v']) &&
+             d.keys().hasOnly(['startMonth', 'opening', 'portfolioAssetId', 'depositsBefore', 'fromFirstData', 'v']) &&
              d.keys().hasAll(['startMonth', 'opening', 'depositsBefore']) &&
-             isMonth(d.startMonth) && isAgorot(d.opening) && optRef(d, 'portfolioAssetId') && isAgorot(d.depositsBefore);
+             isMonth(d.startMonth) && isAgorot(d.opening) && optRef(d, 'portfolioAssetId') && isAgorot(d.depositsBefore) &&
+             (!('fromFirstData' in d) || d.fromFirstData is bool);
     }
 
     function isValidClosedMonth(docId, d) {
@@ -317,6 +318,7 @@ service cloud.firestore {
         (collection == 'goals' && isValidGoal(d)) ||
         (collection == 'donations' && isValidDonation(d)) ||
         (collection == 'tithe' && isValidTithe(docId, d)) ||
+        (collection == 'averagesSettings' && docId == 'settings' && d.keys().hasOnly(['averagesFrom', 'v']) && (!('averagesFrom' in d) || isMonth(d.averagesFrom))) ||
         (collection == 'closedMonths' && isValidClosedMonth(docId, d)) ||
         (collection == 'car' && isValidCar(docId, d)) ||
         (collection == 'pensionFunds' && isValidPensionFund(d)) ||

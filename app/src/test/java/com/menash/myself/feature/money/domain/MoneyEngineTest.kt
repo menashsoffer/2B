@@ -144,11 +144,11 @@ class MoneyEngineTest {
         assertNull(cushionMonths(assets, Money.ZERO))
         assertEquals(0.0, cushionMonths(emptyList(), ils(100))!!, 0.0)
     }
-    @Test fun savingUsesLatestThreeInChronologicalOrderAndAllowsLosses() {
+    @Test fun savingUsesAvailableMonthsAndAllowsLosses() {
         assertNull(savingRate(emptyList()))
         assertEquals(ils(-10), savingRate(listOf(snapshot(jan, 90, 100))))
         assertEquals(ils(15), savingRate(listOf(snapshot(jan, 100, 90), snapshot(feb, 100, 80))))
-        assertEquals(ils(20), savingRate(listOf(snapshot(mar, 100, 80), snapshot(jan.minusMonths(1), 1000, 0), snapshot(jan, 100, 90), snapshot(feb, 100, 70))))
+        assertEquals(ils(265), savingRate(listOf(snapshot(mar, 100, 80), snapshot(jan.minusMonths(1), 1000, 0), snapshot(jan, 100, 90), snapshot(feb, 100, 70))))
     }
     @Test fun savingAverageRoundsHalfUp() {
         assertEquals(Money(1), savingRate(listOf(MonthSnapshot(jan, Money(1), Money.ZERO), MonthSnapshot(feb, Money.ZERO, Money.ZERO))))

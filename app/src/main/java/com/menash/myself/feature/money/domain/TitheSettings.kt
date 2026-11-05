@@ -13,6 +13,7 @@ data class TitheSettings(
     val opening: Money = Money.ZERO,
     val portfolioAssetId: String? = null,
     val depositsBefore: Money = Money.ZERO,
+    val fromFirstData: Boolean = true,
 ) {
     init { require(depositsBefore >= Money.ZERO) }
 

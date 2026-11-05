@@ -57,6 +57,30 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun classifyRestOnlyChangesUnassignedLinesInSelectedMonthWithoutLearning() {
+        val march = YearMonth.of(2024, 3)
+        val april = march.plusMonths(1)
+        val transactions = FakeTransactionRepository()
+        transactions.lines.value = (1..5).map { line("mar$it", march.atDay(it)).copy(categoryId = null) } +
+            line("apr", april.atDay(1)).copy(categoryId = null)
+        val originalMemory = transactions.memory.value
+        val repo = FakeMoneyRepository(data)
+        val vm = MonthCloseViewModel(repo, transactions, flowOf(null), { today }, DefaultErrorReporter())
+        vm.open(march)
+        assertFalse(vm.ui.value.view!!.canClose)
+        vm.askClassifyRest()
+        assertTrue(vm.ui.value.confirmMisc)
+        vm.classifyRest()
+        val category = (repo.saved.single() as MoneyEntry.CategoryEntry).value
+        assertEquals("שונות", category.name)
+        assertEquals(5, transactions.lines.value.count { it.row.billingMonth == march && it.categoryId == category.id })
+        assertNull(transactions.lines.value.single { it.row.billingMonth == april }.categoryId)
+        assertEquals(originalMemory, transactions.memory.value)
+        repo.data.value = data.copy(categories = data.categories + category)
+        assertTrue(vm.ui.value.view!!.checks.none { it.kind == com.menash.myself.feature.money.domain.CloseCheckKind.UNASSIGNED })
+    }
+
+    @Test
     fun sourceCanBeClosedAndReopenedFromTheSelectedMonth() {
         val transactions = FakeTransactionRepository()
         val source = StatementSource(Source.MAX, "1234")

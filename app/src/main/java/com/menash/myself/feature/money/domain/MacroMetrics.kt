@@ -2,6 +2,7 @@ package com.menash.myself.feature.money.domain
 
 import com.menash.myself.core.domain.model.Money
 import java.time.LocalDate
+import java.time.YearMonth
 
 fun netWorth(assets: List<Asset>): Money {
     val positive = sumMoney(assets.filter { it.kind == AssetKind.ASSET }.map { it.balance })
@@ -18,11 +19,12 @@ fun cushionMonths(assets: List<Asset>, averageMonthlyExpenses: Money?): Double? 
 /** Cushion against this month's planned expenses (fixed + subscriptions + variable + installments). */
 fun cushionMonths(assets: List<Asset>, plan: MonthPlan.Planned): Double? = cushionMonths(assets, plan.plannedExpenses)
 
-/** Monthly monetary saving, not a percentage; latest three distinct month closes. */
-fun savingRate(snapshots: List<MonthSnapshot>): Money? {
+/** Monthly monetary saving, not a percentage, over the chosen closed months. */
+fun savingRate(snapshots: List<MonthSnapshot>, averagesFrom: YearMonth? = null): Money? {
     require(snapshots.map { it.month }.distinct().size == snapshots.size) { "One snapshot per month is required" }
-    if (snapshots.isEmpty()) return null
-    val latest = snapshots.sortedByDescending { it.month }.take(3)
+    val ordered = snapshots.sortedByDescending { it.month }
+    val latest = if (averagesFrom == null) ordered.take(12) else ordered.filter { it.month >= averagesFrom }
+    if (latest.isEmpty()) return null
     return sumMoney(latest.map { Money(Math.subtractExact(it.actualIncomes.agorot, it.actualExpenses.agorot)) }) / latest.size
 }
 

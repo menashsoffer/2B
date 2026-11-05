@@ -66,4 +66,9 @@
     <string name="tithe_portfolio_none">אין תיק</string>
     <string name="tithe_field_deposits">כמה הופקד לתיק לפני חודש ההתחלה</string>
     <string name="tithe_deposits_note">הפקדות מאז נספרות מקבצי וואן זירו שמעלים.</string>
+    <string name="tithe_from_first_data">מתחילת הנתונים (%1$s)</string>
+    <string name="tithe_from_month">מחודש מסוים</string>
+    <string name="tithe_possible_duplicate">ייתכן שזו אותה תרומה</string>
+    <string name="tithe_duplicate_detail">תרומה ידנית מ־%1$s ושורת ייבוא מ־%2$s</string>
+    <string name="tithe_same_donation">זו אותה תרומה</string>
 </resources>

@@ -13,7 +13,12 @@ import com.menash.myself.feature.money.data.MoneyRepository
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
+import com.menash.myself.feature.money.importer.monthLines
+import com.menash.myself.feature.money.domain.MISC_CATEGORY_NAME
+import com.menash.myself.feature.money.domain.ExpenseClass
+import com.menash.myself.feature.money.domain.newCategory
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -34,6 +39,7 @@ private data class CloseQuery(
     val month: YearMonth? = null,
     val noLines: Set<String> = emptySet(),
     val confirming: Boolean = false,
+    val confirmingMisc: Boolean = false,
     val saving: Boolean = false,
     val saveError: String? = null,
     val balanceDraft: CloseBalanceDraft = CloseBalanceDraft(),
@@ -46,6 +52,7 @@ data class MonthCloseUi(
     val view: CloseView? = null,
     /** "לסגור מחדש?" is showing for a month that is already closed. */
     val confirmReclose: Boolean = false,
+    val confirmMisc: Boolean = false,
     /** The latest month that can be shown: this month. */
     val currentMonth: YearMonth? = null,
     /** The earliest month that can be shown, matching the money screen's history boundary. */
@@ -97,6 +104,7 @@ class MonthCloseViewModel(
             balanceDraft = q.balanceDraft,
             balancesValid = q.balanceDraft.valid(input.data.assets),
             confirmReclose = q.confirming,
+            confirmMisc = q.confirmingMisc,
             currentMonth = current,
             earliestMonth = earliest,
             saving = q.saving,
@@ -128,12 +136,12 @@ class MonthCloseViewModel(
         val shown = ui.value.view?.month ?: return
         val target = shown.plusMonths(by)
         if (target !in earliest..<current) return
-        query.update { it.copy(month = target, noLines = emptySet(), confirming = false, balanceDraft = CloseBalanceDraft(), successfullyClosed = null) }
+        query.update { it.copy(month = target, noLines = emptySet(), confirming = false, confirmingMisc = false, balanceDraft = CloseBalanceDraft(), successfullyClosed = null) }
     }
 
     fun openNextPending() {
         val target = ui.value.nextPending ?: return
-        query.update { it.copy(month = target, noLines = emptySet(), confirming = false,
+        query.update { it.copy(month = target, noLines = emptySet(), confirming = false, confirmingMisc = false,
             balanceDraft = CloseBalanceDraft(), successfullyClosed = null) }
     }
 
@@ -147,6 +155,28 @@ class MonthCloseViewModel(
         safeLaunch("setSourceClosed", onError = { error ->
             query.update { it.copy(saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error)) }
         }) { transactions.setSourceClosedFrom(source, if (closed) month else null) }
+    }
+
+    fun askClassifyRest() { query.update { it.copy(confirmingMisc = true) } }
+
+    fun cancelClassifyRest() { query.update { it.copy(confirmingMisc = false) } }
+
+    fun classifyRest() {
+        val month = ui.value.view?.month ?: return
+        query.update { it.copy(confirmingMisc = false, saveError = null) }
+        safeLaunch("classifyRest", onError = { error ->
+            query.update { it.copy(saveError = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error)) }
+        }) {
+            val input = (inputs.first { it is ScreenLoad.Ready } as ScreenLoad.Ready<CloseInputs>).value
+            val lines = monthLines(input.stored, month, input.memory, input.data.categories).lines.filter { it.unassigned }
+            if (lines.isEmpty()) return@safeLaunch
+            val category = input.data.categories.firstOrNull { it.name == MISC_CATEGORY_NAME }
+                ?: newCategory(MISC_CATEGORY_NAME, ExpenseClass.CURRENT, input.data.categories) { java.util.UUID.randomUUID().toString() }
+                ?: return@safeLaunch
+            if (input.data.categories.none { it.id == category.id }) money.save(MoneyEntry.CategoryEntry(category))
+            // The same per-line write as decide(thisLineOnly = true): never update merchant memory.
+            lines.forEach { transactions.setCategory(it.id, category.id) }
+        }
     }
 
     /** Saves the preview. A month already closed asks once before it is replaced. */
