@@ -1,4 +1,5 @@
-# Never rename or move this workflow: its run number drives versionCode and must not reset.
+# Do not rename, move or delete distribute.yml: GITHUB_RUN_NUMBER is counted per workflow file;
+# a new file restarts it at 1, versionCode goes down, and phones refuse a lower versionCode.
 # Signed APK to Firebase App Distribution.
 # CLI: https://firebase.google.com/docs/app-distribution/android/distribute-cli
 # Auth: https://firebase.google.com/docs/app-distribution/authenticate-service-account
@@ -73,9 +74,17 @@ jobs:
     needs: [guard, rules]
     if: ${{ !cancelled() && needs.guard.result == 'success' && needs.guard.outputs.changes == 'true' && (needs.rules.result == 'success' || needs.rules.result == 'skipped') }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       ANDROID_HOME: /home/runner/android-sdk
     steps:
+      - name: Require main for releases
+        if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Releases run from main only; use dry_run on other branches"
+          exit 1
+
       - name: Fail if a required secret is missing
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -257,3 +266,21 @@ jobs:
             --app "${FIREBASE_APP_ID}" \
             --groups "family" \
             --release-notes-file "${RUNNER_TEMP}/release-notes.txt"
+
+      - name: Tag and create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="v${VERSION_NAME}"
+          apk="${RUNNER_TEMP}/2b-${VERSION_NAME}.apk"
+          aab="${RUNNER_TEMP}/2b-${VERSION_NAME}.aab"
+          cp app/build/outputs/apk/release/app-release.apk "$apk"
+          cp app/build/outputs/bundle/release/app-release.aab "$aab"
+          git tag "$tag" "${GITHUB_SHA}"
+          git push origin "$tag"
+          gh release create "$tag" "$apk" "$aab" \
+            --target "${GITHUB_SHA}" \
+            --title "$tag" \
+            --notes-file "${RUNNER_TEMP}/release-notes.txt"
