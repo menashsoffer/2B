@@ -1,4 +1,4 @@
-package com.menash.myself.ui.dreams
+package com.menash.myself.feature.dreams.ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*

@@ -15,7 +15,7 @@ import com.menash.myself.BuildConfig
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.ui.calendar.CalendarScreen
 import com.menash.myself.ui.catalog.FileCatalogScreen
-import com.menash.myself.ui.dreams.DreamsScreen
+import com.menash.myself.feature.dreams.ui.DreamsScreen
 import com.menash.myself.ui.fitness.FitnessScreen
 import com.menash.myself.feature.home.ui.HomeScreen
 import com.menash.myself.feature.home.ui.LifeHomeScreen
