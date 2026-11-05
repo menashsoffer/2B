@@ -1,4 +1,4 @@
-package com.menash.myself.data.repository
+package com.menash.myself.core.data.repository
 
 import com.menash.myself.core.data.model.ItemLocation
 import com.menash.myself.core.data.repository.impl.FirestoreTaskRepository
