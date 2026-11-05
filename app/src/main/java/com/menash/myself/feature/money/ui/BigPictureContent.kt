@@ -95,12 +95,17 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
     }
 
     MoneySurface(testTag = "money_cushion") {
+        picture.averagesCurrentMonth?.let { current ->
+            Column(modifier = Modifier.padding(horizontal = Spacing.s16, vertical = Spacing.s8), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
+                AveragesWindowPicker(picture.averagesFrom, current, actions.onAveragesFrom)
+            }
+        }
         val cushion = picture.cushionMonths
         AmountRow(
             title = stringResource(R.string.money_cushion),
             detail = when {
                 cushion == null -> stringResource(R.string.money_cushion_empty)
-                picture.cushionFromClosed -> stringResource(R.string.money_cushion_basis_closed)
+                picture.cushionFromClosed -> averagesWindowCaption(picture.averagesFrom)
                 else -> stringResource(R.string.money_cushion_basis)
             },
             amount = cushion?.let { stringResource(R.string.money_cushion_value, DecimalFormat("0.#").format(it)) },
@@ -108,7 +113,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
         val saving = picture.monthlySaving
         AmountRow(
             title = stringResource(R.string.money_saving_rate),
-            detail = stringResource(if (saving == null) R.string.money_saving_rate_empty else R.string.money_saving_rate_basis),
+            detail = if (saving == null) stringResource(R.string.money_saving_rate_empty) else averagesWindowCaption(picture.averagesFrom),
             amount = saving?.let { formatMoney(it) },
             amountColor = if (saving != null && saving.isNegative()) colors.danger else null,
             testTag = "money_saving_rate",

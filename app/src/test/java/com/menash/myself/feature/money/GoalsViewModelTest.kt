@@ -41,6 +41,16 @@ class GoalsViewModelTest {
         GoalsViewModel(repo, MutableStateFlow<BigDecimal?>(MoneySamples.rate), { today }, DefaultErrorReporter()) { "goal-new" }
 
     @Test
+    fun changingAveragesWindowSavesTheHouseholdSetting() {
+        val repo = FakeMoneyRepository(MoneySamples.filled)
+        val vm = viewModel(repo)
+        val from = YearMonth.of(2025, 6)
+        vm.setAveragesFrom(from)
+        vm.setAveragesFrom(null)
+        assertEquals(listOf(MoneyEntry.AveragesSettingsEntry(from), MoneyEntry.AveragesSettingsEntry(null)), repo.saved)
+    }
+
+    @Test
     fun opens_withEachStoredGoalAnswered_andCloses() {
         val vm = viewModel(FakeMoneyRepository(MoneySamples.filled.copy(goals = listOf(trip))))
         assertFalse(vm.ui.value.open)

@@ -23,7 +23,7 @@ import com.menash.myself.feature.money.GoalsViewModel
 fun GoalsScreen(ui: GoalsUi, viewModel: GoalsViewModel, modifier: Modifier = Modifier) {
     GoalsContent(
         ui = ui,
-        actions = GoalsActions(onAdd = viewModel::startAdding, onGoal = viewModel::startEditing, onClose = viewModel::close),
+        actions = GoalsActions(onAdd = viewModel::startAdding, onGoal = viewModel::startEditing, onAveragesFrom = viewModel::setAveragesFrom, onClose = viewModel::close),
         modifier = modifier,
     )
 }

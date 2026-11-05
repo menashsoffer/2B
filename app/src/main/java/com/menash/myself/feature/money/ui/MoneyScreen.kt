@@ -253,6 +253,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onAddKind = viewModel::startAdding,
                 onTransactions = { filter -> transactionsViewModel.open(state.money?.month ?: YearMonth.from(TodayProvider.today()), filter) },
                 onGoals = goalsViewModel::open,
+                onAveragesFrom = viewModel::setAveragesFrom,
                 onTithe = titheViewModel::open,
                 onCloseMonth = { closeViewModel.open(state.money?.month) },
                 onCar = carViewModel::open,
