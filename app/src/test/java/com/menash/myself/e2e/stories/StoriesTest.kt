@@ -1,4 +1,4 @@
-package com.menash.myself.e2e
+package com.menash.myself.e2e.stories
 
 import com.menash.myself.e2e.stories.Stories
 import com.menash.myself.feature.money.data.MoneyEntry
