@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.core.di.LocalAppContainer
-import com.menash.myself.ui.settings.CityPickerDialog
+import com.menash.myself.feature.settings.ui.CityPickerDialog
 
 @Composable
 fun HomeHebcalCard(onOpenSettings: () -> Unit) {
