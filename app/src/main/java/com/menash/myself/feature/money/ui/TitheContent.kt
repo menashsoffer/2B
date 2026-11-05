@@ -113,7 +113,7 @@ private fun Balance(view: TitheView) {
                 color = if (balance > Money.ZERO) colors.warning else colors.success,
             )
             Text(
-                text = stringResource(R.string.tithe_since, hebrewMonthYear(view.settings.startMonth)),
+                text = stringResource(R.string.tithe_since, hebrewMonthYear(view.effectiveStart)),
                 style = AppType.caption,
                 color = colors.textSecondary,
             )

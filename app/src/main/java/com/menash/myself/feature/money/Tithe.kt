@@ -55,6 +55,7 @@ data class TitheView(
     /** Newest first; only donations from the start month on count. */
     val donations: List<Donation>,
     val unsubmitted: UnsubmittedDonations,
+    val effectiveStart: YearMonth = settings.startMonth,
 )
 
 private fun signed(balance: CharityBalance): Money = when (balance) {
@@ -82,11 +83,13 @@ fun titheView(
     month: YearMonth,
     imported: ImportedIncome = ImportedIncome(emptyList(), emptyMap()),
     importedDeposits: Money = Money.ZERO,
+    effectiveStart: YearMonth? = null,
 ): TitheView? {
     val settings = data.tithe ?: return null
+    val start = effectiveStart ?: settings.startMonth
     val rated = data.items.incomes.filter { it.titheRate != TitheRate.NONE }
-    val counted = data.donations.filter { !it.date.isBefore(settings.startMonth.atDay(1)) }.sortedByDescending { it.date }
-    val months = generateSequence(settings.startMonth) { it.plusMonths(1) }.takeWhile { it <= month }
+    val counted = data.donations.filter { !it.date.isBefore(start.atDay(1)) }.sortedByDescending { it.date }
+    val months = generateSequence(start) { it.plusMonths(1) }.takeWhile { it <= month }
         .map { titheMonth(it, rated, imported, counted) }.toList().reversed()
     val fromIncome = sumMoney(months.map { it.owed })
     val portfolio = data.assets.firstOrNull { it.id == settings.portfolioAssetId && it.kind == AssetKind.ASSET }?.let { asset ->
@@ -105,12 +108,21 @@ fun titheView(
         countedIncomes = rated.size,
         donations = counted,
         unsubmitted = unsubmittedThisYear(data.donations, month.year),
+        effectiveStart = start,
     )
 }
 
 /** The balance straight from the imported lines, as the maaser screen and the big picture both show it. */
 fun titheFromImports(data: MoneyData, month: YearMonth, stored: List<StoredTransaction>, memory: ImportMemory): TitheView? {
-    val start = data.tithe?.startMonth ?: return null
+    val settings = data.tithe ?: return null
+    val start = effectiveTitheStart(settings, month, stored)
     val incomeIds = data.items.incomes.map { it.id }.toSet()
-    return titheView(data, month, importedIncome(stored, memory, incomeIds), portfolioDeposits(stored, start, memory))
+    return titheView(data, month, importedIncome(stored, memory, incomeIds), portfolioDeposits(stored, start, memory), start)
+}
+
+/** The earliest import can move the start back; without imports a new count begins this month. */
+fun effectiveTitheStart(settings: TitheSettings, current: YearMonth, stored: List<StoredTransaction>): YearMonth {
+    if (!settings.fromFirstData) return settings.startMonth
+    val first = stored.minOfOrNull { it.row.billingMonth } ?: return current
+    return minOf(first, settings.startMonth)
 }

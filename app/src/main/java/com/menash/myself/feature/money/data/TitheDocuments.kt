@@ -21,6 +21,7 @@ internal object TitheDocuments {
         put("opening", settings.opening.agorot)
         settings.portfolioAssetId?.let { put("portfolioAssetId", it) }
         put("depositsBefore", settings.depositsBefore.agorot)
+        put("fromFirstData", settings.fromFirstData)
     }
 
     fun donation(id: String, doc: MoneyDoc): Donation = Donation(
@@ -38,6 +39,7 @@ internal object TitheDocuments {
             opening = Money(doc.longOrNull("opening") ?: 0),
             portfolioAssetId = doc.stringOrNull("portfolioAssetId"),
             depositsBefore = Money(doc.longOrNull("depositsBefore") ?: 0),
+            fromFirstData = doc.boolean("fromFirstData"),
         )
     }
 }

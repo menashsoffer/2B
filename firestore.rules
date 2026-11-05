@@ -234,9 +234,10 @@ service cloud.firestore {
 
     function isValidTithe(docId, d) {
       return docId == 'settings' &&
-             d.keys().hasOnly(['startMonth', 'opening', 'portfolioAssetId', 'depositsBefore', 'v']) &&
+             d.keys().hasOnly(['startMonth', 'opening', 'portfolioAssetId', 'depositsBefore', 'fromFirstData', 'v']) &&
              d.keys().hasAll(['startMonth', 'opening', 'depositsBefore']) &&
-             isMonth(d.startMonth) && isAgorot(d.opening) && optRef(d, 'portfolioAssetId') && isAgorot(d.depositsBefore);
+             isMonth(d.startMonth) && isAgorot(d.opening) && optRef(d, 'portfolioAssetId') && isAgorot(d.depositsBefore) &&
+             (!('fromFirstData' in d) || d.fromFirstData is bool);
     }
 
     function isValidClosedMonth(docId, d) {

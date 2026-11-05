@@ -32,6 +32,7 @@ data class TitheSettingsDraft(
     val ahead: Boolean = false,
     val portfolioAssetId: String? = null,
     val depositsBefore: String = "",
+    val fromFirstData: Boolean = true,
 )
 
 /** A first count starts this month, with nothing owed from before. */
@@ -41,6 +42,7 @@ fun settingsDraftOf(settings: TitheSettings?, month: YearMonth): TitheSettingsDr
         opening = it.opening.takeUnless { o -> o.isZero() }?.let { o -> amountText(Money(Math.abs(o.agorot))) }.orEmpty(),
         ahead = it.opening.isNegative(),
         portfolioAssetId = it.portfolioAssetId,
+        fromFirstData = it.fromFirstData,
         depositsBefore = it.depositsBefore.takeUnless { d -> d.isZero() }?.let(::amountText).orEmpty(),
     )
 } ?: TitheSettingsDraft(startMonth = month)
@@ -53,5 +55,6 @@ fun buildSettings(draft: TitheSettingsDraft): TitheSettings {
         opening = if (draft.ahead) Money(-opening.agorot) else opening,
         portfolioAssetId = draft.portfolioAssetId,
         depositsBefore = parseAmount(draft.depositsBefore) ?: Money.ZERO,
+        fromFirstData = draft.fromFirstData,
     )
 }

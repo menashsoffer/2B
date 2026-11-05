@@ -76,7 +76,7 @@ fun TitheOverlays(ui: TitheUi, viewModel: TitheViewModel) {
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = sheetColor,
         ) {
-            TitheSettingsForm(draft, month, ui.assets, viewModel::updateSettings, viewModel::saveSettings)
+            TitheSettingsForm(draft, month, ui.assets, viewModel::updateSettings, viewModel::saveSettings, ui.firstDataMonth ?: month)
         }
     }
 }

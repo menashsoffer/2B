@@ -110,12 +110,18 @@ fun TitheSettingsForm(
     assets: List<Asset>,
     onChange: ((TitheSettingsDraft) -> TitheSettingsDraft) -> Unit,
     onSave: () -> Unit,
+    firstDataMonth: YearMonth = month,
 ) {
     val colors = MaterialTheme.appColors
     val number = KeyboardOptions(keyboardType = KeyboardType.Decimal)
     SheetColumn("tithe_settings_form") {
         Text(text = stringResource(R.string.tithe_settings_title), style = AppType.title, color = colors.textPrimary)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s8), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
+        PillTabs(
+            options = listOf(stringResource(R.string.tithe_from_first_data, hebrewMonthYear(firstDataMonth)), stringResource(R.string.tithe_from_month)),
+            selectedIndex = if (draft.fromFirstData) 0 else 1,
+            onSelect = { index -> onChange { it.copy(fromFirstData = index == 0) } },
+        )
+        if (!draft.fromFirstData) FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.s8), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {
             val start = draft.startMonth
             Chip(text = stringResource(R.string.tithe_start_month, hebrewMonthYear(start)), variant = ChipVariant.Success)
             Chip(text = stringResource(R.string.tithe_month_earlier), onClick = { onChange { it.copy(startMonth = start.minusMonths(1)) } })

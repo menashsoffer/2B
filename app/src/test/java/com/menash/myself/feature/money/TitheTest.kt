@@ -25,6 +25,20 @@ class TitheTest {
     private val data = filled.copy(donations = donations, tithe = tithe)
 
     @Test
+    fun firstDataMovesStartBackWhenOlderImportsArrive() {
+        fun line(month: YearMonth) = StoredTransaction(
+            com.menash.myself.feature.money.importer.StatementRow(month.toString(), com.menash.myself.feature.money.importer.Source.MAX,
+                "1234", month.atDay(1), month.atDay(1), "עסק", charge = Money(100)),
+        )
+        val settings = tithe.copy(startMonth = YearMonth.of(2026, 1), fromFirstData = true)
+        val january = YearMonth.of(2024, 1)
+        val june = YearMonth.of(2023, 6)
+        val d = data.copy(tithe = settings)
+        assertEquals(january, titheFromImports(d, october, listOf(line(january)), com.menash.myself.feature.money.importer.ImportMemory())!!.months.last().month)
+        assertEquals(june, titheFromImports(d, october, listOf(line(january), line(june)), com.menash.myself.feature.money.importer.ImportMemory())!!.months.last().month)
+    }
+
+    @Test
     fun noStartMonth_noBalance() {
         assertNull(titheView(filled, october))
     }
