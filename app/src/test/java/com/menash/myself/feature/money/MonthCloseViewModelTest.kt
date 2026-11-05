@@ -87,6 +87,22 @@ class MonthCloseViewModelTest {
     }
 
     @Test
+    fun successfulCloseOffersOldestWaitingMonthWithoutSwitching() {
+        val repo = FakeMoneyRepository(data)
+        val vm = viewModel(repo, listOf(line("jan", LocalDate.of(2024, 1, 5)), line("mar", LocalDate.of(2024, 3, 5))))
+        vm.open()
+        val january = YearMonth.of(2024, 1)
+        val march = YearMonth.of(2024, 3)
+        assertNull(vm.ui.value.nextPending)
+        vm.closeMonth()
+        assertEquals(january, vm.ui.value.view!!.month)
+        assertEquals(march, vm.ui.value.nextPending)
+        vm.openNextPending()
+        assertEquals(march, vm.ui.value.view!!.month)
+        assertNull(vm.ui.value.nextPending)
+    }
+
+    @Test
     fun lastMonth_keepsTodaysBalancesWithoutAStep() {
         val vm = viewModel(FakeMoneyRepository(data), listOf(line("a", LocalDate.of(2026, 10, 5))))
         vm.open()

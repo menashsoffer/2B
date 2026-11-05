@@ -37,6 +37,7 @@ private data class CloseQuery(
     val saving: Boolean = false,
     val saveError: String? = null,
     val balanceDraft: CloseBalanceDraft = CloseBalanceDraft(),
+    val successfullyClosed: YearMonth? = null,
 )
 
 data class MonthCloseUi(
@@ -95,7 +96,7 @@ class MonthCloseViewModel(
             currentMonth = YearMonth.from(day),
             saving = q.saving,
             saveError = q.saveError,
-            nextPending = pendingCloseMonths(day, input.stored, input.data.closedMonths).firstOrNull { it != month },
+            nextPending = if (q.successfullyClosed == month) pendingCloseMonths(day, input.stored, input.data.closedMonths).firstOrNull { it != month } else null,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MonthCloseUi())
 
@@ -118,7 +119,13 @@ class MonthCloseViewModel(
         val shown = ui.value.view?.month ?: return
         val target = shown.plusMonths(by)
         if (target >= YearMonth.from(today())) return
-        query.update { it.copy(month = target, noLines = emptySet(), confirming = false, balanceDraft = CloseBalanceDraft()) }
+        query.update { it.copy(month = target, noLines = emptySet(), confirming = false, balanceDraft = CloseBalanceDraft(), successfullyClosed = null) }
+    }
+
+    fun openNextPending() {
+        val target = ui.value.nextPending ?: return
+        query.update { it.copy(month = target, noLines = emptySet(), confirming = false,
+            balanceDraft = CloseBalanceDraft(), successfullyClosed = null) }
     }
 
     /** "אין חיובים החודש" on a missing card or account. */
@@ -141,11 +148,7 @@ class MonthCloseViewModel(
         safeLaunch("closeMonth", onError = { error -> val message = com.menash.myself.core.ui.ErrorMapper.toFriendlyMessage(error); closing = false; query.update { it.copy(saving = false, saveError = message) }; events?.send(UiEvent.SaveError(message) { if (ui.value.open && ui.value.view?.month == view.month) closeMonth() }) }, reportError = false) {
             val acknowledged = withTimeoutOrNull(3_000) { money.save(MoneyEntry.ClosedMonthEntry(view.preview)); true } == true
             closing = false
-            val next = if (acknowledged) ui.value.nextPending else null
-            query.update {
-                if (next != null) it.copy(saving = false, month = next, noLines = emptySet(), balanceDraft = CloseBalanceDraft())
-                else it.copy(saving = false)
-            }
+            query.update { it.copy(saving = false, successfullyClosed = if (acknowledged) view.month else null) }
             events?.send(if (acknowledged) UiEvent.MonthClosed(view.month) else UiEvent.SavedOffline)
         }
     }

@@ -46,6 +46,7 @@ import java.time.format.DateTimeFormatter
 data class MonthCloseActions(
     val onPrevious: () -> Unit = {},
     val onNext: () -> Unit = {},
+    val onNextPending: () -> Unit = {},
     /** Opens the file picker to import the missing statement. */
     val onImport: () -> Unit = {},
     val onNoLines: (StatementSource) -> Unit = {},
@@ -106,6 +107,12 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                                 detail = stringResource(R.string.summary_entry_detail),
                                 onClick = { actions.onSummary(view.month) },
                             )
+                        }
+                    }
+                    ui.nextPending?.let { next ->
+                        MoneySurface {
+                            AmountRow(title = stringResource(R.string.close_next_pending, monthTitle(next)), amount = null,
+                                onClick = actions.onNextPending, testTag = "close_next_pending")
                         }
                     }
                     SectionTitle(stringResource(R.string.close_checks_title))
