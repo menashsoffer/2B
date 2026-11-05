@@ -40,12 +40,12 @@ data class TitheMonth(
     val unlinkedLines: Int,
 )
 
+data class DonationMatch(val donation: Donation, val line: Transaction)
+
 /**
  * The maaser and chomesh balance. [balance] is signed: positive is still owed, negative is donated ahead.
  * Each source counts what came in that month when an imported line is linked to it, else its planned net.
  */
-data class DonationMatch(val donation: Donation, val line: Transaction)
-
 data class TitheView(
     val settings: TitheSettings,
     val month: YearMonth,
