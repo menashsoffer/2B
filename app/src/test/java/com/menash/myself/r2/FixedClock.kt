@@ -10,10 +10,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.menash.myself.core.designsystem.component.FloatingNavBar
 import com.menash.myself.core.designsystem.component.FloatingNavItem
-import com.menash.myself.ui.home.HomeContent
-import com.menash.myself.ui.home.HomeUiState
-import com.menash.myself.ui.home.greetingFor
-import com.menash.myself.ui.home.hebrewDateLine
+import com.menash.myself.feature.home.ui.HomeContent
+import com.menash.myself.feature.home.ui.HomeUiState
+import com.menash.myself.feature.home.ui.greetingFor
+import com.menash.myself.feature.home.ui.hebrewDateLine
 import com.menash.myself.ui.shell.PlaceholderTab
 import com.menash.myself.ui.shell.ShellRoute
 import com.menash.myself.ui.shell.ShellTab

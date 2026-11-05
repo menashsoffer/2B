@@ -1,4 +1,4 @@
-package com.menash.myself.ui.home
+package com.menash.myself.feature.home.ui
 
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.test.hasText

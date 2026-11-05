@@ -1,4 +1,4 @@
-package com.menash.myself.ui.home
+package com.menash.myself.feature.home.ui
 
 import android.content.Context
 import androidx.compose.foundation.layout.Column

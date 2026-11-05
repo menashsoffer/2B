@@ -1,4 +1,4 @@
-package com.menash.myself.ui.home
+package com.menash.myself.feature.home.ui
 
 import android.icu.util.Calendar
 import org.junit.Assert.assertEquals

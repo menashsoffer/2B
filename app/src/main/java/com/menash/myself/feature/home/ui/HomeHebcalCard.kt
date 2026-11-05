@@ -1,4 +1,4 @@
-package com.menash.myself.ui.home
+package com.menash.myself.feature.home.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

@@ -10,7 +10,7 @@ import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.core.domain.model.dreamsActiveValue
 import com.menash.myself.core.ui.BaseViewModel
-import com.menash.myself.ui.home.HomeUiState
+import com.menash.myself.feature.home.ui.HomeUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

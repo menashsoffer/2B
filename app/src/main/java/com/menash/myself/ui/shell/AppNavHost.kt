@@ -17,8 +17,8 @@ import com.menash.myself.ui.calendar.CalendarScreen
 import com.menash.myself.ui.catalog.FileCatalogScreen
 import com.menash.myself.ui.dreams.DreamsScreen
 import com.menash.myself.ui.fitness.FitnessScreen
-import com.menash.myself.ui.home.HomeScreen
-import com.menash.myself.ui.home.LifeHomeScreen
+import com.menash.myself.feature.home.ui.HomeScreen
+import com.menash.myself.feature.home.ui.LifeHomeScreen
 import com.menash.myself.ui.household.HouseholdScreen
 import com.menash.myself.ui.inbox.InboxTriageScreen
 import com.menash.myself.ui.life.LifeContent

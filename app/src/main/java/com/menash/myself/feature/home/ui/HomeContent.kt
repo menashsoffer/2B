@@ -1,4 +1,4 @@
-package com.menash.myself.ui.home
+package com.menash.myself.feature.home.ui
 
 import android.content.res.Configuration
 import androidx.compose.foundation.background
