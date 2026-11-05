@@ -44,6 +44,11 @@ Pure Kotlin under `feature.money.domain`; all inputs are supplied by the caller.
 
 ## Month close
 
+- `monthsAwaitingClose(today, stored, closed)` returns distinct ended months with imported rows and no close, oldest first. `closeTarget` chooses the first, or the previous month when there are none. The close screen never navigates into the current month. After a confirmed save, it offers the next pending month explicitly; it does not navigate automatically.
+- `earliestMonth(current, stored, closed)` extends month navigation to the oldest imported or closed month, with at least twelve months before the current month available.
+- `buildMoneyMonth` uses `MonthView.ActualOnly` when imported lines exist and no plan is effective for that month. It displays counted income, spending, savings, top categories and unassigned spending without a plan comparison. Savings lack a start date in the current model, so their existing maturity-based applicability remains unchanged.
+- `importCoverage` groups stored rows by source and source id and returns the first and last billing months and internal gaps. A gap indicates no row, not proof of a missing file.
+- `closeView` expects sources with rows in the previous three months, except a source marked `closedFrom` on or before the close month. This mark changes only the missing-source check, never transaction counting. Members can undo it.
 - `CloseInput(month, today, sourcesThisMonth, sourcesExpected, unassignedCount, pendingCount, assets)` supplies every checklist input. `closeChecks` returns `CloseCheck(kind, blocking, detail)` in `CloseCheckKind` order: MONTH_NOT_OVER, MISSING_SOURCE, UNASSIGNED, PENDING, STALE_BALANCE. Missing sources and stale assets are sorted by id. Details contain the month, source key, count, or asset id.
 - Closing is blocked through the month's last day, for each missing expected source, for a positive unassigned count, and for each asset last updated strictly before `month.atEndOfMonth().minusDays(7)`. The exact seven-day boundary is fresh. This close-specific rule differs from the existing three-month `isStale` rule. Pending lines produce a nonblocking warning; `canClose(checks)` means no blocking check remains.
 - `closeMonth(month, items, transactions, actualIncome, assets: List<Asset>, usdToIls: BigDecimal?, today)` freezes `ClosedMonth(month, snapshot, byCategory, periodic, balances, liabilities, closedOn)`. It sums supplied counted transactions whose **billing month** matches, with checked agorot arithmetic. Refunds reduce expenses; only the final total is clamped to zero. Actual income is supplied separately. Category actuals come directly from `planVsActual.categories` (null means uncategorised); matched installments count once in total expenses and remain outside category actuals.
@@ -77,7 +82,7 @@ Uses existing `core.domain.model.Money` in integer minor units. Annual equivalen
 
 No persistence, UI, Android dependencies, imports, bank connections, actual purchase tracking or household permissions. Existing Android minimum-version/java.time compatibility and build configuration are outside this package's scope; callers must provide compatible runtime support. No Gradle or credential configuration is added.
 
-Month close leaves legacy snapshot balances empty and stores historical balances in separate asset/liability maps. Existing Firestore rules do not include a `closedMonths` collection; this change adds only pure document mapping, not a repository or rules deployment.
+Month close leaves legacy snapshot balances empty and stores historical balances in separate asset/liability maps. Firestore rules and repository support `closedMonths` and `sourceClosures`; deployment of rules is separate from a code change.
 
 ## Year summary
 
