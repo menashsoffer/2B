@@ -1,5 +1,6 @@
-package com.menash.myself
+package com.menash.myself.core
 
+import com.menash.myself.BuildConfig
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
