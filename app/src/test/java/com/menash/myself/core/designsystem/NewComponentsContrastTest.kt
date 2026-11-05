@@ -76,8 +76,8 @@ class NewComponentsContrastTest {
         case("Chip", "warning text and icon warning on warningSoft", 4.5, { it.warning }, { it.warningSoft }),
         case("PrimaryButton", "label onAccent on accent", 4.5, { it.onAccent }, { it.accent }),
         case("EmptyState", "description textSecondary on background", 4.5, { it.textSecondary }, { it.background }),
-        case("AccountSheet", "sign-out text and icon danger on card", 4.5, { it.danger }, { it.card }),
-        case("AccountSheet", "settings icon accent on card", 3.0, { it.accent }, { it.card }),
+        case("MeContent", "sign-out text and icon danger on card", 4.5, { it.danger }, { it.card }),
+        case("MeContent", "settings icon accent on card", 3.0, { it.accent }, { it.card }),
     )
 
     private fun case(

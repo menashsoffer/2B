@@ -19,10 +19,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,7 +45,6 @@ import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.ui.MainViewModel
 import com.menash.myself.core.ui.UiEvent
 import com.menash.myself.ui.money.hebrewMonthYear
-import com.menash.myself.ui.settings.SettingsDialog
 import kotlinx.coroutines.launch
 
 @Composable
@@ -64,10 +61,6 @@ fun AppShell(
     }?.route.orEmpty()
     val activeError by mainViewModel.errorFlow.collectAsStateWithLifecycle(initialValue = null)
     val vmError by mainViewModel.errorState.collectAsStateWithLifecycle()
-    var showAccount by remember { mutableStateOf(false) }
-    var showManagement by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-    var managementKey by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
-    var showSettings by remember { mutableStateOf(false) }
     val appContainer = LocalAppContainer.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -76,7 +69,11 @@ fun AppShell(
     fun openRoute(route: String) {
         val destination = navController.currentDestination
         val alreadyOpen = destination?.hierarchy?.any { it.route == route } == true
-        if (alreadyOpen) return
+        if (alreadyOpen) {
+            // Tapping the open tab again goes back to the top of that tab.
+            if (route in shellTabRoutes) navController.popBackStack("$route/main", inclusive = false)
+            return
+        }
         if (route in shellTabRoutes) {
             navController.navigate(route) {
                 popUpTo(navController.graph.findStartDestination().id) {
@@ -145,61 +142,11 @@ fun AppShell(
     ) { contentModifier ->
         AppNavHost(
             navController = navController,
-            displayName = currentUser?.displayName,
+            currentUser = currentUser,
             onOpenRoute = ::openRoute,
-            onOpenAccount = { showAccount = true },
+            onRequestSignIn = onRequestSignIn,
             onSignedOut = onSignedOut,
             modifier = contentModifier,
-        )
-    }
-
-    if (showAccount) {
-        AccountSheet(
-            signedIn = currentUser != null,
-            displayName = currentUser?.displayName?.takeIf { it.isNotBlank() },
-            email = currentUser?.email?.takeIf { it.isNotBlank() },
-            onDismiss = { showAccount = false },
-            onManageAccount = { showAccount = false; managementKey = java.util.UUID.randomUUID().toString(); showManagement = true },
-            onSettings = {
-                showAccount = false
-                showSettings = true
-            },
-            onHousehold = {
-                showAccount = false
-                openRoute(ShellRoute.Household)
-            },
-            onSignIn = {
-                showAccount = false
-                onRequestSignIn()
-            },
-            onSignedOut = {
-                showAccount = false
-                onSignedOut()
-            },
-        )
-    }
-
-    if (showManagement) {
-        com.menash.myself.ui.account.AccountManagementRoute(
-            instanceKey = managementKey,
-            onClose = { showManagement = false },
-            onSignIn = { showManagement = false; onSignedOut(); onRequestSignIn() },
-        )
-    }
-
-    if (showSettings) {
-        val rate by appContainer.exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
-        SettingsDialog(
-            currentRate = rate?.rate ?: 0.0,
-            onDismiss = { showSettings = false },
-            onSaveRate = { newRate ->
-                scope.launch { appContainer.exchangeRateRepository.setManualRate(newRate) }
-                showSettings = false
-            },
-            onOpenLegacyScreen = { route ->
-                showSettings = false
-                openRoute(route)
-            },
         )
     }
 
