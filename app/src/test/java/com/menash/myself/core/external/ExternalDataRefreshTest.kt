@@ -1,4 +1,4 @@
-package com.menash.myself
+package com.menash.myself.core.external
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider

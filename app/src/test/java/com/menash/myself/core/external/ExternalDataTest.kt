@@ -1,4 +1,4 @@
-package com.menash.myself
+package com.menash.myself.core.external
 
 import com.menash.myself.core.data.session.DefaultErrorReporter
 import com.menash.myself.core.external.boi.BoiExchangeRateClient
