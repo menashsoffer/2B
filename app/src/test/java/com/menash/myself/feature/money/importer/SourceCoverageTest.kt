@@ -10,10 +10,11 @@ class SourceCoverageTest {
         val first = row.copy(date = YearMonth.of(2024, 1).atDay(1), chargeDate = null)
         val last = row.copy(date = YearMonth.of(2024, 3).atDay(1), chargeDate = null)
         val other = first.copy(sourceId = "9999")
-        val coverage = sourceCoverage(listOf(first, first, last, other))
+        val coverage = importCoverage(listOf(first, first, last, other).map { StoredTransaction(it) })
         val original = coverage.first { it.sourceId == first.sourceId }
-        assertEquals(listOf(YearMonth.of(2024, 1), YearMonth.of(2024, 3)), original.months)
-        assertEquals(listOf(YearMonth.of(2024, 2)), original.missingMonths)
-        assertEquals(emptyList<YearMonth>(), coverage.first { it.sourceId == "9999" }.missingMonths)
+        assertEquals(YearMonth.of(2024, 1), original.firstMonth)
+        assertEquals(YearMonth.of(2024, 3), original.lastMonth)
+        assertEquals(listOf(YearMonth.of(2024, 2)), original.gaps)
+        assertEquals(emptyList<YearMonth>(), coverage.first { it.sourceId == "9999" }.gaps)
     }
 }
