@@ -196,7 +196,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         // The transactions screen comes first: the maaser screen opens it to link a month's income.
         MoneyDestination.Transactions -> TransactionsScreen(rememberShownState(transactionsUi, transactionsUi.open), transactionsViewModel, modifier, onMonth = { month ->
             val current = state.money?.current
-            if (current != null && month in (state.money?.earliest ?: current.minusMonths(com.menash.myself.feature.money.MonthsBack))..current) { viewModel.showMonth(month); true } else false
+            if (current != null && month in (state.money?.earliest ?: current.minusMonths(12))..current) { viewModel.showMonth(month); true } else false
         })
         MoneyDestination.Goals -> GoalsScreen(rememberShownState(goalsUi, goalsUi.open), goalsViewModel, modifier)
         MoneyDestination.Tithe ->
@@ -216,7 +216,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             modifier = modifier,
             onMonth = { month ->
                 val current = state.money?.current
-                if (current != null && month in (state.money?.earliest ?: current.minusMonths(com.menash.myself.feature.money.MonthsBack))..current) { viewModel.showMonth(month); true } else false
+                if (current != null && month in (state.money?.earliest ?: current.minusMonths(12))..current) { viewModel.showMonth(month); true } else false
             },
         )
         MoneyDestination.Subscriptions -> SubscriptionsContent(

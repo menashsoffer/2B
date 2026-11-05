@@ -105,13 +105,13 @@ class MoneyViewModel(
 
     fun showMonth(month: YearMonth) {
         val current = YearMonth.from(today())
-        if (month in (state.value.money?.earliest ?: current.minusMonths(MonthsBack))..current) shown.value = month.takeUnless { it == current }
+        if (month in (state.value.money?.earliest ?: current.minusMonths(12))..current) shown.value = month.takeUnless { it == current }
     }
 
     fun showPreviousMonth() {
         val current = YearMonth.from(today())
         val from = shown.value ?: current
-        if (from > (state.value.money?.earliest ?: current.minusMonths(MonthsBack))) shown.value = from.minusMonths(1)
+        if (from > (state.value.money?.earliest ?: current.minusMonths(12))) shown.value = from.minusMonths(1)
     }
 
     fun showNextMonth() {

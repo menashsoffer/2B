@@ -97,13 +97,10 @@ data class BigPicture(
 )
 
 /** [month] is the month shown; [current] is today's month. The big picture is always today's. */
-data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month, val earliest: YearMonth = current.minusMonths(MonthsBack), val pendingClose: List<YearMonth> = emptyList()) {
+data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month, val earliest: YearMonth = current.minusMonths(12), val pendingClose: List<YearMonth> = emptyList()) {
     val canGoNext: Boolean get() = month < current
     val canGoBack: Boolean get() = month > earliest
 }
-
-/** How far back the month screen goes (three years). */
-const val MonthsBack = 36L
 
 /**
  * [usdToIls] is the stored Bank of Israel rate, or null when none is stored. [transactions] are the imported

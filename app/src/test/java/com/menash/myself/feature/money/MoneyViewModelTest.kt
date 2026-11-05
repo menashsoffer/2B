@@ -73,7 +73,7 @@ class MoneyViewModelTest {
         vm.showNextMonth()
         assertEquals(today, vm.state.value.money)
         repeat(40) { vm.showPreviousMonth() }
-        assertEquals(MoneySamples.month.minusMonths(MonthsBack), vm.state.value.money!!.month)
+        assertEquals(MoneySamples.month.minusMonths(12), vm.state.value.money!!.month)
         assertFalse(vm.state.value.money!!.canGoBack)
     }
 
