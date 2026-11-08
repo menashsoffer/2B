@@ -138,4 +138,16 @@
     <string name="averages_from_month">ממוצע מ־%1$s</string>
     <string name="averages_twelve_choice">12 החודשים האחרונים</string>
     <string name="averages_month_choice">מחודש מסוים</string>
+    <string name="next_step_title">הצעד הבא</string>
+    <string name="next_step_more">עוד %1$d צעדים</string>
+    <string name="next_step_more_one">עוד צעד אחד</string>
+    <string name="task_assign">לשייך %1$d תנועות בלי קטגוריה</string>
+    <string name="task_missing_file">לייבא את הקובץ של %1$s %2$s</string>
+    <string name="task_update_balance">לעדכן את היתרה: %1$s</string>
+    <string name="task_close">לסגור את %1$s</string>
+    <string name="task_close_detail">הכל מוכן, ואז החודש נשמר כמו שהיה</string>
+    <string name="task_before_close">לפני שסוגרים את %1$s</string>
+    <string name="task_this_month">%1$s, החודש</string>
+    <string name="task_tithe">להפריש מעשרות: %1$s</string>
+    <string name="task_tithe_detail">לפי ההכנסה בפועל</string>
 </resources>

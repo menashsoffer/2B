@@ -89,7 +89,7 @@ fun MoneyContent(
                 ) { tab ->
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                         if (tab == MoneyTabBigPicture) BigPictureContent(money.bigPicture, actions)
-                        else MonthContent(money, state.months, expanded, actions)
+                        else MonthContent(money, state.months, expanded, actions, state.tasks)
                     }
                 }
             }
@@ -103,8 +103,11 @@ private fun MonthContent(
     months: List<com.menash.myself.feature.money.MonthPickerCell>,
     expanded: Set<MonthRowKind>,
     actions: MoneyActions,
+    tasks: List<com.menash.myself.feature.money.MonthTask> = emptyList(),
 ) {
     val view = money.view
+    val showTasks = money.month == money.current
+    val nextStep: @Composable () -> Unit = { if (showTasks) NextStepCard(tasks, money.current, actions.onTask) }
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
     MonthSwitcher(money, closed = status is MonthStatus.Closed || (view as? MonthView.ActualOnly)?.closed == true, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
@@ -130,6 +133,7 @@ private fun MonthContent(
             }
         }
     }
+    if (view !is MonthView.Planned) nextStep()
     when (view) {
         is MonthView.Empty -> {
             if (view.usdRateMissing) UsdMissingChip()
@@ -183,6 +187,7 @@ private fun MonthContent(
                     if (view.usdRateMissing) UsdMissingChip()
                 }
             }
+            nextStep()
             MonthCharts(view, actions)
             MoneySurface(testTag = "money_rows") {
                 view.rows.forEach { row -> PlanRow(row, row.kind in expanded, actions) }

@@ -43,6 +43,8 @@ data class MoneyScreenState(
     val money: MoneyMonth? = null,
     val data: MoneyData = MoneyData(),
     val months: List<MonthPickerCell> = emptyList(),
+    /** "Update the month": what to do next, oldest first. Always today's, whatever month is shown. */
+    val tasks: List<MonthTask> = emptyList(),
 )
 
 /** The open add/edit sheet. [askScope] shows the one "from now on / this month only" question. */
@@ -69,6 +71,7 @@ class MoneyViewModel(
     transactions: Flow<List<StoredTransaction>> = flowOf(emptyList()),
     memory: Flow<ImportMemory> = flowOf(ImportMemory()),
     private val events: UiEvents? = null,
+    sourceClosures: Flow<Map<StatementSource, YearMonth>> = flowOf(emptyMap()),
 ) : BaseViewModel(errorReporter) {
 
     private var seeded = false
@@ -80,7 +83,9 @@ class MoneyViewModel(
     /** The month the month tab shows; null follows today's month. */
     private val shown = MutableStateFlow<YearMonth?>(null)
 
-    val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates, transactions, memory, shown) { data, rate, lines, learnt, picked ->
+    val state: StateFlow<MoneyScreenState> = combine(
+        repository.observe(), usdRates, transactions, memory, combine(shown, sourceClosures) { picked, closures -> picked to closures },
+    ) { data, rate, lines, learnt, (picked, closures) ->
         latest = data
         val day = today()
         val current = YearMonth.from(day)
@@ -89,7 +94,8 @@ class MoneyViewModel(
         val now = buildMoneyMonth(data, current, day, rate, lines, learnt).copy(earliest = earliest)
         val money = if (picked == null || picked == current) now else
             buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current, earliest = earliest)
-        MoneyScreenState(money = money, data = data, months = months)
+        val tasks = monthTasks(data, day, rate, lines, learnt, closures, now.bigPicture.titheBalance)
+        MoneyScreenState(money = money, data = data, months = months, tasks = tasks)
     }
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
@@ -243,7 +249,7 @@ class MoneyViewModel(
                 return MoneyViewModel(
                     repository, usdRates, today, errorReporter,
                     transactions = transactions.observeTransactions(), memory = transactions.observeMemory(),
-                    events = events,
+                    events = events, sourceClosures = transactions.observeSourceClosures(),
                 ) as T
             }
         }
