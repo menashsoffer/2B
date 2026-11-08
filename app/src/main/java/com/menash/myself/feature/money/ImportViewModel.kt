@@ -51,8 +51,21 @@ sealed interface ImportUi {
             ?: review.merchants.firstOrNull { it.key == key }?.suggested?.let { MerchantDecision.Categorise(it) }
     }
 
+    /** A Paamonim workbook: its budget as a draft plan. Only [selected] lines are written, and only on confirm. */
+    data class PlanReview(val draft: PlanImportDraft, val selected: Set<String> = draft.selectableKeys) : ImportUi
+
+    /** [saved] plan lines were written; they apply from [from]. */
+    data class PlanDone(val saved: Int, val from: java.time.YearMonth) : ImportUi
+
     object Saving : ImportUi
     data class Done(val written: Int, val removed: Int, val remembered: Int = 0, val unassignedByMonth: Map<java.time.YearMonth, Int> = emptyMap()) : ImportUi
+}
+
+/** A Paamonim plan workbook, or null for anything else (bank and card files, unreadable files). */
+private fun readPlanOrNull(bytes: ByteArray): com.menash.myself.feature.money.importer.PaamonimPlan? = try {
+    com.menash.myself.feature.money.importer.readPaamonimPlan(com.menash.myself.feature.money.importer.readWorkbook(bytes))
+} catch (e: com.menash.myself.feature.money.importer.ImportException) {
+    null
 }
 
 class ImportViewModel(
@@ -62,6 +75,7 @@ class ImportViewModel(
     private val io: CoroutineDispatcher = Dispatchers.Default,
     private val events: UiEvents? = null,
     private val newId: () -> String = { java.util.UUID.randomUUID().toString() },
+    private val today: () -> java.time.LocalDate = com.menash.myself.core.time.TodayProvider::today,
 ) : BaseViewModel(errorReporter) {
 
     private var loadedMemory = ImportMemory()
@@ -83,6 +97,15 @@ class ImportViewModel(
         _ui.value = ImportUi.Reading
         loadJob = viewModelScope.launch {
             try {
+                val planFile = files.singleOrNull()?.takeUnless { it.readError }?.let { file ->
+                    withContext(io) { readPlanOrNull(file.bytes) }
+                }
+                if (planFile != null) {
+                    val data = money.observeForImport().first()
+                    val draft = withContext(io) { draftPlanImport(planFile, data, java.time.YearMonth.from(today()), newId) }
+                    _ui.value = ImportUi.PlanReview(draft)
+                    return@launch
+                }
                 val (existing, memory, categories) = combine(
                     transactions.observeTransactionsForImport(), transactions.observeMemoryForImport(), money.observeForImport(),
                 ) { lines, memory, data -> Triple(lines, memory, data.categories) }.first()
@@ -171,8 +194,28 @@ class ImportViewModel(
         }
     }
 
+    fun togglePlanLine(key: String) {
+        _ui.update { state ->
+            if (state !is ImportUi.PlanReview || key !in state.draft.selectableKeys) state
+            else state.copy(selected = if (key in state.selected) state.selected - key else state.selected + key)
+        }
+    }
+
+    /** Writes the selected lines in one batch. Nothing is written for an empty selection. */
+    fun confirmPlan() {
+        val review = _ui.value as? ImportUi.PlanReview ?: return
+        val entries = review.draft.toSave(review.selected)
+        if (entries.isEmpty()) return
+        _ui.value = ImportUi.Saving
+        safeLaunch("applyPlanImport", onError = { _ui.value = review }) {
+            money.saveAll(entries)
+            pickedFiles = emptyList()
+            _ui.value = ImportUi.PlanDone(review.selected.intersect(review.draft.selectableKeys).size, review.draft.from)
+        }
+    }
+
     fun close() {
-        if (_ui.value is ImportUi.Done) cancel() else _open.value = false
+        if (_ui.value is ImportUi.Done || _ui.value is ImportUi.PlanDone) cancel() else _open.value = false
     }
 
     fun resume() { if (_ui.value != ImportUi.Idle) _open.value = true }

@@ -76,3 +76,18 @@ A household can mark a missing account or card closed from the month currently b
 - The real header strings come from `import-formats.md`, because the real files were deleted after they were checked. The fixtures are synthetic and come from `tools/import-fixtures/make_fixtures.py`. The first real import, in 1b, is the true test.
 - No real sample of "תשלום N מתוך M" exists. The parser looks for it in סוג עסקה and הערות (TODO in `installmentOf`).
 - Cal's total line may also leave out FX lines that already carry an ILS amount. The check excludes every FX line.
+
+## Paamonim plan (`importer/PaamonimPlanReader.kt`, `PlanImport.kt`)
+
+A Paamonim רישומון shared into the same import flow opens a plan review instead of the statement review. Only a single shared file is checked; a plan file shared together with statements goes to the statement review, where it is refused as an unknown format.
+
+- **Detection:** a sheet whose header row starts with "סעיף" and lists the 12 Hebrew month names ("רשימת תקציבים"). Never by the file name.
+- **Read:** column A names the group (קבועות, תקופתיות, שוטפות, הכנסות) and the totals rows, column B the line. The month used is the latest one with any budget. An unused line carries the number 0 instead of a name and is skipped, and so is a line with no budget. "החזר חובות" is read as a total only; debts and savings from "שיקוף" are not read yet.
+- **Draft (`draftPlanImport`):** each line is matched to a category of the same class by name ("דלק" → `VEHICLE_ENERGY_CATEGORY_NAME`) and to the plan items in it.
+  - No item yet: **NEW**. A name with no category: **NEW_CATEGORY** (the category is added).
+  - One item with another monthly amount (more than ₪1 apart): **CHANGED**. The change starts at the import month (`AmountChange`), so earlier months and closed months keep their plan. A yearly fixed expense gets the annual figure; a periodic budget gets `annualAmount` = monthly × 12.
+  - The same amount: **SAME**. Two or more items in the category (or incomes with the name): **SPLIT**, shown but never changed.
+  - "מנויים" while subscriptions are listed one by one: **SUBSCRIPTIONS**, shown but not added, so they are not counted twice.
+  - Incomes are matched by name.
+- **Write:** nothing before confirm. Every NEW, NEW_CATEGORY and CHANGED line starts selected and can be unticked; one `saveAll` writes the selection. A household with no categories gets the Paamonim defaults in the same save.
+- **Fixture:** `paamonim_plan.xls`, built by `tools/import-fixtures/make_paamonim_fixture.py` from a real file with every amount and name replaced. The real file and the name map stay outside the repository.

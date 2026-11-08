@@ -56,6 +56,8 @@ data class ImportActions(
     val onClose: () -> Unit = {},
     val onCancel: () -> Unit = {},
     val onAssign: (java.time.YearMonth) -> Unit = {},
+    val onTogglePlanLine: (String) -> Unit = {},
+    val onConfirmPlan: () -> Unit = {},
 )
 
 /** The import flow, full screen inside the money tab. Every count comes from the [ImportUi] state. */
@@ -72,7 +74,10 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
             .testTag("import_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        item(key = "header") { MoneySubScreen(title = stringResource(R.string.import_title), onBack = actions.onClose) }
+        val planFlow = ui is ImportUi.PlanReview || ui is ImportUi.PlanDone
+        item(key = "header") {
+            MoneySubScreen(title = stringResource(if (planFlow) R.string.plan_import_title else R.string.import_title), onBack = actions.onClose)
+        }
         when (ui) {
             ImportUi.Idle -> Unit
             ImportUi.Error -> item(key = "error") { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }
@@ -97,6 +102,8 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
                 PrimaryButton(text = stringResource(R.string.import_to_month), onClick = actions.onClose, modifier = Modifier.fillMaxWidth())
             } }
             is ImportUi.Review -> reviewBody(ui, actions, duration)
+            is ImportUi.PlanReview -> planReviewBody(ui, actions)
+            is ImportUi.PlanDone -> planDoneBody(ui, actions)
         }
     }
 }
