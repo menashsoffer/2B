@@ -101,7 +101,7 @@ fun ImportCategoryList(
         if (first.isNotEmpty()) {
             MoneySurface(testTag = "import_suggested") {
                 first.forEach { category ->
-                    AmountRow(title = displayName(category), amount = null, onClick = { onDecide(MerchantDecision.Categorise(category.id)) })
+                    AmountRow(title = displayName(category), amount = null, action = RowAction.Choose { onDecide(MerchantDecision.Categorise(category.id)) })
                 }
             }
         }
@@ -110,7 +110,7 @@ fun ImportCategoryList(
                 AmountRow(
                     title = stringResource(R.string.import_own_transfer),
                     amount = null,
-                    onClick = { onDecide(MerchantDecision.OwnTransfer) },
+                    action = RowAction.Choose { onDecide(MerchantDecision.OwnTransfer) },
                     testTag = "import_own_transfer",
                 )
             }
@@ -124,7 +124,7 @@ fun ImportCategoryList(
                         AmountRow(
                             title = displayName(category),
                             amount = null,
-                            onClick = { onDecide(MerchantDecision.Categorise(category.id)) },
+                            action = RowAction.Choose { onDecide(MerchantDecision.Categorise(category.id)) },
                             testTag = "import_category_${category.id}",
                         )
                     }
@@ -136,7 +136,7 @@ fun ImportCategoryList(
             AmountRow(
                 title = stringResource(R.string.import_later),
                 amount = null,
-                onClick = { onDecide(MerchantDecision.Later) },
+                action = RowAction.Choose { onDecide(MerchantDecision.Later) },
                 testTag = "import_later",
             )
         }

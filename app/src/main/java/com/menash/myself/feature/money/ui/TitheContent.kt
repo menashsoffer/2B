@@ -185,7 +185,7 @@ private fun Donations(view: TitheView, actions: TitheActions) {
                     stringResource(R.string.tithe_submitted).takeIf { donation.submittedForTaxRefund },
                 ).joinToString(" · "),
                 amount = formatMoney(donation.amount),
-                onClick = { actions.onDonation(donation) },
+                action = RowAction.Edit { actions.onDonation(donation) },
                 testTag = "tithe_donation_${donation.id}",
             )
         }

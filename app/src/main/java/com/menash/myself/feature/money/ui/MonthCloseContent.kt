@@ -109,14 +109,14 @@ fun MonthCloseContent(ui: MonthCloseUi, actions: MonthCloseActions, modifier: Mo
                                 title = stringResource(R.string.summary_open, hebrewMonthName(view.month.month)),
                                 amount = null,
                                 detail = stringResource(R.string.summary_entry_detail),
-                                onClick = { actions.onSummary(view.month) },
+                                action = RowAction.Open { actions.onSummary(view.month) },
                             )
                         }
                     }
                     ui.nextPending?.let { next ->
                         MoneySurface {
                             AmountRow(title = stringResource(R.string.close_next_pending, monthTitle(next)), amount = null,
-                                onClick = actions.onNextPending, testTag = "close_next_pending")
+                                action = RowAction.Open(actions.onNextPending), testTag = "close_next_pending")
                         }
                     }
                     SectionTitle(stringResource(R.string.close_checks_title))
@@ -184,7 +184,7 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
                 title = stringResource(R.string.close_unassigned, check.detail.toInt()),
                 detail = stringResource(R.string.close_unassigned_detail),
                 amount = null,
-                onClick = { actions.onLines(view.month, LineFilter.UNASSIGNED) },
+                action = RowAction.Open { actions.onLines(view.month, LineFilter.UNASSIGNED) },
                 testTag = "close_unassigned",
                 )
                 TextButton(onClick = actions.onClassifyRest, modifier = Modifier.testTag("close_classify_rest")) {
@@ -196,7 +196,7 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
                 detail = stringResource(R.string.close_pending_detail),
                 amount = null,
                 amountColor = colors.textSecondary,
-                onClick = { actions.onLines(view.month, LineFilter.PENDING) },
+                action = RowAction.Open { actions.onLines(view.month, LineFilter.PENDING) },
                 testTag = "close_pending",
             )
             CloseCheckKind.MISSING_SOURCE, CloseCheckKind.STALE_BALANCE -> Unit
@@ -207,7 +207,7 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
             title = stringResource(R.string.close_missing, sourceLabel(source.source), source.sourceId),
             detail = stringResource(R.string.close_missing_detail),
             amount = null,
-            onClick = actions.onImport,
+            action = RowAction.Open(actions.onImport),
             testTag = "close_missing_${source.key}",
         )
         TextButton(
@@ -223,14 +223,18 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
     }
     view.closedSources.forEach { (source, from) ->
         AmountRow(title = stringResource(R.string.close_source_closed_from, sourceLabel(source.source), source.sourceId, monthTitle(from)),
-            amount = null, onClick = { actions.onSourceClosed(source, false) }, testTag = "close_source_undo_${source.key}")
+            amount = null)
+        TextButton(onClick = { actions.onSourceClosed(source, false) },
+            modifier = Modifier.padding(horizontal = Spacing.s8).testTag("close_source_undo_${source.key}")) {
+            Text(stringResource(R.string.close_source_reopen), style = AppType.caption, color = colors.textSecondary)
+        }
     }
     view.staleAssets.forEach { asset ->
         AmountRow(
             title = stringResource(R.string.close_stale, asset.name),
             detail = stringResource(R.string.close_stale_detail, asset.lastUpdated.format(dateFormat)),
             amount = formatMoney(asset.balance),
-            onClick = { actions.onAsset(asset) },
+            action = RowAction.Edit { actions.onAsset(asset) },
             testTag = "close_stale_${asset.id}",
         )
     }

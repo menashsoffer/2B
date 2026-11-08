@@ -6,7 +6,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.DirectionsCar
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.material.icons.outlined.Savings
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.VolunteerActivism
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -78,7 +83,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                 ).joinToString(" · "),
                 amount = formatMoney(asset.balance),
                 amountColor = if (liability) colors.danger else null,
-                onClick = { actions.onEdit(MoneyEntry.AssetEntry(asset)) },
+                action = RowAction.Edit { actions.onEdit(MoneyEntry.AssetEntry(asset)) },
                 testTag = "money_asset_${asset.id}",
             )
             if (row.stale) {
@@ -120,6 +125,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
         )
     }
 
+    SectionTitle(stringResource(R.string.money_tools))
     MoneySurface(testTag = "money_goals") {
         AmountRow(
             title = stringResource(R.string.goals_entry),
@@ -129,7 +135,8 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                 stringResource(R.string.goals_entry_count, picture.goalCount)
             },
             amount = null,
-            onClick = actions.onGoals,
+            action = RowAction.Open(actions.onGoals),
+            leadingIcon = Icons.Outlined.Flag,
             testTag = "money_goals_entry",
         )
         val tithe = picture.titheBalance
@@ -142,14 +149,16 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                 else -> stringResource(R.string.tithe_entry_settled)
             },
             amount = null,
-            onClick = actions.onTithe,
+            action = RowAction.Open(actions.onTithe),
+            leadingIcon = Icons.Outlined.VolunteerActivism,
             testTag = "money_tithe_entry",
         )
         AmountRow(
             title = stringResource(R.string.car_entry),
             detail = stringResource(R.string.car_entry_detail),
             amount = null,
-            onClick = actions.onCar,
+            action = RowAction.Open(actions.onCar),
+            leadingIcon = Icons.Outlined.DirectionsCar,
             testTag = "money_car_entry",
         )
         val pension = picture.pension
@@ -161,14 +170,16 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                 stringResource(R.string.pension_entry_detail, formatMoney(pension.value), formatMoney(pension.yearlyFee))
             },
             amount = null,
-            onClick = actions.onPension,
+            action = RowAction.Open(actions.onPension),
+            leadingIcon = Icons.Outlined.Savings,
             testTag = "money_pension_entry",
         )
         AmountRow(
             title = stringResource(R.string.subs_entry),
             detail = stringResource(R.string.subs_entry_detail),
             amount = null,
-            onClick = actions.onSubscriptions,
+            action = RowAction.Open(actions.onSubscriptions),
+            leadingIcon = Icons.Outlined.Autorenew,
             testTag = "money_subs_entry",
         )
     }
@@ -189,7 +200,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                     debt.remainingPayments,
                 ),
                 amount = null,
-                onClick = { actions.onEdit(entry) },
+                action = RowAction.Edit { actions.onEdit(entry) },
                 testTag = "money_debt_${debt.id}",
             )
         }
@@ -210,7 +221,7 @@ fun BigPictureContent(picture: BigPicture, actions: MoneyActions) {
                     maturity,
                 ).joinToString(" · "),
                 amount = null,
-                onClick = { actions.onEdit(entry) },
+                action = RowAction.Edit { actions.onEdit(entry) },
                 testTag = "money_saving_${saving.id}",
             )
         }

@@ -31,7 +31,7 @@ fun TitheMonthCard(month: TitheMonth, onLink: (YearMonth) -> Unit) {
                 detail = stringResource(R.string.tithe_unlinked_detail),
                 amount = null,
                 amountColor = colors.warning,
-                onClick = { onLink(month.month) },
+                action = RowAction.Open { onLink(month.month) },
                 testTag = "tithe_unlinked_${month.month}",
             )
         }

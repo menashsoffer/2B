@@ -139,7 +139,7 @@ private fun FundItem(row: FundRow, actions: PensionActions) {
             stringResource(R.string.pension_fund_updated, fund.lastUpdated.format(dateFormat)),
         ).joinToString(" · "),
         amount = formatMoney(fund.value),
-        onClick = { actions.onFund(fund) },
+        action = RowAction.Edit { actions.onFund(fund) },
         testTag = "pension_fund_${fund.id}",
     )
     val liquidOn = snapshot.liquidOn

@@ -44,7 +44,7 @@ fun NewCategoryForm(onCreate: (String, ExpenseClass) -> Unit) {
             AmountRow(
                 title = stringResource(R.string.import_new_category),
                 amount = null,
-                onClick = { open = true },
+                action = RowAction.Expand(expanded = false) { open = true },
                 testTag = "new_category_open",
             )
         } else Column(modifier = Modifier.fillMaxWidth().padding(Spacing.s8), verticalArrangement = Arrangement.spacedBy(Spacing.s8)) {

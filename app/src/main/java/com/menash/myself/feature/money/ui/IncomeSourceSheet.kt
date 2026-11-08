@@ -82,7 +82,7 @@ fun IncomeSourceList(
                     },
                     amount = null,
                     amountColor = null,
-                    onClick = { onPick(income.id) },
+                    action = RowAction.Choose { onPick(income.id) },
                     testTag = "income_source_${income.id}",
                 )
             }

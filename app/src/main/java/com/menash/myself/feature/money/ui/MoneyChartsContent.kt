@@ -94,7 +94,7 @@ internal fun TopCategoriesChart(top: com.menash.myself.feature.money.CategoryTop
             AmountRow(
                 title = stringResource(R.string.chart_more_categories, top.more),
                 amount = null,
-                onClick = { actions.onTransactions(LineFilter.ALL) },
+                action = RowAction.Open { actions.onTransactions(LineFilter.ALL) },
                 testTag = "chart_top_more",
             )
         }

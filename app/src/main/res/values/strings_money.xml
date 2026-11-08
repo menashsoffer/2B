@@ -16,6 +16,7 @@
     <!-- Money tab -->
     <string name="money_tab_month">החודש</string>
     <string name="money_tab_big_picture">התמונה הגדולה</string>
+    <string name="money_tools">כלים ומחשבונים</string>
     <string name="money_empty_title">עוד לא הגדרתם את החודש</string>
     <string name="money_empty_description">מתחילים מהכנסה אחת. כל השאר אפשר להוסיף אחר כך.</string>
     <string name="money_empty_action">להתחיל</string>

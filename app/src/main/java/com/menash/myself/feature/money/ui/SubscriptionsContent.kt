@@ -95,7 +95,7 @@ fun SubscriptionsContent(ui: SubscriptionsUi, actions: SubscriptionsActions, mod
                                         R.string.subs_unlisted_line, hebrewMonthName(charge.last.month.month), charge.months,
                                     ),
                                     amount = formatMoney(charge.last.amount),
-                                    onClick = { actions.onAddFrom(charge) },
+                                    action = RowAction.Edit { actions.onAddFrom(charge) },
                                     onClickLabel = stringResource(R.string.subs_add_from),
                                     testTag = "subs_unlisted_${charge.merchantKey}",
                                 )
@@ -131,7 +131,7 @@ private fun SubscriptionLine(row: SubscriptionRow, actions: SubscriptionsActions
         title = sub.name,
         detail = parts.joinToString(" · "),
         amount = row.monthly?.let { formatMoney(it) },
-        onClick = { actions.onEdit(sub) },
+        action = RowAction.Edit { actions.onEdit(sub) },
         testTag = "subs_row_${sub.id}",
     )
 }
