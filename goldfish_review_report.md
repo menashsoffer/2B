@@ -61,3 +61,86 @@ All four PROPOSE FIX items were applied:
 4. **Issue 4:** `dayChanges` feeds both view models. The first date is emitted at once, and the minute checks run on `Dispatchers.Default`, so `runTest` is not left waiting on an endless timer (an earlier version hung `MoneyFactoriesTest`). Tests: `DayChangeTest`.
 
 Contested: 0. Escalated: 0. Declined: 0. Open: 0.
+
+---
+
+# Round 2: independent Goldfish reviewers
+
+**Reviewers (all completed):** `codebase_details` (money-logic correctness), `design_critic` (architecture and data flow), `comprehension` (Hebrew UI as a household member reads it). Each ran in a fresh context, read-only.
+**Round 1 fixes checked by reviewers:** 2, 3 and 4 work. Fix 1 (periodic) is re-opened as R2-C2/C3.
+**Clean round?** No: 1 Blocker and 15 Majors open.
+
+## Blocker
+
+### [R2-C1] [`codebase_details`] One missing USD rate stops the money tab and the home card
+*   **Affected Scope:** `MonthTasks.kt:51` → `closeView` → `closeMonth` → `planVsActual` → `rateFor` (`domain/MonthPlan.kt:77-80`, `requireNotNull`)
+*   **Discrepancy:** `monthTasks` runs `closeView` on every emission; unlike `buildMoneyMonth`, it does not drop USD subscriptions when no rate is stored. The throw reaches `.catch`, which ends the flow (see R2-D5).
+*   ***AI Suggestion:*** PROPOSE FIX. Verified in code.
+*   ***Proposed Edit:*** `monthTasks` builds the close view from items without USD subscriptions when the rate is null (the same rule as `buildMoneyMonth`). Together with R2-D5, a failure in the steps can no longer freeze the screen. Test: USD subscription, no rate, an open month with lines.
+
+## Major
+
+### [R2-C2 + R2-C3] [`codebase_details`] Periodic change still reaches closed and past months; the closed-year check ignores renewal and empty months (re-opens round 1, issue 1)
+*   **Affected Scope:** `PlanImport.kt` (`yearIsClosedBefore`, periodic CHANGED)
+*   ***AI Suggestion:*** PROPOSE FIX. Verified: closed months draw their plan from the live `annualAmount`; `periodicStatus` accrues from the year start; the year renews (`MonthCloseSnapshot.kt:46-47`).
+*   ***Proposed Edit:*** the import never changes an existing periodic budget. Any different amount is `PERIODIC_IN_USE` ("update manually"), and `yearIsClosedBefore` is removed. New periodic budgets still start at the import month. Amount history on `PeriodicBudget` stays out of this PR (schema and rules change). IMPORT.md is corrected.
+
+### [R2-C4] [`codebase_details`] History plan turns a yearly fixed expense into a monthly one ×12
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** `planFromHistory` leaves out categories that hold a YEARLY fixed expense; the subtitle already says the draft is partial. Test.
+
+### [R2-C5] [`codebase_details`] Case-only or sub-category name matches create a second item
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** one matcher (trimmed, spaces collapsed, case-insensitive) for the category lookup and for `target()`. When the only match is a sub-category, the line is SPLIT (not guessed). Tests: "Yes"/"YES", "גוגל" as FIXED, "Netflix"/"netflix".
+
+### [R2-C6] [`codebase_details`] Confirm writes the snapshot taken when the review opened
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** the draft keeps its source lines; `confirmPlan` rebuilds the draft from fresh data and the current month, then writes only the selected keys that are still changeable (keys are the stable source index). Test: data changes between review and confirm.
+
+### [R2-D1] [`design_critic`] A step tapped on Home opens under a money screen that is already open
+*   ***AI Suggestion:*** PROPOSE FIX. Verified: `moneyDestination` priority (`MoneyDestination.kt:37-50`).
+*   ***Proposed Edit:*** before opening the step, close the import, transactions and other screens that rank above the target (the same pattern as the `pendingUnassigned` handler).
+
+### [R2-D2] [`design_critic`] Heavy work on the main thread, twice per snapshot
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** `.flowOn(Dispatchers.Default)` before `stateIn` in `MoneyViewModel` and `HomeViewModel`. The KDoc says "one function", not "one computation". An app-scoped shared flow is not proposed in this PR.
+
+### [R2-D3] [`design_critic`] `spendingHistory` computed in full only to read its size
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** skip it when the month is planned (the row is hidden), and run `planVsActual` only for the last six candidate months.
+
+### [R2-D4] [`design_critic`] The offered month count can lead to an empty draft; a null draft closes silently
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** the row is offered only when `planFromHistory` has at least one line. `openHistoryPlan` shows "not enough months with categorised spending" instead of closing silently.
+
+### [R2-D5] [`design_critic`] One exception stops the money state for good
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** the steps, freshness and history count are computed inside a per-emission try/catch (reported, empty on failure), so the month screen and the flow survive.
+
+### [R2-U1] [`comprehension`] "לייבא את הקובץ…" opens the close screen
+*   ***AI Suggestion:*** PROPOSE FIX (wording; the close screen is the right place, since it offers import, "no charges" and "source closed"). ***Proposed Edit:*** `task_missing_file` = "חסר הקובץ של %1$s (מסתיים ב־%2$s)"; the detail stays "לפני שסוגרים את X".
+
+### [R2-U2] [`comprehension`] A changed line does not say it replaces today's amount
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** `plan_import_changed` = "יחליף את %1$s שבתוכנית היום".
+
+### [R2-U3] [`comprehension`] Close-screen action buttons look like status text
+*   ***AI Suggestion:*** PROPOSE FIX. "לבטל את הסגירה" is new in this PR; the other two buttons were already on `main`. ***Proposed Edit:*** all three use the accent colour like "לסווג את השאר כ'שונות'". New wording: "לא היו חיובים בכרטיס החודש", "הכרטיס נסגר, לא לחכות לקובץ". **This changes existing `MonthCloseScreenshotTest` goldens, which needs your approval.**
+
+### [R2-U4] [`comprehension`] TalkBack says "פתוח"/"סגור" for expand state, the same words as the month status
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** `money_expanded` = "מורחב", `money_collapsed` = "מקופל".
+
+### [R2-U5] [`comprehension`] One number, two names ("פנוי החודש, צפי" on Home and "צפוי להישאר לפי התוכנית" in the month tab)
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** `home_money_planned` = "צפוי להישאר לפי התוכנית".
+
+### [R2-U6] [`comprehension`] The freshness line reads as two separate facts
+*   ***AI Suggestion:*** PROPOSE FIX. ***Proposed Edit:*** `home_money_fresh` = "%2$s %3$s מעודכן עד %1$s. שאר החשבונות עדכניים יותר" (the home golden changes; it is new in this PR).
+
+## Nits
+
+| Id | Finding | Suggestion |
+|---|---|---|
+| R2-U7 | "להכניס 1 לתוכנית", "1 שורות" | PROPOSE FIX: plurals |
+| R2-U8 | Quote marks disappear in `plan_import_done_detail` | PROPOSE FIX: escape them |
+| R2-U9 | "מנובמבר" can read as "came from November" | PROPOSE FIX: "החל מ" |
+| R2-U10 | "לחודש" button | PROPOSE FIX: "חזרה לחודש" |
+| R2-U11 | "7788" not explained | Fixed with R2-U1 |
+| R2-U12 | `task_close_detail` unclear | PROPOSE FIX: "הכל מוכן. אחרי הסגירה החודש נשמר ולא משתנה" |
+| R2-U13 | "תנועות" and "קטגוריה" vs "שורות" and "סעיף" | DECLINE: the close-screen wording predates this PR; a wording pass of its own |
+| R2-C7 | SAME compares against an override of the import month | PROPOSE FIX: compare against the amount without that override |
+| R2-C8 | History: unclosed months count installments | DECLINE: needs a change to `planVsActual`; the effect is a higher average, which the review screen shows before saving |
+| R2-C9 | Periodic budgets starting after `from` counted in "current" | DECLINE: after R2-C2, a periodic line never changes an existing budget |
+| R2-D6 | Two clocks, up to one minute apart at month end | DECLINE: at most one minute, no data written |
+| R2-D7 | A step left in the inbox across a household switch | DECLINE: it opens a screen only and writes nothing |
