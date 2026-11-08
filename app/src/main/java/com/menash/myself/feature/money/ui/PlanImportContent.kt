@@ -112,6 +112,8 @@ private fun PlanLineRow(line: PlanImportLine, checked: Boolean, onToggle: () -> 
         PlanLineStatus.SPLIT -> line.current?.let { stringResource(R.string.plan_import_split, formatMoney(it)) }
             ?: stringResource(R.string.plan_import_split_unknown)
         PlanLineStatus.SUBSCRIPTIONS -> stringResource(R.string.plan_import_subscriptions)
+        PlanLineStatus.PERIODIC_IN_USE -> stringResource(R.string.plan_import_periodic_in_use, formatMoney(line.current ?: com.menash.myself.core.domain.model.Money.ZERO))
+        PlanLineStatus.DUPLICATE -> stringResource(R.string.plan_import_duplicate)
     }
     val toggle = if (line.selectable) Modifier.toggleable(value = checked, role = Role.Checkbox, onValueChange = { onToggle() }) else Modifier
     Row(

@@ -24,6 +24,7 @@ import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.MonthTask
 import com.menash.myself.feature.money.MonthView
 import com.menash.myself.feature.money.SourceFreshness
+import com.menash.myself.feature.money.dayChanges
 import com.menash.myself.feature.money.moneyOverview
 import com.menash.myself.feature.money.data.TransactionRepository
 import com.menash.myself.feature.money.importer.ImportMemory
@@ -40,6 +41,8 @@ class HomeViewModel(
     usdRates: Flow<BigDecimal?> = flowOf(null),
     today: () -> LocalDate = { LocalDate.now() },
     transactions: TransactionRepository? = null,
+    /** A new date rebuilds the money card even when no data changed (month end with the app open). */
+    days: Flow<LocalDate> = dayChanges(today),
 ) : BaseViewModel(errorReporter) {
 
     private data class HomeMoney(val surplus: Money?, val leftForCurrent: Money?, val tasks: List<MonthTask>, val freshness: SourceFreshness?)
@@ -52,9 +55,8 @@ class HomeViewModel(
             moneyRepository.observe(), usdRates,
             transactions?.observeTransactions() ?: flowOf(emptyList()),
             transactions?.observeMemory() ?: flowOf(ImportMemory()),
-            transactions?.observeSourceClosures() ?: flowOf(emptyMap()),
-        ) { data, rate, lines, memory, closures ->
-            val day = today()
+            combine(transactions?.observeSourceClosures() ?: flowOf(emptyMap()), days) { closures, day -> closures to day },
+        ) { data, rate, lines, memory, (closures, day) ->
             val now = buildMoneyMonth(data, YearMonth.from(day), day, rate, lines, memory)
             val overview = moneyOverview(data, day, rate, lines, memory, closures, now)
             HomeMoney(

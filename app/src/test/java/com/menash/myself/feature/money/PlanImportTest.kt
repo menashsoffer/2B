@@ -6,6 +6,8 @@ import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.domain.AmountChange
 import com.menash.myself.feature.money.domain.AmountHistory
+import com.menash.myself.feature.money.domain.ClosedMonth
+import com.menash.myself.feature.money.domain.MonthSnapshot
 import com.menash.myself.feature.money.domain.Income
 import com.menash.myself.feature.money.domain.MoneyItems
 import com.menash.myself.feature.money.domain.amountFor
@@ -19,6 +21,7 @@ import com.menash.myself.feature.money.importer.readWorkbook
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 import java.time.Month
 import java.time.YearMonth
 
@@ -47,7 +50,7 @@ class PlanImportTest {
         assertEquals("current-1", food.value.categoryId)
         val car = draft.line("ביטוח רכב + טסט").entries.single() as MoneyEntry.PeriodicBudgetEntry
         assertEquals(shekels(150 * 12), car.value.annualAmount)
-        assertEquals(YearMonth.of(2026, 1), car.value.yearStartMonth)
+        assertEquals(from, car.value.yearStartMonth) // no reserve for months before the import
         val income = draft.line("קצבת ילדים").entries.single() as MoneyEntry.IncomeEntry
         assertEquals(shekels(8_800), amountFor(income.value, from))
     }
@@ -75,16 +78,52 @@ class PlanImportTest {
         assertEquals(shekels(1_800), amountFor(saved, from))
     }
 
-    @Test fun aPeriodicBudgetGetsTheNewAnnualAmount() {
-        val holidays = draft(MoneySamples.filled).line("יהדות / חגים")
-        assertEquals(shekels(400), holidays.current)
-        assertEquals(shekels(220 * 12), (holidays.entries.single() as MoneyEntry.PeriodicBudgetEntry).value.annualAmount)
+    private fun closedThrough(last: YearMonth) = generateSequence(YearMonth.of(2026, 1)) { it.plusMonths(1) }.takeWhile { it <= last }
+        .map { ClosedMonth(it, MonthSnapshot(it, Money.ZERO, Money.ZERO), emptyMap(), emptyMap(), emptyMap(), emptyMap(), LocalDate.of(2026, 11, 1)) }
+        .toList()
+
+    @Test fun aPeriodicBudgetChangesOnlyWhenItsEarlierMonthsAreClosed() {
+        val open = draft(MoneySamples.filled).line("יהדות / חגים")
+        assertEquals(PlanLineStatus.PERIODIC_IN_USE, open.status) // January..October still open
+        assertEquals(shekels(400), open.current)
+        assertTrue(open.entries.isEmpty())
+        assertEquals(PlanLineStatus.PERIODIC_IN_USE, draft(MoneySamples.filled.copy(closedMonths = closedThrough(YearMonth.of(2026, 9)))).line("יהדות / חגים").status)
+        val closed = draft(MoneySamples.filled.copy(closedMonths = closedThrough(YearMonth.of(2026, 10)))).line("יהדות / חגים")
+        assertEquals(PlanLineStatus.CHANGED, closed.status)
+        assertEquals(shekels(220 * 12), (closed.entries.single() as MoneyEntry.PeriodicBudgetEntry).value.annualAmount)
+    }
+
+    @Test fun aChangeReplacesAThisMonthOnlyOverrideOfTheImportMonth() {
+        val rent = MoneySamples.rent.copy(amounts = MoneySamples.rent.amounts.copy(
+            overrides = mapOf(from to shekels(6_000), from.plusMonths(2) to shekels(6_100))))
+        val data = MoneySamples.filled.copy(items = MoneySamples.filled.items.copy(fixedExpenses = listOf(rent, MoneySamples.carInsurance)))
+        val saved = (draft(data).line("שכר דירה").entries.single() as MoneyEntry.FixedExpenseEntry).value
+        assertEquals(shekels(460), amountFor(saved, from))
+        assertEquals(shekels(6_100), amountFor(saved, from.plusMonths(2))) // a later choice of the household stays
+    }
+
+    @Test fun repeatedNamesAreKeptApartAndNotGuessed() {
+        val twice = PaamonimPlan(Month.JANUARY, listOf(
+            PaamonimLine(PlanGroup.CURRENT, "מזון", Money(100_000), Money(1_200_000)),
+            PaamonimLine(PlanGroup.CURRENT, "מזון ", Money(50_000), Money(600_000)),
+            PaamonimLine(PlanGroup.CURRENT, "דלק", Money(40_000), Money(480_000)),
+            PaamonimLine(PlanGroup.CURRENT, "דלק / חשמל", Money(30_000), Money(360_000)),
+            PaamonimLine(PlanGroup.INCOME, "משכורת", Money(900_000), Money(10_800_000)),
+            PaamonimLine(PlanGroup.INCOME, "משכורת", Money(800_000), Money(9_600_000)),
+            PaamonimLine(PlanGroup.FIXED, "שכר דירה", Money(500_000), Money(6_000_000)),
+        ), null)
+        val draft = draft(MoneySamples.empty, twice)
+        assertEquals(7, draft.lines.map { it.key }.toSet().size)
+        assertEquals(6, draft.lines.count { it.status == PlanLineStatus.DUPLICATE })
+        assertTrue(draft.lines.filter { it.status == PlanLineStatus.DUPLICATE }.all { it.entries.isEmpty() && !it.selectable })
+        assertEquals(1, draft.selectableKeys.size)
+        assertEquals(1, draft.toSave(draft.selectableKeys).size)
     }
 
     @Test fun subscriptionsTotalIsNotAddedOverListedSubscriptions() {
         val draft = draft(MoneySamples.filled)
         assertEquals(PlanLineStatus.SUBSCRIPTIONS, draft.line("מנויים").status)
-        assertTrue("מנויים" !in draft.selectableKeys.map { it.substringAfter(':') })
+        assertTrue("מנויים" !in draft.selectableKeys.map { it.substringAfterLast(':') })
         assertEquals(PlanLineStatus.NEW, draft(MoneySamples.empty).line("מנויים").status)
     }
 

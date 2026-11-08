@@ -3,7 +3,15 @@ package com.menash.myself.feature.money
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.StoredTransaction
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flowOn
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.math.BigDecimal
@@ -64,3 +72,19 @@ class MonthTaskInbox {
     /** Returns the waiting step and clears it, so it opens once. */
     fun take(): MonthTask? = _pending.value.also { _pending.value = null }
 }
+
+/**
+ * Today, and again whenever the date changes, so screens that show "this month" and its steps move on while the
+ * app stays open across midnight or a month end. Checked once a minute; only a new date is emitted.
+ * The waits run on [context] (real time by default), so a test scheduler that runs every pending task, as
+ * `runTest` does when it ends, is never left waiting on this endless timer.
+ */
+fun dayChanges(
+    today: () -> LocalDate,
+    every: Long = 60_000L,
+    context: CoroutineContext = Dispatchers.Default,
+): Flow<LocalDate> = flow {
+    // The first date is there at once, so a screen never waits for it; only the later checks run on [context].
+    emit(today())
+    emitAll(flow { while (true) { delay(every); emit(today()) } }.flowOn(context))
+}.distinctUntilChanged()
