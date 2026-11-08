@@ -76,6 +76,7 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
     ) {
         val title = when {
             ui is ImportUi.PlanReview && ui.draft.basis is com.menash.myself.feature.money.PlanBasis.History -> R.string.plan_history_title
+            ui is ImportUi.PlanNoHistory -> R.string.plan_history_title
             ui is ImportUi.PlanReview || ui is ImportUi.PlanDone -> R.string.plan_import_title
             else -> R.string.import_title
         }
@@ -106,6 +107,7 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
             is ImportUi.Review -> reviewBody(ui, actions, duration)
             is ImportUi.PlanReview -> planReviewBody(ui, actions)
             is ImportUi.PlanDone -> planDoneBody(ui, actions)
+            ImportUi.PlanNoHistory -> planNoHistoryBody(actions)
         }
     }
 }

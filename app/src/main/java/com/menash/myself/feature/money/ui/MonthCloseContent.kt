@@ -214,11 +214,11 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
             onClick = { actions.onNoLines(source) },
             modifier = Modifier.padding(horizontal = Spacing.s8).testTag("close_no_lines_${source.key}"),
         ) {
-            Text(stringResource(R.string.close_no_lines), style = AppType.caption, color = colors.textSecondary)
+            Text(stringResource(R.string.close_no_lines), style = AppType.caption, color = colors.accent)
         }
         TextButton(onClick = { actions.onSourceClosed(source, true) },
             modifier = Modifier.padding(horizontal = Spacing.s8).testTag("close_source_closed_${source.key}")) {
-            Text(stringResource(R.string.close_source_closed), style = AppType.caption, color = colors.textSecondary)
+            Text(stringResource(R.string.close_source_closed), style = AppType.caption, color = colors.accent)
         }
     }
     view.closedSources.forEach { (source, from) ->
@@ -226,7 +226,7 @@ private fun Checks(view: CloseView, actions: MonthCloseActions) {
             amount = null)
         TextButton(onClick = { actions.onSourceClosed(source, false) },
             modifier = Modifier.padding(horizontal = Spacing.s8).testTag("close_source_undo_${source.key}")) {
-            Text(stringResource(R.string.close_source_reopen), style = AppType.caption, color = colors.textSecondary)
+            Text(stringResource(R.string.close_source_reopen), style = AppType.caption, color = colors.accent)
         }
     }
     view.staleAssets.forEach { asset ->

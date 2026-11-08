@@ -25,9 +25,21 @@ internal fun openTask(task: MonthTask, transactions: TransactionsViewModel, clos
     }
 }
 
-/** Opens a step tapped on the home screen once the money tab is shown. */
+/**
+ * Opens a step tapped on the home screen once the money tab is shown. The money screens keep their state across
+ * tabs, and a screen left open (an import review, the transactions list) ranks above the step's screen, so every
+ * money screen is closed first ([closeAll]); an import in progress keeps its review and can be resumed.
+ */
 @Composable
-internal fun OpenTaskFromInbox(inbox: MonthTaskInbox, transactions: TransactionsViewModel, close: MonthCloseViewModel, tithe: TitheViewModel) {
+internal fun OpenTaskFromInbox(
+    inbox: MonthTaskInbox, transactions: TransactionsViewModel, close: MonthCloseViewModel, tithe: TitheViewModel,
+    closeAll: List<() -> Unit>,
+) {
     val pending by inbox.pending.collectAsStateWithLifecycle()
-    LaunchedEffect(pending) { inbox.take()?.let { openTask(it, transactions, close, tithe) } }
+    LaunchedEffect(pending) {
+        inbox.take()?.let { task ->
+            closeAll.forEach { it() }
+            openTask(task, transactions, close, tithe)
+        }
+    }
 }

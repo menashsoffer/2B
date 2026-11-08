@@ -82,15 +82,13 @@ class PlanImportTest {
         .map { ClosedMonth(it, MonthSnapshot(it, Money.ZERO, Money.ZERO), emptyMap(), emptyMap(), emptyMap(), emptyMap(), LocalDate.of(2026, 11, 1)) }
         .toList()
 
-    @Test fun aPeriodicBudgetChangesOnlyWhenItsEarlierMonthsAreClosed() {
+    @Test fun anExistingPeriodicBudgetIsNeverChanged() {
         val open = draft(MoneySamples.filled).line("יהדות / חגים")
-        assertEquals(PlanLineStatus.PERIODIC_IN_USE, open.status) // January..October still open
+        assertEquals(PlanLineStatus.PERIODIC_IN_USE, open.status)
         assertEquals(shekels(400), open.current)
         assertTrue(open.entries.isEmpty())
-        assertEquals(PlanLineStatus.PERIODIC_IN_USE, draft(MoneySamples.filled.copy(closedMonths = closedThrough(YearMonth.of(2026, 9)))).line("יהדות / חגים").status)
-        val closed = draft(MoneySamples.filled.copy(closedMonths = closedThrough(YearMonth.of(2026, 10)))).line("יהדות / חגים")
-        assertEquals(PlanLineStatus.CHANGED, closed.status)
-        assertEquals(shekels(220 * 12), (closed.entries.single() as MoneyEntry.PeriodicBudgetEntry).value.annualAmount)
+        // Even with the year closed so far: closed months draw their plan from the one annual amount.
+        assertEquals(PlanLineStatus.PERIODIC_IN_USE, draft(MoneySamples.filled.copy(closedMonths = closedThrough(YearMonth.of(2026, 10)))).line("יהדות / חגים").status)
     }
 
     @Test fun aChangeReplacesAThisMonthOnlyOverrideOfTheImportMonth() {
@@ -174,5 +172,45 @@ class PlanImportTest {
         val rent = draft.line("שכר דירה")
         assertEquals(rent.entries, draft.toSave(setOf(rent.key)))
         assertEquals(emptyList<MoneyEntry>(), draft.toSave(emptySet()))
+    }
+
+    @Test fun namesMatchIgnoringCaseAndSubCategoriesAreNotGuessed() {
+        val yes = com.menash.myself.feature.money.domain.Category("cat-yes", "Yes", com.menash.myself.feature.money.domain.ExpenseClass.FIXED)
+        val data = MoneySamples.empty.copy(categories = MoneySamples.empty.categories + yes)
+        val plan = PaamonimPlan(Month.JANUARY, listOf(
+            PaamonimLine(PlanGroup.FIXED, "YES", Money(10_000), Money(120_000)),
+            PaamonimLine(PlanGroup.FIXED, "גוגל", Money(2_000), Money(24_000)), // only a subscription sub-category
+            PaamonimLine(PlanGroup.CURRENT, "Netflix", Money(5_000), Money(60_000)),
+            PaamonimLine(PlanGroup.CURRENT, "netflix", Money(5_000), Money(60_000)),
+        ), null)
+        val draft = draft(data, plan)
+        val existing = draft.lines.single { it.name == "YES" }
+        assertEquals(PlanLineStatus.NEW, existing.status)
+        assertEquals("cat-yes", (existing.entries.single() as MoneyEntry.FixedExpenseEntry).value.categoryId)
+        assertEquals(PlanLineStatus.SPLIT, draft.lines.single { it.name == "גוגל" }.status)
+        assertEquals(2, draft.lines.count { it.status == PlanLineStatus.DUPLICATE })
+    }
+
+    @Test fun anOverrideEqualToTheFileStillWritesTheChange() {
+        val salary = MoneySamples.salary.copy(amounts = MoneySamples.salary.amounts.copy(overrides = mapOf(from to shekels(12_000))))
+        val data = MoneySamples.filled.copy(items = MoneySamples.filled.items.copy(incomes = listOf(salary)))
+        val plan = PaamonimPlan(Month.JANUARY, listOf(PaamonimLine(PlanGroup.INCOME, "משכורת", shekels(12_000), shekels(144_000))), null)
+        val line = draft(data, plan).lines.single()
+        assertEquals(PlanLineStatus.CHANGED, line.status) // the plan itself says 18,000; the override was for one month
+        assertEquals(shekels(18_000), line.current)
+        val saved = (line.entries.single() as MoneyEntry.IncomeEntry).value
+        assertEquals(shekels(12_000), amountFor(saved, from.plusMonths(1)))
+    }
+
+    @Test fun refreshedDraftKeepsKeysAndDropsWhatIsNoLongerAChange() {
+        val draft = draft(MoneySamples.empty)
+        val rent = draft.line("שכר דירה")
+        val nowPlanned = MoneySamples.empty.copy(items = MoneySamples.empty.items.copy(fixedExpenses = listOf(
+            MoneySamples.rent.copy(amounts = com.menash.myself.feature.money.domain.AmountHistory(listOf(AmountChange(from, shekels(460))))))))
+        val fresh = draft.refreshed(nowPlanned, from.plusMonths(1)) { "fresh" }
+        assertEquals(draft.lines.map { it.key }, fresh.lines.map { it.key })
+        assertEquals(PlanLineStatus.SAME, fresh.lines.single { it.key == rent.key }.status)
+        assertTrue(rent.key !in fresh.selectableKeys)
+        assertEquals(from.plusMonths(1), fresh.from)
     }
 }

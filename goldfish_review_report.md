@@ -1,4 +1,4 @@
-Status: resolved (round 1: all four fixes applied after "auto accept")
+Status: resolved (round 1: all four fixes applied; round 2: all PROPOSE FIX items applied after "auto accept")
 
 # Goldfish Annotated Review Report
 
@@ -144,3 +144,19 @@ Contested: 0. Escalated: 0. Declined: 0. Open: 0.
 | R2-C9 | Periodic budgets starting after `from` counted in "current" | DECLINE: after R2-C2, a periodic line never changes an existing budget |
 | R2-D6 | Two clocks, up to one minute apart at month end | DECLINE: at most one minute, no data written |
 | R2-D7 | A step left in the inbox across a household switch | DECLINE: it opens a screen only and writes nothing |
+
+## Resolution (round 2)
+
+All PROPOSE FIX items were applied; the five DECLINE items stay recorded above. Tests: 978, 0 failures; coverage verification passes.
+
+- R2-C1: `monthTasks` leaves USD subscriptions out of the close preview when no rate is stored (`aUsdSubscriptionWithoutARateDoesNotStopTheSteps`).
+- R2-C2/C3: an existing periodic budget is never changed by the import (`anExistingPeriodicBudgetIsNeverChanged`); `yearIsClosedBefore` is removed.
+- R2-C4: history leaves out categories with a yearly fixed expense (`aCategoryWithAYearlyFixedExpenseIsLeftOut`).
+- R2-C5: one case-insensitive matcher; a name matching only a sub-category is SPLIT (`namesMatchIgnoringCaseAndSubCategoriesAreNotGuessed`).
+- R2-C6: confirm re-matches the draft against fresh data and today's month (`confirmMatchesAgainstThePlanAsItIsNow`, `refreshedDraftKeepsKeysAndDropsWhatIsNoLongerAChange`).
+- R2-C7: comparisons use the plan's own history, not an override of the import month (`anOverrideEqualToTheFileStillWritesTheChange`).
+- R2-D1: a step from Home closes every money screen first (`OpenTaskFromInbox`). Not covered: a transactions list opened from search goes back to the search, which still ranks above the step.
+- R2-D2: both view models compute on `Dispatchers.Default` through their factories (`MoneyFactoriesTest` now waits for the state).
+- R2-D3/D4: history only when the month has no plan, at most six months computed, offered only when the draft has lines; otherwise `PlanNoHistory` explains (`viewModelSaysSoWhenNoLineCanBeDrafted`).
+- R2-D5: the steps and the history offer fail alone; Home catches per emission.
+- R2-U1–U12 (except U13): wording, plurals, accent colour for the close-screen buttons. Goldens re-recorded: `closeTodo` (approved), and the PR's own `NextStepCard`, `HomeMoney`, `PlanImport`.

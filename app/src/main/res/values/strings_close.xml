@@ -17,7 +17,7 @@
     <string name="close_pending_detail">לא ייספרו בחודש הזה</string>
     <string name="close_missing">%1$s %2$s</string>
     <string name="close_missing_detail">אין עדיין קובץ של החודש. לייבא עכשיו</string>
-    <string name="close_no_lines">אין חיובים החודש</string>
+    <string name="close_no_lines">לא היו חיובים בכרטיס החודש</string>
     <string name="close_stale">לעדכן את היתרה: %1$s</string>
     <string name="close_stale_detail">עודכן לאחרונה ב-%1$s</string>
     <string name="close_summary_title">מה ייסגר</string>

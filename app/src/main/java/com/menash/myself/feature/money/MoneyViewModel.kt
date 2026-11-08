@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -76,6 +79,8 @@ class MoneyViewModel(
     sourceClosures: Flow<Map<StatementSource, YearMonth>> = flowOf(emptyMap()),
     /** The date the screen is built for; a new date rebuilds it even when no data changed. */
     days: Flow<LocalDate> = dayChanges(today),
+    /** Where the month is built. The factory passes Dispatchers.Default; tests keep the collector's thread. */
+    compute: CoroutineContext = EmptyCoroutineContext,
 ) : BaseViewModel(errorReporter) {
 
     private var seeded = false
@@ -98,15 +103,30 @@ class MoneyViewModel(
         val now = buildMoneyMonth(data, current, day, rate, lines, learnt).copy(earliest = earliest)
         val money = if (picked == null || picked == current) now else
             buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current, earliest = earliest)
-        val tasks = moneyOverview(data, day, rate, lines, learnt, closures, now).tasks
-        MoneyScreenState(money = money, data = data, months = months, tasks = tasks,
-            historyMonths = spendingHistory(data, lines, learnt, day).size)
+        // The steps and the history offer are extras: if one of them fails, the month screen still updates.
+        val tasks = extra("moneyTasks", emptyList()) { moneyOverview(data, day, rate, lines, learnt, closures, now).tasks }
+        // Offered only while this month has no plan, and only when the draft would have lines to show.
+        val historyMonths = if (now.view is MonthView.Planned) 0 else extra("historyMonths", 0) {
+            val history = spendingHistory(data, lines, learnt, day)
+            if (planFromHistory(history, data).isNullOrEmpty()) 0 else history.size
+        }
+        MoneyScreenState(money = money, data = data, months = months, tasks = tasks, historyMonths = historyMonths)
     }
+        .flowOn(compute)
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
             if (error is Exception) handleException("observeMoney", error) else throw error
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, MoneyScreenState())
+
+    private inline fun <T> extra(where: String, fallback: T, block: () -> T): T = try {
+        block()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        handleException(where, e)
+        fallback
+    }
 
     private val _editor = MutableStateFlow<EditorState?>(null)
     val editor: StateFlow<EditorState?> = _editor.asStateFlow()
@@ -254,7 +274,7 @@ class MoneyViewModel(
                 return MoneyViewModel(
                     repository, usdRates, today, errorReporter,
                     transactions = transactions.observeTransactions(), memory = transactions.observeMemory(),
-                    events = events, sourceClosures = transactions.observeSourceClosures(),
+                    events = events, sourceClosures = transactions.observeSourceClosures(), compute = kotlinx.coroutines.Dispatchers.Default,
                 ) as T
             }
         }

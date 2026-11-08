@@ -1,5 +1,6 @@
 package com.menash.myself.feature.money
 
+import com.menash.myself.core.domain.model.Money
 import com.menash.myself.core.data.session.DefaultErrorReporter
 import com.menash.myself.feature.money.data.MoneyEntry
 import com.menash.myself.feature.money.importer.ImportFile
@@ -74,5 +75,20 @@ class PlanImportViewModelTest {
     @Test fun aPlanFileWithAStatementIsReadAsStatementsOnly() {
         vm.load(listOf(paamonim(), ImportFile("max.xlsx", ImportFixtures.bytes("max_nov.xlsx"))))
         assertTrue(vm.ui.value is ImportUi.Review)
+    }
+
+    @Test fun confirmMatchesAgainstThePlanAsItIsNow() {
+        vm.load(listOf(paamonim()))
+        val review = vm.ui.value as ImportUi.PlanReview
+        val rentKey = review.draft.lines.single { it.name == "שכר דירה" }.key
+        // A partner sets rent to the file's amount while the review is open.
+        val edited = MoneySamples.rent.copy(amounts = MoneySamples.rent.amounts.copy(
+            changes = MoneySamples.rent.amounts.changes + com.menash.myself.feature.money.domain.AmountChange(YearMonth.of(2026, 11), Money(46_000))))
+        money.data.value = MoneySamples.filled.copy(items = MoneySamples.filled.items.copy(fixedExpenses = listOf(edited, MoneySamples.carInsurance)))
+        vm.confirmPlan()
+        val done = vm.ui.value as ImportUi.PlanDone
+        assertTrue(money.saved.none { it.id == "fx-rent" })
+        assertEquals(review.selected.size - 1, done.saved)
+        assertTrue(rentKey in review.selected)
     }
 }
