@@ -31,4 +31,6 @@ data class MoneyActions(
     val onCategory: (String) -> Unit = {},
     val onResumeImport: (() -> Unit)? = null,
     val onSearch: () -> Unit = {},
+    /** Opens the screen where a step of "update the month" is done. */
+    val onTask: (com.menash.myself.feature.money.MonthTask) -> Unit = {},
 )
