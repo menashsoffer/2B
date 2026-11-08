@@ -1,6 +1,11 @@
 package com.menash.myself.feature.money.ui
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.feature.money.MonthCloseViewModel
+import com.menash.myself.feature.money.MonthTaskInbox
 import com.menash.myself.feature.money.MonthTask
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
@@ -18,4 +23,11 @@ internal fun openTask(task: MonthTask, transactions: TransactionsViewModel, clos
         is MonthTask.Close -> close.open(task.month)
         is MonthTask.Tithe -> tithe.open()
     }
+}
+
+/** Opens a step tapped on the home screen once the money tab is shown. */
+@Composable
+internal fun OpenTaskFromInbox(inbox: MonthTaskInbox, transactions: TransactionsViewModel, close: MonthCloseViewModel, tithe: TitheViewModel) {
+    val pending by inbox.pending.collectAsStateWithLifecycle()
+    LaunchedEffect(pending) { inbox.take()?.let { openTask(it, transactions, close, tithe) } }
 }

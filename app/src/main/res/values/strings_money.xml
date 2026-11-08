@@ -150,4 +150,5 @@
     <string name="task_this_month">%1$s, החודש</string>
     <string name="task_tithe">להפריש מעשרות: %1$s</string>
     <string name="task_tithe_detail">לפי ההכנסה בפועל</string>
+    <string name="home_money_fresh">הנתונים נכונים ל־%1$s · הקובץ הכי ישן: %2$s %3$s</string>
 </resources>

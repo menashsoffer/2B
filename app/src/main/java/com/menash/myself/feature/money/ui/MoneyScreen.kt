@@ -133,6 +133,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
             appContainer.uiEvents.clearUnassigned()
         }
     }
+    OpenTaskFromInbox(appContainer.monthTaskInbox, transactionsViewModel, closeViewModel, titheViewModel)
     val shared by appContainer.importInbox.pending.collectAsStateWithLifecycle()
     LaunchedEffect(shared) {
         if (shared.isNotEmpty()) importUris(appContainer.importInbox.take().map(Uri::parse))

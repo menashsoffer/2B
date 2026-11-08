@@ -3,6 +3,7 @@ package com.menash.myself.feature.home.ui
 import android.content.Context
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import com.menash.myself.R
 import com.menash.myself.core.data.session.DefaultErrorReporter
@@ -107,5 +108,51 @@ class HomeMoneyHeroTest {
         }
         composeRule.onNodeWithText(MoneyFormatter.format(surplus), substring = true).assertExists()
         composeRule.onNodeWithText(context.getString(R.string.home_money_planned), substring = true).assertExists()
+    }
+
+    @Test
+    fun viewModel_leadsWithLeftForCurrentAndSharesTheSteps() {
+        val stored = com.menash.myself.feature.money.FakeTransactionRepository()
+        val date = MoneySamples.today
+        stored.lines.value = listOf(
+            com.menash.myself.feature.money.importer.StoredTransaction(
+                com.menash.myself.feature.money.importer.StatementRow(id = "r-1", source = com.menash.myself.feature.money.importer.Source.MAX,
+                    sourceId = "1234", date = date, chargeDate = date, description = "שופרסל", charge = Money(10_000),
+                    status = com.menash.myself.feature.money.importer.RowStatus.COUNTED),
+                categoryId = null,
+            ),
+        )
+        val vm = HomeViewModel(noDreams, DefaultErrorReporter(), FakeMoneyRepository(MoneySamples.filled),
+            MutableStateFlow(MoneySamples.rate), { MoneySamples.today }, stored)
+        val collected = mutableListOf<HomeUiState>()
+        val job = CoroutineScope(Dispatchers.Main).launch { vm.uiState.collect { collected += it } }
+        val state = collected.last()
+        assertEquals(Money(380_000), state.moneyLeftForCurrent) // food 3,000 + fuel 800; the line has no category
+        assertEquals(com.menash.myself.feature.money.MonthTask.Assign(MoneySamples.month, 1), state.moneyTasks.last())
+        assertEquals("1234", state.moneyFreshness?.source?.sourceId)
+        job.cancel()
+    }
+
+    @Test
+    fun heroLeadsWithLeftForCurrentAndShowsSteps() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        var tapped: com.menash.myself.feature.money.MonthTask? = null
+        val task = com.menash.myself.feature.money.MonthTask.Assign(MoneySamples.month, 2)
+        composeRule.setContent {
+            MyApplicationTheme {
+                HomeContent(
+                    state = HomeUiState(firstName = "דנה", moneySurplus = Money(500_000), moneyLeftForCurrent = Money(120_000), moneyTasks = listOf(task)),
+                    hour = FixedClock.HOUR,
+                    epochMillis = FixedClock.epochMillis,
+                    onOpenRoute = {},
+                    onOpenAccount = {},
+                    onMoneyTask = { tapped = it },
+                )
+            }
+        }
+        composeRule.onNodeWithText(MoneyFormatter.format(Money(120_000)), substring = true).assertExists()
+        composeRule.onNodeWithText(context.getString(R.string.status_left_for_current), substring = true).assertExists()
+        composeRule.onNode(androidx.compose.ui.test.hasTestTag("next_step_first")).performClick()
+        assertEquals(task, tapped)
     }
 }
