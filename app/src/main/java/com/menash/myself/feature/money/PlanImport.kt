@@ -36,6 +36,13 @@ enum class PlanLineStatus {
     SPLIT,
     /** The "מנויים" total, while subscriptions are already listed one by one. Adding it would count them twice. */
     SUBSCRIPTIONS,
+    /**
+     * An annual budget whose year already runs in open months before the import month. It has one annual amount
+     * and no history, so changing it would change those months too; it is left for the household to update.
+     */
+    PERIODIC_IN_USE,
+    /** Two lines of the source name the same category or income; neither is guessed. */
+    DUPLICATE,
 }
 
 /** One line of the draft. [entries] are written when the line is selected; [current] is today's monthly amount. */
@@ -51,16 +58,16 @@ data class PlanImportLine(
     val selectable: Boolean get() = status == PlanLineStatus.NEW || status == PlanLineStatus.NEW_CATEGORY || status == PlanLineStatus.CHANGED
 }
 
-/**
- * The file's plan against the stored one. Nothing is written until the household confirms; every change starts
- * at [from] (the month of the import), so closed months and earlier plans stay as they were.
- */
 /** Where a draft comes from: a Paamonim file's budget month, or the household's own recent months. */
 sealed interface PlanBasis {
     data class PaamonimFile(val month: Month) : PlanBasis
     data class History(val months: List<YearMonth>) : PlanBasis
 }
 
+/**
+ * The file's plan against the stored one. Nothing is written until the household confirms; every change starts
+ * at [from] (the month of the import), so closed months and earlier plans stay as they were.
+ */
 data class PlanImportDraft(
     val basis: PlanBasis,
     val from: YearMonth,
@@ -95,21 +102,35 @@ private fun draftLines(
 ): PlanImportDraft {
     val seed = if (data.categories.isEmpty()) defaultCategories() else emptyList()
     val categories = (data.categories + seed).toMutableList()
-    val lines = source.map { line ->
-        if (line.group == PlanGroup.INCOME) incomeLine(line, data, from, newId)
-        else expenseLine(line, data, categories, from, newId)
+    // Two source lines for one category or income would save two items for it; both are shown and left alone.
+    val targets = source.map(::target)
+    val repeated = targets.groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+    val lines = source.mapIndexed { index, line ->
+        // The index keeps every source line apart, even when the file repeats a name.
+        val key = "$index:${line.group}:${line.name}"
+        when {
+            targets[index] in repeated -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.DUPLICATE)
+            line.group == PlanGroup.INCOME -> incomeLine(key, line, data, from, newId)
+            else -> expenseLine(key, line, data, categories, from, newId)
+        }
     }
     return PlanImportDraft(basis, from, lines, debts, seed)
 }
 
-private fun key(line: PaamonimLine) = "${line.group}:${line.name}"
+/** What a source line is matched to: an income name, or a category name within its class. */
+private fun target(line: PaamonimLine): String =
+    if (line.group == PlanGroup.INCOME) "income:${normal(line.name)}" else "${klassOf(line.group)}:${normal(categoryName(line))}"
+
+private fun categoryName(line: PaamonimLine): String =
+    if (line.group == PlanGroup.CURRENT && normal(line.name) == FILE_FUEL_NAME) VEHICLE_ENERGY_CATEGORY_NAME else line.name
 
 private fun same(a: Money, b: Money) = kotlin.math.abs(a.agorot - b.agorot) <= SAME_WITHIN_AGOROT
 
 private fun normal(name: String) = name.trim().replace(Regex("""\s+"""), " ")
 
+/** The amount from [month] on. A "this month only" override of [month] would hide it, so it goes; later overrides stay. */
 private fun AmountHistory.from(month: YearMonth, amount: Money) =
-    copy(changes = changes.filterNot { it.effectiveFrom == month } + AmountChange(month, amount))
+    copy(changes = changes.filterNot { it.effectiveFrom == month } + AmountChange(month, amount), overrides = overrides - month)
 
 private fun klassOf(group: PlanGroup) = when (group) {
     PlanGroup.FIXED -> ExpenseClass.FIXED
@@ -117,39 +138,39 @@ private fun klassOf(group: PlanGroup) = when (group) {
     else -> ExpenseClass.CURRENT
 }
 
-private fun incomeLine(line: PaamonimLine, data: MoneyData, from: YearMonth, newId: () -> String): PlanImportLine {
+private fun incomeLine(key: String, line: PaamonimLine, data: MoneyData, from: YearMonth, newId: () -> String): PlanImportLine {
     val matches = data.items.incomes.filter { normal(it.name) == normal(line.name) }
     return when (matches.size) {
-        0 -> PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.NEW,
+        0 -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.NEW,
             entries = listOf(MoneyEntry.IncomeEntry(Income(newId(), line.name, AmountHistory(listOf(AmountChange(from, line.monthly)))))))
         1 -> {
             val income = matches.single()
             val current = amountFor(income, from) ?: Money.ZERO
-            if (same(current, line.monthly)) PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.SAME, current)
-            else PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.CHANGED, current,
+            if (same(current, line.monthly)) PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.SAME, current)
+            else PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.CHANGED, current,
                 listOf(MoneyEntry.IncomeEntry(income.copy(amounts = income.amounts.from(from, line.monthly)))))
         }
-        else -> PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.SPLIT,
+        else -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.SPLIT,
             Money(matches.sumOf { (amountFor(it, from) ?: Money.ZERO).agorot }))
     }
 }
 
 private fun expenseLine(
-    line: PaamonimLine, data: MoneyData, categories: MutableList<Category>, from: YearMonth, newId: () -> String,
+    key: String, line: PaamonimLine, data: MoneyData, categories: MutableList<Category>, from: YearMonth, newId: () -> String,
 ): PlanImportLine {
     val klass = klassOf(line.group)
-    val wanted = if (line.group == PlanGroup.CURRENT && normal(line.name) == FILE_FUEL_NAME) VEHICLE_ENERGY_CATEGORY_NAME else line.name
+    val wanted = categoryName(line)
     val existing = categories.firstOrNull { it.klass == klass && it.parentId == null && normal(it.name) == normal(wanted) }
     if (existing == null) {
         val category = newCategory(line.name, klass, categories, newId)
-            ?: return PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.SPLIT)
+            ?: return PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.SPLIT)
         categories += category
-        return PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.NEW_CATEGORY,
+        return PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.NEW_CATEGORY,
             entries = listOf(MoneyEntry.CategoryEntry(category), newItem(line, category, from, newId)))
     }
     val items = data.items
     if (normal(existing.name) == SUBSCRIPTIONS_NAME && items.subscriptions.isNotEmpty()) {
-        return PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.SUBSCRIPTIONS)
+        return PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.SUBSCRIPTIONS)
     }
     val fixed = items.fixedExpenses.filter { it.categoryId == existing.id }
     val variable = items.variableBudgets.filter { it.categoryId == existing.id }
@@ -159,11 +180,13 @@ private fun expenseLine(
     val current = Money(monthlyNow)
     val count = fixed.size + variable.size + periodic.size
     return when {
-        count == 0 -> PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.NEW,
+        count == 0 -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.NEW,
             entries = listOf(newItem(line, existing, from, newId)))
-        count > 1 -> PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.SPLIT, current)
-        same(current, line.monthly) -> PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.SAME, current)
-        else -> PlanImportLine(key(line), line.group, line.name, line.monthly, PlanLineStatus.CHANGED, current, listOf(
+        count > 1 -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.SPLIT, current)
+        same(current, line.monthly) -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.SAME, current)
+        periodic.isNotEmpty() && !yearIsClosedBefore(periodic.single(), from, data) ->
+            PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.PERIODIC_IN_USE, current)
+        else -> PlanImportLine(key, line.group, line.name, line.monthly, PlanLineStatus.CHANGED, current, listOf(
             fixed.singleOrNull()?.let { item ->
                 val amount = if (item.frequency == Frequency.YEARLY) line.annual else line.monthly
                 MoneyEntry.FixedExpenseEntry(item.copy(amounts = item.amounts.from(from, amount)))
@@ -171,6 +194,12 @@ private fun expenseLine(
             ?: MoneyEntry.PeriodicBudgetEntry(periodic.single().copy(annualAmount = line.annual)),
         ))
     }
+}
+
+/** True when no open month of the budget's year comes before [from]: changing its one amount touches only [from] on. */
+private fun yearIsClosedBefore(budget: PeriodicBudget, from: YearMonth, data: MoneyData): Boolean {
+    val closed = data.closedMonths.map { it.month }.toSet()
+    return generateSequence(budget.yearStartMonth) { it.plusMonths(1) }.takeWhile { it < from }.all { it in closed }
 }
 
 private fun monthlyOf(item: FixedExpense, month: YearMonth): Money {
@@ -186,6 +215,7 @@ private fun newItem(line: PaamonimLine, category: Category, from: YearMonth, new
         ExpenseClass.CURRENT -> MoneyEntry.VariableBudgetEntry(
             VariableBudget(newId(), category.name, history, klass = ExpenseClass.CURRENT, categoryId = category.id))
         ExpenseClass.PERIODIC -> MoneyEntry.PeriodicBudgetEntry(
-            PeriodicBudget(newId(), category.id, category.name, line.annual, YearMonth.of(from.year, Month.JANUARY)))
+            // The budget year starts at the import month, so no earlier month gets a reserve it never had.
+            PeriodicBudget(newId(), category.id, category.name, line.annual, from))
     }
 }

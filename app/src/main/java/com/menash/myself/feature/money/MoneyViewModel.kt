@@ -74,6 +74,8 @@ class MoneyViewModel(
     memory: Flow<ImportMemory> = flowOf(ImportMemory()),
     private val events: UiEvents? = null,
     sourceClosures: Flow<Map<StatementSource, YearMonth>> = flowOf(emptyMap()),
+    /** The date the screen is built for; a new date rebuilds it even when no data changed. */
+    days: Flow<LocalDate> = dayChanges(today),
 ) : BaseViewModel(errorReporter) {
 
     private var seeded = false
@@ -86,10 +88,10 @@ class MoneyViewModel(
     private val shown = MutableStateFlow<YearMonth?>(null)
 
     val state: StateFlow<MoneyScreenState> = combine(
-        repository.observe(), usdRates, transactions, memory, combine(shown, sourceClosures) { picked, closures -> picked to closures },
-    ) { data, rate, lines, learnt, (picked, closures) ->
+        repository.observe(), usdRates, transactions, memory,
+        combine(shown, sourceClosures, days) { picked, closures, day -> Triple(picked, closures, day) },
+    ) { data, rate, lines, learnt, (picked, closures, day) ->
         latest = data
-        val day = today()
         val current = YearMonth.from(day)
         val months = pickerMonths(current, data.closedMonths.map { it.month }.toSet(), lines)
         val earliest = months.last().month
