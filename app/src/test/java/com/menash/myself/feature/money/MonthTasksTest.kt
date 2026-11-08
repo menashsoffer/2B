@@ -89,4 +89,11 @@ class MonthTasksTest {
         assertEquals(emptyList<MonthTask>(), tasks(emptyList(), tithe = Money.ZERO))
         assertEquals(emptyList<MonthTask>(), tasks(emptyList(), tithe = Money(-5_000)))
     }
+
+    @Test fun aUsdSubscriptionWithoutARateDoesNotStopTheSteps() {
+        val gpt = MoneySamples.chatGpt
+        val d = data.copy(items = data.items.copy(subscriptions = listOf(gpt)))
+        val result = monthTasks(d, today, null, listOf(line(october.atDay(10))), ImportMemory())
+        assertEquals(listOf(MonthTask.Close(october)), result)
+    }
 }

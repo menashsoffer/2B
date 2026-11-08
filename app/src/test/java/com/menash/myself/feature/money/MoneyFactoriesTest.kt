@@ -1,5 +1,6 @@
 package com.menash.myself.feature.money
 
+import kotlinx.coroutines.flow.first
 import com.menash.myself.core.data.session.DefaultErrorReporter
 import java.math.BigDecimal
 import java.time.LocalDate
@@ -60,6 +61,10 @@ class MoneyFactoriesTest {
         val importer = ImportViewModel.factory(tx, repo, error).create(ImportViewModel::class.java)
         importer.load(emptyList()); assertEquals(ImportUi.Idle, importer.ui.value)
         val money = MoneyViewModel.factory(repo, rate, today, error, tx).create(MoneyViewModel::class.java)
-        runCurrent(); assertEquals(repo.data.value.items, money.state.value.data.items)
+        // The factory builds the month on Dispatchers.Default, so the state arrives off the test scheduler.
+        val state = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            kotlinx.coroutines.withTimeout(10_000) { money.state.first { it.data.items == repo.data.value.items } }
+        }
+        assertEquals(repo.data.value.items, state.data.items)
     }
 }

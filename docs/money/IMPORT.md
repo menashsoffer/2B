@@ -86,12 +86,14 @@ A Paamonim רישומון shared into the same import flow opens a plan review i
 - **Draft (`draftPlanImport`):** each line is matched to a category of the same class by name ("דלק" → `VEHICLE_ENERGY_CATEGORY_NAME`) and to the plan items in it.
   - No item yet: **NEW**. A name with no category: **NEW_CATEGORY** (the category is added).
   - One item with another monthly amount (more than ₪1 apart): **CHANGED**. The change starts at the import month (`AmountChange`), so earlier months and closed months keep their plan, and a "this month only" override of the import month is removed so it does not hide the change (overrides of later months stay). A yearly fixed expense gets the annual figure.
-  - A periodic budget has one `annualAmount` and no history, so a change would reach back to every month of its budget year. It changes (to monthly × 12) only when every month of its year before the import month is closed; otherwise **PERIODIC_IN_USE**, shown and left for the household. A new periodic budget starts its year at the import month.
+  - A periodic budget has one `annualAmount` and no history: closed months draw their plan from it and `periodicStatus` accrues it from the year start, so any change reaches the whole year. An existing periodic budget with another amount is therefore never changed: **PERIODIC_IN_USE**, shown and left for the household. A new periodic budget starts its year at the import month.
   - Two source lines naming the same income, or the same category once "דלק" is mapped: **DUPLICATE**, all of them shown and none changed. Each source line has its own key (its index), so a repeated name never shares a tick.
+  - Names are compared with spaces collapsed and letter case ignored ("Yes" = "YES"). A name that matches only a sub-category (one subscription) is **SPLIT**: which item to change is not guessed.
+  - The comparison uses the plan's own amount history, not a "this month only" override of the import month.
   - The same amount: **SAME**. Two or more items in the category (or incomes with the name): **SPLIT**, shown but never changed.
   - "מנויים" while subscriptions are listed one by one: **SUBSCRIPTIONS**, shown but not added, so they are not counted twice.
   - Incomes are matched by name.
-- **Write:** nothing before confirm. Every NEW, NEW_CATEGORY and CHANGED line starts selected and can be unticked; one `saveAll` writes the selection. A household with no categories gets the Paamonim defaults in the same save.
+- **Write:** nothing before confirm. Every NEW, NEW_CATEGORY and CHANGED line starts selected and can be unticked. On confirm the draft is matched again against the stored plan as it is then, for that day's month, and one `saveAll` writes the selected lines that are still changes, so an edit made while the review was open is not overwritten. A household with no categories gets the Paamonim defaults in the same save.
 - **Fixture:** `paamonim_plan.xls`, built by `tools/import-fixtures/make_paamonim_fixture.py` from a real file with every amount and name replaced. The real file and the name map stay outside the repository.
 
 ## Plan from history (`PlanFromHistory.kt`)
@@ -100,5 +102,6 @@ The same plan review, built from the household's own months instead of a file. O
 
 - **Months:** the last six ended months with spending. A closed month uses its frozen `byCategory`; an ended month that is not closed uses its imported lines (`planVsActual` with no plan). The current month is never used.
 - **Amounts:** fixed categories take the latest month; current categories the average; periodic categories the average × 12 as the annual budget. Monthly amounts round up to ₪50 and annual ones to ₪100.
-- **Left out:** sub-categories (single subscriptions, listed on their own screen), unassigned spending, and incomes (an import knows the total, not who earned it).
+- **Left out:** sub-categories (single subscriptions, listed on their own screen), categories holding a yearly fixed expense (its one charge would read as a monthly amount), unassigned spending, and incomes (an import knows the total, not who earned it).
+- Only the newest six candidate months are computed. The offer appears only when the draft would have at least one line; if the review then has none, it says so instead of closing.
 - The lines then go through `draftPlanImport`'s matching, so new, changed and same lines behave as for a file.

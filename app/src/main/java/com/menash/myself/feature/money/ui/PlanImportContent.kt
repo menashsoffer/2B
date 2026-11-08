@@ -16,6 +16,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -79,7 +80,7 @@ internal fun LazyListScope.planReviewBody(ui: ImportUi.PlanReview, actions: Impo
                 Text(stringResource(R.string.plan_import_nothing), style = AppType.body, color = MaterialTheme.appColors.textSecondary,
                     modifier = Modifier.weight(1f).padding(horizontal = Spacing.s8).testTag("plan_nothing"))
             } else {
-                PrimaryButton(text = stringResource(R.string.plan_import_confirm, count), onClick = actions.onConfirmPlan,
+                PrimaryButton(text = pluralStringResource(R.plurals.plan_import_confirm, count, count), onClick = actions.onConfirmPlan,
                     enabled = count > 0, modifier = Modifier.weight(1f).testTag("plan_confirm"))
             }
             TextButton(onClick = actions.onCancel, modifier = Modifier.testTag("plan_cancel")) {
@@ -89,10 +90,20 @@ internal fun LazyListScope.planReviewBody(ui: ImportUi.PlanReview, actions: Impo
     }
 }
 
+/** The history offer was tapped but no line could be drafted: say why instead of closing silently. */
+internal fun LazyListScope.planNoHistoryBody(actions: ImportActions) {
+    item(key = "plan_no_history") {
+        Column(modifier = Modifier.fillMaxWidth().testTag("plan_no_history"), verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
+            Text(stringResource(R.string.plan_history_none), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
+            PrimaryButton(text = stringResource(R.string.import_to_month), onClick = actions.onClose, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
 internal fun LazyListScope.planDoneBody(ui: ImportUi.PlanDone, actions: ImportActions) {
     item(key = "plan_done") {
         Column(modifier = Modifier.fillMaxWidth().testTag("plan_done"), verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
-            Text(stringResource(R.string.plan_import_done, ui.saved, hebrewMonthYear(ui.from)), style = AppType.title,
+            Text(pluralStringResource(R.plurals.plan_import_done, ui.saved, ui.saved, hebrewMonthYear(ui.from)), style = AppType.title,
                 color = MaterialTheme.appColors.textPrimary)
             Text(stringResource(R.string.plan_import_done_detail), style = AppType.body, color = MaterialTheme.appColors.textSecondary)
             PrimaryButton(text = stringResource(R.string.import_to_month), onClick = actions.onClose, modifier = Modifier.fillMaxWidth())

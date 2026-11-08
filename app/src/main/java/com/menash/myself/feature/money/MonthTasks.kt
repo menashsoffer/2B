@@ -48,7 +48,11 @@ fun monthTasks(
     titheOwed: Money? = null,
 ): List<MonthTask> = buildList {
     monthsAwaitingClose(today, stored, data.closedMonths).firstOrNull()?.let { month ->
-        val view = closeView(data, month, today, usdToIls, stored, memory, sourceClosures = sourceClosures)
+        // Without a stored rate a USD subscription has no shekel amount; the month tab leaves it out the same way
+        // (buildMoneyMonth), so the steps do not fail while the rate is missing.
+        val priced = if (usdToIls != null) data else data.copy(items = data.items.copy(
+            subscriptions = data.items.subscriptions.filter { it.currency != com.menash.myself.feature.money.domain.Currency.USD }))
+        val view = closeView(priced, month, today, usdToIls, stored, memory, sourceClosures = sourceClosures)
         view.missingSources.forEach { add(MonthTask.MissingFile(month, it)) }
         view.checks.filter { it.kind == CloseCheckKind.UNASSIGNED && it.blocking }
             .forEach { check -> add(MonthTask.Assign(month, check.detail.toIntOrNull() ?: 0)) }

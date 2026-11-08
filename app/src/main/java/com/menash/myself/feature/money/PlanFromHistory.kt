@@ -3,6 +3,7 @@ package com.menash.myself.feature.money
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.data.MoneyData
 import com.menash.myself.feature.money.domain.ExpenseClass
+import com.menash.myself.feature.money.domain.Frequency
 import com.menash.myself.feature.money.domain.MoneyItems
 import com.menash.myself.feature.money.domain.planVsActual
 import com.menash.myself.feature.money.domain.roundUp
@@ -34,29 +35,34 @@ fun spendingHistory(data: MoneyData, stored: List<StoredTransaction>, memory: Im
     val closed = data.closedMonths.filter { it.month < current }.associate { closed ->
         closed.month to closed.byCategory.mapNotNull { (id, amount) -> id?.let { it to amount } }.toMap()
     }
+    val closedWithSpending = closed.filterValues { it.isNotEmpty() }
+    // Only the newest six candidate months are computed: older imported months would be dropped anyway.
+    val candidates = (closedWithSpending.keys + stored.map { it.row.billingMonth }.filter { it < current && it !in closed })
+        .sorted().takeLast(HISTORY_WINDOW)
     val transactions by lazy { toTransactions(stored, memory) }
-    val imported = stored.map { it.row.billingMonth }.filter { it < current && it !in closed }.distinct().associateWith { month ->
-        planVsActual(month, MoneyItems(), transactions, null).categories
+    return candidates.mapNotNull { month ->
+        val byCategory = closedWithSpending[month] ?: planVsActual(month, MoneyItems(), transactions, null).categories
             .mapNotNull { row -> row.categoryId?.takeIf { row.actual.isPositive() }?.let { it to row.actual } }.toMap()
+        byCategory.takeIf { it.isNotEmpty() }?.let { SpendingMonth(month, it) }
     }
-    return (closed + imported).filterValues { it.isNotEmpty() }.toSortedMap().entries.toList()
-        .takeLast(HISTORY_WINDOW).map { SpendingMonth(it.key, it.value) }
 }
 
 /**
  * A plan in the shape of a Paamonim budget list, so it goes through the same review as a file: per category,
  * fixed costs take the latest month, current spending the average, periodic costs the average times 12. Amounts
  * round up (₪50 a month, ₪100 a year) to leave a little room. Null with fewer than three months.
- * Incomes are not drafted: imports give a total, not who earned it. Sub-categories (single subscriptions) are left out.
+ * Incomes are not drafted: imports give a total, not who earned it. Sub-categories (single subscriptions) are left out,
+ * and so are categories holding a yearly fixed expense: its one large charge would read as a monthly amount.
  */
 fun planFromHistory(history: List<SpendingMonth>, data: MoneyData): List<PaamonimLine>? {
     if (history.size < MIN_HISTORY_MONTHS) return null
     val categories = data.categories.associateBy { it.id }
     val ids = history.flatMap { it.byCategory.keys }.toSet()
+    val yearly = data.items.fixedExpenses.filter { it.frequency == Frequency.YEARLY }.mapNotNull { it.categoryId }.toSet()
     return ids.mapNotNull { id ->
         val category = categories[id] ?: return@mapNotNull null
         // A sub-category is one subscription; subscriptions are listed one by one on their own screen.
-        if (category.parentId != null) return@mapNotNull null
+        if (category.parentId != null || id in yearly) return@mapNotNull null
         val values = history.map { it.byCategory[id] ?: Money.ZERO }
         val average = sumMoney(values) / values.size
         val (group, monthly, annual) = when (category.klass) {

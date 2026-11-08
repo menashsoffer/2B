@@ -11,8 +11,8 @@
     <string name="feedback_month_closed">%1$s נסגר</string>
     <string name="money_saving">שומר…</string>
     <string name="money_retry">לנסות שוב</string>
-    <string name="money_expanded">פתוח</string>
-    <string name="money_collapsed">סגור</string>
+    <string name="money_expanded">מורחב</string>
+    <string name="money_collapsed">מקופל</string>
     <!-- Money tab -->
     <string name="money_tab_month">החודש</string>
     <string name="money_tab_big_picture">התמונה הגדולה</string>
@@ -122,7 +122,7 @@
     <string name="money_error_billing_day">יום בין 1 ל־31</string>
 
     <!-- Home -->
-    <string name="home_money_planned">פנוי החודש, צפי</string>
+    <string name="home_money_planned">צפוי להישאר לפי התוכנית</string>
     <string name="money_load_error">לא הצלחנו לטעון את הנתונים.</string>
     <string name="money_load_retry">לנסות שוב</string>
     <string name="status_no_current_budget">אין עדיין תקציב לשוטפות, אז אי אפשר לדעת כמה נשאר</string>
@@ -142,13 +142,13 @@
     <string name="next_step_more">עוד %1$d צעדים</string>
     <string name="next_step_more_one">עוד צעד אחד</string>
     <string name="task_assign">לשייך %1$d תנועות בלי קטגוריה</string>
-    <string name="task_missing_file">לייבא את הקובץ של %1$s %2$s</string>
+    <string name="task_missing_file">חסר הקובץ של %1$s (מסתיים ב־%2$s)</string>
     <string name="task_update_balance">לעדכן את היתרה: %1$s</string>
     <string name="task_close">לסגור את %1$s</string>
-    <string name="task_close_detail">הכל מוכן, ואז החודש נשמר כמו שהיה</string>
+    <string name="task_close_detail">הכל מוכן. אחרי הסגירה החודש נשמר ולא משתנה</string>
     <string name="task_before_close">לפני שסוגרים את %1$s</string>
     <string name="task_this_month">%1$s, החודש</string>
     <string name="task_tithe">להפריש מעשרות: %1$s</string>
     <string name="task_tithe_detail">לפי ההכנסה בפועל</string>
-    <string name="home_money_fresh">הנתונים נכונים ל־%1$s · הקובץ הכי ישן: %2$s %3$s</string>
+    <string name="home_money_fresh">%2$s %3$s מעודכן עד %1$s. שאר החשבונות עדכניים יותר</string>
 </resources>

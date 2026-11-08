@@ -120,14 +120,36 @@ class PlanFromHistoryTest {
         }
     }
 
-    @Test fun viewModelWithoutHistoryClosesQuietly() {
+    @Test fun viewModelWithoutHistorySaysSo() {
         val dispatcher = UnconfinedTestDispatcher()
         Dispatchers.setMain(dispatcher)
         try {
             val vm = ImportViewModel(FakeTransactionRepository(), FakeMoneyRepository(data), DefaultErrorReporter(), io = dispatcher, today = { today })
             vm.openHistoryPlan()
+            assertEquals(ImportUi.PlanNoHistory, vm.ui.value)
+        } finally {
+            Dispatchers.resetMain()
+        }
+    }
+
+    @Test fun aCategoryWithAYearlyFixedExpenseIsLeftOut() {
+        val yearly = closedHistory.mapIndexed { i, c -> c.copy(byCategory = c.byCategory + ("periodic-8" to if (i == 5) shekels(3_600) else Money.ZERO)) }
+        val d = MoneySamples.filled.copy(closedMonths = yearly) // car insurance: a YEARLY fixed expense in periodic-8
+        val lines = requireNotNull(planFromHistory(spendingHistory(d, emptyList(), ImportMemory(), today), d))
+        assertTrue(lines.none { it.name == "ביטוח רכב + טסט" })
+    }
+
+    @Test fun viewModelSaysSoWhenNoLineCanBeDrafted() {
+        val dispatcher = UnconfinedTestDispatcher()
+        Dispatchers.setMain(dispatcher)
+        try {
+            val onlySubs = months.map { closed(it, mapOf("sub-1" to shekels(30))) }
+            val vm = ImportViewModel(FakeTransactionRepository(), FakeMoneyRepository(data.copy(closedMonths = onlySubs)),
+                DefaultErrorReporter(), io = dispatcher, today = { today })
+            vm.openHistoryPlan()
+            assertEquals(ImportUi.PlanNoHistory, vm.ui.value)
+            vm.close()
             assertEquals(ImportUi.Idle, vm.ui.value)
-            assertEquals(false, vm.open.value)
         } finally {
             Dispatchers.resetMain()
         }

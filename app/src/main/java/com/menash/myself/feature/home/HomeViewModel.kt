@@ -19,6 +19,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import com.menash.myself.core.domain.model.Money
 import com.menash.myself.feature.money.MonthStatus
 import com.menash.myself.feature.money.MonthTask
@@ -43,6 +46,8 @@ class HomeViewModel(
     transactions: TransactionRepository? = null,
     /** A new date rebuilds the money card even when no data changed (month end with the app open). */
     days: Flow<LocalDate> = dayChanges(today),
+    /** Where the money card is computed. The factory passes Dispatchers.Default; tests keep the collector's thread. */
+    compute: CoroutineContext = EmptyCoroutineContext,
 ) : BaseViewModel(errorReporter) {
 
     private data class HomeMoney(val surplus: Money?, val leftForCurrent: Money?, val tasks: List<MonthTask>, val freshness: SourceFreshness?)
@@ -57,15 +62,23 @@ class HomeViewModel(
             transactions?.observeMemory() ?: flowOf(ImportMemory()),
             combine(transactions?.observeSourceClosures() ?: flowOf(emptyMap()), days) { closures, day -> closures to day },
         ) { data, rate, lines, memory, (closures, day) ->
-            val now = buildMoneyMonth(data, YearMonth.from(day), day, rate, lines, memory)
-            val overview = moneyOverview(data, day, rate, lines, memory, closures, now)
-            HomeMoney(
-                surplus = (now.view as? MonthView.Planned)?.plan?.expectedSurplus,
-                leftForCurrent = (overview.headline as? MonthStatus.Open)?.leftForCurrent,
-                tasks = overview.tasks,
-                freshness = overview.oldestSource,
-            )
-        }.map<HomeMoney, HomeMoney?> { it }.catch { error ->
+            // A failure hides the card for this emission only; the next data change or date tries again.
+            try {
+                val now = buildMoneyMonth(data, YearMonth.from(day), day, rate, lines, memory)
+                val overview = moneyOverview(data, day, rate, lines, memory, closures, now)
+                HomeMoney(
+                    surplus = (now.view as? MonthView.Planned)?.plan?.expectedSurplus,
+                    leftForCurrent = (overview.headline as? MonthStatus.Open)?.leftForCurrent,
+                    tasks = overview.tasks,
+                    freshness = overview.oldestSource,
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                handleException("observeMoneyHome", e)
+                null
+            }
+        }.flowOn(compute).catch { error ->
             if (error is Exception) {
                 handleException("observeMoneyHome", error)
                 emit(null)
@@ -112,7 +125,8 @@ class HomeViewModel(
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(dreamRepository, errorReporter, moneyRepository, usdRates, today, transactions) as T
+                return HomeViewModel(dreamRepository, errorReporter, moneyRepository, usdRates, today, transactions,
+                    compute = kotlinx.coroutines.Dispatchers.Default) as T
             }
         }
     }

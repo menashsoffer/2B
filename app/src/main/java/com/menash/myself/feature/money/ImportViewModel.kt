@@ -54,6 +54,9 @@ sealed interface ImportUi {
     /** A Paamonim workbook: its budget as a draft plan. Only [selected] lines are written, and only on confirm. */
     data class PlanReview(val draft: PlanImportDraft, val selected: Set<String> = draft.selectableKeys) : ImportUi
 
+    /** The recent months give no line a draft could use (for example only single subscriptions were categorised). */
+    object PlanNoHistory : ImportUi
+
     /** [saved] plan lines were written; they apply from [from]. */
     data class PlanDone(val saved: Int, val from: java.time.YearMonth) : ImportUi
 
@@ -139,7 +142,7 @@ class ImportViewModel(
                 val draft = withContext(io) {
                     draftPlanFromHistory(spendingHistory(data, stored, memory, day), data, java.time.YearMonth.from(day), newId)
                 }
-                if (draft == null) cancel() else _ui.value = ImportUi.PlanReview(draft)
+                _ui.value = if (draft == null || draft.lines.isEmpty()) ImportUi.PlanNoHistory else ImportUi.PlanReview(draft)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -226,21 +229,28 @@ class ImportViewModel(
         }
     }
 
-    /** Writes the selected lines in one batch. Nothing is written for an empty selection. */
+    /**
+     * Writes the selected lines in one batch. The draft is first matched again against the stored plan as it is
+     * now and for today's month, so an edit made meanwhile (by a partner, or in another screen) is not overwritten
+     * by the copy taken when the review opened. A selected line that is no longer a change is not written.
+     */
     fun confirmPlan() {
         val review = _ui.value as? ImportUi.PlanReview ?: return
-        val entries = review.draft.toSave(review.selected)
-        if (entries.isEmpty()) return
+        if (review.draft.toSave(review.selected).isEmpty()) return
         _ui.value = ImportUi.Saving
         safeLaunch("applyPlanImport", onError = { _ui.value = review }) {
-            money.saveAll(entries)
+            val fresh = money.observeForImport().first()
+            val draft = withContext(io) { review.draft.refreshed(fresh, java.time.YearMonth.from(today()), newId) }
+            val selected = review.selected.intersect(draft.selectableKeys)
+            val entries = draft.toSave(selected)
+            if (entries.isNotEmpty()) money.saveAll(entries)
             pickedFiles = emptyList()
-            _ui.value = ImportUi.PlanDone(review.selected.intersect(review.draft.selectableKeys).size, review.draft.from)
+            _ui.value = ImportUi.PlanDone(selected.size, draft.from)
         }
     }
 
     fun close() {
-        if (_ui.value is ImportUi.Done || _ui.value is ImportUi.PlanDone) cancel() else _open.value = false
+        if (_ui.value is ImportUi.Done || _ui.value is ImportUi.PlanDone || _ui.value is ImportUi.PlanNoHistory) cancel() else _open.value = false
     }
 
     fun resume() { if (_ui.value != ImportUi.Idle) _open.value = true }
