@@ -44,7 +44,7 @@ tags: [smoke, import]
     condition: ${output.taps <= 2}
     label: "Tap budget: share to saved <= 2 taps"
 - takeScreenshot: 02_import_done
-- tapOn: "לחודש"
+- tapOn: "חזרה לחודש"
 
 # Second share of the same file: nothing new to save.
 - openLink: myself-e2e://signin?share=hapoalim_oct.xlsx
