@@ -74,10 +74,12 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
             .testTag("import_content"),
         verticalArrangement = Arrangement.spacedBy(Spacing.s16),
     ) {
-        val planFlow = ui is ImportUi.PlanReview || ui is ImportUi.PlanDone
-        item(key = "header") {
-            MoneySubScreen(title = stringResource(if (planFlow) R.string.plan_import_title else R.string.import_title), onBack = actions.onClose)
+        val title = when {
+            ui is ImportUi.PlanReview && ui.draft.basis is com.menash.myself.feature.money.PlanBasis.History -> R.string.plan_history_title
+            ui is ImportUi.PlanReview || ui is ImportUi.PlanDone -> R.string.plan_import_title
+            else -> R.string.import_title
         }
+        item(key = "header") { MoneySubScreen(title = stringResource(title), onBack = actions.onClose) }
         when (ui) {
             ImportUi.Idle -> Unit
             ImportUi.Error -> item(key = "error") { ErrorState(message = stringResource(R.string.money_load_error), onRetry = actions.onRetry, retryLabel = stringResource(R.string.money_load_retry)) }

@@ -257,6 +257,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
                 onTithe = titheViewModel::open,
                 onCloseMonth = { closeViewModel.open(state.money?.month) },
                 onTask = { task -> openTask(task, transactionsViewModel, closeViewModel, titheViewModel) },
+                onPlanFromHistory = importViewModel::openHistoryPlan,
                 onCar = carViewModel::open,
                 onPension = pensionViewModel::open,
                 onSubscriptions = subsViewModel::open,

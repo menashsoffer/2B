@@ -122,7 +122,32 @@ class ImportViewModel(
         }
     }
 
-    fun retry() = load(pickedFiles)
+    fun retry() = if (pickedFiles.isEmpty()) openHistoryPlan() else load(pickedFiles)
+
+    /** Opens the plan review on a draft built from the household's recent months instead of a file. */
+    fun openHistoryPlan() {
+        _open.value = true
+        loadJob?.cancel()
+        pickedFiles = emptyList()
+        _ui.value = ImportUi.Reading
+        loadJob = viewModelScope.launch {
+            try {
+                val (stored, memory, data) = combine(
+                    transactions.observeTransactionsForImport(), transactions.observeMemoryForImport(), money.observeForImport(),
+                ) { lines, memory, data -> Triple(lines, memory, data) }.first()
+                val day = today()
+                val draft = withContext(io) {
+                    draftPlanFromHistory(spendingHistory(data, stored, memory, day), data, java.time.YearMonth.from(day), newId)
+                }
+                if (draft == null) cancel() else _ui.value = ImportUi.PlanReview(draft)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                handleException("historyPlan", e)
+                _ui.value = ImportUi.Error
+            }
+        }
+    }
 
     fun openPicker(merchantKey: String) {
         _ui.update { (it as? ImportUi.Review)?.copy(picking = merchantKey) ?: it }
