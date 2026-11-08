@@ -6,7 +6,7 @@ positions, the Paamonim line names and the template labels. Everything personal 
   - every amount is a random number (fixed seed); no amount equals the original at its cell
   - names of people and creditors, and custom line names, are replaced with generic labels
   - formulas are stored as their values; totals are recomputed from the fake numbers
-Small integers (0..36) and the year are kept: they are flags, counts and row indexes.
+Outside the amount columns, small integers (0..36) and the year are kept: they are flags, counts and row indexes.
 Run: python3 tools/import-fixtures/make_paamonim_fixture.py <real-file.xls> <names.json>  (needs xlrd 2 and xlwt)
 """
 import json, os, random, sys
@@ -18,6 +18,8 @@ src = xlrd.open_workbook(sys.argv[1])
 # {"original": "replacement"} that stays outside the repository, like the source file.
 REPL = json.load(open(sys.argv[2], encoding="utf-8"))
 def fake(lo, hi, step=10): return float(random.randrange(lo // step, hi // step) * step)
+# Amount columns: every number here is faked, small ones too. Elsewhere a small integer is a flag or an index.
+AMOUNT_COLS = {"רשימת תקציבים": set(range(2, 14)), "שיקוף": {5, 6, 9, 10, 11}}
 def read(name):
     s = src.sheet_by_name(name)
     g = {}
@@ -26,7 +28,8 @@ def read(name):
             t, v = s.cell_type(r, c), s.cell_value(r, c)
             if t == xlrd.XL_CELL_TEXT and v.strip(): g[(r, c)] = REPL.get(v.strip(), v)
             elif t == xlrd.XL_CELL_NUMBER:
-                keep = v == 0 or v == 2025 or (float(v).is_integer() and 0 < abs(v) <= 36)
+                amount_col = c in AMOUNT_COLS[name] and r >= 2
+                keep = v == 0 or (not amount_col and (v == 2025 or (float(v).is_integer() and 0 < abs(v) <= 36)))
                 f = fake(50, 900)
                 while abs(f - v) < 0.01: f += 10
                 g[(r, c)] = float(v) if keep else f
