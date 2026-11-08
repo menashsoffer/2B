@@ -90,7 +90,7 @@ fun ImportContent(ui: ImportUi, actions: ImportActions, modifier: Modifier = Mod
                     MoneySurface {
                         months.forEach { (month, count) ->
                             AmountRow(title = stringResource(R.string.import_unassigned_month, hebrewMonthYear(month), count), amount = null,
-                                onClick = { actions.onAssign(month) }, testTag = "import_unassigned_$month")
+                                action = RowAction.Open { actions.onAssign(month) }, testTag = "import_unassigned_$month")
                         }
                     }
                 }
@@ -232,7 +232,7 @@ private fun MerchantRow(merchant: MerchantChoice, ui: ImportUi.Review, actions: 
             title = merchant.name,
             amount = formatMoney(merchant.total),
             detail = merchant.hint?.let { stringResource(R.string.import_hint, it) },
-            onClick = { actions.onPick(merchant.key) },
+            action = RowAction.Edit { actions.onPick(merchant.key) },
             testTag = "import_merchant_${merchant.key.hashCode()}",
         )
         if (decision == null) {

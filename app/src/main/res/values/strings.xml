@@ -227,5 +227,6 @@
     <string name="history_close_pending_count">%1$d חודשים מחכים לסגירה</string>
     <string name="close_next_pending">הבא: %1$s</string>
     <string name="close_source_closed">המקור נסגר</string>
-    <string name="close_source_closed_from">%1$s %2$s נסגר מ־%3$s · ביטול</string>
+    <string name="close_source_closed_from">%1$s %2$s נסגר מ־%3$s</string>
+    <string name="close_source_reopen">לבטל את הסגירה</string>
 </resources>

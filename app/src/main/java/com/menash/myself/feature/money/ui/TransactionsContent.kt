@@ -113,7 +113,7 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                                     title = stringResource(R.string.tx_unassigned_count),
                                     amount = lines.unassignedCount.toString(),
                                     amountColor = MaterialTheme.appColors.warning,
-                                    onClick = { actions.onFilter(LineFilter.UNASSIGNED) },
+                                    action = RowAction.Open { actions.onFilter(LineFilter.UNASSIGNED) },
                                     testTag = "tx_unassigned_count",
                                 )
                             }
@@ -121,7 +121,7 @@ fun TransactionsContent(ui: TransactionsUi, actions: TransactionsActions, modifi
                                 AmountRow(
                                     title = stringResource(R.string.tx_pending_count),
                                     amount = lines.pendingCount.toString(),
-                                    onClick = { actions.onFilter(LineFilter.PENDING) },
+                                    action = RowAction.Open { actions.onFilter(LineFilter.PENDING) },
                                     testTag = "tx_pending_count",
                                 )
                             }
@@ -193,10 +193,7 @@ internal fun LineRow(line: MonthLine, ui: TransactionsUi, actions: TransactionsA
             line.counted -> null
             else -> colors.textSecondary
         },
-        onClick = when {
-            line.canCategorise || line.removable || line.income -> ({ actions.onLine(line) })
-            else -> null
-        },
+        action = if (line.canCategorise || line.removable || line.income) RowAction.Edit { actions.onLine(line) } else null,
         testTag = "tx_line_${line.id}",
     )
 }

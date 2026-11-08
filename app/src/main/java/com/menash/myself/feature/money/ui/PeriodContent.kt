@@ -239,7 +239,7 @@ private fun CategoryLine(row: PeriodCategoryRow, onCategory: (String) -> Unit) {
             else -> stringResource(R.string.period_plan_diff_under, formatMoney(-diff))
         },
         amountColor = if (diff != null && diff.isPositive()) colors.danger else null,
-        onClick = row.categoryId?.let { id -> { onCategory(id) } },
+        action = row.categoryId?.let { id -> RowAction.Open { onCategory(id) } },
     )
 }
 

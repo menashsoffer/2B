@@ -108,13 +108,13 @@ private fun MonthContent(
     val colors = MaterialTheme.appColors
     val status = (view as? MonthView.Planned)?.status
     MonthSwitcher(money, closed = status is MonthStatus.Closed || (view as? MonthView.ActualOnly)?.closed == true, onPrevious = actions.onPreviousMonth, onNext = actions.onNextMonth, months = months, onShowMonth = actions.onShowMonth)
-    actions.onResumeImport?.let { MoneySurface { AmountRow(stringResource(R.string.import_pending), null, onClick = it, testTag = "money_import_pending") } }
+    actions.onResumeImport?.let { MoneySurface { AmountRow(stringResource(R.string.import_pending), null, action = RowAction.Open(it), testTag = "money_import_pending") } }
     MoneySurface(testTag = "money_import_row") {
         AmountRow(
             title = stringResource(R.string.import_entry),
             amount = null,
             detail = stringResource(R.string.import_entry_detail),
-            onClick = actions.onImport,
+            action = RowAction.Open(actions.onImport),
             testTag = "money_import_top",
         )
     }
@@ -126,7 +126,7 @@ private fun MonthContent(
                 AmountRow(title = if (money.pendingClose.size == 1)
                     stringResource(R.string.history_close_pending, hebrewMonthYear(pending))
                 else stringResource(R.string.history_close_pending_count, money.pendingClose.size),
-                    amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+                    amount = null, action = RowAction.Open(actions.onCloseMonth), testTag = "money_close_month")
             }
         }
     }
@@ -142,7 +142,7 @@ private fun MonthContent(
                 testTag = "money_empty",
             )
             if (money.month < money.current) MoneySurface {
-                AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+                AmountRow(title = stringResource(R.string.close_entry), amount = null, action = RowAction.Open(actions.onCloseMonth), testTag = "money_close_month")
             }
         }
         is MonthView.ActualOnly -> {
@@ -154,15 +154,15 @@ private fun MonthContent(
                     amountColor = if (view.saving.isNegative()) colors.danger else null, testTag = "money_actual_saving")
                 view.unassigned?.let { amount ->
                     AmountRow(title = stringResource(R.string.import_unassigned), amount = formatMoney(amount),
-                        onClick = { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
+                        action = RowAction.Open { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
                 }
                 AmountRow(title = stringResource(R.string.tx_entry), amount = null,
                     detail = stringResource(R.string.tx_entry_detail, view.importedLines),
-                    onClick = { actions.onTransactions(LineFilter.ALL) })
+                    action = RowAction.Open { actions.onTransactions(LineFilter.ALL) })
                 if (view.closed) AmountRow(title = stringResource(R.string.summary_entry), amount = null,
-                    detail = stringResource(R.string.summary_entry_detail), onClick = { actions.onMonthSummary(money.month) })
+                    detail = stringResource(R.string.summary_entry_detail), action = RowAction.Open { actions.onMonthSummary(money.month) })
                 if (money.month < money.current) {
-                    AmountRow(title = stringResource(R.string.close_entry), amount = null, onClick = actions.onCloseMonth, testTag = "money_close_month")
+                    AmountRow(title = stringResource(R.string.close_entry), amount = null, action = RowAction.Open(actions.onCloseMonth), testTag = "money_close_month")
                 }
             }
         }
@@ -188,28 +188,28 @@ private fun MonthContent(
                 view.rows.forEach { row -> PlanRow(row, row.kind in expanded, actions) }
                 view.unassigned?.let { unassigned ->
                     AmountRow(title = stringResource(R.string.import_unassigned), amount = formatMoney(unassigned),
-                        amountColor = colors.textSecondary, onClick = { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
+                        amountColor = colors.textSecondary, action = RowAction.Open { actions.onTransactions(LineFilter.UNASSIGNED) }, testTag = "money_unassigned")
                 }
                 if (view.importedLines > 0) {
                     AmountRow(title = stringResource(R.string.tx_entry), amount = null,
                         detail = stringResource(R.string.tx_entry_detail, view.importedLines),
-                        onClick = { actions.onTransactions(LineFilter.ALL) }, testTag = "money_transactions")
+                        action = RowAction.Open { actions.onTransactions(LineFilter.ALL) }, testTag = "money_transactions")
                 }
                 if (status is MonthStatus.Closed) {
                     AmountRow(title = stringResource(R.string.summary_entry), amount = null,
                         detail = stringResource(R.string.summary_entry_detail),
-                        onClick = { actions.onMonthSummary(money.month) }, testTag = "money_month_summary")
+                        action = RowAction.Open { actions.onMonthSummary(money.month) }, testTag = "money_month_summary")
                 }
                 if (money.month < money.current) {
                     AmountRow(title = stringResource(R.string.close_entry), amount = null,
-                        detail = stringResource(R.string.close_entry_detail), onClick = actions.onCloseMonth,
+                        detail = stringResource(R.string.close_entry_detail), action = RowAction.Open(actions.onCloseMonth),
                         testTag = "money_close_month")
                 }
                 AmountRow(
                     title = if (money.current.monthValue == 1) stringResource(R.string.period_year_entry, money.current.year - 1)
                         else stringResource(R.string.period_entry),
                     amount = null, detail = stringResource(R.string.period_entry_detail),
-                    onClick = actions.onPeriod, testTag = "money_period",
+                    action = RowAction.Open(actions.onPeriod), testTag = "money_period",
                 )
             }
             if (view.cardCharges.isNotEmpty()) {
@@ -219,7 +219,7 @@ private fun MonthContent(
                     view.cardCharges.forEach { charge ->
                         AmountRow(title = charge.card.name,
                             detail = stringResource(R.string.money_card_charge_date, charge.date.format(dayFormat)),
-                            amount = formatMoney(charge.amount), onClick = { actions.onEdit(MoneyEntry.CardEntry(charge.card)) })
+                            amount = formatMoney(charge.amount), action = RowAction.Edit { actions.onEdit(MoneyEntry.CardEntry(charge.card)) })
                     }
                 }
             }

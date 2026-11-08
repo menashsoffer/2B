@@ -40,7 +40,7 @@ internal fun PeriodYearCompare(view: PeriodView, onCategory: (String) -> Unit) {
                     amount = formatMoney(riser.thisYear),
                     detail = stringResource(R.string.period_riser_detail, formatMoney(riser.difference), previous),
                     amountColor = MaterialTheme.appColors.danger,
-                    onClick = riser.categoryId?.let { id -> { onCategory(id) } },
+                    action = riser.categoryId?.let { id -> RowAction.Open { onCategory(id) } },
                 )
             }
         }

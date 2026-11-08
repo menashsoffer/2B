@@ -73,7 +73,7 @@ fun MonthSummaryContent(ui: MonthSummaryUi, onBack: () -> Unit, modifier: Modifi
                     amount = formatMoney(row.actual),
                     detail = stringResource(R.string.summary_overrun_detail, formatMoney(row.planned), formatMoney(row.over)),
                     amountColor = MaterialTheme.appColors.danger,
-                    onClick = row.categoryId?.let { id -> { onCategory(id) } },
+                    action = row.categoryId?.let { id -> RowAction.Open { onCategory(id) } },
                 )
             }
         }
@@ -166,7 +166,7 @@ private fun Suggestions(view: MonthSummaryView, onCategory: (String) -> Unit) {
                         amount = formatMoney(row.suggested),
                         detail = row.current?.let { stringResource(R.string.summary_plan_now, formatMoney(it)) }
                             ?: stringResource(R.string.summary_plan_none),
-                        onClick = { onCategory(row.categoryId) },
+                        action = RowAction.Open { onCategory(row.categoryId) },
                     )
                 }
             }
