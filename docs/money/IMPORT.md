@@ -91,3 +91,12 @@ A Paamonim רישומון shared into the same import flow opens a plan review i
   - Incomes are matched by name.
 - **Write:** nothing before confirm. Every NEW, NEW_CATEGORY and CHANGED line starts selected and can be unticked; one `saveAll` writes the selection. A household with no categories gets the Paamonim defaults in the same save.
 - **Fixture:** `paamonim_plan.xls`, built by `tools/import-fixtures/make_paamonim_fixture.py` from a real file with every amount and name replaced. The real file and the name map stay outside the repository.
+
+## Plan from history (`PlanFromHistory.kt`)
+
+The same plan review, built from the household's own months instead of a file. Offered on the month tab when the current month has no plan and at least three ended months have spending.
+
+- **Months:** the last six ended months with spending. A closed month uses its frozen `byCategory`; an ended month that is not closed uses its imported lines (`planVsActual` with no plan). The current month is never used.
+- **Amounts:** fixed categories take the latest month; current categories the average; periodic categories the average × 12 as the annual budget. Monthly amounts round up to ₪50 and annual ones to ₪100.
+- **Left out:** sub-categories (single subscriptions, listed on their own screen), unassigned spending, and incomes (an import knows the total, not who earned it).
+- The lines then go through `draftPlanImport`'s matching, so new, changed and same lines behave as for a file.

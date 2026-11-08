@@ -26,6 +26,7 @@ import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.designsystem.theme.tabular
 import com.menash.myself.feature.money.ImportUi
+import com.menash.myself.feature.money.PlanBasis
 import com.menash.myself.feature.money.PlanImportLine
 import com.menash.myself.feature.money.PlanLineStatus
 import com.menash.myself.feature.money.importer.PlanGroup
@@ -45,8 +46,12 @@ internal fun LazyListScope.planReviewBody(ui: ImportUi.PlanReview, actions: Impo
     item(key = "plan_title") {
         Column(verticalArrangement = Arrangement.spacedBy(Spacing.s8), modifier = Modifier.padding(horizontal = Spacing.s8)) {
             Text(
-                stringResource(R.string.plan_import_subtitle,
-                    draft.fileMonth.getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("he")), hebrewMonthYear(draft.from)),
+                when (val basis = draft.basis) {
+                    is PlanBasis.PaamonimFile -> stringResource(R.string.plan_import_subtitle,
+                        basis.month.getDisplayName(TextStyle.FULL_STANDALONE, Locale.forLanguageTag("he")), hebrewMonthYear(draft.from))
+                    is PlanBasis.History -> stringResource(R.string.plan_history_subtitle, basis.months.size,
+                        hebrewMonthYear(basis.months.first()), hebrewMonthYear(basis.months.last()), hebrewMonthYear(draft.from))
+                },
                 style = AppType.caption, color = MaterialTheme.appColors.textSecondary,
             )
         }

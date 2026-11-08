@@ -76,4 +76,8 @@
     <string name="plan_import_nothing">התוכנית כבר תואמת לקובץ</string>
     <string name="plan_import_done">%1$d שורות נכנסו לתוכנית, מ%2$s</string>
     <string name="plan_import_done_detail">אפשר לשנות כל שורה בלשונית "החודש"</string>
+    <string name="plan_history_title">תוכנית מהחודשים שלך</string>
+    <string name="plan_history_subtitle">לפי %1$d החודשים האחרונים, %2$s עד %3$s: קבועות לפי החודש האחרון, שוטפות ותקופתיות לפי הממוצע, מעוגל למעלה. השינויים חלים מ%4$s. שום דבר לא נשמר עד האישור.</string>
+    <string name="plan_history_entry">לבנות תוכנית מ־%1$d החודשים האחרונים</string>
+    <string name="plan_history_entry_detail">טיוטה לפי מה שהוצאתם בפועל. מאשרים שורה אחר שורה</string>
 </resources>

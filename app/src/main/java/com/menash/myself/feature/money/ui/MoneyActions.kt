@@ -33,4 +33,6 @@ data class MoneyActions(
     val onSearch: () -> Unit = {},
     /** Opens the screen where a step of "update the month" is done. */
     val onTask: (com.menash.myself.feature.money.MonthTask) -> Unit = {},
+    /** Opens a draft plan built from the household's recent months. */
+    val onPlanFromHistory: () -> Unit = {},
 )

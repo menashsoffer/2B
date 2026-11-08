@@ -55,8 +55,14 @@ data class PlanImportLine(
  * The file's plan against the stored one. Nothing is written until the household confirms; every change starts
  * at [from] (the month of the import), so closed months and earlier plans stay as they were.
  */
+/** Where a draft comes from: a Paamonim file's budget month, or the household's own recent months. */
+sealed interface PlanBasis {
+    data class PaamonimFile(val month: Month) : PlanBasis
+    data class History(val months: List<YearMonth>) : PlanBasis
+}
+
 data class PlanImportDraft(
-    val fileMonth: Month,
+    val basis: PlanBasis,
     val from: YearMonth,
     val lines: List<PlanImportLine>,
     val debtRepayment: Money?,
@@ -77,14 +83,23 @@ private const val SAME_WITHIN_AGOROT = 100L
 private const val SUBSCRIPTIONS_NAME = "מנויים"
 private const val FILE_FUEL_NAME = "דלק"
 
-fun draftPlanImport(plan: PaamonimPlan, data: MoneyData, from: YearMonth, newId: () -> String): PlanImportDraft {
+fun draftPlanImport(plan: PaamonimPlan, data: MoneyData, from: YearMonth, newId: () -> String): PlanImportDraft =
+    draftLines(PlanBasis.PaamonimFile(plan.month), plan.lines, plan.debtRepayment, data, from, newId)
+
+/** The same review for a plan built from the household's own months; null with too little history. */
+fun draftPlanFromHistory(history: List<SpendingMonth>, data: MoneyData, from: YearMonth, newId: () -> String): PlanImportDraft? =
+    planFromHistory(history, data)?.let { lines -> draftLines(PlanBasis.History(history.map { it.month }), lines, null, data, from, newId) }
+
+private fun draftLines(
+    basis: PlanBasis, source: List<PaamonimLine>, debts: Money?, data: MoneyData, from: YearMonth, newId: () -> String,
+): PlanImportDraft {
     val seed = if (data.categories.isEmpty()) defaultCategories() else emptyList()
     val categories = (data.categories + seed).toMutableList()
-    val lines = plan.lines.map { line ->
+    val lines = source.map { line ->
         if (line.group == PlanGroup.INCOME) incomeLine(line, data, from, newId)
         else expenseLine(line, data, categories, from, newId)
     }
-    return PlanImportDraft(plan.month, from, lines, plan.debtRepayment, seed)
+    return PlanImportDraft(basis, from, lines, debts, seed)
 }
 
 private fun key(line: PaamonimLine) = "${line.group}:${line.name}"

@@ -45,6 +45,8 @@ data class MoneyScreenState(
     val months: List<MonthPickerCell> = emptyList(),
     /** "Update the month": what to do next, oldest first. Always today's, whatever month is shown. */
     val tasks: List<MonthTask> = emptyList(),
+    /** Ended months with spending a draft plan can be built from (closed, or imported and not closed yet). */
+    val historyMonths: Int = 0,
 )
 
 /** The open add/edit sheet. [askScope] shows the one "from now on / this month only" question. */
@@ -95,7 +97,8 @@ class MoneyViewModel(
         val money = if (picked == null || picked == current) now else
             buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current, earliest = earliest)
         val tasks = monthTasks(data, day, rate, lines, learnt, closures, now.bigPicture.titheBalance)
-        MoneyScreenState(money = money, data = data, months = months, tasks = tasks)
+        MoneyScreenState(money = money, data = data, months = months, tasks = tasks,
+            historyMonths = spendingHistory(data, lines, learnt, day).size)
     }
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->

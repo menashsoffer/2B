@@ -89,7 +89,7 @@ fun MoneyContent(
                 ) { tab ->
                     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s16)) {
                         if (tab == MoneyTabBigPicture) BigPictureContent(money.bigPicture, actions)
-                        else MonthContent(money, state.months, expanded, actions, state.tasks)
+                        else MonthContent(money, state.months, expanded, actions, state.tasks, state.historyMonths)
                     }
                 }
             }
@@ -104,6 +104,7 @@ private fun MonthContent(
     expanded: Set<MonthRowKind>,
     actions: MoneyActions,
     tasks: List<com.menash.myself.feature.money.MonthTask> = emptyList(),
+    historyMonths: Int = 0,
 ) {
     val view = money.view
     val showTasks = money.month == money.current
@@ -134,6 +135,12 @@ private fun MonthContent(
         }
     }
     if (view !is MonthView.Planned) nextStep()
+    if (showTasks && view !is MonthView.Planned && historyMonths >= com.menash.myself.feature.money.MIN_HISTORY_MONTHS) {
+        MoneySurface(testTag = "money_plan_from_history") {
+            AmountRow(title = stringResource(R.string.plan_history_entry, historyMonths), amount = null,
+                detail = stringResource(R.string.plan_history_entry_detail), action = RowAction.Open(actions.onPlanFromHistory))
+        }
+    }
     when (view) {
         is MonthView.Empty -> {
             if (view.usdRateMissing) UsdMissingChip()
