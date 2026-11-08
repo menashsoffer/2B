@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.menash.myself.core.time.TodayProvider
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.home.HomeViewModel
+import com.menash.myself.shell.ShellRoute
 import kotlinx.coroutines.delay
 
 @Composable
@@ -33,6 +34,7 @@ fun HomeScreen(
             moneyRepository = appContainer.moneyRepository,
             usdRates = appContainer.usdRateFlow,
             today = TodayProvider::today,
+            transactions = appContainer.transactionRepository,
         )
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -59,6 +61,10 @@ fun HomeScreen(
         epochMillis = nowMillis,
         onOpenRoute = onOpenRoute,
         onOpenAccount = onOpenAccount,
+        onMoneyTask = { task ->
+            appContainer.monthTaskInbox.offer(task)
+            onOpenRoute(ShellRoute.Money)
+        },
         modifier = modifier,
     )
 }

@@ -120,6 +120,7 @@ class AppContainer(private val context: Context) {
 
     /** Files shared into the app, waiting for the money tab's import. */
     val importInbox = ImportInbox()
+    val monthTaskInbox = com.menash.myself.feature.money.MonthTaskInbox()
 
     /** The stored Bank of Israel USD rate for the money engine; null when none is stored. */
     val usdRateFlow: Flow<BigDecimal?> by lazy { exchangeRateRepository.currentRateFlow.map { usdRateOf(it) } }

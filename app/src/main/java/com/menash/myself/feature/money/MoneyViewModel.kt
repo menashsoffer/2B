@@ -96,7 +96,7 @@ class MoneyViewModel(
         val now = buildMoneyMonth(data, current, day, rate, lines, learnt).copy(earliest = earliest)
         val money = if (picked == null || picked == current) now else
             buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current, earliest = earliest)
-        val tasks = monthTasks(data, day, rate, lines, learnt, closures, now.bigPicture.titheBalance)
+        val tasks = moneyOverview(data, day, rate, lines, learnt, closures, now).tasks
         MoneyScreenState(money = money, data = data, months = months, tasks = tasks,
             historyMonths = spendingHistory(data, lines, learnt, day).size)
     }

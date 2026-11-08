@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
@@ -29,14 +31,19 @@ import com.menash.myself.R
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.HeroCard
 import com.menash.myself.core.designsystem.component.MetricCard
-import com.menash.myself.core.designsystem.component.MoneyFormatter
 import com.menash.myself.core.designsystem.component.MetricValueStyle
+import com.menash.myself.core.designsystem.component.MoneyFormatter
 import com.menash.myself.core.designsystem.component.ProfileAvatar
 import com.menash.myself.core.designsystem.component.ScreenHeader
+import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
+import com.menash.myself.feature.money.MonthTask
+import com.menash.myself.feature.money.ui.NextStepCard
+import com.menash.myself.feature.money.ui.sourceLabel
 import com.menash.myself.shell.ShellRoute
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeContent(
@@ -47,6 +54,7 @@ fun HomeContent(
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
     debug: Boolean = BuildConfig.DEBUG,
+    onMoneyTask: (MonthTask) -> Unit = { onOpenRoute(ShellRoute.Money) },
 ) {
     val colors = MaterialTheme.appColors
     val dreamsValue = state.dreamsActive?.toString()
@@ -87,12 +95,27 @@ fun HomeContent(
             )
         }
         val surplus = state.moneySurplus
+        val left = state.moneyLeftForCurrent
         HeroCard(
             label = stringResource(R.string.nav_money),
-            message = stringResource(if (surplus != null) R.string.home_money_planned else R.string.home_money_message),
-            value = surplus?.let { MoneyFormatter.format(it) },
+            message = stringResource(when {
+                left != null -> R.string.status_left_for_current
+                surplus != null -> R.string.home_money_planned
+                else -> R.string.home_money_message
+            }),
+            value = (left ?: surplus)?.let { MoneyFormatter.format(it) },
             onClick = { onOpenRoute(ShellRoute.Money) },
         )
+        state.moneyFreshness?.let { fresh ->
+            Text(
+                text = stringResource(R.string.home_money_fresh, fresh.lastLine.format(DateTimeFormatter.ofPattern("d.M")),
+                    sourceLabel(fresh.source.source), fresh.source.sourceId),
+                style = AppType.caption, color = colors.textSecondary,
+                modifier = Modifier.padding(horizontal = Spacing.s8).testTag("home_money_fresh"),
+            )
+        }
+        val today = java.time.YearMonth.from(java.time.Instant.ofEpochMilli(epochMillis).atZone(java.time.ZoneId.systemDefault()))
+        NextStepCard(state.moneyTasks, today, onMoneyTask)
         if (debug) {
         Row(
             modifier = Modifier
