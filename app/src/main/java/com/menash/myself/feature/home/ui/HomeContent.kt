@@ -34,7 +34,6 @@ import com.menash.myself.core.designsystem.component.MetricCard
 import com.menash.myself.core.designsystem.component.MetricValueStyle
 import com.menash.myself.core.designsystem.component.MoneyFormatter
 import com.menash.myself.core.designsystem.component.ProfileAvatar
-import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.Spacing
@@ -48,8 +47,10 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun HomeContent(
     state: HomeUiState,
-    hour: Int,
+    @Suppress("UNUSED_PARAMETER") hour: Int,
     epochMillis: Long,
+    greeting: String? = null,
+    animateGreeting: Boolean = false,
     onOpenRoute: (String) -> Unit,
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
@@ -84,11 +85,17 @@ fun HomeContent(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ScreenHeader(
-                title = homeTitle(state.firstName, stringResource(greetingFor(hour))),
-                subtitle = hebrewDateLine(epochMillis),
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                GreetingLine(
+                    text = greeting ?: greetingLine(GreetingVisit.Returning, state.firstName),
+                    animate = animateGreeting,
+                )
+                Text(
+                    text = hebrewDateLine(epochMillis),
+                    style = AppType.caption,
+                    color = colors.textSecondary,
+                )
+            }
             ProfileAvatar(
                 displayName = state.firstName,
                 onClick = onOpenAccount,

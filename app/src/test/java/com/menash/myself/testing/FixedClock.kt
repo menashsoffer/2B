@@ -12,7 +12,7 @@ import com.menash.myself.core.designsystem.component.FloatingNavBar
 import com.menash.myself.core.designsystem.component.FloatingNavItem
 import com.menash.myself.feature.home.ui.HomeContent
 import com.menash.myself.feature.home.ui.HomeUiState
-import com.menash.myself.feature.home.ui.greetingFor
+import com.menash.myself.R
 import com.menash.myself.feature.home.ui.hebrewDateLine
 import com.menash.myself.shell.PlaceholderTab
 import com.menash.myself.shell.ShellRoute
@@ -48,11 +48,10 @@ object FixedClock {
     }
 }
 
-/**
- * Hebrew greeting for [hour]. [greetingFor] returns a string resource id.
- */
+/** The returning-visit greeting. The hour no longer changes the words. */
 fun greetingText(context: Context, hour: Int): String {
-    return context.getString(greetingFor(hour))
+    check(hour in 0..23)
+    return context.getString(R.string.greeting_return)
 }
 
 /** Date line at [FixedClock.epochMillis]. */
