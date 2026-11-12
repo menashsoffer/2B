@@ -11,4 +11,5 @@
 | [money/IMPORT.md](money/IMPORT.md) | ייבוא קבצי בנק ואשראי |
 | [handoff/REPORT.md](handoff/REPORT.md) | הדו"ח של שלב הבנייה האחרון |
 | [design/](design/) | מוקאפים |
+| [graph/](graph/) | מפת הקוד (Graphify): דוח מבנה שמתעדכן אחרי כל מיזוג |
 | [archive/](archive/) | מסמכים היסטוריים שלא מתארים את הקוד היום |

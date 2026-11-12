@@ -20,3 +20,6 @@ app/google-services.json
 *.jks
 *.keystore
 *-debug.log
+
+# Graphify (code graph, rebuilt locally or by .github/workflows/graphify.yml)
+graphify-out/

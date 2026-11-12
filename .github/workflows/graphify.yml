@@ -1,0 +1,66 @@
+name: Code graph (Graphify)
+
+# Rebuilds the Graphify code graph after code lands on main.
+# AST only (tree-sitter), no LLM and no API key.
+# Commits docs/graph/GRAPH_REPORT.md when it changed and uploads graph.json + graph.html as an artifact.
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "app/src/**"
+      - "tools/**"
+      - "e2e/**"
+      - "firestore.test.js"
+      - ".github/workflows/graphify.yml"
+  workflow_dispatch:
+
+# contents: write only to commit the refreshed report back to main.
+permissions:
+  contents: write
+
+concurrency:
+  group: graphify-main
+  cancel-in-progress: true
+
+jobs:
+  graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pinned: bump on purpose, after checking the report still reads well.
+      - name: Install Graphify
+        run: pip install "graphifyy==0.9.107"
+
+      - name: Build the code graph (no LLM)
+        run: graphify update .
+
+      - name: Upload graph.json and graph.html
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphify-${{ github.sha }}
+          path: |
+            graphify-out/graph.json
+            graphify-out/graph.html
+            graphify-out/GRAPH_REPORT.md
+          retention-days: 30
+
+      # GITHUB_TOKEN pushes do not start other workflows, so this commit does not trigger branch-tests.
+      - name: Commit the refreshed report
+        run: |
+          cp graphify-out/GRAPH_REPORT.md docs/graph/GRAPH_REPORT.md
+          git add docs/graph/GRAPH_REPORT.md
+          if git diff --cached --quiet; then
+            echo "Report unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: refresh code graph report [skip ci]"
+          git pull --rebase origin main
+          git push origin HEAD:main
