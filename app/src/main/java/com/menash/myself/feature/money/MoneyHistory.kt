@@ -42,7 +42,7 @@ data class MoneyFrame(
 /**
  * Keeps screens in the order they were opened.
  * Screens that are no longer open drop out. Newly opened screens go on top.
- * A shared file uses [replaceMoneyHistory] so Back returns to the money root.
+ * A shared file closes the open screens first, so Back from import returns to the money root.
  */
 fun syncMoneyHistory(history: List<MoneyFrame>, open: List<MoneyFrame>): List<MoneyFrame> {
     val byPlace = open.associateBy { it.place }
@@ -50,8 +50,6 @@ fun syncMoneyHistory(history: List<MoneyFrame>, open: List<MoneyFrame>): List<Mo
     val seen = kept.map { it.place }.toSet()
     return kept + open.filter { it.place !in seen }
 }
-
-fun replaceMoneyHistory(frame: MoneyFrame): List<MoneyFrame> = listOf(frame)
 
 fun encodeMoneyHistory(frames: List<MoneyFrame>): String = frames.joinToString(";") { it.encode() }
 

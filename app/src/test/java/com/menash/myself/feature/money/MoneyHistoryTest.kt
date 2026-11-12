@@ -45,12 +45,6 @@ class MoneyHistoryTest {
     }
 
     @Test
-    fun shareReplacesTheStackWithImport() {
-        val importing = frame(MoneyPlace.Import)
-        assertEquals(listOf(importing), replaceMoneyHistory(importing))
-    }
-
-    @Test
     fun encodeRoundTrip() {
         val frames = listOf(
             MoneyFrame(MoneyPlace.Close, month = "2026-09"),

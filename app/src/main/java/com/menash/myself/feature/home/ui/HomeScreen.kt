@@ -22,7 +22,6 @@ import com.menash.myself.shell.ShellRoute
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.map
 
 @Composable
 fun HomeScreen(
@@ -45,8 +44,6 @@ fun HomeScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val greetingStore = remember { GreetingStore(context.greetingDataStore) }
-    val greetingRecord by greetingStore.record.map<GreetingRecord, GreetingRecord?> { it }
-        .collectAsStateWithLifecycle(initialValue = null)
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -66,13 +63,7 @@ fun HomeScreen(
     }
     val today = Instant.ofEpochMilli(nowMillis).atZone(ZoneId.systemDefault()).toLocalDate()
     val reducedMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    val decision = rememberGreetingDecision(greetingRecord, today, displayName, reducedMotion)
-    LaunchedEffect(decision) {
-        val chosen = decision ?: return@LaunchedEffect
-        if (!chosen.mark) return@LaunchedEffect
-        if (chosen.animate) delay(1_000)
-        greetingStore.markShown(today)
-    }
+    val decision = rememberVisitGreeting(greetingStore, displayName, today, reducedMotion)
     HomeContent(
         state = state.copy(firstName = firstNameOf(displayName)),
         hour = 0,

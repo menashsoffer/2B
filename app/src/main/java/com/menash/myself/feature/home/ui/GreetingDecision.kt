@@ -1,10 +1,15 @@
 package com.menash.myself.feature.home.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.LocalDate
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 
 /** Chosen once, when the stored record first arrives. Later writes do not change it. */
 data class GreetingDecision(
@@ -30,4 +35,24 @@ fun rememberGreetingDecision(
         animate = shouldAnimateGreeting(loaded, today, reducedMotion),
         mark = loaded.lastShown != today,
     )
+}
+
+/** The greeting בית renders, decided from the visit store and frozen for this calendar day. */
+@Composable
+fun rememberVisitGreeting(
+    store: GreetingStore,
+    displayName: String?,
+    today: LocalDate,
+    reducedMotion: Boolean,
+): GreetingDecision? {
+    val record by store.record.map<GreetingRecord, GreetingRecord?> { it }
+        .collectAsStateWithLifecycle(initialValue = null)
+    val decision = rememberGreetingDecision(record, today, displayName, reducedMotion)
+    LaunchedEffect(decision) {
+        val chosen = decision ?: return@LaunchedEffect
+        if (!chosen.mark) return@LaunchedEffect
+        if (chosen.animate) delay(1_000)
+        store.markShown(today)
+    }
+    return decision
 }
