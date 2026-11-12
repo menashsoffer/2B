@@ -25,10 +25,22 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.util.UUID
 
-data class DonationEditor(val draft: DonationDraft, val isNew: Boolean, val invalid: Boolean = false, val confirmDelete: Boolean = false, val saving: Boolean = false, val saveError: String? = null)
+data class DonationEditor(
+    val draft: DonationDraft,
+    val isNew: Boolean,
+    val invalid: Boolean = false,
+    val confirmDelete: Boolean = false,
+    val saving: Boolean = false,
+    val saveError: String? = null,
+    val opened: DonationDraft = draft,
+)
 
 /** Which sheet is open on the maaser screen. */
-data class TitheSheets(val donation: DonationEditor? = null, val settings: TitheSettingsDraft? = null)
+data class TitheSheets(
+    val donation: DonationEditor? = null,
+    val settings: TitheSettingsDraft? = null,
+    val settingsOpened: TitheSettingsDraft? = settings,
+)
 
 data class TitheUi(
     val open: Boolean = false,
@@ -117,7 +129,8 @@ class TitheViewModel(
     }
 
     fun startSettings() {
-        sheets.value = TitheSheets(settings = settingsDraftOf(ui.value.view?.settings, month))
+        val draft = settingsDraftOf(ui.value.view?.settings, month)
+        sheets.value = TitheSheets(settings = draft, settingsOpened = draft)
     }
 
     fun updateSettings(transform: (TitheSettingsDraft) -> TitheSettingsDraft) {

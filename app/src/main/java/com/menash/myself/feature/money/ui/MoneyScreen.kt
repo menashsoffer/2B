@@ -136,7 +136,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     }
     OpenTaskFromInbox(appContainer.monthTaskInbox, transactionsViewModel, closeViewModel, titheViewModel, listOf(importViewModel::close, transactionsViewModel::close, trendViewModel::close, summaryViewModel::close, goalsViewModel::close, titheViewModel::close, carViewModel::close, pensionViewModel::close, closeViewModel::close, subsViewModel::close, periodViewModel::close))
     val navVms = MoneyNavVms(transactionsViewModel, closeViewModel, summaryViewModel, trendViewModel, goalsViewModel, titheViewModel, carViewModel, pensionViewModel, subsViewModel, periodViewModel, importViewModel)
-    SharedImportEffect(appContainer.importInbox, { shareBlocked(viewModel, goalsViewModel, titheViewModel, pensionViewModel, carViewModel, closeViewModel) }, navVms::closeAll, viewModel::dismissEditor, ::importUris)
+    SharedImportEffect(appContainer.importInbox, { shareBlocked(viewModel, goalsViewModel, titheViewModel, pensionViewModel, carViewModel, closeViewModel, importViewModel) }, navVms::closeAll, viewModel::dismissEditor, ::importUris)
 
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     @Composable

@@ -19,8 +19,8 @@ import java.time.LocalDate
 
 /** Which sheet is open on the car screen. */
 sealed interface CarSheet {
-    data class Categories(val selected: Set<String>) : CarSheet
-    data class Compare(val draft: CarCompareDraft) : CarSheet
+    data class Categories(val selected: Set<String>, val opened: Set<String> = selected) : CarSheet
+    data class Compare(val draft: CarCompareDraft, val opened: CarCompareDraft = draft) : CarSheet
 }
 
 data class CarUi(

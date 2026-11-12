@@ -21,7 +21,15 @@ import kotlinx.coroutines.flow.update
 import java.time.LocalDate
 import java.util.UUID
 
-data class FundEditor(val draft: FundDraft, val isNew: Boolean, val invalid: FundField? = null, val confirmDelete: Boolean = false, val saving: Boolean = false, val saveError: String? = null)
+data class FundEditor(
+    val draft: FundDraft,
+    val isNew: Boolean,
+    val invalid: FundField? = null,
+    val confirmDelete: Boolean = false,
+    val saving: Boolean = false,
+    val saveError: String? = null,
+    val opened: FundDraft = draft,
+)
 
 data class PensionUi(
     val open: Boolean = false,

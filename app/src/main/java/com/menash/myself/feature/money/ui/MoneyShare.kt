@@ -1,17 +1,20 @@
 package com.menash.myself.feature.money.ui
 
+import com.menash.myself.feature.money.CarSheet
 import com.menash.myself.feature.money.CarViewModel
 import com.menash.myself.feature.money.GoalsViewModel
+import com.menash.myself.feature.money.ImportUi
+import com.menash.myself.feature.money.ImportViewModel
 import com.menash.myself.feature.money.MoneyViewModel
+import com.menash.myself.feature.money.MonthCloseUi
 import com.menash.myself.feature.money.MonthCloseViewModel
 import com.menash.myself.feature.money.PensionViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.isDirty
 
 /**
- * A shared file must not call [MoneyNavVms.closeAll] while a money editor is open.
- * close() drops the sheet, so a half-typed goal, tithe, pension, car, or close-balance draft would vanish.
- * The month sheet is cleared only on purpose, and only once it is dirty.
+ * A shared file asks before it drops work the user has actually changed.
+ * An editor that is still the draft it opened with closes without asking.
  */
 fun shareBlocked(
     month: MoneyViewModel,
@@ -20,14 +23,24 @@ fun shareBlocked(
     pension: PensionViewModel,
     car: CarViewModel,
     close: MonthCloseViewModel,
-): Boolean = shareBlocked(
-    monthDirty = month.editor.value?.isDirty() == true,
-    goalEditor = goals.ui.value.editor != null,
-    titheEditor = tithe.ui.value.sheets.let { it.donation != null || it.settings != null },
-    pensionEditor = pension.ui.value.editor != null,
-    carEditor = car.ui.value.sheet != null,
-    closeBalances = close.ui.value.balanceDraft.let { it.entering || it.values.any { value -> value.value.isNotBlank() } },
-)
+    import: ImportViewModel,
+): Boolean {
+    val sheets = tithe.ui.value.sheets
+    return shareBlocked(
+        monthDirty = month.editor.value?.isDirty() == true,
+        goalEditor = goals.ui.value.editor?.let { it.draft != it.opened } == true,
+        titheEditor = sheets.donation?.let { it.draft != it.opened } == true ||
+            (sheets.settings != null && sheets.settings != sheets.settingsOpened),
+        pensionEditor = pension.ui.value.editor?.let { it.draft != it.opened } == true,
+        carEditor = when (val sheet = car.ui.value.sheet) {
+            is CarSheet.Categories -> sheet.selected != sheet.opened
+            is CarSheet.Compare -> sheet.draft != sheet.opened
+            null -> false
+        },
+        closeBalances = close.ui.value.blocksShare(),
+        importWork = import.ui.value.blocksShare(),
+    )
+}
 
 fun shareBlocked(
     monthDirty: Boolean,
@@ -36,4 +49,16 @@ fun shareBlocked(
     pensionEditor: Boolean,
     carEditor: Boolean,
     closeBalances: Boolean,
-): Boolean = monthDirty || goalEditor || titheEditor || pensionEditor || carEditor || closeBalances
+    importWork: Boolean = false,
+): Boolean = monthDirty || goalEditor || titheEditor || pensionEditor || carEditor || closeBalances || importWork
+
+/** Category picks, or a plan review with lines switched off. A fresh review is not work yet. */
+fun ImportUi.blocksShare(): Boolean = when (this) {
+    is ImportUi.Review -> decisions.isNotEmpty() || picking != null
+    is ImportUi.PlanReview -> selected != draft.selectableKeys
+    else -> false
+}
+
+/** "אין חיובים", a confirm step, or a balance the user typed. Opening the screen alone is not. */
+fun MonthCloseUi.blocksShare(): Boolean =
+    noLines.isNotEmpty() || confirmReclose || confirmMisc || balanceDraft.values.any { it.value.isNotBlank() }

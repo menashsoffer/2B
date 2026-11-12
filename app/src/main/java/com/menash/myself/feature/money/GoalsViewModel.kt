@@ -30,6 +30,8 @@ data class GoalEditor(
     val error: GoalField? = null,
     val preview: Feasibility? = null,
     val confirmDelete: Boolean = false,
+    /** Draft as the sheet opened. A share asks only after the user changes it. */
+    val opened: GoalDraft = draft,
 )
 
 data class GoalsUi(
