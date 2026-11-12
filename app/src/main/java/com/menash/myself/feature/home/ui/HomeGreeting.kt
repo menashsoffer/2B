@@ -3,7 +3,22 @@ package com.menash.myself.feature.home.ui
 import android.icu.text.SimpleDateFormat
 import android.icu.util.Calendar
 import android.icu.util.ULocale
+import androidx.annotation.StringRes
+import com.menash.myself.R
 import java.time.LocalDate
+
+@StringRes
+fun greetingFor(hour: Int): Int = when (hour) {
+    in 5..11 -> R.string.greeting_morning
+    in 12..16 -> R.string.greeting_afternoon
+    else -> R.string.greeting_evening
+}
+
+fun hourOf(epochMillis: Long): Int {
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = epochMillis
+    return calendar.get(Calendar.HOUR_OF_DAY)
+}
 
 enum class GreetingVisit { First, Returning }
 
@@ -33,6 +48,10 @@ fun greetingLine(words: String, displayName: String?): String {
     val name = greetingName(displayName) ?: return words
     return "$words, $name"
 }
+
+/** Both greetings (Menash 12/11): «ערב טוב, דנה. טוב לראות אותך שוב», or «נעים להכיר» on the first day. */
+fun combinedGreeting(timeWords: String, visitWords: String, displayName: String?): String =
+    "${greetingLine(timeWords, displayName)}. $visitWords"
 
 fun firstNameOf(displayName: String?): String? {
     val trimmed = displayName?.trim().orEmpty()

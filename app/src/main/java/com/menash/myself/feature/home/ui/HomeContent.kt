@@ -88,7 +88,11 @@ fun HomeContent(
             Column(modifier = Modifier.weight(1f)) {
                 if (showGreeting) {
                     GreetingLine(
-                        text = greeting ?: greetingLine(stringResource(R.string.greeting_return), state.firstName),
+                        text = greeting ?: combinedGreeting(
+                            stringResource(greetingFor(hourOf(epochMillis))),
+                            stringResource(R.string.greeting_return),
+                            state.firstName,
+                        ),
                         animate = animateGreeting,
                     )
                 } else {

@@ -63,7 +63,7 @@ fun HomeScreen(
     }
     val today = Instant.ofEpochMilli(nowMillis).atZone(ZoneId.systemDefault()).toLocalDate()
     val reducedMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    val decision = rememberVisitGreeting(greetingStore, displayName, today, reducedMotion)
+    val decision = rememberVisitGreeting(greetingStore, displayName, today, reducedMotion, hourOf(nowMillis))
     HomeContent(
         state = state.copy(firstName = firstNameOf(displayName)),
         epochMillis = nowMillis,

@@ -4,10 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.FamilyRestroom
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,13 +27,6 @@ fun SignInScreen(
 ) {
     val text = copy ?: SignInCopy(
         wordmark = stringResource(R.string.sign_in_wordmark),
-        body = stringResource(R.string.sign_in_body),
-        spacesTitle = stringResource(R.string.sign_in_spaces_title),
-        spacesSubtitle = stringResource(R.string.sign_in_spaces_subtitle),
-        syncTitle = stringResource(R.string.sign_in_sync_title),
-        syncSubtitle = stringResource(R.string.sign_in_sync_subtitle),
-        privacyTitle = stringResource(R.string.sign_in_privacy_title),
-        privacySubtitle = stringResource(R.string.sign_in_privacy_subtitle),
         button = stringResource(R.string.sign_in_button),
         close = stringResource(R.string.sign_in_close),
     )
@@ -96,40 +85,6 @@ fun SignInScreen(
                     textAlign = TextAlign.Center
                 )
 
-                Text(
-                    text = text.body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 22.sp
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Feature Highlights (3 calm pills)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    FeatureRow(
-                        icon = Icons.Default.FamilyRestroom,
-                        title = text.spacesTitle,
-                        subtitle = text.spacesSubtitle
-                    )
-                    FeatureRow(
-                        icon = Icons.Default.CloudDone,
-                        title = text.syncTitle,
-                        subtitle = text.syncSubtitle
-                    )
-                    FeatureRow(
-                        icon = Icons.Default.Lock,
-                        title = text.privacyTitle,
-                        subtitle = text.privacySubtitle
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
                 // Google Sign In Button
                 Button(
                     onClick = {
@@ -176,33 +131,6 @@ fun SignInScreen(
 
 
             }
-        }
-    }
-}
-
-@Composable
-private fun FeatureRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    title: String,
-    subtitle: String
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-            Text(subtitle, fontSize = 11.sp, color = Color.Gray)
         }
     }
 }

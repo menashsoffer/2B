@@ -66,19 +66,12 @@ class SignInFlowTest {
     fun signInCopy_holdsEachLabel() {
         val copy = SignInCopy(
             wordmark = "מותג",
-            body = "גוף",
-            spacesTitle = "מרחבים",
-            spacesSubtitle = "שלי, שלה",
-            syncTitle = "סנכרון",
-            syncSubtitle = "מגובה",
-            privacyTitle = "פרטיות",
-            privacySubtitle = "מקומי",
             button = "התחבר",
             close = "סגירה",
         )
         assertEquals("סגירה", copy.close)
         assertEquals("מותג", copy.wordmark)
-        assertEquals("שלי, שלה", copy.spacesSubtitle)
+        assertEquals("התחבר", copy.button)
     }
 
     @Test
@@ -86,15 +79,11 @@ class SignInFlowTest {
         composeRule.setContent {
             MyApplicationTheme {
                 Column {
-                    Text(stringResource(R.string.sign_in_spaces_subtitle), modifier = Modifier.testTag("spaces"))
-                    Text(stringResource(R.string.sign_in_sync_subtitle), modifier = Modifier.testTag("sync"))
                     Text(stringResource(R.string.sign_in_close), modifier = Modifier.testTag("close"))
                     Text(stringResource(R.string.sign_in_button), modifier = Modifier.testTag("button"))
                 }
             }
         }
-        composeRule.onNodeWithTag("spaces").assertTextEquals("שלי, שלה, ומשותף לבית")
-        composeRule.onNodeWithTag("sync").assertTextEquals("עובד תמיד, נשמר בענן ומגובה")
         composeRule.onNodeWithTag("close").assertTextEquals("סגירה")
         composeRule.onNodeWithTag("button").assertTextEquals("התחבר באמצעות חשבון Google")
     }

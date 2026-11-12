@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="greeting_morning">בוקר טוב</string>
+    <string name="greeting_afternoon">צהריים טובים</string>
+    <string name="greeting_evening">ערב טוב</string>
     <string name="nav_home">בית</string>
     <string name="nav_money">כסף</string>
     <string name="nav_dreams">חלומות</string>
