@@ -30,7 +30,7 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.menash.myself.core.auth.AuthManager
-import com.menash.myself.core.auth.SignInScreen
+import com.menash.myself.core.auth.toAuthSession
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
@@ -83,47 +83,35 @@ private fun MyselfRoot() {
     val appContainer = LocalAppContainer.current
     val scope = rememberCoroutineScope()
     val auth = remember { runCatching { Firebase.auth }.getOrNull() }
-    var currentUser by remember { mutableStateOf(auth?.currentUser) }
-    var showSignIn by remember { mutableStateOf(false) }
+    var session by remember { mutableStateOf(auth?.currentUser?.toAuthSession()) }
 
     DisposableEffect(auth) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            currentUser = firebaseAuth.currentUser
+            session = firebaseAuth.currentUser?.toAuthSession()
         }
         auth?.addAuthStateListener(listener)
         onDispose { auth?.removeAuthStateListener(listener) }
     }
 
+    // Returning users are signed in quietly. A guest stays on בית; sign-in is a route from «אני».
     LaunchedEffect(auth) {
         if (auth == null || auth.currentUser != null) return@LaunchedEffect
         AuthManager.attemptAutoSignIn(
             context = context,
             credentialManager = CredentialManager.create(context),
-            onAuthSuccess = { currentUser = auth.currentUser },
+            onAuthSuccess = { session = auth.currentUser?.toAuthSession() },
             onUnauthenticated = {},
             scope = scope,
         )
     }
 
-
     val mainViewModel: MainViewModel = viewModel(factory = MainViewModel.factory(appContainer))
-    if (showSignIn) {
-        SignInScreen(
-            onAuthSuccess = {
-                currentUser = auth?.currentUser
-                showSignIn = false
-            },
-        )
-    } else {
-        AppShell(
-            mainViewModel = mainViewModel,
-            currentUser = currentUser,
-            onRequestSignIn = { showSignIn = true },
-            onSignedOut = {
-                appContainer.householdSession.setHouseholdId(null)
-                currentUser = null
-                showSignIn = false
-            },
-        )
-    }
+    AppShell(
+        mainViewModel = mainViewModel,
+        session = session,
+        onSignedOut = {
+            appContainer.householdSession.setHouseholdId(null)
+            session = null
+        },
+    )
 }

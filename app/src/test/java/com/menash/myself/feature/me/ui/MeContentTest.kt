@@ -59,7 +59,7 @@ class MeContentTest {
                 ))
             }
         }
-        composeRule.onAllNodesWithTag("account_sign_in").assertCountEquals(0)
+        composeRule.onAllNodesWithTag("me_sign_in").assertCountEquals(0)
         listOf("account_household", "account_settings", "account_management", "account_sign_out").forEach { tag ->
             composeRule.onNodeWithTag(tag).performClick()
         }
@@ -74,7 +74,7 @@ class MeContentTest {
         }
         composeRule.onAllNodesWithTag("account_sign_out").assertCountEquals(0)
         composeRule.onAllNodesWithTag("account_management").assertCountEquals(0)
-        composeRule.onNodeWithTag("account_sign_in").performClick()
+        composeRule.onNodeWithTag("me_sign_in").performClick()
         assertEquals(listOf("signIn"), opened)
     }
 
@@ -94,7 +94,7 @@ class MeContentTest {
         composeRule.setContent {
             MyApplicationTheme {
                 MeScreen(
-                    currentUser = null,
+                    session = null,
                     onRequestSignIn = {},
                     onSignedOut = {},
                     onOpenHousehold = {},
@@ -137,7 +137,7 @@ class MeContentTest {
         restorationTester.setContent {
             MyApplicationTheme {
                 MeScreen(
-                    currentUser = null,
+                    session = null,
                     onRequestSignIn = {},
                     onSignedOut = {},
                     onOpenHousehold = {},

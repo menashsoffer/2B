@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sign_in_wordmark">2B</string>
+    <string name="sign_in_body">סדר ופוקוס לי ולאשתי — פחות עומס קוגניטיבי, מרחבים משותפים ופרטיים, משימות וחלומות.</string>
+    <string name="sign_in_spaces_title">מרחבים נפרדים ומשותפים</string>
+    <string name="sign_in_spaces_subtitle">שלי, שלה, ומשותף לבית</string>
+    <string name="sign_in_sync_title">סנכרון ענן ואופליין מלא</string>
+    <string name="sign_in_sync_subtitle">עובד תמיד, נשמר בענן ומגובה</string>
+    <string name="sign_in_privacy_title">הגנה ופרטיות מלאה</string>
+    <string name="sign_in_privacy_subtitle">התחברות מאובטחת בחשבון Google</string>
+    <string name="sign_in_button">התחבר באמצעות חשבון Google</string>
+    <string name="sign_in_close">סגירה</string>
+</resources>

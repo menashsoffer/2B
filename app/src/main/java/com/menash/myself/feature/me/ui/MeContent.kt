@@ -88,7 +88,7 @@ fun MeContent(state: MeState, actions: MeActions, modifier: Modifier = Modifier)
         if (!state.signedIn) {
             MeGroup {
                 MeRow(stringResource(R.string.account_sign_in), Icons.AutoMirrored.Outlined.Login,
-                    "account_sign_in", actions.onSignIn)
+                    "me_sign_in", actions.onSignIn)
             }
         }
         MeSection(stringResource(R.string.me_section_home)) {

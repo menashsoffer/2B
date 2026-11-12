@@ -15,16 +15,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.credentials.CredentialManager
+import com.menash.myself.R
 
 @Composable
 fun SignInScreen(
     onAuthSuccess: () -> Unit,
+    onClose: () -> Unit = {},
+    copy: SignInCopy? = null,
 ) {
+    val text = copy ?: SignInCopy(
+        wordmark = stringResource(R.string.sign_in_wordmark),
+        body = stringResource(R.string.sign_in_body),
+        spacesTitle = stringResource(R.string.sign_in_spaces_title),
+        spacesSubtitle = stringResource(R.string.sign_in_spaces_subtitle),
+        syncTitle = stringResource(R.string.sign_in_sync_title),
+        syncSubtitle = stringResource(R.string.sign_in_sync_subtitle),
+        privacyTitle = stringResource(R.string.sign_in_privacy_title),
+        privacySubtitle = stringResource(R.string.sign_in_privacy_subtitle),
+        button = stringResource(R.string.sign_in_button),
+        close = stringResource(R.string.sign_in_close),
+    )
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
@@ -47,6 +63,15 @@ fun SignInScreen(
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
+        TextButton(
+            onClick = onClose,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+                .testTag("sign_in_close"),
+        ) {
+            Text(text.close)
+        }
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -64,7 +89,7 @@ fun SignInScreen(
             ) {
                 // Header
                 Text(
-                    text = "2B",
+                    text = text.wordmark,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -72,7 +97,7 @@ fun SignInScreen(
                 )
 
                 Text(
-                    text = "סדר ופוקוס לי ולאשתי — פחות עומס קוגניטיבי, מרחבים משותפים ופרטיים, משימות וחלומות.",
+                    text = text.body,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -88,18 +113,18 @@ fun SignInScreen(
                 ) {
                     FeatureRow(
                         icon = Icons.Default.FamilyRestroom,
-                        title = "מרחבים נפרדים ומשותפים",
-                        subtitle = "שלי, שלה, ומשותף לבית"
+                        title = text.spacesTitle,
+                        subtitle = text.spacesSubtitle
                     )
                     FeatureRow(
                         icon = Icons.Default.CloudDone,
-                        title = "סנכרון ענן ואופליין מלא",
-                        subtitle = "עובד תמיד, נשמר בענן ומגובה"
+                        title = text.syncTitle,
+                        subtitle = text.syncSubtitle
                     )
                     FeatureRow(
                         icon = Icons.Default.Lock,
-                        title = "הגנה ופרטיות מלאה",
-                        subtitle = "התחברות מאובטחת בחשבון Google"
+                        title = text.privacyTitle,
+                        subtitle = text.privacySubtitle
                     )
                 }
 
@@ -142,7 +167,7 @@ fun SignInScreen(
                         )
                     } else {
                         Text(
-                            text = "התחבר באמצעות חשבון Google",
+                            text = text.button,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )

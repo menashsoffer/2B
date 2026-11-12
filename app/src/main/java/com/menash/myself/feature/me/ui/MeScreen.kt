@@ -12,9 +12,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.firebase.auth.FirebaseUser
 import com.menash.myself.BuildConfig
 import com.menash.myself.core.auth.AuthManager
+import com.menash.myself.core.auth.AuthSession
 import com.menash.myself.core.auth.SignOutConfirmDialog
 import com.menash.myself.core.data.repository.ExchangeRateRepository
 import com.menash.myself.core.data.repository.HebcalRepository
@@ -26,7 +26,7 @@ import com.menash.myself.shell.GalleryIndex
 /** Wires [MeContent]: sign in and out, household, preferences, account management, debug gallery. */
 @Composable
 fun MeScreen(
-    currentUser: FirebaseUser?,
+    session: AuthSession?,
     onRequestSignIn: () -> Unit,
     onSignedOut: () -> Unit,
     onOpenHousehold: () -> Unit,
@@ -45,9 +45,9 @@ fun MeScreen(
 
     MeContent(
         state = MeState(
-            signedIn = currentUser != null,
-            displayName = currentUser?.displayName,
-            email = currentUser?.email,
+            signedIn = session != null,
+            displayName = session?.displayName,
+            email = session?.email,
             versionName = BuildConfig.VERSION_NAME,
             versionCode = BuildConfig.VERSION_CODE,
         ),
