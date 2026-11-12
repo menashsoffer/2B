@@ -68,6 +68,8 @@ class NightBlueGuardTest {
             "danger" to palette.danger.toArgb(),
             "successSoft" to palette.successSoft.toArgb(),
             "warningSoft" to palette.warningSoft.toArgb(),
+            "mint" to palette.mint.toArgb(),
+            "mintSoft" to palette.mintSoft.toArgb(),
         )
         assertEquals(expected, actual)
     }
@@ -136,6 +138,8 @@ class NightBlueGuardTest {
         "danger" to 0xFF8E3D3D.toInt(),
         "successSoft" to 0xFFE2EEE6.toInt(),
         "warningSoft" to 0xFFF4EAD6.toInt(),
+        "mint" to 0xFFAAD1B6.toInt(),
+        "mintSoft" to 0xFFE6F2EA.toInt(),
     )
 
     private val darkHex = mapOf(
@@ -153,6 +157,8 @@ class NightBlueGuardTest {
         "danger" to 0xFFE4B0B0.toInt(),
         "successSoft" to 0xFF1D2B23.toInt(),
         "warningSoft" to 0xFF2E2717.toInt(),
+        "mint" to 0xFFAAD1B6.toInt(),
+        "mintSoft" to 0xFF1F2D27.toInt(),
     )
 
     private val colorAllowList = setOf(

@@ -23,6 +23,7 @@ import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.invisibleToUser
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import com.menash.myself.core.designsystem.theme.AppType
@@ -73,7 +74,7 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
         if (!animate) return@LaunchedEffect
         leaf.animateTo(1f, tween(durationMillis = 250, delayMillis = 750, easing = FastOutSlowInEasing))
     }
-    val mint = MaterialTheme.appColors.success
+    val mint = MaterialTheme.appColors.mint
     Column(
         modifier = modifier
             .semantics(mergeDescendants = true) {
@@ -94,7 +95,7 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
             modifier = Modifier
                 .fillMaxWidth()
                 .height(14.dp)
-                .clearAndSetSemantics {},
+                .clearAndSetSemantics { invisibleToUser() },
         ) {
             val y = 4.dp.toPx()
             val path = Path().apply {
