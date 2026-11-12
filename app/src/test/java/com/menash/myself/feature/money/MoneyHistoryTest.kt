@@ -64,12 +64,6 @@ class MoneyHistoryTest {
     }
 
     @Test
-    fun dirtyShareAsksBeforeImport() {
-        assertEquals(true, shareImportShouldAsk(dirty = true))
-        assertEquals(false, shareImportShouldAsk(dirty = false))
-    }
-
-    @Test
     fun decodeRejectsGarbage() {
         assertNull(MoneyFrame.decode("nope"))
         assertNull(MoneyFrame.decode("Close|2026-09"))

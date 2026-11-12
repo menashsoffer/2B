@@ -32,7 +32,6 @@ import com.menash.myself.feature.money.decodeMoneyHistory
 import com.menash.myself.feature.money.encodeMoneyHistory
 import com.menash.myself.feature.money.importer.LineFilter
 import com.menash.myself.feature.money.framesToReplay
-import com.menash.myself.feature.money.shareImportShouldAsk
 import com.menash.myself.feature.money.syncMoneyHistory
 import android.net.Uri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -199,7 +198,7 @@ fun SharedImportEffect(
     var ask by remember { mutableStateOf(false) }
     LaunchedEffect(pending) {
         if (pending.isEmpty() || ask) return@LaunchedEffect
-        if (shareImportShouldAsk(dirty())) ask = true
+        if (dirty()) ask = true
         else {
             onCloseAll()
             importUris(inbox.take().map(Uri::parse))

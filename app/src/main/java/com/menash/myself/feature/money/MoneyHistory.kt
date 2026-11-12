@@ -59,6 +59,3 @@ fun decodeMoneyHistory(raw: String): List<MoneyFrame> =
 /** After process death the open flags are empty, so every saved frame is replayed. */
 fun framesToReplay(history: List<MoneyFrame>, openPlaces: Set<MoneyPlace>): List<MoneyFrame> =
     history.filter { it.place !in openPlaces }
-
-/** A shared file asks before it leaves a dirty form. Otherwise it opens import. */
-fun shareImportShouldAsk(dirty: Boolean): Boolean = dirty
