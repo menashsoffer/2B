@@ -4,11 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.menash.myself.feature.money.CarViewModel
 import com.menash.myself.feature.money.CategoryTrendUi
@@ -38,6 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.feature.money.ImportInbox
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -144,9 +147,11 @@ fun rememberMoneyDestination(
     return shown.lastOrNull()?.place.toMoneyDestination()
 }
 
+private const val RestoreWaitMillis = 2_500L
+
 /**
- * Saved walk order stays on screen until every restored frame is open again.
- * Marking ready in the same breath as replay would sync against an empty flag list and wipe the stack.
+ * After process death the saved walk order stays up until each frame is open again, or for
+ * [RestoreWaitMillis]. Readiness then latches, so a later close syncs on the next frame.
  */
 @Composable
 fun restoredMoneyStack(
@@ -155,19 +160,30 @@ fun restoredMoneyStack(
 ): List<MoneyFrame> {
     var stored by rememberSaveable { mutableStateOf("") }
     val history = decodeMoneyHistory(stored)
-    var replayStarted by remember { mutableStateOf(history.isEmpty()) }
-    var waited by remember { mutableIntStateOf(0) }
-    val missing = framesToReplay(history, open.map { it.place }.toSet())
-    LaunchedEffect(Unit) {
-        if (missing.isNotEmpty()) replay(missing)
-        replayStarted = true
+    val openNow = rememberUpdatedState(open)
+    val placesNow = open.map { it.place }.toSet()
+    var settled by remember {
+        mutableStateOf(history.isEmpty() || history.all { it.place in placesNow })
     }
-    if (replayStarted && missing.isNotEmpty()) SideEffect { waited += 1 }
-    val ready = replayStarted && (missing.isEmpty() || waited > 8)
-    val shown = if (ready) syncMoneyHistory(history, open) else history
+    LaunchedEffect(Unit) {
+        if (settled) return@LaunchedEffect
+        val missing = framesToReplay(history, openNow.value.map { it.place }.toSet())
+        if (missing.isNotEmpty()) replay(missing)
+        withTimeoutOrNull(RestoreWaitMillis) {
+            snapshotFlow { openNow.value.map { it.place }.toSet() }
+                .first { places -> history.all { it.place in places } }
+        }
+        settled = true
+    }
+    val shown = if (settled) syncMoneyHistory(history, open) else heldRestore(history, open)
     val encoded = encodeMoneyHistory(shown)
     SideEffect { if (stored != encoded) stored = encoded }
     return shown
+}
+
+private fun heldRestore(history: List<MoneyFrame>, open: List<MoneyFrame>): List<MoneyFrame> {
+    val byPlace = open.associateBy { it.place }
+    return history.map { byPlace[it.place] ?: it }
 }
 
 /** A shared file replaces the money stack with import. A dirty form asks first and can keep the file pending. */
