@@ -65,7 +65,11 @@ data class EditorState(
     val retryEntries: List<MoneyEntry>? = null,
     /** The item sheet a "כרטיס חדש" sheet was opened from; it comes back, draft intact, when the card sheet closes. */
     val returnTo: EditorState? = null,
+    /** Draft as it was when the sheet opened. Differs once the user edits a field. */
+    val opened: ItemDraft = draft,
 )
+
+fun EditorState.isDirty(): Boolean = draft != opened
 
 class MoneyViewModel(
     private val repository: MoneyRepository,
@@ -91,6 +95,7 @@ class MoneyViewModel(
 
     /** The month the month tab shows; null follows today's month. */
     private val shown = MutableStateFlow<YearMonth?>(null)
+    val shownMonth: StateFlow<YearMonth?> = shown.asStateFlow()
 
     val state: StateFlow<MoneyScreenState> = combine(
         repository.observe(), usdRates, transactions, memory,
@@ -170,11 +175,12 @@ class MoneyViewModel(
     /** "להוסיף כמנוי" on a charge seen in the card files: the sheet opens filled from what was charged. */
     fun startSubscriptionFrom(charge: UnlistedCharge) {
         startAdding(EditKind.SUBSCRIPTION)
-        _editor.update {
-            it?.copy(draft = it.draft.copy(
+        _editor.update { state ->
+            val filled = state?.draft?.copy(
                 name = charge.name, amount = amountText(charge.last.amount), categoryId = charge.categoryId,
                 renewalDate = charge.last.month.atDay(minOf(today().dayOfMonth, charge.last.month.lengthOfMonth())),
-            ))
+            ) ?: return@update state
+            state.copy(draft = filled, opened = filled)
         }
     }
 

@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,11 +31,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.auth.FirebaseUser
 import com.menash.myself.R
+import com.menash.myself.core.auth.AuthSession
 import com.menash.myself.core.designsystem.component.FloatingNavBar
 import com.menash.myself.core.designsystem.component.FloatingNavBarDefaults
 import com.menash.myself.core.designsystem.component.FloatingNavItem
@@ -42,6 +42,8 @@ import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.feature.money.ui.LocalMoneyReselect
+import com.menash.myself.feature.money.ui.MoneyReselectBus
 import com.menash.myself.shell.MainViewModel
 import com.menash.myself.core.ui.UiEvent
 import com.menash.myself.feature.money.ui.hebrewMonthYear
@@ -50,11 +52,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun AppShell(
     mainViewModel: MainViewModel,
-    currentUser: FirebaseUser?,
-    onRequestSignIn: () -> Unit,
+    session: AuthSession?,
     onSignedOut: () -> Unit,
 ) {
     val navController = rememberNavController()
+    val moneyReselect = remember { MoneyReselectBus() }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedRoute = shellTabs.firstOrNull { tab ->
         backStackEntry?.destination?.hierarchy?.any { it.route == tab.route } == true
@@ -66,26 +68,7 @@ fun AppShell(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val snackbarHost = remember { SnackbarHostState() }
-    fun openRoute(route: String) {
-        val destination = navController.currentDestination
-        val alreadyOpen = destination?.hierarchy?.any { it.route == route } == true
-        if (alreadyOpen) {
-            // Tapping the open tab again goes back to the top of that tab.
-            if (route in shellTabRoutes) navController.popBackStack("$route/main", inclusive = false)
-            return
-        }
-        if (route in shellTabRoutes) {
-            navController.navigate(route) {
-                popUpTo(navController.graph.findStartDestination().id) {
-                    saveState = true
-                }
-                launchSingleTop = true
-                restoreState = true
-            }
-        } else {
-            navController.navigate(route)
-        }
-    }
+    fun openRoute(route: String) = navController.openTab(route) { moneyReselect.send() }
 
     LaunchedEffect(appContainer, snackbarHost) {
         var previous: kotlinx.coroutines.Job? = null
@@ -128,7 +111,9 @@ fun AppShell(
     // A shared bank or card file opens the money tab, which runs the import.
     val sharedFiles by appContainer.importInbox.pending.collectAsStateWithLifecycle()
     LaunchedEffect(sharedFiles.isNotEmpty()) {
-        if (sharedFiles.isNotEmpty()) openRoute(ShellRoute.Money)
+        // Not openRoute: on the money tab that counts as a second tap, which closes every
+        // money screen, including a half-typed form, before the money screen can ask.
+        if (sharedFiles.isNotEmpty()) navController.openShellRoute(ShellRoute.Money)
     }
 
     AppShellContent(
@@ -138,20 +123,29 @@ fun AppShell(
         ),
         onDismissError = { mainViewModel.clearErrors() },
         onSelectTab = ::openRoute,
+        showNavBar = shellShowsNavBar(backStackEntry?.destination?.route),
         snackbarHostState = snackbarHost,
     ) { contentModifier ->
+        CompositionLocalProvider(
+            LocalLeaveTab provides { openRoute(ShellRoute.Home) },
+            LocalMoneyReselect provides moneyReselect,
+        ) {
         AppNavHost(
             navController = navController,
-            currentUser = currentUser,
+            session = session,
             onOpenRoute = ::openRoute,
-            onRequestSignIn = onRequestSignIn,
-            onSignedOut = onSignedOut,
+            onRequestSignIn = { navController.requireSignIn(signedIn = session != null) },
+            onSignedOut = {
+                navController.signOutToHome()
+                onSignedOut()
+            },
             modifier = contentModifier,
         )
+        }
     }
 
-    LaunchedEffect(currentUser?.uid) {
-        if (currentUser != null) {
+    LaunchedEffect(session?.uid) {
+        if (session != null) {
             mainViewModel.initializeHouseholdForUser()
         }
     }
@@ -173,6 +167,7 @@ fun AppShellContent(
     onDismissError: () -> Unit,
     onSelectTab: (String) -> Unit,
     modifier: Modifier = Modifier,
+    showNavBar: Boolean = true,
     snackbarHostState: SnackbarHostState? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
@@ -184,7 +179,7 @@ fun AppShellContent(
             }
             content(Modifier.weight(1f))
         }
-        FloatingNavBar(
+        if (showNavBar) FloatingNavBar(
             items = shellTabs.map { tab ->
                 FloatingNavItem(
                     route = tab.route,

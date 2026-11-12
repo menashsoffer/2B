@@ -34,7 +34,6 @@ import com.menash.myself.core.designsystem.component.MetricCard
 import com.menash.myself.core.designsystem.component.MetricValueStyle
 import com.menash.myself.core.designsystem.component.MoneyFormatter
 import com.menash.myself.core.designsystem.component.ProfileAvatar
-import com.menash.myself.core.designsystem.component.ScreenHeader
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.designsystem.theme.Spacing
@@ -48,8 +47,10 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun HomeContent(
     state: HomeUiState,
-    hour: Int,
     epochMillis: Long,
+    greeting: String? = null,
+    animateGreeting: Boolean = false,
+    showGreeting: Boolean = true,
     onOpenRoute: (String) -> Unit,
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
@@ -84,11 +85,25 @@ fun HomeContent(
             horizontalArrangement = Arrangement.spacedBy(Spacing.s8),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ScreenHeader(
-                title = homeTitle(state.firstName, stringResource(greetingFor(hour))),
-                subtitle = hebrewDateLine(epochMillis),
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                if (showGreeting) {
+                    GreetingLine(
+                        text = greeting ?: combinedGreeting(
+                            stringResource(greetingFor(hourOf(epochMillis))),
+                            stringResource(R.string.greeting_return),
+                            state.firstName,
+                        ),
+                        animate = animateGreeting,
+                    )
+                } else {
+                    GreetingReserve()
+                }
+                Text(
+                    text = hebrewDateLine(epochMillis),
+                    style = AppType.caption,
+                    color = colors.textSecondary,
+                )
+            }
             ProfileAvatar(
                 displayName = state.firstName,
                 onClick = onOpenAccount,
@@ -194,7 +209,6 @@ private fun HomePreview(dreamsActive: Int?) {
     calendar.set(android.icu.util.Calendar.MILLISECOND, 0)
     HomeContent(
         state = HomeUiState(firstName = "דנה", dreamsActive = dreamsActive),
-        hour = 21,
         epochMillis = calendar.timeInMillis,
         onOpenRoute = {},
         onOpenAccount = {},

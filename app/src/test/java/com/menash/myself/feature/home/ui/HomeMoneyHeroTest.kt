@@ -99,7 +99,6 @@ class HomeMoneyHeroTest {
             MyApplicationTheme {
                 HomeContent(
                     state = HomeUiState(firstName = "דנה", moneySurplus = surplus),
-                    hour = FixedClock.HOUR,
                     epochMillis = FixedClock.epochMillis,
                     onOpenRoute = {},
                     onOpenAccount = {},
@@ -142,7 +141,6 @@ class HomeMoneyHeroTest {
             MyApplicationTheme {
                 HomeContent(
                     state = HomeUiState(firstName = "דנה", moneySurplus = Money(500_000), moneyLeftForCurrent = Money(120_000), moneyTasks = listOf(task)),
-                    hour = FixedClock.HOUR,
                     epochMillis = FixedClock.epochMillis,
                     onOpenRoute = {},
                     onOpenAccount = {},

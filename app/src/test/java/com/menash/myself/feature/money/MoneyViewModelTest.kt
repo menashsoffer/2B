@@ -186,6 +186,15 @@ class MoneyViewModelTest {
     }
 
     @Test
+    fun subscriptionFromACharge_opensClean() {
+        val vm = viewModel(FakeMoneyRepository(MoneySamples.filled))
+        vm.startSubscriptionFrom(UnlistedCharge("netflix", "נטפליקס", "sub-1", LastCharge(month, Money(4_900)), 3))
+        val editor = vm.editor.value!!
+        assertEquals("נטפליקס", editor.draft.name)
+        assertFalse(editor.isDirty())
+    }
+
+    @Test
     fun newItem_onlyNameAndAmount_defaultsFilled() {
         val repository = FakeMoneyRepository(MoneySamples.filled)
         val vm = viewModel(repository)

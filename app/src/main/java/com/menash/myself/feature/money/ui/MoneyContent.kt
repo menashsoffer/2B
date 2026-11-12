@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -53,14 +54,19 @@ fun MoneyContent(
     expanded: Set<MonthRowKind>,
     actions: MoneyActions,
     modifier: Modifier = Modifier,
+    scrollToTop: Int = 0,
 ) {
     val colors = MaterialTheme.appColors
+    val scroll = rememberScrollState()
+    LaunchedEffect(scrollToTop) {
+        if (scrollToTop > 0) scroll.scrollTo(0)
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(colors.background)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scroll)
             .padding(FloatingNavBarDefaults.contentPadding())
             .padding(start = Spacing.s16, end = Spacing.s16, top = Spacing.s8)
             .testTag("money_content"),

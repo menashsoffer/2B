@@ -66,6 +66,8 @@ data class MonthCloseUi(
     val loadError: Boolean = false,
     val noHousehold: Boolean = false,
     val nextPending: YearMonth? = null,
+    /** Sources the user marked "אין חיובים החודש". */
+    val noLines: Set<String> = emptySet(),
 )
 
 /** "לסגור את החודש": what is still missing, what closing would store, and the close itself. */
@@ -110,6 +112,7 @@ class MonthCloseViewModel(
             saving = q.saving,
             saveError = q.saveError,
             nextPending = if (q.successfullyClosed == month) monthsAwaitingClose(day, input.stored, input.data.closedMonths).firstOrNull { it != month } else null,
+            noLines = q.noLines,
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, MonthCloseUi())
 

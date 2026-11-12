@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="discard_title">לצאת בלי לשמור?</string>
+    <string name="discard_keep">המשך לערוך</string>
+    <string name="discard_leave">צא בלי לשמור</string>
+    <string name="greeting_first">נעים להכיר</string>
+    <string name="greeting_return">טוב לראות אותך שוב</string>
+    <string name="rate_manual_override">השתמש בדריסה ידנית לשער הדולר</string>
+</resources>

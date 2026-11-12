@@ -11,12 +11,16 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.provider.Settings
 import com.menash.myself.core.time.TodayProvider
 import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.home.HomeViewModel
 import com.menash.myself.shell.ShellRoute
+import java.time.Instant
+import java.time.ZoneId
 import kotlinx.coroutines.delay
 
 @Composable
@@ -38,6 +42,8 @@ fun HomeScreen(
         )
     )
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val greetingStore = remember { GreetingStore(context.greetingDataStore) }
     var nowMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -55,10 +61,15 @@ fun HomeScreen(
             nowMillis = System.currentTimeMillis()
         }
     }
+    val today = Instant.ofEpochMilli(nowMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+    val reducedMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    val decision = rememberVisitGreeting(greetingStore, displayName, today, reducedMotion, hourOf(nowMillis))
     HomeContent(
         state = state.copy(firstName = firstNameOf(displayName)),
-        hour = hourOf(nowMillis),
         epochMillis = nowMillis,
+        greeting = decision?.text,
+        animateGreeting = decision?.animate == true,
+        showGreeting = decision != null,
         onOpenRoute = onOpenRoute,
         onOpenAccount = onOpenAccount,
         onMoneyTask = { task ->

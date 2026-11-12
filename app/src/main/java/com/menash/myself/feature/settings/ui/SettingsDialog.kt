@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,6 +53,8 @@ fun SettingsDialog(
     val scope = rememberCoroutineScope()
 
     var showCityDropdown by remember { mutableStateOf(false) }
+    var draftCityId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var cityEdited by rememberSaveable { mutableStateOf(false) }
     var showDesignGallery by remember { mutableStateOf(false) }
     val boiRateState by exchangeRateRepository.currentRateFlow.collectAsStateWithLifecycle()
     val selectedCityState by hebcalRepository.selectedCityFlow.collectAsStateWithLifecycle()
@@ -77,11 +81,14 @@ fun SettingsDialog(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text("עיר לזמני שבת וחגים:", fontSize = 12.sp, color = Color.Gray)
+                        val shownCity = if (cityEdited) {
+                            IsraeliCity.DEFAULT_CITIES.firstOrNull { it.geonameid == draftCityId }
+                        } else selectedCityState
                         Text(
-                            text = selectedCityState?.nameHebrew ?: "בחר עיר",
+                            text = shownCity?.nameHebrew ?: "בחר עיר",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = if (selectedCityState == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+                            color = if (shownCity == null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                         )
                         Text("נתונים: Hebcal.com", fontSize = 10.sp, color = Color.Gray)
                     }
@@ -97,9 +104,8 @@ fun SettingsDialog(
                         text = { Text(city.nameHebrew) },
                         onClick = {
                             showCityDropdown = false
-                            scope.launch(start = CoroutineStart.UNDISPATCHED) {
-                                withContext(NonCancellable) { hebcalRepository.selectCity(city) }
-                            }
+                            draftCityId = city.geonameid
+                            cityEdited = true
                         }
                     )
                 }
@@ -134,6 +140,7 @@ fun SettingsDialog(
                 supportingText = { Text(stringResource(R.string.ui_str_251)) }
             )
 
+            val manualRate = stringResource(R.string.rate_manual_override)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -142,9 +149,11 @@ fun SettingsDialog(
                 Checkbox(
                     checked = useManualRate,
                     onCheckedChange = { useManualRate = it },
-                    modifier = Modifier.testTag("use_manual_rate_checkbox")
+                    modifier = Modifier
+                        .testTag("use_manual_rate_checkbox")
+                        .semantics { contentDescription = manualRate }
                 )
-                Text("השתמש בדריסה ידנית לשער הדולר", fontSize = 13.sp)
+                Text(manualRate, fontSize = 13.sp)
             }
 
             if (boiRateState?.isManualOverride == true) {
@@ -177,13 +186,14 @@ fun SettingsDialog(
         Button(
             onClick = {
                 val rate = rateInput.toDoubleOrNull() ?: currentRate
+                val manualWasOn = boiRateState?.isManualOverride == true
+                val rateEdited = useManualRate != manualWasOn || (useManualRate && rateInput != currentRate.toString())
+                val city = IsraeliCity.DEFAULT_CITIES.firstOrNull { it.geonameid == draftCityId }
                 scope.launch(start = CoroutineStart.UNDISPATCHED) {
                     withContext(NonCancellable) {
-                        if (useManualRate) {
-                            exchangeRateRepository.setManualRate(rate)
-                        } else {
-                            exchangeRateRepository.clearManualRate()
-                        }
+                        if (cityEdited && city != null && city != selectedCityState) hebcalRepository.selectCity(city)
+                        if (rateEdited && useManualRate) exchangeRateRepository.setManualRate(rate)
+                        else if (rateEdited) exchangeRateRepository.clearManualRate()
                     }
                 }
                 onDismiss()

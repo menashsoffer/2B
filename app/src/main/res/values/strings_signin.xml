@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sign_in_wordmark">2B</string>
+    <string name="sign_in_button">התחבר באמצעות חשבון Google</string>
+    <string name="sign_in_close">סגירה</string>
+</resources>

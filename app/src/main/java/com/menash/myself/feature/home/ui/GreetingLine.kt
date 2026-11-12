@@ -1,0 +1,159 @@
+package com.menash.myself.feature.home.ui
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.graphics.PathMeasure
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.invisibleToUser
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import com.menash.myself.core.designsystem.theme.AppType
+import com.menash.myself.core.designsystem.theme.appColors
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.unit.dp
+
+private val UnderlineEasing = CubicBezierEasing(0.33f, 1f, 0.68f, 1f)
+
+val GreetingUnderlineProgress = SemanticsPropertyKey<Float>("GreetingUnderlineProgress")
+val GreetingLeafProgress = SemanticsPropertyKey<Float>("GreetingLeafProgress")
+
+/** Tests opt in to read the line and leaf. Production leaves them off the semantics tree. */
+val LocalGreetingInspection = staticCompositionLocalOf { false }
+
+private var SemanticsPropertyReceiver.greetingUnderline by GreetingUnderlineProgress
+private var SemanticsPropertyReceiver.greetingLeaf by GreetingLeafProgress
+
+/** Underline progress for a clock that starts at 0. The line draws from 150 ms to 750 ms. */
+fun greetingUnderlineFraction(elapsedMs: Int): Float = when {
+    elapsedMs <= 150 -> 0f
+    elapsedMs >= 750 -> 1f
+    else -> UnderlineEasing.transform((elapsedMs - 150) / 600f)
+}
+
+/** Leaf progress. The leaf sprouts from 750 ms to 1000 ms. */
+fun greetingLeafFraction(elapsedMs: Int): Float = when {
+    elapsedMs <= 750 -> 0f
+    elapsedMs >= 1000 -> 1f
+    else -> FastOutSlowInEasing.transform((elapsedMs - 750) / 250f)
+}
+
+/**
+ * The greeting words are visible immediately. A mint line draws right to left, then a leaf.
+ * [animate] false draws the finished line, for a later visit the same day or reduced motion.
+ */
+@Composable
+fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) {
+    val underline = remember(animate) { Animatable(if (animate) 0f else 1f) }
+    val leaf = remember(animate) { Animatable(if (animate) 0f else 1f) }
+    LaunchedEffect(animate) {
+        if (!animate) {
+            underline.snapTo(1f)
+            leaf.snapTo(1f)
+            return@LaunchedEffect
+        }
+        underline.animateTo(1f, tween(durationMillis = 600, delayMillis = 150, easing = UnderlineEasing))
+    }
+    LaunchedEffect(animate) {
+        if (!animate) return@LaunchedEffect
+        leaf.animateTo(1f, tween(durationMillis = 250, delayMillis = 750, easing = FastOutSlowInEasing))
+    }
+    val mint = MaterialTheme.appColors.mint
+    val inspect = LocalGreetingInspection.current
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val lineWidth = layout?.let { result ->
+        val line = result.lineCount - 1
+        result.getLineRight(line) - result.getLineLeft(line)
+    } ?: 0f
+    Column(
+        modifier = modifier
+            .semantics(mergeDescendants = true) {
+                heading()
+                if (inspect) {
+                    greetingUnderline = underline.value
+                    greetingLeaf = leaf.value
+                }
+            }
+            .testTag("home_greeting"),
+    ) {
+        Text(
+            text = text,
+            style = AppType.title,
+            color = MaterialTheme.appColors.textPrimary,
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            onTextLayout = { layout = it },
+        )
+        Canvas(
+            modifier = Modifier
+                .width(with(LocalDensity.current) { lineWidth.toDp() })
+                .height(14.dp)
+                .clearAndSetSemantics { invisibleToUser() },
+        ) {
+            val y = 4.dp.toPx()
+            val path = Path().apply {
+                moveTo(size.width, y)
+                lineTo(0f, y)
+            }
+            val measure = PathMeasure().apply { setPath(path, false) }
+            val revealed = Path()
+            measure.getSegment(0f, measure.length * underline.value, revealed, true)
+            drawPath(revealed, mint, style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round))
+            val leafScale = leaf.value
+            if (leafScale > 0f) {
+                translate(left = 0f, top = y) {
+                    drawPath(leafShape(18.dp.toPx() * leafScale), mint)
+                }
+            }
+        }
+    }
+}
+
+/** Empty greeting slot with the same height as the finished line, before the record loads. */
+@Composable
+fun GreetingReserve(modifier: Modifier = Modifier) {
+    Column(modifier.clearAndSetSemantics {}) {
+        Text(
+            text = " ",
+            style = AppType.title,
+            color = MaterialTheme.appColors.textPrimary.copy(alpha = 0f),
+            minLines = 2,
+            maxLines = 2,
+            modifier = Modifier.clearAndSetSemantics {},
+        )
+        Spacer(Modifier.height(14.dp))
+    }
+}
+
+private fun leafShape(size: Float): Path = Path().apply {
+    moveTo(0f, 0f)
+    quadraticTo(size * 0.15f, -size * 0.9f, size, -size * 0.2f)
+    quadraticTo(size * 0.45f, size * 0.25f, 0f, 0f)
+    close()
+}
