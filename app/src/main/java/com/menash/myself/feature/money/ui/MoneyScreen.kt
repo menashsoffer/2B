@@ -136,7 +136,8 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     }
     OpenTaskFromInbox(appContainer.monthTaskInbox, transactionsViewModel, closeViewModel, titheViewModel, listOf(importViewModel::close, transactionsViewModel::close, trendViewModel::close, summaryViewModel::close, goalsViewModel::close, titheViewModel::close, carViewModel::close, pensionViewModel::close, closeViewModel::close, subsViewModel::close, periodViewModel::close))
     val navVms = MoneyNavVms(transactionsViewModel, closeViewModel, summaryViewModel, trendViewModel, goalsViewModel, titheViewModel, carViewModel, pensionViewModel, subsViewModel, periodViewModel, importViewModel)
-    SharedImportEffect(appContainer.importInbox, { shareBlocked(viewModel, goalsViewModel, titheViewModel, pensionViewModel, carViewModel, closeViewModel, importViewModel) }, navVms::closeAll, viewModel::dismissEditor, ::importUris)
+    val blocked = { shareBlocked(viewModel, goalsViewModel, titheViewModel, pensionViewModel, carViewModel, closeViewModel, importViewModel) }
+    SharedImportEffect(appContainer.importInbox, blocked, navVms::closeAll, viewModel::dismissEditor, ::importUris, remember { shareBlockedFlow(viewModel, goalsViewModel, titheViewModel, pensionViewModel, carViewModel, closeViewModel, importViewModel) })
 
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     @Composable
@@ -173,6 +174,8 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         shownMonth = viewModel.shownMonth,
         onRestoreMonth = viewModel::showMonth,
         onScrollTop = { scrollTick++ },
+        dirty = blocked,
+        onDiscard = viewModel::dismissEditor,
     )
     TabRootBack(enabled = destination == MoneyDestination.Root)
     val duration = Motion.duration(Motion.medium)
