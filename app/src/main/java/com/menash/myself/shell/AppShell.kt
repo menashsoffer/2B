@@ -133,7 +133,10 @@ fun AppShell(
             session = session,
             onOpenRoute = ::openRoute,
             onRequestSignIn = { navController.requireSignIn(signedIn = session != null) },
-            onSignedOut = onSignedOut,
+            onSignedOut = {
+                navController.signOutToHome()
+                onSignedOut()
+            },
             modifier = contentModifier,
         )
         }

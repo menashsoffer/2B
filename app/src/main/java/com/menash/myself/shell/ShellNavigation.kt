@@ -28,6 +28,19 @@ fun TabRootBack(enabled: Boolean = true) {
     BackHandler(enabled = enabled, onBack = leave)
 }
 
+/** Sign-out lands on the בית root and drops every saved tab, including the money walk stack. */
+fun NavHostController.signOutToHome() {
+    shellTabRoutes.forEach { route -> clearBackStack(route) }
+    navigate(ShellRoute.Home) {
+        popUpTo(graph.id) {
+            inclusive = true
+            saveState = false
+        }
+        launchSingleTop = true
+        restoreState = false
+    }
+}
+
 fun NavHostController.openTab(route: String, onMoneyReselect: () -> Unit = {}) {
     val already = currentDestination?.hierarchy?.any { it.route == route } == true
     openShellRoute(route)

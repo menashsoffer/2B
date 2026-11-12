@@ -12,6 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.menash.myself.feature.money.MoneyFrame
+import com.menash.myself.feature.money.MoneyPlace
+import com.menash.myself.feature.money.ui.restoredMoneyStack
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -88,6 +91,25 @@ class ShellBackTest {
         composeRule.onNodeWithTag("nav_money").performClick()
         composeRule.onNodeWithTag("money_sub").assertTextEquals("סגור")
     }
+
+    @Test
+    fun b13_signOut_returnsHomeAndClearsMoneyHistory() {
+        val exited = mutableStateOf(false)
+        composeRule.setContent { BackHarness(exited) }
+        composeRule.onNodeWithTag("nav_money").performClick()
+        composeRule.onNodeWithTag("pick_month").performClick()
+        composeRule.onNodeWithTag("open_sub").performClick()
+        composeRule.onNodeWithTag("open_goals").performClick()
+        composeRule.onNodeWithTag("money_stack").assertTextEquals("Goals")
+        composeRule.onNodeWithTag("nav_me").performClick()
+        composeRule.onNodeWithTag("sign_out").performClick()
+        composeRule.onNodeWithTag("screen_home").assertExists()
+        composeRule.onNodeWithTag("nav_money").performClick()
+        composeRule.onNodeWithTag("money_month").assertTextEquals("2026-11")
+        composeRule.onNodeWithTag("money_sub").assertTextEquals("סגור")
+        composeRule.onNodeWithTag("money_stack").assertTextEquals("ריק")
+        assertEquals(false, exited.value)
+    }
 }
 
 class MonthHolder : ViewModel() {
@@ -127,7 +149,7 @@ private fun BackHarness(exited: androidx.compose.runtime.MutableState<Boolean>) 
                     session = null,
                     onOpenRoute = { navController.openTab(it) { reselect.send() } },
                     onRequestSignIn = {},
-                    onSignedOut = {},
+                    onSignedOut = { navController.signOutToHome() },
                     modifier = modifier,
                     screens = screens,
                 )
@@ -147,22 +169,31 @@ private fun backScreens(reselect: MoneyReselectBus): ShellScreens = ShellScreens
     },
     money = {
         val holder: MonthHolder = viewModel()
+        var open by remember { mutableStateOf(emptyList<MoneyFrame>()) }
+        val shown = restoredMoneyStack(open) { missing -> open = missing }
         LaunchedEffect(reselect) { reselect.ticks.collect { holder.subOpen = false } }
         TabRootBack()
         Column(modifier = Modifier.testTag("screen_money")) {
             Text(holder.month, modifier = Modifier.testTag("money_month"))
             Text(if (holder.subOpen) "פתוח" else "סגור", modifier = Modifier.testTag("money_sub"))
+            Text(shown.joinToString("-") { it.place.name }.ifEmpty { "ריק" }, modifier = Modifier.testTag("money_stack"))
             TextButton(onClick = { holder.month = "2026-09" }, modifier = Modifier.testTag("pick_month")) {
                 Text("חודש")
             }
             TextButton(onClick = { holder.subOpen = true }, modifier = Modifier.testTag("open_sub")) {
                 Text("מסך")
             }
+            TextButton(onClick = { open = listOf(MoneyFrame(MoneyPlace.Goals)) }, modifier = Modifier.testTag("open_goals")) {
+                Text("יעד")
+            }
         }
     },
-    me = { _, _, _, _, _ ->
+    me = { _, _, onSignedOut, _, _ ->
         TabRootBack()
-        Text("אני", modifier = Modifier.testTag("screen_me"))
+        Column {
+            Text("אני", modifier = Modifier.testTag("screen_me"))
+            TextButton(onClick = onSignedOut, modifier = Modifier.testTag("sign_out")) { Text("יציאה") }
+        }
     },
     signIn = { _, _ -> Text("התחברות") },
 )
