@@ -6,10 +6,16 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.menash.myself.core.data.session.DefaultErrorReporter
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
+import com.menash.myself.feature.money.CarViewModel
 import com.menash.myself.feature.money.FakeMoneyRepository
+import com.menash.myself.feature.money.FakeTransactionRepository
 import com.menash.myself.feature.money.GoalsViewModel
 import com.menash.myself.feature.money.ImportInbox
 import com.menash.myself.feature.money.MoneySamples
+import com.menash.myself.feature.money.MoneyViewModel
+import com.menash.myself.feature.money.MonthCloseViewModel
+import com.menash.myself.feature.money.PensionViewModel
+import com.menash.myself.feature.money.TitheViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -97,12 +103,17 @@ class SharedImportEffectTest {
 
     @Test
     fun halfTypedGoal_keepSurvivesAndFileStaysPending() {
-        val goals = GoalsViewModel(
-            FakeMoneyRepository(MoneySamples.filled),
-            MutableStateFlow(MoneySamples.rate),
-            { LocalDate.of(2026, 10, 30) },
-            DefaultErrorReporter(),
-        )
+        val money = FakeMoneyRepository(MoneySamples.filled)
+        val transactions = FakeTransactionRepository()
+        val rate = MutableStateFlow(MoneySamples.rate)
+        val today = { LocalDate.of(2026, 10, 30) }
+        val error = DefaultErrorReporter()
+        val goals = GoalsViewModel(money, rate, today, error)
+        val month = MoneyViewModel(money, rate, today, error)
+        val tithe = TitheViewModel(money, transactions, today, error)
+        val pension = PensionViewModel(money, today, error)
+        val car = CarViewModel(money, transactions, today, error)
+        val close = MonthCloseViewModel(money, transactions, rate, today, error)
         goals.open()
         goals.startAdding()
         goals.updateDraft { it.copy(name = "דירה") }
@@ -114,16 +125,7 @@ class SharedImportEffectTest {
             MyApplicationTheme {
                 SharedImportEffect(
                     inbox,
-                    {
-                        shareBlocked(
-                            monthDirty = false,
-                            goalEditor = goals.ui.value.editor != null,
-                            titheEditor = false,
-                            pensionEditor = false,
-                            carEditor = false,
-                            closeBalances = false,
-                        )
-                    },
+                    { shareBlocked(month, goals, tithe, pension, car, close) },
                     { closed++; goals.close() },
                     {},
                     {},
