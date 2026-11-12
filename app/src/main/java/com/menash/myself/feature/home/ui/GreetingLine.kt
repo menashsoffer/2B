@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +42,9 @@ private val UnderlineEasing = CubicBezierEasing(0.33f, 1f, 0.68f, 1f)
 
 val GreetingUnderlineProgress = SemanticsPropertyKey<Float>("GreetingUnderlineProgress")
 val GreetingLeafProgress = SemanticsPropertyKey<Float>("GreetingLeafProgress")
+
+/** Tests opt in to read the line and leaf. Production leaves them off the semantics tree. */
+val LocalGreetingInspection = staticCompositionLocalOf { false }
 
 private var SemanticsPropertyReceiver.greetingUnderline by GreetingUnderlineProgress
 private var SemanticsPropertyReceiver.greetingLeaf by GreetingLeafProgress
@@ -80,6 +84,7 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
         leaf.animateTo(1f, tween(durationMillis = 250, delayMillis = 750, easing = FastOutSlowInEasing))
     }
     val mint = MaterialTheme.appColors.mint
+    val inspect = LocalGreetingInspection.current
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val lineWidth = layout?.let { result ->
         val line = result.lineCount - 1
@@ -89,8 +94,10 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
         modifier = modifier
             .semantics(mergeDescendants = true) {
                 heading()
-                greetingUnderline = underline.value
-                greetingLeaf = leaf.value
+                if (inspect) {
+                    greetingUnderline = underline.value
+                    greetingLeaf = leaf.value
+                }
             }
             .testTag("home_greeting"),
     ) {
@@ -98,6 +105,7 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
             text = text,
             style = AppType.title,
             color = MaterialTheme.appColors.textPrimary,
+            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             onTextLayout = { layout = it },
@@ -135,6 +143,8 @@ fun GreetingReserve(modifier: Modifier = Modifier) {
             text = " ",
             style = AppType.title,
             color = MaterialTheme.appColors.textPrimary.copy(alpha = 0f),
+            minLines = 2,
+            maxLines = 2,
             modifier = Modifier.clearAndSetSemantics {},
         )
         Spacer(Modifier.height(14.dp))

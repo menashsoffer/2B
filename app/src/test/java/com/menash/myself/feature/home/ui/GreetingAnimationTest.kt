@@ -1,25 +1,31 @@
 package com.menash.myself.feature.home.ui
 
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
-import kotlinx.coroutines.delay
+import java.io.File
+import java.time.LocalDate
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.runBlocking
+import android.os.Looper
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.time.LocalDate
 
-/** The line draws on the first launch and the returning sentence is not shown before the record loads. */
+/** The line draws once the visit record loads, and the day is marked when that draw starts. */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [36])
@@ -28,25 +34,12 @@ class GreetingAnimationTest {
     @get:Rule
     val composeRule = createComposeRule()
 
-    @Test
-    fun frames_drawUnderlineThenLeaf() {
-        composeRule.mainClock.autoAdvance = false
-        composeRule.setContent {
-            MyApplicationTheme { GreetingLine(text = "נעים להכיר", animate = true) }
-        }
-        assertProgress(0f, 0f)
-        composeRule.mainClock.advanceTimeBy(150)
-        assertProgress(0f, 0f)
-        composeRule.mainClock.advanceTimeBy(600)
-        assertProgress(1f, 0f)
-        composeRule.mainClock.advanceTimeBy(250)
-        assertProgress(1f, 1f)
-    }
+    private val today = LocalDate.of(2026, 11, 12)
 
     @Test
     fun beforeTheRecordLoads_noGreetingText() {
         composeRule.setContent {
-            val decision = rememberGreetingDecision(null, LocalDate.of(2026, 11, 12), "דנה", false)
+            val decision = rememberGreetingDecision(null, today, "דנה", false)
             if (decision == null) GreetingReserve() else GreetingLine(decision.text, decision.animate)
         }
         assertEquals(0, composeRule.onAllNodesWithText("טוב לראות", substring = true).fetchSemanticsNodes().size)
@@ -54,32 +47,67 @@ class GreetingAnimationTest {
     }
 
     @Test
-    fun firstLaunch_showsMeetYouAndMarksOnlyAfterTheAnimation() {
+    fun recordLoads_drawsFromZeroAndMarksWhenTheDrawStarts() {
         composeRule.mainClock.autoAdvance = false
-        val today = LocalDate.of(2026, 11, 12)
-        var marks by mutableIntStateOf(0)
-        composeRule.setContent {
-            val decision = rememberGreetingDecision(GreetingRecord(), today, "דנה", reducedMotion = false)
-            LaunchedEffect(decision) {
-                val chosen = decision ?: return@LaunchedEffect
-                if (!chosen.mark) return@LaunchedEffect
-                if (chosen.animate) delay(1_000)
-                marks++
+        val store = store()
+        val marked = java.util.concurrent.atomic.AtomicReference<LocalDate?>()
+        Thread {
+            runCatching {
+                runBlocking {
+                    store.record.collect { if (it.lastShown == today) marked.set(it.lastShown) }
+                }
             }
-            GreetingLine(decision!!.text, animate = decision.animate)
+        }.apply { isDaemon = true }.start()
+        Thread.sleep(100)
+        composeRule.setContent {
+            CompositionLocalProvider(LocalGreetingInspection provides true) {
+                MyApplicationTheme {
+                    val decision = rememberVisitGreeting(store, "דנה", today, reducedMotion = false)
+                    if (decision == null) GreetingReserve() else GreetingLine(decision.text, decision.animate)
+                }
+            }
         }
-        composeRule.onNodeWithText("נעים להכיר, דנה").fetchSemanticsNode()
+        assertEquals(0, composeRule.onAllNodesWithTag("home_greeting").fetchSemanticsNodes().size)
+        repeat(30) {
+            if (composeRule.onAllNodesWithTag("home_greeting").fetchSemanticsNodes().isNotEmpty()) return@repeat
+            composeRule.mainClock.advanceTimeByFrame()
+        }
+        composeRule.onNodeWithTag("home_greeting").fetchSemanticsNode()
+        composeRule.mainClock.advanceTimeByFrame()
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
         assertEquals(0, composeRule.onAllNodesWithText("טוב לראות", substring = true).fetchSemanticsNodes().size)
-        composeRule.mainClock.advanceTimeBy(400)
-        assertEquals(0, marks)
-        composeRule.mainClock.advanceTimeBy(700)
-        composeRule.onNodeWithText("נעים להכיר, דנה").fetchSemanticsNode()
-        assertEquals(1, marks)
+        assertProgress(0f, 0f)
+        composeRule.mainClock.advanceTimeBy(150)
+        assertProgress(0f, 0f)
+        composeRule.mainClock.advanceTimeBy(250)
+        val underline = composeRule.onNodeWithTag("home_greeting").fetchSemanticsNode().config[GreetingUnderlineProgress]
+        assertTrue(underline > 0f && underline < 1f)
+        val started = System.currentTimeMillis()
+        while (marked.get() == null && System.currentTimeMillis() - started < 2_000) {
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(20)
+        }
+        assertEquals(today, marked.get())
+        composeRule.mainClock.advanceTimeBy(350)
+        assertProgress(1f, 0f)
+        composeRule.mainClock.advanceTimeBy(250)
+        assertProgress(1f, 1f)
+        assertTrue(composeRule.onAllNodesWithText("נעים להכיר", substring = true).fetchSemanticsNodes().isNotEmpty())
+        assertEquals(0, composeRule.onAllNodesWithText("טוב לראות", substring = true).fetchSemanticsNodes().size)
     }
 
     private fun assertProgress(underline: Float, leaf: Float) {
         val node = composeRule.onNodeWithTag("home_greeting").fetchSemanticsNode()
         assertEquals(underline, node.config[GreetingUnderlineProgress], 0.05f)
         assertEquals(leaf, node.config[GreetingLeafProgress], 0.05f)
+    }
+
+    private fun store(): GreetingStore {
+        val file = File(System.getProperty("java.io.tmpdir"), "greeting-anim-${System.nanoTime()}.preferences_pb")
+        val dataStore = PreferenceDataStoreFactory.create(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            produceFile = { file },
+        )
+        return GreetingStore(dataStore)
     }
 }

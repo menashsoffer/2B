@@ -10,8 +10,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.R
 import java.time.LocalDate
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 /** Chosen once, when the stored record first arrives. Later writes do not change it. */
 data class GreetingDecision(
@@ -56,8 +57,7 @@ fun rememberVisitGreeting(
     LaunchedEffect(decision) {
         val chosen = decision ?: return@LaunchedEffect
         if (!chosen.mark) return@LaunchedEffect
-        if (chosen.animate) delay(1_000)
-        store.markShown(today)
+        withContext(NonCancellable) { store.markShown(today) }
     }
     return decision
 }
