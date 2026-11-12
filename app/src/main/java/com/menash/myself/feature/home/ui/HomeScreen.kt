@@ -66,20 +66,20 @@ fun HomeScreen(
     }
     val today = Instant.ofEpochMilli(nowMillis).atZone(ZoneId.systemDefault()).toLocalDate()
     val reducedMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    LaunchedEffect(greetingRecord, today) {
-        val loaded = greetingRecord ?: return@LaunchedEffect
-        if (loaded.lastShown != today) greetingStore.markShown(today)
+    val decision = rememberGreetingDecision(greetingRecord, today, displayName, reducedMotion)
+    LaunchedEffect(decision) {
+        val chosen = decision ?: return@LaunchedEffect
+        if (!chosen.mark) return@LaunchedEffect
+        if (chosen.animate) delay(1_000)
+        greetingStore.markShown(today)
     }
-    val loadedGreeting = greetingRecord
-    val greeting = if (loadedGreeting == null) greetingLine(GreetingVisit.Returning, displayName)
-        else greetingLine(greetingVisit(loadedGreeting, today), displayName)
-    val animateGreeting = loadedGreeting != null && shouldAnimateGreeting(loadedGreeting, today, reducedMotion)
     HomeContent(
         state = state.copy(firstName = firstNameOf(displayName)),
         hour = 0,
         epochMillis = nowMillis,
-        greeting = greeting,
-        animateGreeting = animateGreeting,
+        greeting = decision?.text,
+        animateGreeting = decision?.animate == true,
+        showGreeting = decision != null,
         onOpenRoute = onOpenRoute,
         onOpenAccount = onOpenAccount,
         onMoneyTask = { task ->

@@ -51,6 +51,7 @@ fun HomeContent(
     epochMillis: Long,
     greeting: String? = null,
     animateGreeting: Boolean = false,
+    showGreeting: Boolean = true,
     onOpenRoute: (String) -> Unit,
     onOpenAccount: () -> Unit,
     modifier: Modifier = Modifier,
@@ -86,10 +87,14 @@ fun HomeContent(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                GreetingLine(
-                    text = greeting ?: greetingLine(GreetingVisit.Returning, state.firstName),
-                    animate = animateGreeting,
-                )
+                if (showGreeting) {
+                    GreetingLine(
+                        text = greeting ?: greetingLine(GreetingVisit.Returning, state.firstName),
+                        animate = animateGreeting,
+                    )
+                } else {
+                    GreetingReserve()
+                }
                 Text(
                     text = hebrewDateLine(epochMillis),
                     style = AppType.caption,

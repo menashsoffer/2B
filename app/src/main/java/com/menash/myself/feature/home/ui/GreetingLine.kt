@@ -19,6 +19,8 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -26,9 +28,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.appColors
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.dp
 
 private val UnderlineEasing = CubicBezierEasing(0.33f, 1f, 0.68f, 1f)
+
+val GreetingUnderlineProgress = SemanticsPropertyKey<Float>("GreetingUnderlineProgress")
+val GreetingLeafProgress = SemanticsPropertyKey<Float>("GreetingLeafProgress")
+
+private var SemanticsPropertyReceiver.greetingUnderline by GreetingUnderlineProgress
+private var SemanticsPropertyReceiver.greetingLeaf by GreetingLeafProgress
 
 /** Underline progress for a clock that starts at 0. The line draws from 150 ms to 750 ms. */
 fun greetingUnderlineFraction(elapsedMs: Int): Float = when {
@@ -50,8 +59,8 @@ fun greetingLeafFraction(elapsedMs: Int): Float = when {
  */
 @Composable
 fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) {
-    val underline = remember { Animatable(if (animate) 0f else 1f) }
-    val leaf = remember { Animatable(if (animate) 0f else 1f) }
+    val underline = remember(animate) { Animatable(if (animate) 0f else 1f) }
+    val leaf = remember(animate) { Animatable(if (animate) 0f else 1f) }
     LaunchedEffect(animate) {
         if (!animate) {
             underline.snapTo(1f)
@@ -65,7 +74,15 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
         leaf.animateTo(1f, tween(durationMillis = 250, delayMillis = 750, easing = FastOutSlowInEasing))
     }
     val mint = MaterialTheme.appColors.success
-    Column(modifier = modifier.semantics(mergeDescendants = true) { heading() }.testTag("home_greeting")) {
+    Column(
+        modifier = modifier
+            .semantics(mergeDescendants = true) {
+                heading()
+                greetingUnderline = underline.value
+                greetingLeaf = leaf.value
+            }
+            .testTag("home_greeting"),
+    ) {
         Text(
             text = text,
             style = AppType.title,
@@ -95,6 +112,20 @@ fun GreetingLine(text: String, animate: Boolean, modifier: Modifier = Modifier) 
                 }
             }
         }
+    }
+}
+
+/** Empty greeting slot with the same height as the finished line, before the record loads. */
+@Composable
+fun GreetingReserve(modifier: Modifier = Modifier) {
+    Column(modifier.clearAndSetSemantics {}) {
+        Text(
+            text = " ",
+            style = AppType.title,
+            color = MaterialTheme.appColors.textPrimary.copy(alpha = 0f),
+            modifier = Modifier.clearAndSetSemantics {},
+        )
+        Spacer(Modifier.height(14.dp))
     }
 }
 
