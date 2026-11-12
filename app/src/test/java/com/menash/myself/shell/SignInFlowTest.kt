@@ -31,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.menash.myself.R
 import com.menash.myself.core.auth.AuthSession
+import com.menash.myself.core.auth.SignInCopy
 import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.feature.me.ui.MeActions
 import com.menash.myself.feature.me.ui.MeContent
@@ -59,6 +60,25 @@ class SignInFlowTest {
         assertTrue(shellShowsNavBar(ShellRoute.Home))
         assertTrue(shellShowsNavBar(null))
         assertFalse(shellShowsNavBar(RequireSignIn.Route))
+    }
+
+    @Test
+    fun signInCopy_holdsEachLabel() {
+        val copy = SignInCopy(
+            wordmark = "מותג",
+            body = "גוף",
+            spacesTitle = "מרחבים",
+            spacesSubtitle = "שלי, שלה",
+            syncTitle = "סנכרון",
+            syncSubtitle = "מגובה",
+            privacyTitle = "פרטיות",
+            privacySubtitle = "מקומי",
+            button = "התחבר",
+            close = "סגירה",
+        )
+        assertEquals("סגירה", copy.close)
+        assertEquals("מותג", copy.wordmark)
+        assertEquals("שלי, שלה", copy.spacesSubtitle)
     }
 
     @Test
