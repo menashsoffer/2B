@@ -21,6 +21,15 @@ import java.time.YearMonth
 class MoneyDocumentsTest {
 
     @Test
+    fun averagesSettingsRoundTripAndDefault() {
+        val month = java.time.YearMonth.of(2025, 6)
+        listOf(null, month).forEach { from ->
+            val entry = MoneyEntry.AveragesSettingsEntry(from)
+            assertEquals(entry, MoneyDocuments.decode(MoneyCollection.AVERAGES_SETTINGS, "settings", MoneyDocuments.encode(entry)))
+        }
+    }
+
+    @Test
     fun legacyFuelCategoryKeepsItsIdAndCustomNames() {
         fun decoded(id: String, name: String): Category {
             val entry = MoneyEntry.CategoryEntry(Category(id, name, ExpenseClass.CURRENT))
@@ -93,6 +102,7 @@ class MoneyDocumentsTest {
     fun saving_withAndWithoutMaturity() {
         assertRoundTrip(MoneyEntry.SavingEntry(MoneySamples.pension))
         assertRoundTrip(MoneyEntry.SavingEntry(MoneySamples.pension.copy(maturity = null)))
+        assertRoundTrip(MoneyEntry.SavingEntry(MoneySamples.pension.copy(startMonth = java.time.YearMonth.of(2026, 1))))
     }
 
     @Test
@@ -195,6 +205,6 @@ class MoneyDocumentsTest {
     @Test
     fun seedOnlyWhenTheHouseholdHasNoCategories() {
         assertEquals(defaultCategories(), categoriesToSeed(emptyList(), defaultCategories()))
-        assertEquals(emptyList<Category>(), categoriesToSeed(listOf(defaultCategories().first()), defaultCategories()))
+        assertEquals(defaultCategories().filter { it.id == com.menash.myself.feature.money.domain.DONATION_CATEGORY_ID }, categoriesToSeed(listOf(defaultCategories().first()), defaultCategories()))
     }
 }

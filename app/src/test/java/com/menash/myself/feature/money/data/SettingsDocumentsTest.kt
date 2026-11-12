@@ -61,6 +61,14 @@ class SettingsDocumentsTest {
     }
 
     @Test
+    fun oldTitheSettingsRetainTheirStartMonth() {
+        val old = mapOf<String, Any>("startMonth" to "2024-03", "opening" to 0L, "depositsBefore" to 0L)
+        val decoded = TitheDocuments.settings(TitheSettings.ID, MoneyDoc(old))
+        assertFalse(decoded.fromFirstData)
+        assertEquals(YearMonth.of(2024, 3), decoded.startMonth)
+    }
+
+    @Test
     fun donationAndTitheSettings_roundTrip() {
         val donation = Donation(
             id = "d-1", date = LocalDate.of(2026, 10, 12), amount = Money(36_000),

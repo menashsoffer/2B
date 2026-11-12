@@ -10,7 +10,7 @@ import com.menash.myself.core.domain.model.UiState
 import com.menash.myself.core.domain.model.VisibilityFilter
 import com.menash.myself.core.domain.model.dreamsActiveValue
 import com.menash.myself.core.ui.BaseViewModel
-import com.menash.myself.ui.home.HomeUiState
+import com.menash.myself.feature.home.ui.HomeUiState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,8 +19,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import com.menash.myself.core.domain.model.Money
+import com.menash.myself.feature.money.MonthStatus
+import com.menash.myself.feature.money.MonthTask
 import com.menash.myself.feature.money.MonthView
+import com.menash.myself.feature.money.SourceFreshness
+import com.menash.myself.feature.money.dayChanges
+import com.menash.myself.feature.money.moneyOverview
+import com.menash.myself.feature.money.data.TransactionRepository
+import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.buildMoneyMonth
 import com.menash.myself.feature.money.data.MoneyRepository
 import java.math.BigDecimal
@@ -33,16 +43,42 @@ class HomeViewModel(
     moneyRepository: MoneyRepository? = null,
     usdRates: Flow<BigDecimal?> = flowOf(null),
     today: () -> LocalDate = { LocalDate.now() },
+    transactions: TransactionRepository? = null,
+    /** A new date rebuilds the money card even when no data changed (month end with the app open). */
+    days: Flow<LocalDate> = dayChanges(today),
+    /** Where the money card is computed. The factory passes Dispatchers.Default; tests keep the collector's thread. */
+    compute: CoroutineContext = EmptyCoroutineContext,
 ) : BaseViewModel(errorReporter) {
 
-    /** The expected surplus when the month is planned, otherwise null (no invented 0). */
-    private val surplus: Flow<Money?> = if (moneyRepository == null) {
+    private data class HomeMoney(val surplus: Money?, val leftForCurrent: Money?, val tasks: List<MonthTask>, val freshness: SourceFreshness?)
+
+    /** This month's money as the month tab shows it, from the same [moneyOverview]. Null without a repository. */
+    private val money: Flow<HomeMoney?> = if (moneyRepository == null) {
         flowOf(null)
     } else {
-        combine(moneyRepository.observe(), usdRates) { data, rate ->
-            val day = today()
-            (buildMoneyMonth(data, YearMonth.from(day), day, rate).view as? MonthView.Planned)?.plan?.expectedSurplus
-        }.catch { error ->
+        combine(
+            moneyRepository.observe(), usdRates,
+            transactions?.observeTransactions() ?: flowOf(emptyList()),
+            transactions?.observeMemory() ?: flowOf(ImportMemory()),
+            combine(transactions?.observeSourceClosures() ?: flowOf(emptyMap()), days) { closures, day -> closures to day },
+        ) { data, rate, lines, memory, (closures, day) ->
+            // A failure hides the card for this emission only; the next data change or date tries again.
+            try {
+                val now = buildMoneyMonth(data, YearMonth.from(day), day, rate, lines, memory)
+                val overview = moneyOverview(data, day, rate, lines, memory, closures, now)
+                HomeMoney(
+                    surplus = (now.view as? MonthView.Planned)?.plan?.expectedSurplus,
+                    leftForCurrent = (overview.headline as? MonthStatus.Open)?.leftForCurrent,
+                    tasks = overview.tasks,
+                    freshness = overview.oldestSource,
+                )
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                handleException("observeMoneyHome", e)
+                null
+            }
+        }.flowOn(compute).catch { error ->
             if (error is Exception) {
                 handleException("observeMoneyHome", error)
                 emit(null)
@@ -52,8 +88,14 @@ class HomeViewModel(
         }
     }
 
-    val uiState: StateFlow<HomeUiState> = combine(observeDreams(dreamRepository), surplus) { dreams, money ->
-        HomeUiState(dreamsActive = dreamsActiveValue(dreams), moneySurplus = money)
+    val uiState: StateFlow<HomeUiState> = combine(observeDreams(dreamRepository), money) { dreams, money ->
+        HomeUiState(
+            dreamsActive = dreamsActiveValue(dreams),
+            moneySurplus = money?.surplus,
+            moneyLeftForCurrent = money?.leftForCurrent,
+            moneyTasks = money?.tasks.orEmpty(),
+            moneyFreshness = money?.freshness,
+        )
     }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
@@ -79,10 +121,12 @@ class HomeViewModel(
             moneyRepository: MoneyRepository,
             usdRates: Flow<BigDecimal?>,
             today: () -> LocalDate,
+            transactions: TransactionRepository? = null,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(dreamRepository, errorReporter, moneyRepository, usdRates, today) as T
+                return HomeViewModel(dreamRepository, errorReporter, moneyRepository, usdRates, today, transactions,
+                    compute = kotlinx.coroutines.Dispatchers.Default) as T
             }
         }
     }

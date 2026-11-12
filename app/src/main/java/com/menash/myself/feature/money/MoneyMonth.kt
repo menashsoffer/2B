@@ -11,6 +11,7 @@ import com.menash.myself.feature.money.domain.MoneyItems
 import com.menash.myself.feature.money.domain.MonthPlan
 import com.menash.myself.feature.money.domain.amountFor
 import com.menash.myself.feature.money.domain.cushionMonths
+import com.menash.myself.feature.money.domain.forMonth
 import com.menash.myself.feature.money.domain.isStale
 import com.menash.myself.feature.money.domain.monthPlan
 import com.menash.myself.feature.money.domain.PensionSnapshot
@@ -42,6 +43,12 @@ data class MonthRow(val kind: MonthRowKind, val total: Money, val items: List<Mo
 data class BarSegment(val kind: MonthRowKind?, val amount: Money)
 
 sealed interface MonthView {
+    data class ActualOnly(
+        val income: Money, val spent: Money, val unassigned: Money?, val importedLines: Int,
+        val top: CategoryTop, val closed: Boolean,
+    ) : MonthView {
+        val saving: Money get() = income - spent
+    }
     data class Empty(val usdRateMissing: Boolean = false) : MonthView
     data class Planned(
         val plan: MonthPlan.Planned,
@@ -88,16 +95,15 @@ data class BigPicture(
     val flows: List<MonthFlowPoint> = emptyList(),
     /** Net worth after each closed month with balances, then today. */
     val worth: List<WorthPoint> = emptyList(),
+    val averagesFrom: YearMonth? = null,
+    val averagesCurrentMonth: YearMonth? = null,
 )
 
 /** [month] is the month shown; [current] is today's month. The big picture is always today's. */
-data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month) {
+data class MoneyMonth(val month: YearMonth, val view: MonthView, val bigPicture: BigPicture, val current: YearMonth = month, val earliest: YearMonth = current.minusMonths(12), val pendingClose: List<YearMonth> = emptyList()) {
     val canGoNext: Boolean get() = month < current
-    val canGoBack: Boolean get() = month > current.minusMonths(MonthsBack)
+    val canGoBack: Boolean get() = month > earliest
 }
-
-/** How far back the month screen goes (three years). */
-const val MonthsBack = 36L
 
 /**
  * [usdToIls] is the stored Bank of Israel rate, or null when none is stored. [transactions] are the imported
@@ -112,20 +118,30 @@ fun buildMoneyMonth(
     memory: ImportMemory = ImportMemory(),
 ): MoneyMonth {
     val rate = usdToIls?.takeIf { it > BigDecimal.ZERO }
-    val missingUsd = if (rate == null) {
-        data.items.subscriptions.filter { it.currency == Currency.USD && amountFor(it, month) != null }
-    } else {
-        emptyList()
-    }
+    val active = data.items.forMonth(month, today)
+    val missingUsd = if (rate == null) active.subscriptions.filter { it.currency == Currency.USD } else emptyList()
     val missingIds = missingUsd.map { it.id }.toSet()
-    val items = data.items.copy(subscriptions = data.items.subscriptions.filter { it.id !in missingIds })
+    // Only items with a known plan for this month belong in the month screen. In particular,
+    // a recurring amount created later must not turn an older imported month into a zero plan.
+    val items = active.copy(subscriptions = active.subscriptions.filter { it.id !in missingIds })
     val plan = monthPlan(month, items, rate)
     val view = when (plan) {
         // A month whose only items are USD subscriptions without a rate stays a set-up month, with the chip.
-        MonthPlan.Empty -> MonthView.Empty(usdRateMissing = missingUsd.isNotEmpty())
+        MonthPlan.Empty -> {
+            val lines = com.menash.myself.feature.money.importer.monthLines(transactions, month, memory, data.categories)
+            if (lines.lines.isEmpty()) MonthView.Empty(usdRateMissing = missingUsd.isNotEmpty())
+            else {
+                val actuals = com.menash.myself.feature.money.domain.planVsActual(month,
+                    com.menash.myself.feature.money.domain.MoneyItems(),
+                    com.menash.myself.feature.money.importer.toTransactions(transactions, memory), rate).categories
+                val unassigned = com.menash.myself.feature.money.domain.sumMoney(lines.lines.filter { it.unassigned }.mapNotNull { it.row.charge })
+                MonthView.ActualOnly(lines.income, lines.spent, unassigned.takeUnless { it.isZero() }, lines.lines.size,
+                    topCategories(actuals, data.categories), data.closedMonths.any { it.month == month })
+            }
+        }
         is MonthPlan.Planned -> MonthView.Planned(
             plan = plan,
-            rows = rows(data.items, plan, month, rate, missingIds),
+            rows = rows(active, plan, month, rate, missingIds),
             cardCharges = plan.cardCharges,
             bar = bar(plan),
             usdRateMissing = missingUsd.isNotEmpty(),
@@ -134,13 +150,15 @@ fun buildMoneyMonth(
             .let { it.copy(status = monthStatus(it, data.closedMonths.lastOrNull { c -> c.month == month }, transactions, month)) }
     }
     val planned = (view as? MonthView.Planned)?.plan
-    val closed = closedFigures(data.closedMonths)
+    val closed = closedFigures(data.closedMonths, data.averagesFrom)
     val closedCushion = closed.averageExpenses?.let { cushionMonths(data.assets, it) }
     val liquidWorth = data.assets.takeIf { it.isNotEmpty() }?.let { netWorth(it) }
     val pension = data.pensionFunds.takeIf { it.isNotEmpty() }?.let { pensionSnapshot(it, today) }
     return MoneyMonth(
         month = month,
+        current = YearMonth.from(today),
         view = view,
+        pendingClose = monthsAwaitingClose(today, transactions, data.closedMonths),
         bigPicture = BigPicture(
             netWorth = liquidWorth,
             assets = data.assets.map { AssetRow(it, isStale(it, today)) },
@@ -151,6 +169,8 @@ fun buildMoneyMonth(
             titheBalance = titheFromImports(data, month, transactions, memory)?.balance,
             monthlySaving = closed.monthlySaving,
             cushionFromClosed = closedCushion != null,
+            averagesFrom = data.averagesFrom,
+            averagesCurrentMonth = YearMonth.from(today),
             pension = pension,
             totalWorth = totalWorth(liquidWorth, pension),
             flows = monthFlows(data.closedMonths, transactions, memory, data.categories, YearMonth.from(today)),

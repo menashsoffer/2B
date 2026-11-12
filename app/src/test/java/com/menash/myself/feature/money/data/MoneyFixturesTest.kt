@@ -23,7 +23,7 @@ class MoneyFixturesTest {
         val list = Regex("""function isMoneyCollection\(name\)\s*\{\s*return name in \[(.*?)]""", RegexOption.DOT_MATCHES_ALL)
             .find(rules)?.groupValues?.get(1) ?: error("isMoneyCollection not found in firestore.rules")
         val inRules = Regex("'([A-Za-z]+)'").findAll(list).map { it.groupValues[1] }.toSet()
-        assertEquals(19, inRules.size)
+        assertEquals(21, inRules.size)
         assertEquals(inRules, MoneyFixtures.all().keys)
     }
 

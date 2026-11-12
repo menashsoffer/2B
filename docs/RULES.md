@@ -7,7 +7,7 @@
 ## 1. כללי יסוד
 1. **כשלא בטוחים — שואלים:** לעולם אין לנחש כוונת משתמש, התנהגות עסקית או נוסחאות חישוב.
 2. **איסור מוחלט על מחיקת נתוני משתמש:** אף פעולה, מיגרציה או שחזור אינם מוחקים נתונים ללא גיבוי מקומי מקדים ואישור מפורש מהמשתמש.
-3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`ui/<x>/` מחולקים ל-`*Content` ו-`*Screen`. המבנה המלא ב-[ARCHITECTURE.md](ARCHITECTURE.md).
+3. **מבנה אחיד:** כל פיצ'ר חדש נבנה כמו עמוד הכסף: `feature/<x>/domain` (Kotlin טהור), `feature/<x>/data` (המרה למסמכים), `feature/<x>/*ViewModel.kt`, ומסכים ב-`feature/<x>/ui/` מחולקים ל-`*Content` ו-`*Screen`. כללי המבנה המלאים ב-[STRUCTURE.md](STRUCTURE.md).
 
 ---
 
@@ -18,7 +18,7 @@
 - **המבנה בפועל** (חבילות, זרימת נתונים, עמוד הכסף, בדיקות, CI): [ARCHITECTURE.md](ARCHITECTURE.md).
 - **גבולות תלויות (Dependency Boundaries):**
   - `domain/` הוא Kotlin טהור: אין `import android.*`, `androidx.*` או Firebase.
-  - קוד ב-`feature/` וב-`ui/` לא מייבא `com.menash.myself.data.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
+  - קוד ב-`feature/` וב-`shell/` לא מייבא `com.menash.myself.core.data.legacy.*` ולא את `ModelMappers` (נבדק ב-`LayerBoundariesTest`).
   - ViewModels תלויים בממשקי Repository (`core/data/repository`, `feature/money/data`), לא במימושים.
   - הזרקת תלויות ידנית ב-`AppContainer`, בלי פריימוורק.
 
@@ -86,7 +86,7 @@
    - ערכת הצבעים Night Blue (`theme/Palette.kt`, `ActivePalette`). צבע (`Color(0x…)`) וגודל גופן (`.sp`) רק ב-`theme/`; `NightBlueGuardTest` נכשל על שימוש חדש מחוץ ל-allow-list, וגם על רשומה מיותרת בה.
    - רכיבים משותפים (`component/`): `HeroCard`, `MetricCard`, `MoneyText` (עם פסיקי אלפים וסמל ₪ מיושר RTL), `Chip`, `PillTabs`, `ListRow`, `PrimaryButton`, `TextInput`, `SpaceBadge`, `SharedBadge`, `EmptyState`, `ErrorState`, `LoadingState`, `OfflineIndicator`, `FloatingNavBar`, `ProfileAvatar`, `ProgressBar`, `QuickAddButton`, `ScreenHeader`.
    - אף מסך אינו מגדיר סגנונות משל עצמו — הכל נגזר ממערכת העיצוב.
-2. **ניווט ב-5 לשוניות (`FloatingNavBar`, `ui/shell/ShellTab.kt`):**
+2. **ניווט ב-5 לשוניות (`FloatingNavBar`, `shell/ShellTab.kt`):**
    - בית, כסף, חלומות, קניות, מעקב. חלומות, קניות ומעקב הם עדיין מסכי placeholder.
    - אין FAB לכל מסך (`ShellAndViewModelGuardsTest`).
 3. **ניהול עומס קוגניטיבי:**
@@ -133,13 +133,17 @@
 
 ## 8. התקנה והפצה (Install and distribution)
 
-דחיפה ל-`main` מפעילה את `.github/workflows/distribute.yml`, וגם הפעלה ידנית (workflow_dispatch). הודעת קומיט שמכילה `[skip ci]` מדלגת על הריצה. כך מגיעה גרסה לטלפונים, בלי Android Studio ובלי כבל:
+מיזוג ל־`main` אינו מפיץ גרסה ואינו פורס חוקים. הפצה מופעלת ידנית דרך Actions → Distribute או בהרצה מתוזמנת יומית כשיש שינויים, ופורסת קודם את החוקים כברירת מחדל (בהרצה ידנית אפשר לבטל את `deploy_rules` כדי להפיץ ללא פריסת חוקים). לפרטים ראו `docs/RELEASE.md`.
+
+**חוקי Firestore חייבים להישאר תואמים לגרסת האפליקציה שכבר מותקנת בטלפונים**, משום שהחוקים נפרסים לפני שהטלפונים מתעדכנים.
+
+כך מגיעה גרסה לטלפונים, בלי Android Studio ובלי כבל:
 
 1. אם סוד חסר, הריצה נעצרת מיד ומדפיסה את **שם** הסוד. אין build ואין העלאה.
 2. `app/google-services.json` נכתב מהסוד `GOOGLE_SERVICES_JSON` — הקובץ האמיתי, לא הקובץ המזויף של בדיקות היחידה.
 3. `./gradlew testDebugUnitTest`. כישלון בדיקות עוצר את ההפצה.
-4. `./gradlew assembleRelease` בונה APK חתום. `versionCode` מגיע ממשתנה הסביבה `VERSION_CODE`; ב-CI זה `github.run_number`, כדי שכל בנייה תהיה חדשה והטלפון יקבל עדכון במקום.
-5. Firebase CLI מעלה את `app/build/outputs/apk/release/app-release.apk` לקבוצת הבודקים שה-alias שלה `family`. הערות השחרור הן הודעת הקומיט.
+4. `./gradlew assembleRelease` בונה APK חתום. `versionCode` מגיע ממשתנה הסביבה `VERSION_CODE`; ב-CI זה 1000 ועוד `github.run_number`, כדי שכל בנייה תהיה חדשה והטלפון יקבל עדכון במקום.
+5. Firebase CLI מעלה את `app/build/outputs/apk/release/app-release.apk` לקבוצת הבודקים שה-alias שלה `family`. הערות השחרור מוזנות ידנית או נוצרות מהשינויים מאז התג הקודם.
 
 **שמות הסודות** (Settings → Secrets and variables → Actions). הערכים אינם במסמך הזה ואינם ב-git:
 
@@ -239,5 +243,5 @@ Explicit, confirmed account/household deletion is the approved exception to the 
 | G6 | יתר הקוד | מדידה בלבד | מדידה בלבד |
 
 - פונקציות Compose מוחרגות ממדידת האחוזים. מסכים שיש להם תמונות ייחוס של Roborazzi נבדקים מולן. לוגיקה בתוך `LaunchedEffect` או `remember` בפונקציית Composable אינה נמדדת; לוגיקה עסקית צריכה להיות ב־ViewModel או בשכבת domain.
-- לפי קובצי `ui/**/*Screen.kt` ותמונות הייחוס הקיימות, למסכים הבאים אין golden ייעודי: FileCatalog, InboxTriage, Dreams, Fitness, Household, Calendar, More, LifeHome, Tasks ו־MoneySubScreen. תמונות הרכיבים ו־HomeContent אינן הוכחה לכיסוי מלא של המסך.
+- לפי קובצי `feature/*/ui/**/*Screen.kt` ותמונות הייחוס הקיימות, למסכים הבאים אין golden ייעודי: FileCatalog, InboxTriage, Dreams, Fitness, Household, Calendar, More, LifeHome, Tasks ו־MoneySubScreen. תמונות הרכיבים ו־HomeContent אינן הוכחה לכיסוי מלא של המסך.
 - להרצה מקומית: `./gradlew testDebugUnitTest koverHtmlReportDebug`. הדוח נפתח מ־`app/build/reports/kover/htmlDebug/index.html`.

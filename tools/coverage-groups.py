@@ -12,9 +12,10 @@ def groups(name):
     domain = name.startswith(money + 'domain.')
     importer = name.startswith(money + 'importer.')
     data = name.startswith(money + 'data.')
-    presentation = name.startswith(money) and not (domain or importer or data)
-    other = name.startswith(base) and not name.startswith(money)
-    rest = not name.startswith(base)
+    ui = name.startswith(base) and '.ui.' in name[len(base):]
+    presentation = name.startswith(money) and not (domain or importer or data or ui)
+    other = name.startswith(base) and not name.startswith(money) and not ui
+    rest = not name.startswith(base) or ui
     return [i for i, match in enumerate((domain, importer, data, presentation, other, rest), 1) if match]
 counts = [0] * 6
 unassigned, overlaps = [], []

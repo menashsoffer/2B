@@ -55,11 +55,14 @@ class MonthCloseRenewalTest {
     }
 
     @Test fun futureBudgetsAreOmittedWithoutBlockingCloseAndStartMonthIsIncluded() {
-        val future = budget.copy(id = "future", yearStartMonth = start.plusMonths(1))
+        val future = budget.copy(id = "future", categoryId = "future-cat", yearStartMonth = start.plusMonths(1))
         val closed = close(start, listOf(budget, future))
         assertEquals(setOf("annual"), closed.periodic.keys)
+        assertEquals(mapOf<String?, Money>("car" to Money.ZERO), closed.byCategory)
         assertEquals(Money(1000), closed.periodic.getValue("annual").accruedToDate)
-        assertTrue(close(start.minusMonths(1)).periodic.isEmpty())
+        val beforeStart = close(start.minusMonths(1))
+        assertTrue(beforeStart.periodic.isEmpty())
+        assertTrue(beforeStart.byCategory.isEmpty())
         assertTrue(canClose(closeChecks(CloseInput(start, closed.closedOn, emptySet(), emptySet(), 0, 0, emptyList()))))
     }
 }

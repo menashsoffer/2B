@@ -50,8 +50,43 @@ class MonthCloseFlowTest {
         val stored = listOf(line(LocalDate.of(2026, 10, 10), 10_000))
         assertEquals(october, closeTarget(LocalDate.of(2026, 11, 3), stored, emptyList()))
         val closed = ClosedMonth(october, MonthSnapshot(october, Money.ZERO, Money.ZERO), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
-        assertEquals(YearMonth.of(2026, 11), closeTarget(LocalDate.of(2026, 11, 3), stored, listOf(closed)))
-        assertEquals(YearMonth.of(2026, 11), closeTarget(LocalDate.of(2026, 11, 3), emptyList(), emptyList()))
+        assertEquals(october, closeTarget(LocalDate.of(2026, 11, 3), stored, listOf(closed)))
+        assertEquals(october, closeTarget(LocalDate.of(2026, 11, 3), emptyList(), emptyList()))
+    }
+
+    @Test
+    fun target_selectsOldestEndedMonthWithLines() {
+        val january = YearMonth.of(2024, 1)
+        val stored = listOf(line(LocalDate.of(2026, 11, 1), 1), line(LocalDate.of(2024, 1, 10), 1), line(LocalDate.of(2026, 10, 10), 1))
+        assertEquals(january, closeTarget(afterOctober, stored, emptyList()))
+    }
+
+    @Test
+    fun awaitingMonthsAreDistinctOrderedAndExcludeClosedAndCurrent() {
+        val jan = YearMonth.of(2024, 1)
+        val mar = YearMonth.of(2024, 3)
+        val rows = listOf(line(mar.atDay(5), 1), line(jan.atDay(2), 1), line(jan.atDay(3), 1), line(afterOctober, 1))
+        assertEquals(listOf(jan, mar), monthsAwaitingClose(afterOctober, rows, emptyList()))
+        val closed = ClosedMonth(jan, MonthSnapshot(jan, Money.ZERO, Money.ZERO), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
+        assertEquals(listOf(mar), monthsAwaitingClose(afterOctober, rows, listOf(closed)))
+    }
+
+    @Test
+    fun closedSourceIsNotExpectedFromMarkedMonthAndCanBeUndone() {
+        val source = StatementSource(Source.MAX, "1234")
+        val previous = listOf(line(LocalDate.of(2024, 5, 10), 500))
+        val june = YearMonth.of(2024, 6)
+        val before = closeView(data, june, today = afterOctober, usdToIls = null, stored = previous, memory = ImportMemory())
+        assertTrue(before.missingSources.contains(source))
+        val closed = closeView(data, june, afterOctober, null, previous, ImportMemory(), sourceClosures = mapOf(source to june))
+        assertFalse(closed.missingSources.contains(source))
+        assertEquals(june, closed.closedSources[source])
+        for (offset in 1L..6L) {
+            val month = june.plusMonths(offset)
+            val recent = listOf(line(month.minusMonths(1).atDay(5), 500))
+            assertFalse(closeView(data, month, afterOctober, null, recent, ImportMemory(), sourceClosures = mapOf(source to june)).missingSources.contains(source))
+            assertTrue(closeView(data, month, afterOctober, null, recent, ImportMemory()).missingSources.contains(source))
+        }
     }
 
     @Test
@@ -129,6 +164,17 @@ class MonthCloseFlowTest {
         val stored = ClosedMonth(october, MonthSnapshot(october, Money(1), Money(1)), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
         val v = view(listOf(line(LocalDate.of(2026, 10, 5), 25_000)), d = data.copy(closedMonths = listOf(stored)))
         assertEquals(stored, v.existing)
+    }
+
+    @Test
+    fun closedFiguresApplyTheChosenWindow() {
+        fun closed(month: YearMonth, income: Long, spent: Long) =
+            ClosedMonth(month, MonthSnapshot(month, Money(income), Money(spent)), emptyMap(), emptyMap(), emptyMap(), emptyMap(), afterOctober)
+        val rows = listOf(closed(YearMonth.of(2025, 5), 1000, 900), closed(YearMonth.of(2025, 6), 1000, 300))
+        val figures = closedFigures(rows, YearMonth.of(2025, 6))
+        assertEquals(Money(700), figures.monthlySaving)
+        assertEquals(Money(300), figures.averageExpenses)
+        assertEquals(YearMonth.of(2025, 6), figures.averagesFrom)
     }
 
     @Test

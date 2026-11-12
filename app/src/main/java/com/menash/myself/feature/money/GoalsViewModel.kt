@@ -57,11 +57,11 @@ class GoalsViewModel(
     val ui: StateFlow<GoalsUi> = combine(open, repository.observe(), usdRates, editor) { isOpen, data, usd, sheet ->
         latest = data
         rate = usd
-        GoalsUi(isOpen, canWe(data, month, usd, closedFigures(data.closedMonths).monthlySaving), month, sheet?.let { it.copy(preview = preview(it.draft)) })
+        GoalsUi(isOpen, canWe(data, month, usd, closedFigures(data.closedMonths, data.averagesFrom).monthlySaving), month, sheet?.let { it.copy(preview = preview(it.draft)) })
     }.stateIn(viewModelScope, SharingStarted.Eagerly, GoalsUi())
 
     private fun preview(draft: GoalDraft): Feasibility? =
-        (buildGoal(draft) { "preview" } as? GoalResult.Ok)?.let { previewAnswer(it.goal, latest, month, rate, closedFigures(latest.closedMonths).monthlySaving) }
+        (buildGoal(draft) { "preview" } as? GoalResult.Ok)?.let { previewAnswer(it.goal, latest, month, rate, closedFigures(latest.closedMonths, latest.averagesFrom).monthlySaving) }
 
     fun open() {
         open.value = true
@@ -70,6 +70,10 @@ class GoalsViewModel(
     fun close() {
         open.value = false
         editor.value = null
+    }
+
+    fun setAveragesFrom(from: YearMonth?) {
+        safeLaunch("saveAverages") { repository.save(MoneyEntry.AveragesSettingsEntry(from)) }
     }
 
     fun startAdding() {

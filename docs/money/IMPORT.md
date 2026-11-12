@@ -65,8 +65,43 @@ stored lines + ImportMemory ──toTransactions──▶ engine Transaction ─
 
 `households/{hid}/transactions/{id}` has 15 fields at most. Amounts are agorot and dates are `YYYY-MM-DD`. `households/{hid}/merchantMemory/m-<hash>` holds `{key, categoryId?, ownTransfer, alias?, askEachTime?}`. `alias` (1–60 characters) is only a display name: matching and the document id always use the bank's text. `askEachTime` marks a generic merchant (ביט, העברה): it is never learnt, its stored `categoryId` is ignored, and turning it on first copies the learnt category onto the lines that followed it. A category chosen with "רק לתנועה הזו" is saved on that line only. Both are added to `isMoneyCollection` in `firestore.rules`: members read and write, everyone else is denied. `apply` writes in batches of 450.
 
+## Closed sources and historical coverage
+
+A household can mark a missing account or card closed from the month currently being closed. A `sourceClosures/s-<hash>` document stores `v: 1`, `source`, `sourceId`, and `closedFrom` (`YYYY-MM`); undo deletes the mark. `closedFrom` prevents that source from being expected for that month and later months. Existing and later imported lines still count normally. This does not change import identifiers or merging.
+
+`importCoverage(stored)` groups by source and source id, returning the first and last billing months with rows and gaps within that range. A gap means no stored rows; it does not establish whether a file is missing or a source had no activity. The coverage function has no screen in this task.
+
 ## Not verified yet
 
 - The real header strings come from `import-formats.md`, because the real files were deleted after they were checked. The fixtures are synthetic and come from `tools/import-fixtures/make_fixtures.py`. The first real import, in 1b, is the true test.
 - No real sample of "תשלום N מתוך M" exists. The parser looks for it in סוג עסקה and הערות (TODO in `installmentOf`).
 - Cal's total line may also leave out FX lines that already carry an ILS amount. The check excludes every FX line.
+
+## Paamonim plan (`importer/PaamonimPlanReader.kt`, `PlanImport.kt`)
+
+A Paamonim רישומון shared into the same import flow opens a plan review instead of the statement review. Only a single shared file is checked; a plan file shared together with statements goes to the statement review, where it is refused as an unknown format.
+
+- **Detection:** a sheet whose header row starts with "סעיף" and lists the 12 Hebrew month names ("רשימת תקציבים"). Never by the file name.
+- **Read:** column A names the group (קבועות, תקופתיות, שוטפות, הכנסות) and the totals rows, column B the line. The month used is the latest one with any budget. An unused line carries the number 0 instead of a name and is skipped, and so is a line with no budget. "החזר חובות" is read as a total only; debts and savings from "שיקוף" are not read yet.
+- **Draft (`draftPlanImport`):** each line is matched to a category of the same class by name ("דלק" → `VEHICLE_ENERGY_CATEGORY_NAME`) and to the plan items in it.
+  - No item yet: **NEW**. A name with no category: **NEW_CATEGORY** (the category is added).
+  - One item with another monthly amount (more than ₪1 apart): **CHANGED**. The change starts at the import month (`AmountChange`), so earlier months and closed months keep their plan, and a "this month only" override of the import month is removed so it does not hide the change (overrides of later months stay). A yearly fixed expense gets the annual figure.
+  - A periodic budget has one `annualAmount` and no history: closed months draw their plan from it and `periodicStatus` accrues it from the year start, so any change reaches the whole year. An existing periodic budget with another amount is therefore never changed: **PERIODIC_IN_USE**, shown and left for the household. A new periodic budget starts its year at the import month.
+  - Two source lines naming the same income, or the same category once "דלק" is mapped: **DUPLICATE**, all of them shown and none changed. Each source line has its own key (its index), so a repeated name never shares a tick.
+  - Names are compared with spaces collapsed and letter case ignored ("Yes" = "YES"). A name that matches only a sub-category (one subscription) is **SPLIT**: which item to change is not guessed.
+  - The comparison uses the plan's own amount history, not a "this month only" override of the import month.
+  - The same amount: **SAME**. Two or more items in the category (or incomes with the name): **SPLIT**, shown but never changed.
+  - "מנויים" while subscriptions are listed one by one: **SUBSCRIPTIONS**, shown but not added, so they are not counted twice.
+  - Incomes are matched by name.
+- **Write:** nothing before confirm. Every NEW, NEW_CATEGORY and CHANGED line starts selected and can be unticked. On confirm the draft is matched again against the stored plan as it is then, for that day's month, and one `saveAll` writes the selected lines that are still changes, so an edit made while the review was open is not overwritten. A household with no categories gets the Paamonim defaults in the same save.
+- **Fixture:** `paamonim_plan.xls`, built by `tools/import-fixtures/make_paamonim_fixture.py` from a real file with every amount and name replaced. The real file and the name map stay outside the repository.
+
+## Plan from history (`PlanFromHistory.kt`)
+
+The same plan review, built from the household's own months instead of a file. Offered on the month tab when the current month has no plan and at least three ended months have spending.
+
+- **Months:** the last six ended months with spending. A closed month uses its frozen `byCategory`; an ended month that is not closed uses its imported lines (`planVsActual` with no plan). The current month is never used.
+- **Amounts:** fixed categories take the latest month; current categories the average; periodic categories the average × 12 as the annual budget. Monthly amounts round up to ₪50 and annual ones to ₪100.
+- **Left out:** sub-categories (single subscriptions, listed on their own screen), categories holding a yearly fixed expense (its one charge would read as a monthly amount), unassigned spending, and incomes (an import knows the total, not who earned it).
+- Only the newest six candidate months are computed. The offer appears only when the draft would have at least one line; if the review then has none, it says so instead of closing.
+- The lines then go through `draftPlanImport`'s matching, so new, changed and same lines behave as for a file.

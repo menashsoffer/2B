@@ -6,8 +6,8 @@ import com.menash.myself.core.data.repository.InboxRepository
 import com.menash.myself.core.data.session.HouseholdSession
 import com.menash.myself.core.domain.model.ForWhom
 import com.menash.myself.core.domain.model.InboxItem
-import com.menash.myself.data.firestore.LifeHubRepository
-import com.menash.myself.data.models.Household
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.models.Household
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest

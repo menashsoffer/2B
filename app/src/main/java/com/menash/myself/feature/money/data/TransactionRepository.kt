@@ -4,6 +4,9 @@ import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.ImportPlan
 import com.menash.myself.feature.money.importer.StoredTransaction
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import com.menash.myself.feature.money.StatementSource
+import java.time.YearMonth
 
 /** Imported bank and card lines plus what the household taught the importer. Shared by every member. */
 interface TransactionRepository {
@@ -15,6 +18,10 @@ interface TransactionRepository {
     fun observeMemoryForScreen(): Flow<ImportMemory> = observeMemory()
     fun observeTransactionsForImport(): Flow<List<StoredTransaction>> = observeTransactionsForScreen()
     fun observeMemoryForImport(): Flow<ImportMemory> = observeMemoryForScreen()
+
+    /** Source closure affects missing-statement checks only. */
+    fun observeSourceClosures(): Flow<Map<StatementSource, YearMonth>> = flowOf(emptyMap())
+    suspend fun setSourceClosedFrom(source: StatementSource, month: YearMonth?)
 
     /** Writes a confirmed [ImportPlan]: upserts by id, so applying the same plan twice changes nothing. */
     suspend fun apply(plan: ImportPlan)

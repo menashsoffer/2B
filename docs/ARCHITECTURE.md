@@ -1,45 +1,31 @@
 # ארכיטקטורה — 2B
 
-המסמך מתאר את הקוד כפי שהוא ב-`main` (31/10/2026). כללי הפיתוח ב-[RULES.md](RULES.md), בעיות פתוחות ב-[KNOWN_ISSUES.md](KNOWN_ISSUES.md), מה הלאה ב-[ROADMAP.md](ROADMAP.md).
+המסמך מתאר את הקוד כפי שהוא ב-`main` (31/10/2026). מבנה החבילות ב-[STRUCTURE.md](STRUCTURE.md), כללי הפיתוח ב-[RULES.md](RULES.md), בעיות פתוחות ב-[KNOWN_ISSUES.md](KNOWN_ISSUES.md), מה הלאה ב-[ROADMAP.md](ROADMAP.md).
 
 ## מודול אחד, חבילה אחת
 
 אפליקציית Android אחת (`app/`), Kotlin + Jetpack Compose. Namespace: `com.menash.myself`. Application id: `com.aistudio.mycalculators.qvxmzt` (קבוע לתמיד, אחרת הטלפון לא מקבל עדכון).
 
-```
+```text
 com.menash.myself
-├── MainActivity, MyselfApp      כניסה; MyselfApp מחזיק את AppContainer
-├── auth/                        כניסה עם Google (Credential Manager + Firebase Auth)
-├── calendar/                    קריאת יומן המכשיר
+├── MainActivity.kt, MyselfApp.kt
+├── shell/                     AppShell, AppNavHost, ShellTab, GalleryIndex, PlaceholderTab, MainViewModel
 ├── core/
-│   ├── crash/                   Crashlytics: non-fatals ו-handler שמנקה הודעות
-│   ├── data/
-│   │   ├── mapper/              המרות בין מסמכי Firestore הישנים למודל ה-domain
-│   │   ├── model/               ItemLocation (פריט בבית או פרטי)
-│   │   ├── repository/          ממשקי Repository שהמסכים תלויים בהם
-│   │   │   └── impl/            מימושים: Firestore, Room (הגדרות), BOI, Hebcal
-│   │   └── session/             HouseholdSession, ErrorReporter
-│   ├── designsystem/            Night Blue: theme/ (טוקנים), component/, gallery/
-│   ├── di/                      AppContainer: הזרקת תלויות ידנית
-│   ├── domain/                  מודלים משותפים (Money באגורות, ForWhom, Task, Dream…) ו-util/
-│   ├── external/                בנק ישראל (boi/) ו-Hebcal (hebcal/), עם מטמון DataStore
-│   └── ui/                      BaseViewModel (safeLaunch), ErrorMapper
-├── data/                        שכבת Firestore של העמודים הישנים, ו-Room להגדרות
-│   ├── firestore/               DataSources לכל אוסף + LifeHubRepository + HouseholdRepository
-│   └── models/, entities/, dao/ מסמכי Firestore ו-Room כפי שהם נשמרים
+│   ├── auth/  calendar/  crash/  di/  time/  ui/
+│   ├── designsystem/          theme/, component/, gallery/
+│   ├── domain/                model/, search/, util/
+│   ├── external/              boi/, hebcal/
+│   └── data/                  account/, mapper/, model/, repository/(impl/), session/, legacy/
 ├── feature/
-│   ├── money/                   עמוד הכסף (ראו למטה)
-│   └── home, tasks, dreams, inbox, fitness, household, importcatalog
-│                                ViewModels של העמודים הישנים
-└── ui/
-    ├── shell/                   AppShell, ניווט, 5 הלשוניות
-    ├── money/                   מסכי הכסף (Content טהור + Screen שמחבר ViewModel)
-    └── home, tasks, dreams, …   מסכי העמודים הישנים
+│   ├── money/                 state + ViewModels; ui/, domain/, importer/, data/, search/
+│   └── account, home, me, life, more, settings, tasks, dreams, inbox, fitness, household, calendar, importcatalog
+│                              ViewModel(s) at the root (when present) + ui/
+└── e2e/stories/               סיפורים בדיוניים לבניית e2e ולבדיקות
 ```
 
 ## הלשוניות והניווט
 
-`ui/shell/ShellTab.kt`: בית, כסף, חלומות, קניות, מעקב. בית וכסף בנויים; שלוש האחרות הן `PlaceholderTab`. המסכים הישנים (משימות, חלומות הישן, אינבוקס, כושר, יומן, קטלוג קבצים, משק בית) נשארו כ-routes נפרדים ב-`AppNavHost`. מגיעים אליהם רק מהגלריה הנסתרת (`GalleryIndex`): לחיצה ארוכה על שורת הגרסה בהגדרות.
+`shell/ShellTab.kt`: בית, כסף, חלומות, קניות, מעקב. בית וכסף בנויים; שלוש האחרות הן `PlaceholderTab`. המסכים הישנים (משימות, חלומות הישן, אינבוקס, כושר, יומן, קטלוג קבצים, משק בית) נשארו כ-routes נפרדים ב-`AppNavHost`. מגיעים אליהם רק מהגלריה הנסתרת (`GalleryIndex`): לחיצה ארוכה על שורת הגרסה בהגדרות.
 
 ## זרימת נתונים
 
@@ -61,7 +47,7 @@ Screen (Compose) ──> ViewModel (BaseViewModel.safeLaunch) ──> Repository
 | `feature/money/importer` | קריאת קבצי בנק ואשראי (XLS/XLSX/CFB משלנו, בלי POI), זיהוי, מיזוג, סיווג. פירוט ב-[money/IMPORT.md](money/IMPORT.md) | לא |
 | `feature/money/data` | המרה בין מודל ה-domain למסמכי Firestore (`*Documents`, `MoneyDoc`), וממשקי `MoneyRepository`/`TransactionRepository` | לא |
 | `feature/money/*.kt` | מצב מסכים (drafts, views) ו-ViewModels | רק ה-ViewModels |
-| `ui/money` | המסכים. כל מסך מחולק ל-`*Content` (טהור, נבדק ב-screenshot) ו-`*Screen` (מחבר ViewModel) | כן |
+| `feature/money/ui` | המסכים. כל מסך מחולק ל-`*Content` (טהור, נבדק ב-screenshot) ו-`*Screen` (מחבר ViewModel) | כן |
 | `core/data/repository/impl/FirestoreMoneyRepository`, `FirestoreTransactionRepository` | הגישה ל-Firestore | כן |
 
 כסף הוא תמיד `Money` (אגורות ב-`Long`), לעולם לא `Double`.
@@ -70,7 +56,7 @@ Screen (Compose) ──> ViewModel (BaseViewModel.safeLaunch) ──> Repository
 
 - **בדיקות יחידה** (`app/src/test`): JUnit + Robolectric. המנוע וה-importer נבדקים כ-Kotlin טהור.
 - **Screenshot** (Roborazzi): goldens ב-`app/src/test/snapshots/designsystem/`. שם הקובץ הוא שם מחלקת הבדיקה, אז לא משנים שם למחלקת screenshot בלי להקליט מחדש.
-- **שומרי ארכיטקטורה**: `LayerBoundariesTest` (אין import של `data.` ב-`feature/` וב-`ui/`, כל קובץ פחות מ-300 שורות), `ShellAndViewModelGuardsTest`, `NightBlueGuardTest` (צבעים ו-sp רק מה-theme, עם allow-list שנכשלת גם על רשומה מיותרת).
+- **שומרי ארכיטקטורה**: `LayerBoundariesTest` (אין import של `data.` ב-`feature/` וב-`shell/`, כל קובץ פחות מ-300 שורות), `ShellAndViewModelGuardsTest`, `NightBlueGuardTest` (צבעים ו-sp רק מה-theme, עם allow-list שנכשלת גם על רשומה מיותרת).
 - **חוקי Firestore**: `firestore.test.js` מול האמולטור.
 
 ## CI
@@ -78,5 +64,5 @@ Screen (Compose) ──> ViewModel (BaseViewModel.safeLaunch) ──> Repository
 | Workflow | מתי | מה |
 |---|---|---|
 | `branch-tests.yml` | push ל-`claude/**`, או ידני | בדיקות יחידה. ידני עם `record=true` מקליט goldens חדשים בלבד ועושה commit "test: record new goldens" (הריצה עצמה תמיד מסומנת failure) |
-| `distribute.yml` | push ל-`main` | בדיקות, APK חתום, Firebase App Distribution לקבוצה `family` |
-| `firestore-rules.yml` | push ל-`main` שנוגע בחוקים | בדיקות אמולטור ו-deploy לחוקים ולאינדקסים |
+| `distribute.yml` | ידני, או הרצה מתוזמנת יומית כשיש שינויים | בדיקות, APK חתום, Firebase App Distribution לקבוצה `family` |
+| `firestore-rules.yml` | נקרא על ידי Distribute, או ידני | בדיקות אמולטור ו-deploy לחוקים ולאינדקסים |

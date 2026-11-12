@@ -26,4 +26,4 @@ interface MoneyRepository {
 
 /** The Paamonim defaults go in only when the household has no categories at all. */
 fun categoriesToSeed(existing: List<Category>, defaults: List<Category>): List<Category> =
-    if (existing.isEmpty()) defaults else emptyList()
+    if (existing.isEmpty()) defaults else defaults.filter { it.id == com.menash.myself.feature.money.domain.DONATION_CATEGORY_ID && existing.none { category -> category.id == it.id } }

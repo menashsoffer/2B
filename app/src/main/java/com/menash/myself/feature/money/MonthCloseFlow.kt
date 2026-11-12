@@ -13,6 +13,7 @@ import com.menash.myself.feature.money.domain.averageMonthlyExpenses
 import com.menash.myself.feature.money.domain.canClose
 import com.menash.myself.feature.money.domain.closeChecks
 import com.menash.myself.feature.money.domain.closeMonth
+import com.menash.myself.feature.money.domain.forMonth
 import com.menash.myself.feature.money.domain.monthlySaving
 import com.menash.myself.feature.money.importer.ImportMemory
 import com.menash.myself.feature.money.importer.Source
@@ -32,13 +33,16 @@ data class StatementSource(val source: Source, val sourceId: String) {
 
 private fun StatementRow.statementSource() = StatementSource(source, sourceId)
 
-/** The month the close screen opens on: last month while it has lines and is not closed, else this month. */
-fun closeTarget(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): YearMonth {
+/** Ended months with imported lines that have not been closed, in chronological order. */
+fun monthsAwaitingClose(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): List<YearMonth> {
     val current = YearMonth.from(today)
-    val previous = current.minusMonths(1)
-    val pending = closed.none { it.month == previous } && stored.any { it.row.billingMonth == previous }
-    return if (pending) previous else current
+    val closedMonths = closed.map { it.month }.toSet()
+    return stored.map { it.row.billingMonth }.filter { it < current && it !in closedMonths }.distinct().sorted()
 }
+
+/** Open the oldest pending month, or the previous month when there is nothing pending. */
+fun closeTarget(today: LocalDate, stored: List<StoredTransaction>, closed: List<ClosedMonth>): YearMonth =
+    monthsAwaitingClose(today, stored, closed).firstOrNull() ?: YearMonth.from(today).minusMonths(1)
 
 /**
  * The close screen for [month]. [checks] come from the engine's closeChecks; [preview] is what closing now
@@ -49,6 +53,7 @@ data class CloseView(
     val checks: List<CloseCheck>,
     val missingSources: List<StatementSource>,
     val staleAssets: List<Asset>,
+    val closedSources: Map<StatementSource, YearMonth> = emptyMap(),
     val preview: ClosedMonth,
     val existing: ClosedMonth?,
 ) {
@@ -69,12 +74,13 @@ fun closeView(
     memory: ImportMemory,
     noLines: Set<String> = emptySet(),
     pastBalances: BalancesAtClose = BalancesAtClose.Unknown,
+    sourceClosures: Map<StatementSource, YearMonth> = emptyMap(),
 ): CloseView {
     val lines = monthLines(stored, month, memory, data.categories)
     val thisMonth = stored.filter { it.row.billingMonth == month }.map { it.row.statementSource() }.toSet()
     val window = month.minusMonths(3)..month.minusMonths(1)
     val expected = stored.filter { it.row.billingMonth in window }.map { it.row.statementSource() }
-        .filter { it.key !in noLines }.toSet()
+        .filter { it.key !in noLines && (sourceClosures[it]?.let { closed -> closed > month } ?: true) }.toSet()
     val checks = closeChecks(
         CloseInput(
             month = month,
@@ -92,9 +98,10 @@ fun closeView(
         month = month,
         checks = checks,
         missingSources = checks.filter { it.kind == CloseCheckKind.MISSING_SOURCE }.mapNotNull { byKey[it.detail] },
+        closedSources = sourceClosures.filterValues { it <= month },
         staleAssets = checks.filter { it.kind == CloseCheckKind.STALE_BALANCE }.mapNotNull { assets[it.detail] },
         preview = closeMonth(
-            month, data.items, toTransactions(stored, memory), actualIncome(stored, month, memory),
+            month, data.items.forMonth(month, today), toTransactions(stored, memory), actualIncome(stored, month, memory),
             if (needsHistoricalBalances(month, today)) pastBalances else BalancesAtClose.Current(data.assets), usdToIls, today,
         ),
         existing = data.closedMonths.firstOrNull { it.month == month },
@@ -102,7 +109,7 @@ fun closeView(
 }
 
 /** What the big picture and "האם אפשר?" take from closed months; both null until a month is closed. */
-data class ClosedFigures(val monthlySaving: Money?, val averageExpenses: Money?)
+data class ClosedFigures(val monthlySaving: Money?, val averageExpenses: Money?, val averagesFrom: YearMonth? = null)
 
-fun closedFigures(closed: List<ClosedMonth>): ClosedFigures =
-    ClosedFigures(monthlySaving(closed), averageMonthlyExpenses(closed))
+fun closedFigures(closed: List<ClosedMonth>, averagesFrom: YearMonth? = null): ClosedFigures =
+    ClosedFigures(monthlySaving(closed, averagesFrom), averageMonthlyExpenses(closed, averagesFrom), averagesFrom)

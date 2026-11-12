@@ -35,24 +35,26 @@ import com.menash.myself.core.designsystem.theme.appColors
 
 @Composable
 fun ProfileAvatar(
-    onClick: () -> Unit,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     displayName: String? = null,
 ) {
     val colors = MaterialTheme.appColors
     val letter = displayName?.trim()?.firstOrNull()?.takeUnless { it.isWhitespace() }?.toString()
     val description = stringResource(R.string.account_menu)
+    // Null onClick draws the same circle as a picture only (the profile card in «אני»).
+    val interactive = if (onClick == null) modifier.clearAndSetSemantics {} else modifier
+        .minimumInteractiveComponentSize()
+        .size(48.dp)
+        .semantics { contentDescription = description }
+        .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(bounded = false),
+            role = Role.Button,
+            onClick = onClick,
+        )
     Box(
-        modifier = modifier
-            .minimumInteractiveComponentSize()
-            .size(48.dp)
-            .semantics { contentDescription = description }
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = false),
-                role = Role.Button,
-                onClick = onClick,
-            ),
+        modifier = interactive,
         contentAlignment = Alignment.Center,
     ) {
         Box(

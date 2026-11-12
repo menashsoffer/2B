@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.tasks.await
-import com.menash.myself.data.firestore.FirestoreErrors
+import com.menash.myself.core.data.legacy.firestore.FirestoreErrors
 
 /** households/{hid}/{collection}/{id}, one listener per collection. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -175,6 +175,7 @@ class FirestoreMoneyRepository(
             goals = entries.filterIsInstance<MoneyEntry.GoalEntry>().map { it.value },
             donations = entries.filterIsInstance<MoneyEntry.DonationEntry>().map { it.value },
             tithe = entries.filterIsInstance<MoneyEntry.TitheEntry>().firstOrNull()?.value,
+            averagesFrom = entries.filterIsInstance<MoneyEntry.AveragesSettingsEntry>().firstOrNull()?.averagesFrom,
             closedMonths = entries.filterIsInstance<MoneyEntry.ClosedMonthEntry>().map { it.value }.sortedBy { it.month },
             car = entries.filterIsInstance<MoneyEntry.CarEntry>().firstOrNull()?.value,
             pensionFunds = entries.filterIsInstance<MoneyEntry.PensionFundEntry>().map { it.value },

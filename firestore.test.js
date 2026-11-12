@@ -333,7 +333,7 @@ const FIXTURES_DIR = path.join(__dirname, "firestore-fixtures", "money");
 const MONEY_COLLECTIONS = [
   "cards", "incomes", "fixedExpenses", "subscriptions", "variableBudgets",
   "installments", "periodicBudgets", "debts", "savings", "assets", "categories",
-  "transactions", "merchantMemory", "goals", "donations", "tithe", "closedMonths", "pensionFunds", "car",
+  "transactions", "merchantMemory", "sourceClosures", "goals", "donations", "tithe", "averagesSettings", "closedMonths", "pensionFunds", "car",
 ];
 
 function fixtures(collection) {
@@ -344,7 +344,7 @@ function fixtures(collection) {
 
 // The document id the app would use: settings documents are fixed, closed months are "yyyy-MM".
 function docIdFor(collection, index) {
-  if (collection === "tithe" || collection === "car") return "settings";
+  if (collection === "tithe" || collection === "car" || collection === "averagesSettings") return "settings";
   if (collection === "closedMonths") return `2025-${String(index + 1).padStart(2, "0")}`;
   return `0b7c5f3e-money-${index + 1}`;
 }
@@ -367,7 +367,8 @@ for (const collection of MONEY_COLLECTIONS) {
       const ref = house.collection(collection).doc(docIdFor(collection, i));
       await assertSucceeds(ref.set(doc)).catch((e) => { throw new Error(`${collection}/${name}: ${e.message}`); });
       const { v, ...withoutVersion } = doc;
-      await assertSucceeds(ref.set(withoutVersion)).catch((e) => { throw new Error(`${collection}/${name} without v: ${e.message}`); });
+      if (collection === "sourceClosures") await assertFails(ref.set(withoutVersion));
+      else await assertSucceeds(ref.set(withoutVersion)).catch((e) => { throw new Error(`${collection}/${name} without v: ${e.message}`); });
     }
   });
 
@@ -403,7 +404,7 @@ const REQUIRED = {
   cards: "name", incomes: "titheRate", fixedExpenses: "klass", subscriptions: "renewalDate", variableBudgets: "amounts",
   installments: "total", periodicBudgets: "categoryId", debts: "creditor", savings: "accumulated", assets: "liquid",
   categories: "klass", goals: "allocated", donations: "submittedForTaxRefund", tithe: "startMonth", closedMonths: "closedOn",
-  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key",
+  car: "fields", pensionFunds: "feeOnBalance", transactions: "status", merchantMemory: "key", sourceClosures: "closedFrom",
 };
 // A number field, pushed past its allowed range (agorot beyond ±₪100M, or a day / count / horizon too big).
 const OUT_OF_RANGE = {
@@ -415,7 +416,7 @@ const OUT_OF_RANGE = {
 const MONTH_OR_DATE = {
   installments: "firstMonth", periodicBudgets: "yearStartMonth", savings: "maturity", goals: "targetMonth", tithe: "startMonth",
   subscriptions: "renewalDate", debts: "asOf", assets: "lastUpdated", donations: "date", closedMonths: "closedOn",
-  pensionFunds: "lastUpdated", transactions: "date",
+  averagesSettings: "averagesFrom", pensionFunds: "lastUpdated", transactions: "date", sourceClosures: "closedFrom",
 };
 // An enum field and a value the app never writes.
 const ENUM = {
@@ -440,8 +441,10 @@ for (const collection of MONEY_COLLECTIONS) {
 
     await deny("unknown key", { ...base, hacked: 1 });
     await deny("wrong type", wrongType(base));
-    const { [REQUIRED[collection]]: _dropped, ...missing } = base;
-    await deny("missing required key", missing);
+    if (REQUIRED[collection]) {
+      const { [REQUIRED[collection]]: _dropped, ...missing } = base;
+      await deny("missing required key", missing);
+    }
     await deny("v = 0", { ...base, v: 0 });
     await deny("v as text", { ...base, v: "1" });
     if (OUT_OF_RANGE[collection]) await deny("out of range", { ...base, [OUT_OF_RANGE[collection]]: 10000000001 });
@@ -458,6 +461,7 @@ test("Money: settings documents and closed months only under their own ids", asy
   const house = moneyDb();
   await assertFails(house.collection("tithe").doc("other").set(fixtures("tithe")[0].doc));
   await assertFails(house.collection("car").doc("other").set(fixtures("car")[0].doc));
+  await assertFails(house.collection("averagesSettings").doc("other").set(fixtures("averagesSettings")[0].doc));
   await assertFails(house.collection("closedMonths").doc("2026-13").set(fixtures("closedMonths")[0].doc));
   await assertFails(house.collection("closedMonths").doc("sept").set(fixtures("closedMonths")[0].doc));
 });
@@ -661,4 +665,32 @@ test('Removed partner observes an empty membership query and can create a replac
     await assertSucceeds(partner.doc('households/replacement').set({ownerUid:BOB_UID,memberUids:[BOB_UID],partnerUid:'',partnerEmail:''}));
     await testEnv.clearFirestore();
   }
+});
+
+
+test("Source closures: validate dates, required fields and household access", async () => {
+  await setupHousehold();
+  const doc = moneyDb().collection("sourceClosures").doc("s-123");
+  const valid = {v: 1, source: "MAX", sourceId: "max-1234", closedFrom: "2024-06"};
+  await assertSucceeds(doc.set(valid));
+  await assertFails(doc.set({...valid, closedFrom: "2024-13"}));
+  await assertFails(doc.set({...valid, source: "OTHER"}));
+  await assertFails(doc.set({...valid, sourceId: "x".repeat(201)}));
+  await assertFails(doc.set({...valid, extra: true}));
+  await assertFails(doc.update({closedFrom: FieldValue.delete()}));
+  await assertFails(moneyDb(CHARLIE_UID, CHARLIE_EMAIL).collection("sourceClosures").doc("s-123").get());
+  await assertFails(moneyDb(CHARLIE_UID, CHARLIE_EMAIL).collection("sourceClosures").doc("s-123").set(valid));
+  await assertSucceeds(doc.delete());
+});
+
+
+test("Savings: optional startMonth must be a valid month on create and update", async () => {
+  await setupHousehold();
+  const doc = moneyDb().collection("savings").doc("saving-start");
+  const valid = {v: 1, name: "חיסכון", monthlyDeposit: 100, accumulated: 200};
+  await assertSucceeds(doc.set(valid));
+  await assertSucceeds(doc.update({startMonth: "2026-01"}));
+  await assertFails(doc.update({startMonth: "2026-13"}));
+  await assertFails(doc.set({...valid, startMonth: 202601}));
+  await assertSucceeds(doc.update({startMonth: FieldValue.delete()}));
 });

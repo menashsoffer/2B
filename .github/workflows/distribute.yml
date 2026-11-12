@@ -1,3 +1,5 @@
+# Do not rename, move or delete distribute.yml: GITHUB_RUN_NUMBER is counted per workflow file;
+# a new file restarts it at 1, versionCode goes down, and phones refuse a lower versionCode.
 # Signed APK to Firebase App Distribution.
 # CLI: https://firebase.google.com/docs/app-distribution/android/distribute-cli
 # Auth: https://firebase.google.com/docs/app-distribution/authenticate-service-account
@@ -5,16 +7,75 @@
 name: Distribute
 
 on:
-  push:
-    branches: [main]
+  # 04:00 UTC = 06:00 Israel winter / 07:00 summer; GitHub may run late and disables schedules after 60 days of repository inactivity.
+  schedule:
+    - cron: "0 4 * * *" # Change this UTC time or remove this line and the schedule key to disable.
   workflow_dispatch:
+    inputs:
+      release_notes:
+        description: Hebrew release notes for the family (empty generates notes)
+        type: string
+        required: false
+      deploy_rules:
+        description: Deploy Firestore rules before release
+        type: boolean
+        default: true
+      dry_run:
+        description: Build and verify without deploying or releasing
+        type: boolean
+        default: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  distribute:
+  guard:
     runs-on: ubuntu-latest
+    outputs:
+      changes: ${{ steps.changes.outputs.changes }}
+    steps:
+      - name: Require main for releases
+        if: ${{ !inputs.dry_run && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "Releases run from main only; use dry_run on other branches"
+          exit 1
+
+      - uses: actions/checkout@v5
+        if: ${{ github.event_name == 'schedule' }}
+        with:
+          fetch-depth: 0
+
+      - name: Check for new changes
+        id: changes
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = schedule ]; then
+            tag=$(git tag --points-at HEAD --list 'v*' | head -n 1)
+            if [ -n "$tag" ]; then
+              echo "No changes since $tag, nothing to release"
+              echo "changes=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "changes=true" >> "$GITHUB_OUTPUT"
+
+  # Deploy rules first so the new APK never reaches phones before its rules are live.
+  rules:
+    needs: guard
+    if: ${{ needs.guard.outputs.changes == 'true' && (github.event_name == 'schedule' || inputs.deploy_rules) && !inputs.dry_run }}
+    uses: ./.github/workflows/firestore-rules.yml
+    secrets: inherit
+
+  distribute:
+    needs: [guard, rules]
+    if: ${{ !cancelled() && needs.guard.result == 'success' && needs.guard.outputs.changes == 'true' && (needs.rules.result == 'success' || needs.rules.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       ANDROID_HOME: /home/runner/android-sdk
     steps:
@@ -44,6 +105,8 @@ jobs:
           echo "All required secrets are present."
 
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-java@v5
         with:
@@ -139,21 +202,40 @@ jobs:
           print("Release manifest: READ_CALENDAR absent")
           PYTHON
 
-      - name: Upload release bundle artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: myself-${{ env.VERSION_CODE }}.aab
-          path: app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 30
-
       - name: Lint debug
         # lint.xml: NewApi is fatal, every other id is a warning.
         # abortOnError fails this step only on NewApi, before the upload.
         run: ./gradlew lintDebug --no-daemon
 
+      - name: Prepare release notes
+        env:
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/release/app-release.apk
+          version_name=$("${ANDROID_HOME}/build-tools/36.0.0/aapt" dump badging "$apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p" | head -n 1)
+          test -n "$version_name" || { echo "Could not read versionName"; exit 1; }
+          echo "VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          notes="${RUNNER_TEMP}/release-notes.txt"
+          printf 'גרסה %s\n' "$version_name" > "$notes"
+          if [ -n "$RELEASE_NOTES" ]; then
+            printf '%s\n' "$RELEASE_NOTES" >> "$notes"
+          else
+            last_tag=$(git describe --tags --match 'v*' --abbrev=0 HEAD 2>/dev/null || true)
+            if [ -n "$last_tag" ]; then
+              git log "$last_tag"..HEAD --no-merges --format='%s' > "${RUNNER_TEMP}/subjects.txt"
+            else
+              git log -20 --no-merges --format='%s' > "${RUNNER_TEMP}/subjects.txt"
+            fi
+            head -n 30 "${RUNNER_TEMP}/subjects.txt" | sed 's/^/- /' >> "$notes"
+            count=$(wc -l < "${RUNNER_TEMP}/subjects.txt")
+            if [ "$count" -gt 30 ]; then
+              printf -- '- ועוד %s שינויים\n' "$((count - 30))" >> "$notes"
+            fi
+          fi
+
       - name: Upload to Firebase App Distribution
-        if: ${{ github.ref == 'refs/heads/main' }}
+        if: ${{ !inputs.dry_run }}
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
@@ -163,7 +245,6 @@ jobs:
           cred="${RUNNER_TEMP}/firebase-service-account.json"
           printf '%s' "${FIREBASE_SERVICE_ACCOUNT}" > "${cred}"
           export GOOGLE_APPLICATION_CREDENTIALS="${cred}"
-          git log -1 --format=%B > "${RUNNER_TEMP}/release-notes.txt"
           npm install --prefix "${RUNNER_TEMP}/firebase" firebase-tools
           # https://firebase.google.com/docs/app-distribution/android/distribute-cli
           "${RUNNER_TEMP}/firebase/node_modules/.bin/firebase" appdistribution:distribute \
@@ -171,3 +252,17 @@ jobs:
             --app "${FIREBASE_APP_ID}" \
             --groups "family" \
             --release-notes-file "${RUNNER_TEMP}/release-notes.txt"
+
+      - name: Tag and create GitHub Release
+        if: ${{ !inputs.dry_run }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="v${VERSION_NAME}"
+          git tag "$tag" "${GITHUB_SHA}"
+          git push origin "$tag"
+          gh release create "$tag" \
+            --target "${GITHUB_SHA}" \
+            --title "$tag" \
+            --notes-file "${RUNNER_TEMP}/release-notes.txt"

@@ -30,10 +30,10 @@ import com.menash.myself.core.external.boi.boiDataStore
 import com.menash.myself.core.external.hebcal.HebcalClient
 import com.menash.myself.core.external.hebcal.HebcalStore
 import com.menash.myself.core.external.hebcal.hebcalDataStore
-import com.menash.myself.data.AppDatabase
-import com.menash.myself.data.firestore.FirestoreManager
-import com.menash.myself.data.firestore.HouseholdRepository
-import com.menash.myself.data.firestore.LifeHubRepository
+import com.menash.myself.core.data.legacy.AppDatabase
+import com.menash.myself.core.data.legacy.firestore.FirestoreManager
+import com.menash.myself.core.data.legacy.firestore.HouseholdRepository
+import com.menash.myself.core.data.legacy.firestore.LifeHubRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -120,6 +120,7 @@ class AppContainer(private val context: Context) {
 
     /** Files shared into the app, waiting for the money tab's import. */
     val importInbox = ImportInbox()
+    val monthTaskInbox = com.menash.myself.feature.money.MonthTaskInbox()
 
     /** The stored Bank of Israel USD rate for the money engine; null when none is stored. */
     val usdRateFlow: Flow<BigDecimal?> by lazy { exchangeRateRepository.currentRateFlow.map { usdRateOf(it) } }

@@ -56,6 +56,37 @@
     <string name="import_remembered_count">%1$d בתי עסק נזכרו לפעם הבאה</string>
     <string name="import_unassigned_count">%1$d נשארו בלי קטגוריה</string>
     <string name="import_assign_now">לשייך עכשיו</string>
-    <string name="import_to_month">לחודש</string>
+    <string name="import_to_month">חזרה לחודש</string>
     <string name="import_unassigned_month">%1$s · %2$d בלי קטגוריה</string>
+    <string name="plan_import_title">תוכנית מפעמונים</string>
+    <string name="plan_import_subtitle">התקציב של %1$s מהקובץ. השינויים חלים מ%2$s. שום דבר לא נשמר עד האישור.</string>
+    <string name="plan_import_group_fixed">חודשיות קבועות</string>
+    <string name="plan_import_group_periodic">תקופתיות (לחודש, בממוצע)</string>
+    <string name="plan_import_group_current">שוטפות</string>
+    <string name="plan_import_group_income">הכנסות</string>
+    <string name="plan_import_new">חדש בתוכנית</string>
+    <string name="plan_import_new_category">סעיף חדש</string>
+    <string name="plan_import_changed">יחליף את %1$s שבתוכנית היום</string>
+    <string name="plan_import_same">כבר בתוכנית</string>
+    <string name="plan_import_split">כמה פריטים בתוכנית (%1$s). מעדכנים ידנית</string>
+    <string name="plan_import_split_unknown">לא נמצא סעיף מתאים. מעדכנים ידנית</string>
+    <string name="plan_import_subscriptions">המנויים כבר מפורטים במסך המנויים</string>
+    <string name="plan_import_debts">החזרי חובות בקובץ: %1$s לחודש. את החובות מוסיפים בנפרד</string>
+    <plurals name="plan_import_confirm">
+        <item quantity="one">להכניס שורה אחת לתוכנית</item>
+        <item quantity="other">להכניס %1$d שורות לתוכנית</item>
+    </plurals>
+    <string name="plan_import_nothing">התוכנית כבר תואמת לקובץ</string>
+    <plurals name="plan_import_done">
+        <item quantity="one">שורה אחת נכנסה לתוכנית, החל מ%2$s</item>
+        <item quantity="other">%1$d שורות נכנסו לתוכנית, החל מ%2$s</item>
+    </plurals>
+    <string name="plan_import_done_detail">אפשר לשנות כל שורה בלשונית \"החודש\"</string>
+    <string name="plan_history_title">תוכנית מהחודשים שלך</string>
+    <string name="plan_history_subtitle">לפי %1$d החודשים האחרונים, %2$s עד %3$s: קבועות לפי החודש האחרון, שוטפות ותקופתיות לפי הממוצע, מעוגל למעלה. השינויים חלים מ%4$s. שום דבר לא נשמר עד האישור.</string>
+    <string name="plan_history_entry">לבנות תוכנית מ־%1$d החודשים האחרונים</string>
+    <string name="plan_history_entry_detail">טיוטה לפי מה שהוצאתם בפועל. מאשרים שורה אחר שורה</string>
+    <string name="plan_import_periodic_in_use">תקציב שנתי קיים (היום %1$s). שינוי בו משנה את כל השנה, ולכן מעדכנים ידנית</string>
+    <string name="plan_import_duplicate">מופיע יותר מפעם אחת. מעדכנים ידנית</string>
+    <string name="plan_history_none">אין מספיק חודשים עם הוצאות מסווגות כדי לבנות טיוטה. אחרי ששייכים תנועות לסעיפים, אפשר לנסות שוב</string>
 </resources>

@@ -35,7 +35,7 @@ class MonthCloseHistoryTest {
         assertEquals(Money(500), averageMonthlyExpenses(rows.take(1)))
         assertEquals(Money(300), averageMonthlyExpenses(rows.take(2)))
         assertEquals(Money(333), averageMonthlyExpenses(rows.take(3)))
-        assertEquals(Money(400), averageMonthlyExpenses(rows))
+        assertEquals(Money(300), averageMonthlyExpenses(rows))
     }
 
     @Test fun calendarGapsAddNoZeroMonths() {
@@ -46,19 +46,36 @@ class MonthCloseHistoryTest {
         assertEquals(Money(2), averageMonthlyExpenses(listOf(closed(1, 1), closed(2, 2))))
     }
 
-    @Test fun rejectsDuplicateMonthsEvenOutsideLatestThree() {
+    @Test fun rejectsDuplicateMonthsOutsideWindow() {
         val input = listOf(closed(1, 1), closed(1, 2), closed(3, 3), closed(4, 4), closed(5, 5))
         assertThrows(IllegalArgumentException::class.java) { averageMonthlyExpenses(input) }
         assertThrows(IllegalArgumentException::class.java) { monthlySaving(input) }
     }
 
-    @Test fun savingDelegatesIncludingNegativeSavingRoundingAndLatestThree() {
+    @Test fun savingUsesAvailableMonthsAndRounds() {
         val input = listOf(closed(1, 0), closed(3, 1002), closed(8, 1001), closed(12, 1002))
         assertEquals(savingRate(input.map { it.snapshot }), monthlySaving(input))
-        assertEquals(Money(-2), monthlySaving(input))
+        assertEquals(Money(249), monthlySaving(input))
         assertEquals(Money(-2), monthlySaving(input.takeLast(2)))
         assertEquals(Money(-2), monthlySaving(input.takeLast(1)))
         assertNull(monthlySaving(emptyList()))
+    }
+
+    @Test fun averagesUseLastTwelveOrAllSinceChosenMonth() {
+        val first = YearMonth.of(2024, 7)
+        val rows = (1..20).map { n ->
+            val m = first.plusMonths((n - 1).toLong())
+            ClosedMonth(m, MonthSnapshot(m, Money(3000), Money(n * 100L)), emptyMap(), emptyMap(), emptyMap(), emptyMap(), m.atEndOfMonth().plusDays(1))
+        }.reversed()
+        assertEquals(Money(1450), averageMonthlyExpenses(rows))
+        assertEquals(Money(1550), monthlySaving(rows))
+        val from = YearMonth.of(2025, 6)
+        assertEquals(Money(1600), averageMonthlyExpenses(rows, from))
+        assertEquals(Money(1400), monthlySaving(rows, from))
+        assertEquals(Money(200), averageMonthlyExpenses(rows.takeLast(3)))
+        assertEquals(Money(2800), monthlySaving(rows.takeLast(3)))
+        assertNull(averageMonthlyExpenses(rows, YearMonth.of(2030, 1)))
+        assertNull(monthlySaving(rows, YearMonth.of(2030, 1)))
     }
 
     @Test fun expenseSummationIsChecked() {

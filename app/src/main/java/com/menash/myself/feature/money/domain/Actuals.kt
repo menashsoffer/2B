@@ -43,18 +43,19 @@ private fun scheduledPayment(purchase: InstallmentPurchase, month: YearMonth): M
  * Each purchase matches at most one transaction.
  */
 fun planVsActual(month: YearMonth, items: MoneyItems, transactions: List<Transaction>, usdToIls: java.math.BigDecimal?): PlanVsActual {
+    val active = items.forMonth(month)
     val planned = linkedMapOf<String?, Money>()
     fun plan(categoryId: String?, amount: Money) { planned[categoryId] = sumMoney(listOf(planned[categoryId] ?: Money.ZERO, amount)) }
     fun monthlyOf(single: MoneyItems): Money = when (val p = monthPlan(month, single, usdToIls)) {
         is MonthPlan.Planned -> p.plannedExpenses
         MonthPlan.Empty -> Money.ZERO
     }
-    items.fixedExpenses.forEach { plan(it.categoryId, monthlyOf(MoneyItems(fixedExpenses = listOf(it)))) }
-    items.subscriptions.forEach { plan(it.categoryId, monthlyOf(MoneyItems(subscriptions = listOf(it)))) }
-    items.variableBudgets.forEach { plan(it.categoryId, monthlyOf(MoneyItems(variableBudgets = listOf(it)))) }
-    items.periodicBudgets.forEach { plan(it.categoryId, monthlyReserve(it)) }
+    active.fixedExpenses.forEach { plan(it.categoryId, monthlyOf(MoneyItems(fixedExpenses = listOf(it)))) }
+    active.subscriptions.forEach { plan(it.categoryId, monthlyOf(MoneyItems(subscriptions = listOf(it)))) }
+    active.variableBudgets.forEach { plan(it.categoryId, monthlyOf(MoneyItems(variableBudgets = listOf(it)))) }
+    active.periodicBudgets.forEach { plan(it.categoryId, monthlyReserve(it)) }
 
-    val unmatched = items.installments.toMutableList()
+    val unmatched = active.installments.toMutableList()
     val matches = mutableListOf<InstallmentActual>()
     val actual = linkedMapOf<String?, Money>()
     for (tx in transactions.filter { it.billingMonth == month }) {

@@ -26,6 +26,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -43,6 +46,10 @@ data class MoneyScreenState(
     val money: MoneyMonth? = null,
     val data: MoneyData = MoneyData(),
     val months: List<MonthPickerCell> = emptyList(),
+    /** "Update the month": what to do next, oldest first. Always today's, whatever month is shown. */
+    val tasks: List<MonthTask> = emptyList(),
+    /** Ended months with spending a draft plan can be built from (closed, or imported and not closed yet). */
+    val historyMonths: Int = 0,
 )
 
 /** The open add/edit sheet. [askScope] shows the one "from now on / this month only" question. */
@@ -69,6 +76,11 @@ class MoneyViewModel(
     transactions: Flow<List<StoredTransaction>> = flowOf(emptyList()),
     memory: Flow<ImportMemory> = flowOf(ImportMemory()),
     private val events: UiEvents? = null,
+    sourceClosures: Flow<Map<StatementSource, YearMonth>> = flowOf(emptyMap()),
+    /** The date the screen is built for; a new date rebuilds it even when no data changed. */
+    days: Flow<LocalDate> = dayChanges(today),
+    /** Where the month is built. The factory passes Dispatchers.Default; tests keep the collector's thread. */
+    compute: CoroutineContext = EmptyCoroutineContext,
 ) : BaseViewModel(errorReporter) {
 
     private var seeded = false
@@ -80,20 +92,41 @@ class MoneyViewModel(
     /** The month the month tab shows; null follows today's month. */
     private val shown = MutableStateFlow<YearMonth?>(null)
 
-    val state: StateFlow<MoneyScreenState> = combine(repository.observe(), usdRates, transactions, memory, shown) { data, rate, lines, learnt, picked ->
+    val state: StateFlow<MoneyScreenState> = combine(
+        repository.observe(), usdRates, transactions, memory,
+        combine(shown, sourceClosures, days) { picked, closures, day -> Triple(picked, closures, day) },
+    ) { data, rate, lines, learnt, (picked, closures, day) ->
         latest = data
-        val day = today()
         val current = YearMonth.from(day)
-        val now = buildMoneyMonth(data, current, day, rate, lines, learnt)
+        val months = pickerMonths(current, data.closedMonths.map { it.month }.toSet(), lines)
+        val earliest = months.last().month
+        val now = buildMoneyMonth(data, current, day, rate, lines, learnt).copy(earliest = earliest)
         val money = if (picked == null || picked == current) now else
-            buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current)
-        MoneyScreenState(money = money, data = data, months = pickerMonths(current, data.closedMonths.map { it.month }.toSet(), lines))
+            buildMoneyMonth(data, picked, day, rate, lines, learnt).copy(bigPicture = now.bigPicture, current = current, earliest = earliest)
+        // The steps and the history offer are extras: if one of them fails, the month screen still updates.
+        val tasks = extra("moneyTasks", emptyList()) { moneyOverview(data, day, rate, lines, learnt, closures, now).tasks }
+        // Offered only while this month has no plan, and only when the draft would have lines to show.
+        val historyMonths = if (now.view is MonthView.Planned) 0 else extra("historyMonths", 0) {
+            val history = spendingHistory(data, lines, learnt, day)
+            if (planFromHistory(history, data).isNullOrEmpty()) 0 else history.size
+        }
+        MoneyScreenState(money = money, data = data, months = months, tasks = tasks, historyMonths = historyMonths)
     }
+        .flowOn(compute)
         .onEach { seedCategoriesOnce(it.data) }
         .catch { error ->
             if (error is Exception) handleException("observeMoney", error) else throw error
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, MoneyScreenState())
+
+    private inline fun <T> extra(where: String, fallback: T, block: () -> T): T = try {
+        block()
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        handleException(where, e)
+        fallback
+    }
 
     private val _editor = MutableStateFlow<EditorState?>(null)
     val editor: StateFlow<EditorState?> = _editor.asStateFlow()
@@ -103,19 +136,23 @@ class MoneyViewModel(
 
     fun showMonth(month: YearMonth) {
         val current = YearMonth.from(today())
-        if (month in current.minusMonths(MonthsBack)..current) shown.value = month.takeUnless { it == current }
+        if (month in (state.value.money?.earliest ?: current.minusMonths(12))..current) shown.value = month.takeUnless { it == current }
     }
 
     fun showPreviousMonth() {
         val current = YearMonth.from(today())
         val from = shown.value ?: current
-        if (from > current.minusMonths(MonthsBack)) shown.value = from.minusMonths(1)
+        if (from > (state.value.money?.earliest ?: current.minusMonths(12))) shown.value = from.minusMonths(1)
     }
 
     fun showNextMonth() {
         val current = YearMonth.from(today())
         val next = (shown.value ?: current).plusMonths(1)
         shown.value = if (next >= current) null else next
+    }
+
+    fun setAveragesFrom(from: YearMonth?) {
+        safeLaunch("saveAverages") { repository.save(MoneyEntry.AveragesSettingsEntry(from)) }
     }
 
     private fun seedCategoriesOnce(data: MoneyData) {
@@ -237,7 +274,7 @@ class MoneyViewModel(
                 return MoneyViewModel(
                     repository, usdRates, today, errorReporter,
                     transactions = transactions.observeTransactions(), memory = transactions.observeMemory(),
-                    events = events,
+                    events = events, sourceClosures = transactions.observeSourceClosures(), compute = kotlinx.coroutines.Dispatchers.Default,
                 ) as T
             }
         }

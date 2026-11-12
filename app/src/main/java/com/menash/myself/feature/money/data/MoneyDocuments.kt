@@ -106,6 +106,7 @@ object MoneyDocuments {
                 put("monthlyDeposit", it.monthlyDeposit.agorot)
                 put("accumulated", it.accumulated.agorot)
                 it.maturity?.let { month -> put("maturity", month.toString()) }
+                it.startMonth?.let { month -> put("startMonth", month.toString()) }
             }
         }
         is MoneyEntry.AssetEntry -> entry.value.let {
@@ -124,6 +125,7 @@ object MoneyDocuments {
         }
         is MoneyEntry.DonationEntry -> TitheDocuments.encode(entry.value)
         is MoneyEntry.TitheEntry -> TitheDocuments.encode(entry.value)
+        is MoneyEntry.AveragesSettingsEntry -> buildMap { entry.averagesFrom?.let { put("averagesFrom", it.toString()) } }
         is MoneyEntry.CarEntry -> CarDocuments.encode(entry.value)
         is MoneyEntry.ClosedMonthEntry -> ClosedMonthDocuments.encode(entry.value)
         is MoneyEntry.PensionFundEntry -> PensionDocuments.encode(entry.value)
@@ -229,6 +231,7 @@ object MoneyDocuments {
                     monthlyDeposit = doc.money("monthlyDeposit"),
                     accumulated = doc.money("accumulated"),
                     maturity = doc.stringOrNull("maturity")?.let { YearMonth.parse(it) },
+                    startMonth = doc.stringOrNull("startMonth")?.let { YearMonth.parse(it) },
                 )
             )
             MoneyCollection.ASSETS -> MoneyEntry.AssetEntry(
@@ -250,6 +253,10 @@ object MoneyDocuments {
             )
             MoneyCollection.DONATIONS -> MoneyEntry.DonationEntry(TitheDocuments.donation(id, doc))
             MoneyCollection.TITHE -> MoneyEntry.TitheEntry(TitheDocuments.settings(id, doc))
+            MoneyCollection.AVERAGES_SETTINGS -> {
+                require(id == "settings") { "Unexpected averages settings id '$id'" }
+                MoneyEntry.AveragesSettingsEntry(doc.stringOrNull("averagesFrom")?.let(YearMonth::parse))
+            }
             MoneyCollection.CLOSED_MONTHS -> MoneyEntry.ClosedMonthEntry(ClosedMonthDocuments.decode(id, data))
             MoneyCollection.CAR -> MoneyEntry.CarEntry(CarDocuments.plan(id, data))
             MoneyCollection.PENSION_FUNDS -> MoneyEntry.PensionFundEntry(PensionDocuments.fund(id, doc))

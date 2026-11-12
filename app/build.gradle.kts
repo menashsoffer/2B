@@ -176,6 +176,7 @@ kover {
           classes("com.menash.myself.feature.money.domain.*")
           classes("com.menash.myself.feature.money.importer.*")
           classes("com.menash.myself.feature.money.data.*")
+          classes("com.menash.myself.feature.money.ui.*")
         }
       }
       verify { rule { minBound(96) } }
@@ -222,6 +223,7 @@ dependencies {
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
+  testImplementation(libs.mockito.kotlin)
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.androidx.work.testing)
   testImplementation(libs.robolectric)

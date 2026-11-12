@@ -39,9 +39,10 @@ fun closeMonth(
     today: LocalDate,
 ): ClosedMonth {
     val (balances, liabilities) = balancesAtClose.maps()
+    val active = items.forMonth(month, today)
     val total = sumMoney(transactions.filter { it.billingMonth == month }.map { it.amount })
-    val actuals = planVsActual(month, items, transactions, usdToIls)
-    val periodic = items.periodicBudgets.filter { it.yearStartMonth <= month }.associate { budget ->
+    val actuals = planVsActual(month, active, transactions, usdToIls)
+    val periodic = active.periodicBudgets.associate { budget ->
         val yearsElapsed = ChronoUnit.MONTHS.between(budget.yearStartMonth, month) / 12
         val renewed = budget.copy(yearStartMonth = budget.yearStartMonth.plusYears(yearsElapsed))
         budget.id to periodicStatus(renewed, month, transactions)

@@ -39,6 +39,7 @@ data class TitheUi(
     /** Assets that can be the investment portfolio. */
     val assets: List<Asset> = emptyList(),
     val sheets: TitheSheets = TitheSheets(),
+    val firstDataMonth: YearMonth? = null,
 )
 
 /** "מעשרות": the maaser and chomesh balance, month by month, with the donations and the counting settings. */
@@ -58,7 +59,7 @@ class TitheViewModel(
     val ui: StateFlow<TitheUi> = combine(
         open, money.observe(), transactions.observeTransactions(), transactions.observeMemory(), sheets,
     ) { isOpen, data, stored, memory, open ->
-        TitheUi(isOpen, titheFromImports(data, month, stored, memory), month, today(), data.assets.filter { it.kind == AssetKind.ASSET }, open)
+        TitheUi(isOpen, titheFromImports(data, month, stored, memory), month, today(), data.assets.filter { it.kind == AssetKind.ASSET }, open, stored.minOfOrNull { it.row.billingMonth } ?: month)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, TitheUi())
 
     fun open() {
@@ -69,6 +70,10 @@ class TitheViewModel(
         if (sheets.value.donation?.saving == true) return
         open.value = false
         sheets.value = TitheSheets()
+    }
+
+    fun matchDonation(match: DonationMatch) {
+        safeLaunch("matchDonation") { money.save(MoneyEntry.DonationEntry(match.donation.copy(matchedLineId = match.line.id))) }
     }
 
     fun startDonation() {

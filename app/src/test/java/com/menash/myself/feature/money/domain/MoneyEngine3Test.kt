@@ -25,7 +25,7 @@ class MoneyEngine3Test {
         assertEquals(all.size, all.map { it.id }.distinct().size)
         assertEquals(16, all.count { it.klass == ExpenseClass.FIXED })
         assertEquals(20, all.count { it.klass == ExpenseClass.PERIODIC })
-        assertEquals(12, all.count { it.klass == ExpenseClass.CURRENT })
+        assertEquals(13, all.count { it.klass == ExpenseClass.CURRENT })
         val subscriptions = all.single { it.name == "מנויים" }
         assertEquals(8, all.count { it.parentId == subscriptions.id })
         assertTrue(all.any { it.name == "חניה - כביש 6" && it.klass == ExpenseClass.CURRENT })
@@ -136,6 +136,12 @@ class MoneyEngine3Test {
         assertEquals(ils(1000), plan(items, feb).debtPayments)
         assertEquals(Money.ZERO, plan(items, feb.plusMonths(1)).debtPayments)
         assertEquals(Money.ZERO, plan(items, YearMonth.of(2025, 12)).debtPayments)
+    }
+    @Test fun savingDepositsRespectTheKnownStartMonth() {
+        val saving = Saving("s", "kids", ils(500), ils(10_000), startMonth = feb)
+        val items = MoneyItems(savings = listOf(saving))
+        assertEquals(Money.ZERO, plan(items, jan).savingDeposits)
+        assertEquals(ils(500), plan(items, feb).savingDeposits)
     }
     @Test fun savingDepositsReduceSurplusUntilMaturityButAreNotExpenses() {
         val saving = Saving("s", "kids", ils(500), ils(10_000), maturity = feb)

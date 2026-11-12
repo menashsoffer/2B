@@ -4,7 +4,7 @@ import com.menash.myself.core.domain.model.InboxItem
 
 object InboxMappers {
 
-    fun inboxToDomain(data: com.menash.myself.data.models.InboxItem): InboxItem {
+    fun inboxToDomain(data: com.menash.myself.core.data.legacy.models.InboxItem): InboxItem {
         val (forWhom, isPrivate) = ModelMappers.legacySpaceToForWhom(data.space)
         return InboxItem(
             id = data.id,
@@ -18,8 +18,8 @@ object InboxMappers {
         )
     }
 
-    fun inboxToData(domain: InboxItem, householdId: String): com.menash.myself.data.models.InboxItem {
-        return com.menash.myself.data.models.InboxItem(
+    fun inboxToData(domain: InboxItem, householdId: String): com.menash.myself.core.data.legacy.models.InboxItem {
+        return com.menash.myself.core.data.legacy.models.InboxItem(
             id = domain.id,
             text = domain.text,
             space = ModelMappers.forWhomToLegacySpace(domain.forWhom, domain.isPrivate),
