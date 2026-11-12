@@ -66,7 +66,6 @@ class HomeContentScreenshotTest {
         composeRule.captureR2Screen(darkTheme = false, fontScale = 1.0f) {
             HomeContent(
                 state = HomeUiState(firstName = com.menash.myself.testing.SampleName),
-                hour = com.menash.myself.testing.FixedClock.HOUR,
                 epochMillis = com.menash.myself.testing.FixedClock.epochMillis,
                 onOpenRoute = {}, onOpenAccount = {}, debug = false,
             )

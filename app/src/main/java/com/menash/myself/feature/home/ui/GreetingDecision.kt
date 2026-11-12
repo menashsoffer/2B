@@ -6,7 +6,9 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.menash.myself.R
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
@@ -30,8 +32,11 @@ fun rememberGreetingDecision(
         if (frozen.value == null && record != null) frozen.value = record
     }
     val loaded = frozen.value ?: return null
+    val words = stringResource(
+        if (greetingVisit(loaded, today) == GreetingVisit.First) R.string.greeting_first else R.string.greeting_return,
+    )
     return GreetingDecision(
-        text = greetingLine(greetingVisit(loaded, today), displayName),
+        text = greetingLine(words, displayName),
         animate = shouldAnimateGreeting(loaded, today, reducedMotion),
         mark = loaded.lastShown != today,
     )

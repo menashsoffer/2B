@@ -56,7 +56,7 @@ class HomeMoneyScreenshotTest {
     private fun capture(dark: Boolean, font: Float) {
         composeRule.captureR2Screen(darkTheme = dark, fontScale = font) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                HomeContent(state = state, hour = FixedClock.HOUR, epochMillis = FixedClock.epochMillis,
+                HomeContent(state = state, epochMillis = FixedClock.epochMillis,
                     onOpenRoute = {}, onOpenAccount = {}, debug = false)
             }
         }

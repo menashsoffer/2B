@@ -140,6 +140,7 @@ fun SettingsDialog(
                 supportingText = { Text(stringResource(R.string.ui_str_251)) }
             )
 
+            val manualRate = stringResource(R.string.rate_manual_override)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -150,9 +151,9 @@ fun SettingsDialog(
                     onCheckedChange = { useManualRate = it },
                     modifier = Modifier
                         .testTag("use_manual_rate_checkbox")
-                        .semantics { contentDescription = "השתמש בדריסה ידנית לשער הדולר" }
+                        .semantics { contentDescription = manualRate }
                 )
-                Text("השתמש בדריסה ידנית לשער הדולר", fontSize = 13.sp)
+                Text(manualRate, fontSize = 13.sp)
             }
 
             if (boiRateState?.isManualOverride == true) {

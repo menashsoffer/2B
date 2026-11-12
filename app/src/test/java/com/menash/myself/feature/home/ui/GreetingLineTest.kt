@@ -26,7 +26,7 @@ class GreetingLineTest {
 
     @Test
     fun reducedMotion_isOneHeadingWithTheFullSentence() {
-        val text = greetingLine(GreetingVisit.Returning, "דנה")
+        val text = greetingLine("טוב לראות אותך שוב", "דנה")
         composeRule.setContent {
             MyApplicationTheme { GreetingLine(text = text, animate = false) }
         }

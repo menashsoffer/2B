@@ -69,7 +69,6 @@ fun HomeContentAtFixedClock(
 ) {
     HomeContent(
         state = HomeUiState(firstName = SampleName, dreamsActive = dreamsActive),
-        hour = FixedClock.HOUR,
         epochMillis = FixedClock.epochMillis,
         onOpenRoute = onOpenRoute,
         onOpenAccount = onOpenAccount,

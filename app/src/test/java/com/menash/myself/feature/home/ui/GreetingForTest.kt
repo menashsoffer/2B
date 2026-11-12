@@ -13,12 +13,12 @@ class GreetingForTest {
 
     @Test
     fun textPerVisitAndSignIn() {
-        assertEquals("נעים להכיר", greetingLine(GreetingVisit.First, null))
-        assertEquals("נעים להכיר, דנה", greetingLine(GreetingVisit.First, "דנה כהן"))
-        assertEquals("טוב לראות אותך שוב", greetingLine(GreetingVisit.Returning, null))
-        assertEquals("טוב לראות אותך שוב, דנה", greetingLine(GreetingVisit.Returning, "דנה"))
-        assertFalse(greetingLine(GreetingVisit.First, "דנה").contains("שלום"))
-        assertFalse(greetingLine(GreetingVisit.Returning, "דנה").contains("ערב"))
+        assertEquals("נעים להכיר", greetingLine("נעים להכיר", null))
+        assertEquals("נעים להכיר, דנה", greetingLine("נעים להכיר", "דנה כהן"))
+        assertEquals("טוב לראות אותך שוב", greetingLine("טוב לראות אותך שוב", null))
+        assertEquals("טוב לראות אותך שוב, דנה", greetingLine("טוב לראות אותך שוב", "דנה"))
+        assertFalse(greetingLine("נעים להכיר", "דנה").contains("שלום"))
+        assertFalse(greetingLine("טוב לראות אותך שוב", "דנה").contains("ערב"))
     }
 
     @Test
@@ -29,7 +29,7 @@ class GreetingForTest {
         assertEquals("\u2068Dana\u2069", greetingName("Dana Cohen"))
         val long = "Abcdefghijklmnopq"
         assertEquals("\u2068Abcdefghijklmno…\u2069", greetingName(long))
-        assertEquals("נעים להכיר", greetingLine(GreetingVisit.First, "  "))
+        assertEquals("נעים להכיר", greetingLine("נעים להכיר", "  "))
     }
 
     @Test

@@ -88,7 +88,6 @@ class GreetingVisitStoreTest {
         val decision = rememberVisitGreeting(store, name, today, reducedMotion = true)
         HomeContent(
             state = HomeUiState(firstName = firstNameOf(name)),
-            hour = 0,
             epochMillis = 1_762_931_200_000,
             greeting = decision?.text,
             animateGreeting = decision?.animate == true,

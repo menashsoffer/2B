@@ -5,4 +5,5 @@
     <string name="discard_leave">צא בלי לשמור</string>
     <string name="greeting_first">נעים להכיר</string>
     <string name="greeting_return">טוב לראות אותך שוב</string>
+    <string name="rate_manual_override">השתמש בדריסה ידנית לשער הדולר</string>
 </resources>

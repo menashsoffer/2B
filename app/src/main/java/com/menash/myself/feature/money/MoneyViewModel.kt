@@ -175,11 +175,12 @@ class MoneyViewModel(
     /** "להוסיף כמנוי" on a charge seen in the card files: the sheet opens filled from what was charged. */
     fun startSubscriptionFrom(charge: UnlistedCharge) {
         startAdding(EditKind.SUBSCRIPTION)
-        _editor.update {
-            it?.copy(draft = it.draft.copy(
+        _editor.update { state ->
+            val filled = state?.draft?.copy(
                 name = charge.name, amount = amountText(charge.last.amount), categoryId = charge.categoryId,
                 renewalDate = charge.last.month.atDay(minOf(today().dayOfMonth, charge.last.month.lengthOfMonth())),
-            ))
+            ) ?: return@update state
+            state.copy(draft = filled, opened = filled)
         }
     }
 

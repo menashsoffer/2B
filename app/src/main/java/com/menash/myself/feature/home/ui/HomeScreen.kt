@@ -66,7 +66,6 @@ fun HomeScreen(
     val decision = rememberVisitGreeting(greetingStore, displayName, today, reducedMotion)
     HomeContent(
         state = state.copy(firstName = firstNameOf(displayName)),
-        hour = 0,
         epochMillis = nowMillis,
         greeting = decision?.text,
         animateGreeting = decision?.animate == true,

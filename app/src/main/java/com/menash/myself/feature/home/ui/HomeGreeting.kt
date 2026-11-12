@@ -21,11 +21,6 @@ fun shouldAnimateGreeting(record: GreetingRecord, today: LocalDate, reducedMotio
 fun markGreetingShown(record: GreetingRecord, today: LocalDate): GreetingRecord =
     GreetingRecord(firstDate = record.firstDate ?: today, lastShown = today)
 
-fun greetingWords(visit: GreetingVisit): String = when (visit) {
-    GreetingVisit.First -> "נעים להכיר"
-    GreetingVisit.Returning -> "טוב לראות אותך שוב"
-}
-
 /** First token only. A long name keeps 15 characters and an ellipsis. A Latin name is isolated. */
 fun greetingName(displayName: String?): String? {
     val token = firstNameOf(displayName) ?: return null
@@ -34,8 +29,7 @@ fun greetingName(displayName: String?): String? {
     return if (latin) "\u2068$shown\u2069" else shown
 }
 
-fun greetingLine(visit: GreetingVisit, displayName: String?): String {
-    val words = greetingWords(visit)
+fun greetingLine(words: String, displayName: String?): String {
     val name = greetingName(displayName) ?: return words
     return "$words, $name"
 }

@@ -47,7 +47,6 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun HomeContent(
     state: HomeUiState,
-    @Suppress("UNUSED_PARAMETER") hour: Int,
     epochMillis: Long,
     greeting: String? = null,
     animateGreeting: Boolean = false,
@@ -89,7 +88,7 @@ fun HomeContent(
             Column(modifier = Modifier.weight(1f)) {
                 if (showGreeting) {
                     GreetingLine(
-                        text = greeting ?: greetingLine(GreetingVisit.Returning, state.firstName),
+                        text = greeting ?: greetingLine(stringResource(R.string.greeting_return), state.firstName),
                         animate = animateGreeting,
                     )
                 } else {
@@ -206,7 +205,6 @@ private fun HomePreview(dreamsActive: Int?) {
     calendar.set(android.icu.util.Calendar.MILLISECOND, 0)
     HomeContent(
         state = HomeUiState(firstName = "דנה", dreamsActive = dreamsActive),
-        hour = 21,
         epochMillis = calendar.timeInMillis,
         onOpenRoute = {},
         onOpenAccount = {},
