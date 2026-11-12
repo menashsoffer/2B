@@ -62,11 +62,11 @@ class HomeChromeTest {
         assertFalse(descriptions.contains(backLabel))
         val headings = root.collectHeadings()
         assertEquals(1, headings.size)
-        val greeting = greetingText(context, FixedClock.HOUR)
+        val greeting = greetingText(context, FixedClock.HOUR, SampleName)
         val headingText = headings.first().config.getOrNull(SemanticsProperties.Text)
             .orEmpty()
             .joinToString(separator = "") { text -> text.text }
-        assertEquals("$greeting, $SampleName", headingText)
+        assertEquals(greeting, headingText)
         assertTrue(root.collectTexts().contains(dateLineText(context)))
     }
 }

@@ -11,6 +11,9 @@ import com.menash.myself.feature.money.MonthCloseViewModel
 import com.menash.myself.feature.money.PensionViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.isDirty
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * A shared file asks before it drops work the user has actually changed.
@@ -41,6 +44,19 @@ fun shareBlocked(
         importWork = import.ui.value.blocksShare(),
     )
 }
+
+/** [shareBlocked] as a flow, so a waiting shared file is read as soon as the form saves or closes. */
+fun shareBlockedFlow(
+    month: MoneyViewModel,
+    goals: GoalsViewModel,
+    tithe: TitheViewModel,
+    pension: PensionViewModel,
+    car: CarViewModel,
+    close: MonthCloseViewModel,
+    import: ImportViewModel,
+): Flow<Boolean> = combine(
+    listOf<Flow<Any?>>(month.editor, goals.ui, tithe.ui, pension.ui, car.ui, close.ui, import.ui),
+) { shareBlocked(month, goals, tithe, pension, car, close, import) }.distinctUntilChanged()
 
 fun shareBlocked(
     monthDirty: Boolean,

@@ -13,6 +13,8 @@ import com.menash.myself.core.designsystem.component.FloatingNavItem
 import com.menash.myself.feature.home.ui.HomeContent
 import com.menash.myself.feature.home.ui.HomeUiState
 import com.menash.myself.R
+import com.menash.myself.feature.home.ui.combinedGreeting
+import com.menash.myself.feature.home.ui.greetingFor
 import com.menash.myself.feature.home.ui.hebrewDateLine
 import com.menash.myself.shell.PlaceholderTab
 import com.menash.myself.shell.ShellRoute
@@ -48,11 +50,9 @@ object FixedClock {
     }
 }
 
-/** The returning-visit greeting. The hour no longer changes the words. */
-fun greetingText(context: Context, hour: Int): String {
-    check(hour in 0..23)
-    return context.getString(R.string.greeting_return)
-}
+/** The returning-visit greeting בית shows at [hour]: «ערב טוב, <name>. טוב לראות אותך שוב». */
+fun greetingText(context: Context, hour: Int, name: String?): String =
+    combinedGreeting(context.getString(greetingFor(hour)), context.getString(R.string.greeting_return), name)
 
 /** Date line at [FixedClock.epochMillis]. */
 fun dateLineText(context: Context): String {

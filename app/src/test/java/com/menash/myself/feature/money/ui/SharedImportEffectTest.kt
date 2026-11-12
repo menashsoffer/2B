@@ -162,6 +162,49 @@ class SharedImportEffectTest {
     }
 
     @Test
+    fun keep_thenTheFormCloses_importsTheWaitingFile() {
+        val month = moneyVm()
+        val goals = goalVm()
+        val tithe = titheVm()
+        val pension = pensionVm()
+        val car = carVm()
+        val close = closeVm()
+        val import = importVm()
+        goals.open()
+        goals.startAdding()
+        goals.updateDraft { it.copy(name = "דירה") }
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        val inbox = ImportInbox().also { it.offer(listOf("content://bank/file")) }
+        var closed = 0
+        val imported = mutableListOf<List<Uri>>()
+        composeRule.setContent {
+            MyApplicationTheme {
+                SharedImportEffect(
+                    inbox,
+                    { shareBlocked(month, goals, tithe, pension, car, close, import) },
+                    { closed++ },
+                    {},
+                    { imported += it },
+                    shareBlockedFlow(month, goals, tithe, pension, car, close, import),
+                )
+            }
+        }
+        composeRule.onNodeWithTag("discard_keep").performClick()
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        composeRule.waitForIdle()
+        assertEquals(listOf("content://bank/file"), inbox.pending.value)
+        assertEquals(0, imported.size)
+
+        goals.close()
+        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        composeRule.waitForIdle()
+        assertEquals(1, closed)
+        assertEquals(1, imported.size)
+        assertEquals(emptyList<String>(), inbox.pending.value)
+        assertEquals(0, composeRule.onAllNodesWithTag("discard_confirm").fetchSemanticsNodes().size)
+    }
+
+    @Test
     fun cleanGoal_closesWithoutAsking() {
         val goals = goalVm()
         goals.open()

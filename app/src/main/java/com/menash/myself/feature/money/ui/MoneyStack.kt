@@ -37,6 +37,7 @@ import android.net.Uri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.menash.myself.feature.money.ImportInbox
 import java.time.YearMonth
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
@@ -126,6 +127,8 @@ fun rememberMoneyDestination(
     shownMonth: StateFlow<YearMonth?>,
     onRestoreMonth: (YearMonth) -> Unit,
     onScrollTop: () -> Unit,
+    dirty: () -> Boolean = { false },
+    onDiscard: () -> Unit = {},
 ): MoneyDestination {
     val open = inputs.frames()
     var savedMonth by rememberSaveable { mutableStateOf<String?>(null) }
@@ -137,11 +140,29 @@ fun rememberMoneyDestination(
     LaunchedEffect(month) { savedMonth = month?.toString() }
     val shown = restoredMoneyStack(open) { missing -> missing.forEach(vms::replay) }
     val reselect = LocalMoneyReselect.current
+    var askReselect by remember { mutableStateOf(false) }
+    val dirtyNow by rememberUpdatedState(dirty)
+    val scrollTop by rememberUpdatedState(onScrollTop)
     LaunchedEffect(reselect) {
         reselect.ticks.collect {
-            vms.closeAll()
-            onScrollTop()
+            // A second tap on כסף never drops a half-typed form without asking, like a shared file.
+            if (dirtyNow()) askReselect = true
+            else {
+                vms.closeAll()
+                scrollTop()
+            }
         }
+    }
+    if (askReselect) {
+        DiscardChangesDialog(
+            onKeep = { askReselect = false },
+            onLeave = {
+                askReselect = false
+                onDiscard()
+                vms.closeAll()
+                scrollTop()
+            },
+        )
     }
     return shown.lastOrNull()?.place.toMoneyDestination()
 }
@@ -193,20 +214,35 @@ fun SharedImportEffect(
     onCloseAll: () -> Unit,
     onDiscard: () -> Unit,
     importUris: (List<Uri>) -> Unit,
+    blockedChanges: Flow<Boolean>? = null,
 ) {
     val pending by inbox.pending.collectAsStateWithLifecycle()
+    // Read here only so this effect recomposes when a form saves or closes.
+    val watched = blockedChanges?.collectAsStateWithLifecycle(initialValue = false)?.value
     var ask by remember { mutableStateOf(false) }
-    LaunchedEffect(pending) {
-        if (pending.isEmpty() || ask) return@LaunchedEffect
-        if (dirty()) ask = true
-        else {
-            onCloseAll()
-            importUris(inbox.take().map(Uri::parse))
+    // «המשך לערוך» keeps the file waiting. It is read once nothing is left to lose.
+    var waiting by remember { mutableStateOf(false) }
+    val stillBlocked = waiting && dirty()
+    LaunchedEffect(pending, waiting, stillBlocked, watched) {
+        if (pending.isEmpty()) {
+            waiting = false
+            return@LaunchedEffect
         }
+        if (ask || stillBlocked) return@LaunchedEffect
+        if (!waiting && dirty()) {
+            ask = true
+            return@LaunchedEffect
+        }
+        waiting = false
+        onCloseAll()
+        importUris(inbox.take().map(Uri::parse))
     }
     if (ask) {
         DiscardChangesDialog(
-            onKeep = { ask = false },
+            onKeep = {
+                ask = false
+                waiting = true
+            },
             onLeave = {
                 ask = false
                 onDiscard()

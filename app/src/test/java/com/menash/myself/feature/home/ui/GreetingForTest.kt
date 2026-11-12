@@ -1,5 +1,6 @@
 package com.menash.myself.feature.home.ui
 
+import com.menash.myself.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -56,5 +57,17 @@ class GreetingForTest {
         assertEquals(0f, greetingLeafFraction(750), 0.001f)
         assertEquals(1f, greetingLeafFraction(1000), 0.001f)
         assertTrue(greetingLeafFraction(900) in 0.01f..0.99f)
+    }
+
+    @Test
+    fun combined_timeOfDayThenVisit() {
+        assertEquals(R.string.greeting_evening, greetingFor(4))
+        assertEquals(R.string.greeting_morning, greetingFor(5))
+        assertEquals(R.string.greeting_morning, greetingFor(11))
+        assertEquals(R.string.greeting_afternoon, greetingFor(12))
+        assertEquals(R.string.greeting_afternoon, greetingFor(16))
+        assertEquals(R.string.greeting_evening, greetingFor(17))
+        assertEquals("ערב טוב, דנה. טוב לראות אותך שוב", combinedGreeting("ערב טוב", "טוב לראות אותך שוב", "דנה כהן"))
+        assertEquals("בוקר טוב. נעים להכיר", combinedGreeting("בוקר טוב", "נעים להכיר", null))
     }
 }

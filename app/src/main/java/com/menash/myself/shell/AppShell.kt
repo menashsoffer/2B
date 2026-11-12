@@ -111,7 +111,9 @@ fun AppShell(
     // A shared bank or card file opens the money tab, which runs the import.
     val sharedFiles by appContainer.importInbox.pending.collectAsStateWithLifecycle()
     LaunchedEffect(sharedFiles.isNotEmpty()) {
-        if (sharedFiles.isNotEmpty()) openRoute(ShellRoute.Money)
+        // Not openRoute: on the money tab that counts as a second tap, which closes every
+        // money screen, including a half-typed form, before the money screen can ask.
+        if (sharedFiles.isNotEmpty()) navController.openShellRoute(ShellRoute.Money)
     }
 
     AppShellContent(

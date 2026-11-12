@@ -27,6 +27,7 @@ fun rememberGreetingDecision(
     today: LocalDate,
     displayName: String?,
     reducedMotion: Boolean,
+    hour: Int? = null,
 ): GreetingDecision? {
     val frozen = remember(today) { mutableStateOf(record) }
     SideEffect {
@@ -36,8 +37,9 @@ fun rememberGreetingDecision(
     val words = stringResource(
         if (greetingVisit(loaded, today) == GreetingVisit.First) R.string.greeting_first else R.string.greeting_return,
     )
+    val timeWords = hour?.let { stringResource(greetingFor(it)) }
     return GreetingDecision(
-        text = greetingLine(words, displayName),
+        text = if (timeWords == null) greetingLine(words, displayName) else combinedGreeting(timeWords, words, displayName),
         animate = shouldAnimateGreeting(loaded, today, reducedMotion),
         mark = loaded.lastShown != today,
     )
@@ -50,10 +52,11 @@ fun rememberVisitGreeting(
     displayName: String?,
     today: LocalDate,
     reducedMotion: Boolean,
+    hour: Int? = null,
 ): GreetingDecision? {
     val record by store.record.map<GreetingRecord, GreetingRecord?> { it }
         .collectAsStateWithLifecycle(initialValue = null)
-    val decision = rememberGreetingDecision(record, today, displayName, reducedMotion)
+    val decision = rememberGreetingDecision(record, today, displayName, reducedMotion, hour)
     LaunchedEffect(decision) {
         val chosen = decision ?: return@LaunchedEffect
         if (!chosen.mark) return@LaunchedEffect
