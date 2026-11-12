@@ -1,5 +1,6 @@
 package com.menash.myself.feature.me.ui
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -14,6 +15,7 @@ import com.menash.myself.core.designsystem.theme.MyApplicationTheme
 import com.menash.myself.core.external.boi.BoiRate
 import com.menash.myself.core.external.hebcal.HebcalData
 import com.menash.myself.core.external.hebcal.IsraeliCity
+import com.menash.myself.feature.settings.ui.SettingsDialog
 import com.menash.myself.testing.DarkQualifiers
 import com.menash.myself.testing.LightQualifiers
 import com.menash.myself.testing.SampleName
@@ -121,6 +123,40 @@ class MeContentTest {
     }
 
     @Test
+    fun preferences_saveWithoutEdits_writesNothing() {
+        val rateRepo = FakeExchangeRateRepository(
+            BoiRate(
+                officialRate = 3.55,
+                officialRateDate = LocalDate.of(2026, 10, 26),
+                officialFetchedAt = Instant.parse("2026-10-26T14:30:00Z"),
+                manualRate = 3.85,
+                isManualOverride = true,
+            ),
+        )
+        val hebcalRepo = FakeHebcalRepository()
+        composeRule.setContent {
+            MyApplicationTheme {
+                MeScreen(
+                    session = null,
+                    onRequestSignIn = {},
+                    onSignedOut = {},
+                    onOpenHousehold = {},
+                    onOpenRoute = {},
+                    exchangeRateRepository = rateRepo,
+                    hebcalRepository = hebcalRepo,
+                    dialogsInWindow = false,
+                )
+            }
+        }
+        composeRule.onNodeWithTag("account_settings").performClick()
+        composeRule.onNodeWithTag("save_settings_button").performClick()
+        composeRule.waitForIdle()
+        assertEquals(emptyList<Double?>(), rateRepo.manualRateCalls)
+        assertEquals(0, rateRepo.clearManualRateCalls)
+        assertEquals(0, hebcalRepo.selectCityCalls)
+    }
+
+    @Test
     fun preferences_survivesConfigurationChange() {
         val rateRepo = FakeExchangeRateRepository(
             BoiRate(
@@ -174,6 +210,36 @@ class MeContentTest {
     fun meGuest_light_font13() = composeRule.captureR2Screen(darkTheme = false, fontScale = 1.3f) {
         MeContent(guest, MeActions())
     }
+
+    @Test
+    fun preferences_light_font10() = composeRule.captureR2Screen(darkTheme = false, fontScale = 1.0f) {
+        PreferencesShot()
+    }
+
+    @Test
+    @Config(sdk = [36], qualifiers = DarkQualifiers)
+    fun preferences_dark_font10() = composeRule.captureR2Screen(darkTheme = true, fontScale = 1.0f) {
+        PreferencesShot()
+    }
+}
+
+@Composable
+private fun PreferencesShot() {
+    SettingsDialog(
+        currentRate = 3.55,
+        onDismiss = {},
+        exchangeRateRepository = FakeExchangeRateRepository(
+            BoiRate(
+                officialRate = 3.55,
+                officialRateDate = LocalDate.of(2026, 10, 26),
+                officialFetchedAt = Instant.parse("2026-10-26T14:30:00Z"),
+                manualRate = null,
+                isManualOverride = false,
+            ),
+        ),
+        hebcalRepository = FakeHebcalRepository(),
+        inDialogWindow = false,
+    )
 }
 
 private class FakeExchangeRateRepository(initial: BoiRate?) : ExchangeRateRepository {
@@ -209,6 +275,7 @@ private class FakeExchangeRateRepository(initial: BoiRate?) : ExchangeRateReposi
 private class FakeHebcalRepository : HebcalRepository {
     override val hebcalDataFlow: StateFlow<HebcalData?> = MutableStateFlow(null)
     override val selectedCityFlow: StateFlow<IsraeliCity?> = MutableStateFlow(null)
-    override suspend fun selectCity(city: IsraeliCity) {}
+    var selectCityCalls = 0
+    override suspend fun selectCity(city: IsraeliCity) { selectCityCalls++ }
     override suspend fun refreshDataIfNeeded(): Result<HebcalData?> = Result.success(null)
 }

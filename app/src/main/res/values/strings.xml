@@ -57,8 +57,8 @@
     <string name="ui_str_236">קובץ תנועות בנקאי לסיווג הוצאות ותזרים מזומנים חיובי.</string>
     <string name="ui_str_237">פירוט עסקאות כרטיס אשראי [שלב 2]</string>
     <string name="ui_csv_239">ייבוא קובצי CSV בקלות</string>
-    <string name="ui_str_241">הגדרות וניהול נתונים</string>
-    <string name="ui_str_242">שמור הגדרות</string>
+    <string name="ui_str_241">העדפות</string>
+    <string name="ui_str_242">שמור</string>
 
     <string name="ui_usd_247">שער דולר ידני (USD → ₪)</string>
 
