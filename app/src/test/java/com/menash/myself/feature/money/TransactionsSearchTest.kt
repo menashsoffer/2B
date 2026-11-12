@@ -95,6 +95,9 @@ class TransactionsSearchTest {
         assertTrue(vm.ui.value.searching)
         assertEquals("קפה", vm.ui.value.query.text)
         assertTrue(vm.ui.value.query.search!!.onlyUnassigned)
+        vm.closeAll()
+        assertEquals(TransactionsQuery(), vm.ui.value.query)
+        assertFalse(vm.ui.value.open)
     }
 
     @Test

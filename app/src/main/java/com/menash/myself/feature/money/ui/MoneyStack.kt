@@ -86,8 +86,7 @@ class MoneyNavVms(
 ) {
     fun closeAll() {
         import.close()
-        transactions.close()
-        transactions.close()
+        transactions.closeAll()
         trend.close()
         summary.close()
         goals.close()

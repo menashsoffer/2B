@@ -134,6 +134,11 @@ class TransactionsViewModel(
         query.value = query.value.backToSearch ?: TransactionsQuery()
     }
 
+    /** Clears the month and the search under it. One assignment, so a stack clear cannot stop on the search. */
+    fun closeAll() {
+        query.value = TransactionsQuery()
+    }
+
     /** Opens search across months, optionally narrowed (a period, a category, only unassigned lines). */
     fun openSearch(scope: LineSearchScope = LineSearchScope(), text: String = "") {
         query.value = TransactionsQuery(search = scope, text = text)
