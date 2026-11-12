@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -41,6 +42,8 @@ import com.menash.myself.core.designsystem.theme.AppType
 import com.menash.myself.core.designsystem.theme.Spacing
 import com.menash.myself.core.designsystem.theme.appColors
 import com.menash.myself.core.di.LocalAppContainer
+import com.menash.myself.feature.money.ui.LocalMoneyReselect
+import com.menash.myself.feature.money.ui.MoneyReselectBus
 import com.menash.myself.shell.MainViewModel
 import com.menash.myself.core.ui.UiEvent
 import com.menash.myself.feature.money.ui.hebrewMonthYear
@@ -53,6 +56,7 @@ fun AppShell(
     onSignedOut: () -> Unit,
 ) {
     val navController = rememberNavController()
+    val moneyReselect = remember { MoneyReselectBus() }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedRoute = shellTabs.firstOrNull { tab ->
         backStackEntry?.destination?.hierarchy?.any { it.route == tab.route } == true
@@ -64,7 +68,7 @@ fun AppShell(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val snackbarHost = remember { SnackbarHostState() }
-    fun openRoute(route: String) = navController.openShellRoute(route)
+    fun openRoute(route: String) = navController.openTab(route) { moneyReselect.send() }
 
     LaunchedEffect(appContainer, snackbarHost) {
         var previous: kotlinx.coroutines.Job? = null
@@ -120,6 +124,10 @@ fun AppShell(
         showNavBar = shellShowsNavBar(backStackEntry?.destination?.route),
         snackbarHostState = snackbarHost,
     ) { contentModifier ->
+        CompositionLocalProvider(
+            LocalLeaveTab provides { openRoute(ShellRoute.Home) },
+            LocalMoneyReselect provides moneyReselect,
+        ) {
         AppNavHost(
             navController = navController,
             session = session,
@@ -128,6 +136,7 @@ fun AppShell(
             onSignedOut = onSignedOut,
             modifier = contentModifier,
         )
+        }
     }
 
     LaunchedEffect(session?.uid) {

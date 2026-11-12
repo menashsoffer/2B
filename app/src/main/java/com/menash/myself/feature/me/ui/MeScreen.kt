@@ -22,6 +22,7 @@ import com.menash.myself.core.di.LocalAppContainer
 import com.menash.myself.feature.account.ui.AccountManagementRoute
 import com.menash.myself.feature.settings.ui.SettingsDialog
 import com.menash.myself.shell.GalleryIndex
+import com.menash.myself.shell.TabRootBack
 
 /** Wires [MeContent]: sign in and out, household, preferences, account management, debug gallery. */
 @Composable
@@ -35,6 +36,7 @@ fun MeScreen(
     hebcalRepository: HebcalRepository = LocalAppContainer.current.hebcalRepository,
     dialogsInWindow: Boolean = true,
 ) {
+    TabRootBack()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var showPreferences by rememberSaveable { mutableStateOf(false) }

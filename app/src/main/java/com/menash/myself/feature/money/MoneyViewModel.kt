@@ -91,6 +91,7 @@ class MoneyViewModel(
 
     /** The month the month tab shows; null follows today's month. */
     private val shown = MutableStateFlow<YearMonth?>(null)
+    val shownMonth: StateFlow<YearMonth?> = shown.asStateFlow()
 
     val state: StateFlow<MoneyScreenState> = combine(
         repository.observe(), usdRates, transactions, memory,

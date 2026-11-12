@@ -39,6 +39,7 @@ import com.menash.myself.feature.money.PensionViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
+import com.menash.myself.shell.TabRootBack
 import com.menash.myself.feature.money.importer.LineFilter
 import java.time.YearMonth
 
@@ -167,19 +168,13 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     var selectedTab by rememberSaveable { mutableIntStateOf(MoneyTabMonth) }; var expanded by remember { mutableStateOf(emptySet<MonthRowKind>()) }
     var picking by remember { mutableStateOf(false) }
 
-    val destination = moneyDestination(MoneyOpenFlags(
-        importing = importOpen,
-        transactions = transactionsUi.open,
-        goals = goalsUi.open,
-        tithe = titheUi.open,
-        car = carUi.open,
-        pension = pensionUi.open,
-        close = closeUi.open,
-        subscriptions = subsUi.open,
-        period = periodUi.open,
-        summary = summaryUi.open,
-        trend = trendUi.open,
-    ))
+    var scrollTick by remember { mutableIntStateOf(0) }
+    val destination = rememberMoneyDestination(
+        inputs = MoneyNavInputs(importOpen, transactionsUi, goalsUi.open, titheUi.open, carUi.open, pensionUi.open, closeUi, subsUi.open, periodUi.open, summaryUi, trendUi),
+        vms = MoneyNavVms(transactionsViewModel, closeViewModel, summaryViewModel, trendViewModel, goalsViewModel, titheViewModel, carViewModel, pensionViewModel, subsViewModel, periodViewModel, importViewModel),
+        onScrollTop = { scrollTick++ },
+    )
+    TabRootBack(enabled = destination == MoneyDestination.Root)
     val duration = Motion.duration(Motion.medium)
     val enter = Motion.slideIn(duration)
     val exit = Motion.slideOut(duration)
@@ -239,6 +234,7 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         MoneyDestination.Period ->
             PeriodContent(rememberShownState(periodUi, periodUi.open), PeriodActions(periodViewModel::select, periodViewModel::close, trendViewModel::open, transactionsViewModel::openRange), modifier)
         MoneyDestination.Root -> MoneyContent(
+            scrollToTop = scrollTick,
             state = state,
             selectedTab = selectedTab,
             expanded = expanded,

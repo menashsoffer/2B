@@ -1,8 +1,10 @@
 package com.menash.myself.shell
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -16,6 +18,21 @@ object RequireSignIn {
 
 /** The tab bar stays off the sign-in route (B13). */
 fun shellShowsNavBar(route: String?): Boolean = route != RequireSignIn.Route
+
+/** Tab roots other than בית use this to go home and keep that tab's stack (B5). */
+val LocalLeaveTab = staticCompositionLocalOf<(() -> Unit)?> { null }
+
+@Composable
+fun TabRootBack(enabled: Boolean = true) {
+    val leave = LocalLeaveTab.current ?: return
+    BackHandler(enabled = enabled, onBack = leave)
+}
+
+fun NavHostController.openTab(route: String, onMoneyReselect: () -> Unit = {}) {
+    val already = currentDestination?.hierarchy?.any { it.route == route } == true
+    openShellRoute(route)
+    if (already && route == ShellRoute.Money) onMoneyReselect()
+}
 
 fun NavHostController.openShellRoute(route: String) {
     val destination = currentDestination

@@ -1,0 +1,177 @@
+package com.menash.myself.feature.money.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.staticCompositionLocalOf
+import com.menash.myself.feature.money.CarViewModel
+import com.menash.myself.feature.money.CategoryTrendUi
+import com.menash.myself.feature.money.CategoryTrendViewModel
+import com.menash.myself.feature.money.GoalsViewModel
+import com.menash.myself.feature.money.ImportViewModel
+import com.menash.myself.feature.money.MoneyFrame
+import com.menash.myself.feature.money.MoneyPlace
+import com.menash.myself.feature.money.MonthCloseUi
+import com.menash.myself.feature.money.MonthCloseViewModel
+import com.menash.myself.feature.money.MonthSummaryUi
+import com.menash.myself.feature.money.MonthSummaryViewModel
+import com.menash.myself.feature.money.PensionViewModel
+import com.menash.myself.feature.money.PeriodViewModel
+import com.menash.myself.feature.money.SubscriptionsViewModel
+import com.menash.myself.feature.money.TitheViewModel
+import com.menash.myself.feature.money.TransactionsUi
+import com.menash.myself.feature.money.TransactionsViewModel
+import com.menash.myself.feature.money.decodeMoneyHistory
+import com.menash.myself.feature.money.encodeMoneyHistory
+import com.menash.myself.feature.money.importer.LineFilter
+import com.menash.myself.feature.money.syncMoneyHistory
+import java.time.YearMonth
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+
+/** Open money screens, in the order a brand-new pair should stack (parent, then child). */
+class MoneyNavInputs(
+    val importOpen: Boolean,
+    val transactions: TransactionsUi,
+    val goalsOpen: Boolean,
+    val titheOpen: Boolean,
+    val carOpen: Boolean,
+    val pensionOpen: Boolean,
+    val close: MonthCloseUi,
+    val subscriptionsOpen: Boolean,
+    val periodOpen: Boolean,
+    val summary: MonthSummaryUi,
+    val trend: CategoryTrendUi,
+) {
+    fun frames(): List<MoneyFrame> = buildList {
+        if (goalsOpen) add(MoneyFrame(MoneyPlace.Goals))
+        if (titheOpen) add(MoneyFrame(MoneyPlace.Tithe))
+        if (carOpen) add(MoneyFrame(MoneyPlace.Car))
+        if (pensionOpen) add(MoneyFrame(MoneyPlace.Pension))
+        if (subscriptionsOpen) add(MoneyFrame(MoneyPlace.Subscriptions))
+        if (periodOpen) add(MoneyFrame(MoneyPlace.Period))
+        if (close.open) add(MoneyFrame(MoneyPlace.Close, month = close.view?.month?.toString()))
+        if (summary.open) add(MoneyFrame(MoneyPlace.Summary, month = summary.month?.toString()))
+        if (transactions.open) add(transactionFrame(transactions))
+        if (trend.open) add(MoneyFrame(MoneyPlace.Trend, categoryId = trend.categoryId))
+        if (importOpen) add(MoneyFrame(MoneyPlace.Import))
+    }
+}
+
+class MoneyNavVms(
+    val transactions: TransactionsViewModel,
+    val close: MonthCloseViewModel,
+    val summary: MonthSummaryViewModel,
+    val trend: CategoryTrendViewModel,
+    val goals: GoalsViewModel,
+    val tithe: TitheViewModel,
+    val car: CarViewModel,
+    val pension: PensionViewModel,
+    val subscriptions: SubscriptionsViewModel,
+    val period: PeriodViewModel,
+    val import: ImportViewModel,
+) {
+    fun closeAll() {
+        import.close()
+        transactions.close()
+        transactions.close()
+        trend.close()
+        summary.close()
+        goals.close()
+        tithe.close()
+        car.close()
+        pension.close()
+        close.close()
+        subscriptions.close()
+        period.close()
+    }
+
+    fun replay(frame: MoneyFrame) {
+        val month = frame.month?.let { runCatching { YearMonth.parse(it) }.getOrNull() }
+        when (frame.place) {
+            MoneyPlace.Goals -> goals.open()
+            MoneyPlace.Tithe -> tithe.open()
+            MoneyPlace.Car -> car.open()
+            MoneyPlace.Pension -> pension.open()
+            MoneyPlace.Subscriptions -> subscriptions.open()
+            MoneyPlace.Period -> period.open()
+            MoneyPlace.Close -> close.open(month)
+            MoneyPlace.Summary -> month?.let(summary::open)
+            MoneyPlace.Transactions -> replayTransactions(transactions, month, frame.filter)
+            MoneyPlace.Trend -> frame.categoryId?.let(trend::open)
+            MoneyPlace.Import -> import.resume()
+        }
+    }
+}
+
+/** The visible money screen: walk order, restored after process death, cleared when כסף is reselected. */
+@Composable
+fun rememberMoneyDestination(
+    inputs: MoneyNavInputs,
+    vms: MoneyNavVms,
+    onScrollTop: () -> Unit,
+): MoneyDestination {
+    val open = inputs.frames()
+    var stored by rememberSaveable { mutableStateOf("") }
+    val history = decodeMoneyHistory(stored)
+    var ready by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        val openNow = open.map { it.place }.toSet()
+        history.filter { it.place !in openNow }.forEach(vms::replay)
+        ready = true
+    }
+    val shown = if (ready) syncMoneyHistory(history, open) else history
+    val encoded = encodeMoneyHistory(shown)
+    SideEffect {
+        if (stored != encoded) stored = encoded
+    }
+    val reselect = LocalMoneyReselect.current
+    LaunchedEffect(reselect) {
+        reselect.ticks.collect {
+            vms.closeAll()
+            onScrollTop()
+        }
+    }
+    return shown.lastOrNull()?.place.toMoneyDestination()
+}
+
+private fun transactionFrame(ui: TransactionsUi): MoneyFrame {
+    val month = ui.query.month
+    val filter = if (month == null) "SEARCH" else ui.query.filter.name
+    return MoneyFrame(MoneyPlace.Transactions, month = month?.toString(), filter = filter)
+}
+
+private fun replayTransactions(transactions: TransactionsViewModel, month: YearMonth?, filter: String?) {
+    if (month == null || filter == "SEARCH") transactions.openSearch()
+    else transactions.open(month, runCatching { LineFilter.valueOf(filter ?: "ALL") }.getOrDefault(LineFilter.ALL))
+}
+
+private fun MoneyPlace?.toMoneyDestination(): MoneyDestination = when (this) {
+    null -> MoneyDestination.Root
+    MoneyPlace.Goals -> MoneyDestination.Goals
+    MoneyPlace.Tithe -> MoneyDestination.Tithe
+    MoneyPlace.Car -> MoneyDestination.Car
+    MoneyPlace.Pension -> MoneyDestination.Pension
+    MoneyPlace.Subscriptions -> MoneyDestination.Subscriptions
+    MoneyPlace.Period -> MoneyDestination.Period
+    MoneyPlace.Close -> MoneyDestination.Close
+    MoneyPlace.Summary -> MoneyDestination.Summary
+    MoneyPlace.Transactions -> MoneyDestination.Transactions
+    MoneyPlace.Trend -> MoneyDestination.Trend
+    MoneyPlace.Import -> MoneyDestination.Import
+}
+
+/** Second tap on כסף. [AppShell] sends it; the money screen closes its stack and scrolls up. */
+class MoneyReselectBus {
+    private val events = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val ticks: SharedFlow<Unit> = events.asSharedFlow()
+    fun send() { events.tryEmit(Unit) }
+}
+
+val LocalMoneyReselect = staticCompositionLocalOf { MoneyReselectBus() }
