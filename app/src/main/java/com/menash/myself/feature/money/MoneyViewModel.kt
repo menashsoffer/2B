@@ -65,7 +65,11 @@ data class EditorState(
     val retryEntries: List<MoneyEntry>? = null,
     /** The item sheet a "כרטיס חדש" sheet was opened from; it comes back, draft intact, when the card sheet closes. */
     val returnTo: EditorState? = null,
+    /** Draft as it was when the sheet opened. Differs once the user edits a field. */
+    val opened: ItemDraft = draft,
 )
+
+fun EditorState.isDirty(): Boolean = draft != opened
 
 class MoneyViewModel(
     private val repository: MoneyRepository,

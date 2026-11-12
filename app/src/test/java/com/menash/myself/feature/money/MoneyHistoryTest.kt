@@ -62,6 +62,20 @@ class MoneyHistoryTest {
     }
 
     @Test
+    fun replaySkipsScreensThatAreAlreadyOpen() {
+        val close = frame(MoneyPlace.Close, "2026-09")
+        val transactions = frame(MoneyPlace.Transactions, "2026-09")
+        assertEquals(listOf(transactions), framesToReplay(listOf(close, transactions), setOf(MoneyPlace.Close)))
+        assertEquals(emptyList<MoneyFrame>(), framesToReplay(listOf(close), setOf(MoneyPlace.Close)))
+    }
+
+    @Test
+    fun dirtyShareAsksBeforeImport() {
+        assertEquals(true, shareImportShouldAsk(dirty = true))
+        assertEquals(false, shareImportShouldAsk(dirty = false))
+    }
+
+    @Test
     fun decodeRejectsGarbage() {
         assertNull(MoneyFrame.decode("nope"))
         assertNull(MoneyFrame.decode("Close|2026-09"))

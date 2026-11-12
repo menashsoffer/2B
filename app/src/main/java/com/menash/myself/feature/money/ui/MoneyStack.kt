@@ -29,10 +29,16 @@ import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.decodeMoneyHistory
 import com.menash.myself.feature.money.encodeMoneyHistory
 import com.menash.myself.feature.money.importer.LineFilter
+import com.menash.myself.feature.money.framesToReplay
+import com.menash.myself.feature.money.shareImportShouldAsk
 import com.menash.myself.feature.money.syncMoneyHistory
+import android.net.Uri
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.menash.myself.feature.money.ImportInbox
 import java.time.YearMonth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
 /** Open money screens, in the order a brand-new pair should stack (parent, then child). */
@@ -115,17 +121,23 @@ class MoneyNavVms(
 fun rememberMoneyDestination(
     inputs: MoneyNavInputs,
     vms: MoneyNavVms,
+    shownMonth: StateFlow<YearMonth?>,
+    onRestoreMonth: (YearMonth) -> Unit,
     onScrollTop: () -> Unit,
 ): MoneyDestination {
     val open = inputs.frames()
     var stored by rememberSaveable { mutableStateOf("") }
+    var savedMonth by rememberSaveable { mutableStateOf<String?>(null) }
+    val month by shownMonth.collectAsStateWithLifecycle()
+    val restoredMonth = savedMonth
     val history = decodeMoneyHistory(stored)
     var ready by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
-        val openNow = open.map { it.place }.toSet()
-        history.filter { it.place !in openNow }.forEach(vms::replay)
+        restoredMonth?.let { raw -> runCatching { YearMonth.parse(raw) }.getOrNull()?.let(onRestoreMonth) }
+        framesToReplay(history, open.map { it.place }.toSet()).forEach(vms::replay)
         ready = true
     }
+    LaunchedEffect(month) { savedMonth = month?.toString() }
     val shown = if (ready) syncMoneyHistory(history, open) else history
     val encoded = encodeMoneyHistory(shown)
     SideEffect {
@@ -139,6 +151,38 @@ fun rememberMoneyDestination(
         }
     }
     return shown.lastOrNull()?.place.toMoneyDestination()
+}
+
+/** A shared file replaces the money stack with import. A dirty form asks first and can keep the file pending. */
+@Composable
+fun SharedImportEffect(
+    inbox: ImportInbox,
+    dirty: () -> Boolean,
+    onCloseAll: () -> Unit,
+    onDiscard: () -> Unit,
+    importUris: (List<Uri>) -> Unit,
+) {
+    val pending by inbox.pending.collectAsStateWithLifecycle()
+    var ask by remember { mutableStateOf(false) }
+    LaunchedEffect(pending) {
+        if (pending.isEmpty() || ask) return@LaunchedEffect
+        if (shareImportShouldAsk(dirty())) ask = true
+        else {
+            onCloseAll()
+            importUris(inbox.take().map(Uri::parse))
+        }
+    }
+    if (ask) {
+        DiscardChangesDialog(
+            onKeep = { ask = false },
+            onLeave = {
+                ask = false
+                onDiscard()
+                onCloseAll()
+                importUris(inbox.take().map(Uri::parse))
+            },
+        )
+    }
 }
 
 private fun transactionFrame(ui: TransactionsUi): MoneyFrame {

@@ -39,6 +39,7 @@ import com.menash.myself.feature.money.PensionViewModel
 import com.menash.myself.feature.money.TitheViewModel
 import com.menash.myself.feature.money.TransactionsViewModel
 import com.menash.myself.feature.money.draftPreview
+import com.menash.myself.feature.money.isDirty
 import com.menash.myself.shell.TabRootBack
 import com.menash.myself.feature.money.importer.LineFilter
 import java.time.YearMonth
@@ -135,10 +136,8 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
         }
     }
     OpenTaskFromInbox(appContainer.monthTaskInbox, transactionsViewModel, closeViewModel, titheViewModel, listOf(importViewModel::close, transactionsViewModel::close, trendViewModel::close, summaryViewModel::close, goalsViewModel::close, titheViewModel::close, carViewModel::close, pensionViewModel::close, closeViewModel::close, subsViewModel::close, periodViewModel::close))
-    val shared by appContainer.importInbox.pending.collectAsStateWithLifecycle()
-    LaunchedEffect(shared) {
-        if (shared.isNotEmpty()) importUris(appContainer.importInbox.take().map(Uri::parse))
-    }
+    val navVms = MoneyNavVms(transactionsViewModel, closeViewModel, summaryViewModel, trendViewModel, goalsViewModel, titheViewModel, carViewModel, pensionViewModel, subsViewModel, periodViewModel, importViewModel)
+    SharedImportEffect(appContainer.importInbox, { viewModel.editor.value?.isDirty() == true }, navVms::closeAll, viewModel::dismissEditor, ::importUris)
 
     val editor by viewModel.editor.collectAsStateWithLifecycle()
     @Composable
@@ -171,7 +170,9 @@ fun MoneyScreen(modifier: Modifier = Modifier) {
     var scrollTick by remember { mutableIntStateOf(0) }
     val destination = rememberMoneyDestination(
         inputs = MoneyNavInputs(importOpen, transactionsUi, goalsUi.open, titheUi.open, carUi.open, pensionUi.open, closeUi, subsUi.open, periodUi.open, summaryUi, trendUi),
-        vms = MoneyNavVms(transactionsViewModel, closeViewModel, summaryViewModel, trendViewModel, goalsViewModel, titheViewModel, carViewModel, pensionViewModel, subsViewModel, periodViewModel, importViewModel),
+        vms = navVms,
+        shownMonth = viewModel.shownMonth,
+        onRestoreMonth = viewModel::showMonth,
         onScrollTop = { scrollTick++ },
     )
     TabRootBack(enabled = destination == MoneyDestination.Root)
