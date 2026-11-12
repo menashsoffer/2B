@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -126,23 +127,14 @@ fun rememberMoneyDestination(
     onScrollTop: () -> Unit,
 ): MoneyDestination {
     val open = inputs.frames()
-    var stored by rememberSaveable { mutableStateOf("") }
     var savedMonth by rememberSaveable { mutableStateOf<String?>(null) }
     val month by shownMonth.collectAsStateWithLifecycle()
     val restoredMonth = savedMonth
-    val history = decodeMoneyHistory(stored)
-    var ready by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         restoredMonth?.let { raw -> runCatching { YearMonth.parse(raw) }.getOrNull()?.let(onRestoreMonth) }
-        framesToReplay(history, open.map { it.place }.toSet()).forEach(vms::replay)
-        ready = true
     }
     LaunchedEffect(month) { savedMonth = month?.toString() }
-    val shown = if (ready) syncMoneyHistory(history, open) else history
-    val encoded = encodeMoneyHistory(shown)
-    SideEffect {
-        if (stored != encoded) stored = encoded
-    }
+    val shown = restoredMoneyStack(open) { missing -> missing.forEach(vms::replay) }
     val reselect = LocalMoneyReselect.current
     LaunchedEffect(reselect) {
         reselect.ticks.collect {
@@ -151,6 +143,32 @@ fun rememberMoneyDestination(
         }
     }
     return shown.lastOrNull()?.place.toMoneyDestination()
+}
+
+/**
+ * Saved walk order stays on screen until every restored frame is open again.
+ * Marking ready in the same breath as replay would sync against an empty flag list and wipe the stack.
+ */
+@Composable
+fun restoredMoneyStack(
+    open: List<MoneyFrame>,
+    replay: (List<MoneyFrame>) -> Unit,
+): List<MoneyFrame> {
+    var stored by rememberSaveable { mutableStateOf("") }
+    val history = decodeMoneyHistory(stored)
+    var replayStarted by remember { mutableStateOf(history.isEmpty()) }
+    var waited by remember { mutableIntStateOf(0) }
+    val missing = framesToReplay(history, open.map { it.place }.toSet())
+    LaunchedEffect(Unit) {
+        if (missing.isNotEmpty()) replay(missing)
+        replayStarted = true
+    }
+    if (replayStarted && missing.isNotEmpty()) SideEffect { waited += 1 }
+    val ready = replayStarted && (missing.isEmpty() || waited > 8)
+    val shown = if (ready) syncMoneyHistory(history, open) else history
+    val encoded = encodeMoneyHistory(shown)
+    SideEffect { if (stored != encoded) stored = encoded }
+    return shown
 }
 
 /** A shared file replaces the money stack with import. A dirty form asks first and can keep the file pending. */
